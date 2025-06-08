@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE suppressions PUBLIC
+        "-//Checkstyle//DTD SuppressionXpathFilter Experimental Configuration 1.2//EN"
+        "https://checkstyle.org/dtds/suppressions_1_2_xpath_experimental.dtd">
+
+<suppressions>
+    <!-- Disable checks for classes with Lombok annotations -->
+    <suppress-xpath checks="HideUtilityClassConstructor"
+                    query="//*[MODIFIERS/ANNOTATION[*[@text = 'UtilityClass']]]/descendant-or-self::node()"/>
+    <suppress-xpath checks="VisibilityModifier"
+                    query="//*[MODIFIERS/ANNOTATION[*[@text = 'Value']]]/descendant-or-self::node()"/>
+
+    <!-- Disable checks for classes used with Dagger -->
+    <suppress-xpath checks=".*"
+                    query="//*[MODIFIERS/ANNOTATION[*[@text = 'DaggerGenerated']]]/descendant-or-self::node()"/>
+    <suppress-xpath checks=".*"
+                    query="//*[MODIFIERS/ANNOTATION[*[@text = 'Generated']]]/descendant-or-self::node()"/>
+
+    <!-- Allow interfaces used for dagger components and modules to exist with "I" prefix -->
+    <suppress-xpath checks="TypeName"
+                    query="//*[MODIFIERS/ANNOTATION[*[@text = 'Module']]]/descendant-or-self::node()"/>
+    <suppress-xpath checks="TypeName"
+                    query="//*[MODIFIERS/ANNOTATION[*[@text = 'Component']]]/descendant-or-self::node()"/>
+    <suppress-xpath checks="TypeName"
+                    query="//*[MODIFIERS/ANNOTATION[*[@text = 'Subcomponent']]]/descendant-or-self::node()"/>
+
+    <!-- Allow functional interfaces to exist with "I" prefix -->
+    <suppress-xpath checks="TypeName"
+                    query="//*[MODIFIERS/ANNOTATION[*[@text = 'FunctionalInterface']]]/descendant-or-self::node()"/>
+</suppressions>
