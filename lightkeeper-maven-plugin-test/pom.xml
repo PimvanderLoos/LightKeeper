@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>lightkeeper-maven-plugin-test</artifactId>
+    <packaging>jar</packaging>
 
     <properties>
         <maven.compiler.release>21</maven.compiler.release>
@@ -22,20 +23,11 @@
                 <groupId>nl.pim16aap2.lightkeeper</groupId>
                 <artifactId>lightkeeper-maven-plugin</artifactId>
                 <version>${version.lightkeeper-maven-plugin}</version>
-                <executions>
-                    <execution>
-                        <id>prepare-server</id>
-                        <goals>
-                            <goal>prepare-server</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>test</id>
-                        <goals>
-                            <goal>test</goal>
-                        </goals>
-                    </execution>
-                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

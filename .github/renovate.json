@@ -23,7 +23,10 @@
         "^org\\.mockito:.*"
       ],
       "automerge": true,
-      "automergeType": "branch"
+      "automergeType": "branch",
+      "requiredStatusChecks": [
+        "build"
+      ]
     }
   ]
 }
