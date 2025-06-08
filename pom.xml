@@ -28,7 +28,7 @@
         <version.lombok>1.18.38</version.lombok>
         <version.nullaway>0.12.7</version.nullaway>
         <version.pmd>7.13.0</version.pmd>
-        <version.semver4j>5.7.0</version.semver4j>
+        <version.semver4j>5.7.1</version.semver4j>
 
         <version.manve-checkstyle-plugin>3.6.0</version.manve-checkstyle-plugin>
         <version.maven-clean-plugin>3.4.1</version.maven-clean-plugin>
