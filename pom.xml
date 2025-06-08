@@ -18,20 +18,20 @@
         <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <version.lightkeeper-maven-plugin>1.0-SNAPSHOT</version.lightkeeper-maven-plugin>
-
         <version.maven>3.9.10</version.maven>
 
-        <version.checkstyle>10.24.0</version.checkstyle>
+        <version.lightkeeper-maven-plugin>1.0-SNAPSHOT</version.lightkeeper-maven-plugin>
+
+        <version.checkstyle>10.25.0</version.checkstyle>
         <version.errorprone>2.38.0</version.errorprone>
         <version.jspecify>1.0.0</version.jspecify>
         <version.lombok>1.18.38</version.lombok>
         <version.nullaway>0.12.7</version.nullaway>
-        <version.pmd>7.13.0</version.pmd>
+        <version.pmd>7.14.0</version.pmd>
         <version.semver4j>5.7.1</version.semver4j>
 
-        <version.manve-checkstyle-plugin>3.6.0</version.manve-checkstyle-plugin>
-        <version.maven-clean-plugin>3.4.1</version.maven-clean-plugin>
+        <version.maven-checkstyle-plugin>3.6.0</version.maven-checkstyle-plugin>
+        <version.maven-clean-plugin>3.5.0</version.maven-clean-plugin>
         <version.maven-compiler-plugin>3.14.0</version.maven-compiler-plugin>
         <version.maven-install-plugin>3.1.4</version.maven-install-plugin>
         <version.maven-jar-plugin>3.4.2</version.maven-jar-plugin>
@@ -83,7 +83,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-checkstyle-plugin</artifactId>
-                    <version>${version.manve-checkstyle-plugin}</version>
+                    <version>${version.maven-checkstyle-plugin}</version>
                     <dependencies>
                         <dependency>
                             <groupId>com.puppycrawl.tools</groupId>
