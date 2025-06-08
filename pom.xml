@@ -28,6 +28,7 @@
         <version.lombok>1.18.38</version.lombok>
         <version.nullaway>0.12.7</version.nullaway>
         <version.pmd>7.13.0</version.pmd>
+        <version.semver4j>5.7.0</version.semver4j>
 
         <version.manve-checkstyle-plugin>3.6.0</version.manve-checkstyle-plugin>
         <version.maven-clean-plugin>3.4.1</version.maven-clean-plugin>
@@ -49,6 +50,7 @@
             <artifactId>error_prone_annotations</artifactId>
             <version>${version.errorprone}</version>
             <scope>compile</scope>
+            <optional>true</optional>
         </dependency>
 
         <dependency>
@@ -56,6 +58,7 @@
             <artifactId>jspecify</artifactId>
             <version>${version.jspecify}</version>
             <scope>compile</scope>
+            <optional>true</optional>
         </dependency>
 
         <dependency>
@@ -63,6 +66,14 @@
             <artifactId>lombok</artifactId>
             <version>${version.lombok}</version>
             <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.semver4j</groupId>
+            <artifactId>semver4j</artifactId>
+            <version>${version.semver4j}</version>
+            <scope>compile</scope>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 
