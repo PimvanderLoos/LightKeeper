@@ -1,0 +1,29 @@
+{
+  "extends": [
+    "config:recommended",
+    "schedule:monthly"
+  ],
+  "packageRules": [
+    {
+      "matchPackageNames": [
+        "com.puppycrawl.tools:checkstyle",
+        "com.uber.nullaway:nullaway",
+        "JamesIves/github-pages-deploy-action",
+        "org.jspecify/jspecify",
+        "org.jacoco:jacoco-maven-plugin",
+        "org.projectlombok:lombok",
+        "org.semver4j:semver4j"
+      ],
+      "matchPackagePatterns": [
+        "^org\\.apache\\.maven\\.plugins:.*",
+        "^org\\.junit\\.jupiter:junit-.*",
+        "^net\\.sourceforge\\.pmd:pmd-.*",
+        "^actions/.*",
+        "^com\\.google\\.errorprone:.*",
+        "^org\\.mockito:.*"
+      ],
+      "automerge": true,
+      "automergeType": "branch"
+    }
+  ]
+}
