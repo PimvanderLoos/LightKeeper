@@ -25,6 +25,7 @@
         <version.checkstyle>10.24.0</version.checkstyle>
         <version.errorprone>2.38.0</version.errorprone>
         <version.jspecify>1.0.0</version.jspecify>
+        <version.lombok>1.18.38</version.lombok>
         <version.nullaway>0.12.7</version.nullaway>
         <version.pmd>7.13.0</version.pmd>
 
@@ -55,6 +56,13 @@
             <artifactId>jspecify</artifactId>
             <version>${version.jspecify}</version>
             <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${version.lombok}</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
@@ -217,6 +225,11 @@
                                 </compilerArgs>
                                 <annotationProcessorPaths>
                                     <path>
+                                        <groupId>org.projectlombok</groupId>
+                                        <artifactId>lombok</artifactId>
+                                        <version>${version.lombok}</version>
+                                    </path>
+                                    <path>
                                         <groupId>com.google.errorprone</groupId>
                                         <artifactId>error_prone_core</artifactId>
                                         <version>${version.errorprone}</version>
@@ -246,6 +259,13 @@
                             <configuration>
                                 <release>${maven.compiler.release}</release>
                                 <encoding>UTF-8</encoding>
+                                <annotationProcessorPaths>
+                                    <path>
+                                        <groupId>org.projectlombok</groupId>
+                                        <artifactId>lombok</artifactId>
+                                        <version>${version.lombok}</version>
+                                    </path>
+                                </annotationProcessorPaths>
                             </configuration>
                         </plugin>
                     </plugins>
