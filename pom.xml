@@ -20,7 +20,7 @@
 
         <version.lightkeeper-maven-plugin>1.0-SNAPSHOT</version.lightkeeper-maven-plugin>
 
-        <version.maven>3.9.1</version.maven>
+        <version.maven>3.9.10</version.maven>
 
         <version.checkstyle>10.24.0</version.checkstyle>
         <version.errorprone>2.38.0</version.errorprone>
