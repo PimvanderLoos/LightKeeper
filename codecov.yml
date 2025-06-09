@@ -1,0 +1,31 @@
+codecov:
+  max_report_age: off
+
+comment:
+  layout: " header, reach, diff, components, condensed_files, footer "
+  require_changes: false
+
+coverage:
+  status:
+    patch:
+      default:
+        informational: true
+
+component_management:
+  default_rules:
+    statuses:
+      - type: project
+        informational: true
+      - type: patch
+        informational: true
+
+  individual_components:
+    - component_id: lightkeeper-maven-plugin
+      name: Core
+      paths:
+        - lightkeeper-maven-plugin/**
+
+    - component_id: lightkeeper-maven-plugin/test
+      name: Utilities
+      paths:
+        - lightkeeper-maven-plugin/test/**
