@@ -289,6 +289,34 @@
                                 <fork>true</fork>
                                 <release>${maven.compiler.release}</release>
                                 <showWarnings>true</showWarnings>
+                                <annotationProcessorPaths>
+                                    <path>
+                                        <groupId>org.projectlombok</groupId>
+                                        <artifactId>lombok</artifactId>
+                                        <version>${version.lombok}</version>
+                                    </path>
+                                </annotationProcessorPaths>
+                            </configuration>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+            </build>
+        </profile>
+
+        <profile>
+            <id>errorprone</id>
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <groupId>org.apache.maven.plugins</groupId>
+                            <artifactId>maven-compiler-plugin</artifactId>
+                            <version>${version.maven-compiler-plugin}</version>
+                            <configuration>
+                                <encoding>UTF-8</encoding>
+                                <fork>true</fork>
+                                <release>${maven.compiler.release}</release>
+                                <showWarnings>true</showWarnings>
                                 <compilerArgs>
                                     <arg>-XDcompilePolicy=simple</arg>
                                     <arg>--should-stop=ifError=FLOW</arg>
@@ -320,32 +348,6 @@
                                         <groupId>com.uber.nullaway</groupId>
                                         <artifactId>nullaway</artifactId>
                                         <version>${version.nullaway}</version>
-                                    </path>
-                                </annotationProcessorPaths>
-                            </configuration>
-                        </plugin>
-                    </plugins>
-                </pluginManagement>
-            </build>
-        </profile>
-
-        <profile>
-            <id>skip-errorprone</id>
-            <build>
-                <pluginManagement>
-                    <plugins>
-                        <plugin>
-                            <groupId>org.apache.maven.plugins</groupId>
-                            <artifactId>maven-compiler-plugin</artifactId>
-                            <version>${version.maven-compiler-plugin}</version>
-                            <configuration>
-                                <release>${maven.compiler.release}</release>
-                                <encoding>UTF-8</encoding>
-                                <annotationProcessorPaths>
-                                    <path>
-                                        <groupId>org.projectlombok</groupId>
-                                        <artifactId>lombok</artifactId>
-                                        <version>${version.lombok}</version>
                                     </path>
                                 </annotationProcessorPaths>
                             </configuration>
