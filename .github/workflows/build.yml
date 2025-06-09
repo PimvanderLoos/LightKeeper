@@ -31,3 +31,9 @@ jobs:
 
       - name: Build the project
         run: mvn --batch-mode clean test install verify checkstyle:checkstyle pmd:check
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          directory: report-aggregate/target/site/jacoco-aggregate
+          token: ${{ secrets.CODECOV_TOKEN }}
