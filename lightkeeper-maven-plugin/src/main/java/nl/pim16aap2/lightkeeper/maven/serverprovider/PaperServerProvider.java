@@ -1,6 +1,7 @@
 package nl.pim16aap2.lightkeeper.maven.serverprovider;
 
 import nl.pim16aap2.lightkeeper.maven.ServerSpecification;
+import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 
 public class PaperServerProvider extends ServerProvider
@@ -11,5 +12,17 @@ public class PaperServerProvider extends ServerProvider
     {
         super(log, SERVER_NAME, serverSpecification);
         throw new UnsupportedOperationException("Paper server provider is not yet implemented.");
+    }
+
+    @Override
+    protected void createBaseServerJar()
+        throws MojoExecutionException
+    {
+    }
+
+    @Override
+    protected void createBaseServer()
+        throws MojoExecutionException
+    {
     }
 }

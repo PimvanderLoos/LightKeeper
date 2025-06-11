@@ -6,8 +6,12 @@ import lombok.ToString;
 import lombok.experimental.Accessors;
 import nl.pim16aap2.lightkeeper.maven.ServerSpecification;
 import nl.pim16aap2.lightkeeper.maven.util.FileUtil;
+import org.apache.commons.io.FileUtils;
+import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 
+import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -155,10 +159,99 @@ public abstract class ServerProvider
     /**
      * Prepares the server for use.
      */
-    public void prepareServer()
+    public final void prepareServer()
+        throws MojoExecutionException
     {
-        throw new UnsupportedOperationException(
-            "`prepareServer` is not implemented for " + name() + " server provider.");
+        log().info("Preparing server for platform: '" + name +
+            "' with version: '" + serverSpecification().serverVersion() + "'.");
+
+        if (shouldRecreateJar())
+        {
+            log().info("Recreating server JAR file");
+            FileUtil.cleanDirectory(jarCacheDirectory, "jar cache directory");
+            createBaseServerJar();
+        }
+
+        if (shouldRecreateBaseServer())
+        {
+            log().info("Recreating base server directory");
+            FileUtil.cleanDirectory(baseServerDirectory, "base server directory");
+            createBaseServer();
+        }
+
+        log().info("Copying base server to target server directory");
+        FileUtil.cleanDirectory(targetServerDirectory, "target server directory");
+        createTargetServer();
+    }
+
+    /**
+     * Creates the base server JAR file.
+     * <p>
+     * When this method is called, {@link #jarCacheDirectory()} is guaranteed to be empty.
+     *
+     * @throws MojoExecutionException
+     *     If the base server JAR file could not be created.
+     */
+    protected abstract void createBaseServerJar()
+        throws MojoExecutionException;
+
+    /**
+     * Creates and initializes the base server.
+     * <p>
+     * When this method is called, {@link #baseServerDirectory()} is guaranteed to be empty.
+     *
+     * @throws MojoExecutionException
+     */
+    protected abstract void createBaseServer()
+        throws MojoExecutionException;
+
+    /**
+     * Downloads a file from the specified URL to the target file path.
+     *
+     * @param url
+     *     The URL from which to download the file.
+     * @param targetFile
+     *     The path where the downloaded file should be saved.
+     * @throws MojoExecutionException
+     *     If the file could not be downloaded.
+     */
+    protected void downloadFile(String url, Path targetFile)
+        throws MojoExecutionException
+    {
+        try
+        {
+            log().info("Downloading file from %s to %s".formatted(url, targetFile));
+            FileUtils.copyURLToFile(URI.create(url).toURL(), targetFile.toFile(), 10_000, 10_000);
+        }
+        catch (IOException e)
+        {
+            throw new MojoExecutionException("Failed to download file from %s to %s".formatted(url, targetFile), e);
+        }
+    }
+
+    /**
+     * Creates the target server.
+     * <p>
+     * This method copies the entire base server directory to the target server directory.
+     *
+     * @throws MojoExecutionException
+     *     if the base server directory could not be copied to the target server directory.
+     */
+    protected void createTargetServer()
+        throws MojoExecutionException
+    {
+        try
+        {
+            Files.copy(baseServerDirectory, targetServerDirectory);
+        }
+        catch (IOException exception)
+        {
+            throw new MojoExecutionException(
+                "Failed to copy base server directory %s to target server directory %s"
+                    .formatted(baseServerDirectory, targetServerDirectory),
+                exception
+            );
+        }
     }
 
     /**

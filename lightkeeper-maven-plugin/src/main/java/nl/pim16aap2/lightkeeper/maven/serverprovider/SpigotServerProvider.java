@@ -2,7 +2,10 @@ package nl.pim16aap2.lightkeeper.maven.serverprovider;
 
 import lombok.ToString;
 import nl.pim16aap2.lightkeeper.maven.ServerSpecification;
+import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
+
+import java.nio.file.Path;
 
 /**
  * Represents a provider for the Spigot server type.
@@ -13,6 +16,9 @@ import org.apache.maven.plugin.logging.Log;
 public class SpigotServerProvider extends ServerProvider
 {
     private static final String SERVER_NAME = "spigot";
+    private static final String BUILD_TOOLS_JAR_URL =
+        "https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar";
+    private static final String BUILD_TOOLS_JAR_NAME = "BuildTools.jar";
 
     public SpigotServerProvider(Log log, ServerSpecification serverSpecification)
     {
@@ -20,8 +26,25 @@ public class SpigotServerProvider extends ServerProvider
     }
 
     @Override
-    public void prepareServer()
+    protected void createBaseServerJar()
+        throws MojoExecutionException
     {
-        log().info("Preparing spigot server with provider: \n" + this);
+        final Path BUILD_TOOLS_JAR_PATH =
+            jarCacheDirectory().resolve(BUILD_TOOLS_JAR_NAME);
+
+        log().info("Building Spigot server JAR file using BuildTools...");
+
+        downloadFile(BUILD_TOOLS_JAR_URL, BUILD_TOOLS_JAR_PATH);
+
+        // Run `java -jar ../BuildTools.jar --rev ${serverVersion.serverVersion()}` in the jar cache directory to generate the correct files.
+        // Or ${serverSpecification.javaExecutablePath()}?
+    }
+
+    @Override
+    protected void createBaseServer()
+        throws MojoExecutionException
+    {
+        // Run `java --Xmx${serverSpecification.memoryMb()}M --Xms${serverSpecification.memoryMb()}M -jar ${getOutputJarFileName()} ${serverSpecification.extraJvmArgs()} -jar ${targetJarFile} -nogui` in the ${targetServerDirectory} directory.
+        // Or ${serverSpecification.javaExecutablePath()}?
     }
 }

@@ -22,6 +22,7 @@
 
         <version.maven>3.9.10</version.maven>
 
+        <version.apache-commons-io>2.19.0</version.apache-commons-io>
         <version.assertj>4.0.0-M1</version.assertj>
         <version.checkstyle>10.25.0</version.checkstyle>
         <version.errorprone>2.38.0</version.errorprone>
@@ -62,6 +63,14 @@
             <groupId>org.jspecify</groupId>
             <artifactId>jspecify</artifactId>
             <version>${version.jspecify}</version>
+            <scope>compile</scope>
+            <optional>true</optional>
+
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>${version.apache-commons-io}</version>
             <scope>compile</scope>
             <optional>true</optional>
         </dependency>

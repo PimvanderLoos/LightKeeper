@@ -1,5 +1,6 @@
 package nl.pim16aap2.lightkeeper.maven.util;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.maven.plugin.MojoExecutionException;
 
 import java.io.IOException;
@@ -44,6 +45,41 @@ public final class FileUtil
                 "Failed to create directory '" + name + "' at path '" + path + "'.",
                 exception
             );
+        }
+    }
+
+    /**
+     * Cleans a directory by deleting all files and subdirectories within it.
+     * <p>
+     * Note that the directory itself is not deleted, only its contents.
+     * <p>
+     * If the directory does not exist, it will be created.
+     *
+     * @param path
+     *     the path to delete.
+     * @throws MojoExecutionException
+     *     If the file or directory could not be deleted.
+     */
+    public static void cleanDirectory(Path path, String context)
+        throws MojoExecutionException
+    {
+        if (Files.exists(path))
+        {
+            try
+            {
+                FileUtils.cleanDirectory(path.toFile());
+            }
+            catch (IOException exception)
+            {
+                throw new MojoExecutionException(
+                    "Failed to clean %s with path '%s'.".formatted(context, path),
+                    exception
+                );
+            }
+        }
+        else
+        {
+            createDirectories(path, context);
         }
     }
 
