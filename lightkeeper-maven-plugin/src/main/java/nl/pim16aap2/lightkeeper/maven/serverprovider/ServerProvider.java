@@ -162,9 +162,6 @@ public abstract class ServerProvider
     public final void prepareServer()
         throws MojoExecutionException
     {
-        log().info("Preparing server for platform: '" + name +
-            "' with version: '" + serverSpecification().serverVersion() + "'.");
-
         if (shouldRecreateJar())
         {
             log().info("Recreating server JAR file");
@@ -242,6 +239,7 @@ public abstract class ServerProvider
     {
         try
         {
+            Files.deleteIfExists(targetServerDirectory);
             Files.copy(baseServerDirectory, targetServerDirectory);
         }
         catch (IOException exception)
