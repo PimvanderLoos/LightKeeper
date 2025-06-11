@@ -89,6 +89,8 @@ public class PrepareServerMojo extends AbstractMojo
     public void execute()
         throws MojoExecutionException
     {
+        getLog().info("Preparing server for platform: '" + serverType + "' with version: '" + serverVersion + "'.");
+
         FileUtil.createDirectories(jarCacheDirectoryRoot, "jar cache directory root");
         FileUtil.createDirectories(baseServerCacheDirectoryRoot, "base server cache directory root");
         FileUtil.createDirectories(serverWorkDirectoryRoot, "server work directory root");
@@ -120,8 +122,6 @@ public class PrepareServerMojo extends AbstractMojo
                     serverType,
                     SUPPORTED_SERVER_TYPES));
         };
-
-        getLog().info("Using server provider: " + serverProvider.name());
 
         serverProvider.prepareServer();
     }

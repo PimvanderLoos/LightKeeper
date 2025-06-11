@@ -44,7 +44,14 @@ public class SpigotServerProvider extends ServerProvider
     protected void createBaseServer()
         throws MojoExecutionException
     {
+        // First, configure the server:
+        // - Accept the EULA by creating a file named `eula.txt` in the base server directory with the content `eula=true`.
+        // - Create a `server.properties`:
+        //   - Enable rcon, to be used with https://github.com/jobfeikens/rcon
+        //
+
         // Run `java --Xmx${serverSpecification.memoryMb()}M --Xms${serverSpecification.memoryMb()}M -jar ${getOutputJarFileName()} ${serverSpecification.extraJvmArgs()} -jar ${targetJarFile} -nogui` in the ${targetServerDirectory} directory.
         // Or ${serverSpecification.javaExecutablePath()}?
+        // Alternatively, run it in a container! Instead of javaExecutablePath, use image name/tag.
     }
 }
