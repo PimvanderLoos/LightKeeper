@@ -1,13 +1,13 @@
 package nl.pim16aap2.lightkeeper.maven;
 
 import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.PaperServerProvider;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.ServerProvider;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.SpigotServerProvider;
 import nl.pim16aap2.lightkeeper.maven.util.FileUtil;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -20,6 +20,7 @@ import java.util.Objects;
 
 @Mojo(name = "prepare-server", defaultPhase = LifecyclePhase.PRE_INTEGRATION_TEST)
 @AllArgsConstructor
+@NoArgsConstructor
 public class PrepareServerMojo extends AbstractMojo
 {
     private static final List<String> SUPPORTED_SERVER_TYPES = List.of("spigot", "paper");
@@ -31,22 +32,22 @@ public class PrepareServerMojo extends AbstractMojo
     private String serverVersion;
 
     @Parameter(
-        property = "lightkeeper.jarCacheDirectory",
+        property = "lightkeeper.jarCacheDirectoryRoot",
         defaultValue = "${settings.localRepository}/nl/pim16aap2/lightkeeper/cache/jars"
     )
-    private Path jarCacheDirectory;
+    private Path jarCacheDirectoryRoot;
 
     @Parameter(
-        property = "lightkeeper.baseServerCacheDirectory",
+        property = "lightkeeper.baseServerCacheDirectoryRoot",
         defaultValue = "${settings.localRepository}/nl/pim16aap2/lightkeeper/cache/server"
     )
-    private Path baseServerCacheDirectory;
+    private Path baseServerCacheDirectoryRoot;
 
     @Parameter(
-        property = "lightkeeper.serverWorkDirectory",
+        property = "lightkeeper.serverWorkDirectoryRoot",
         defaultValue = "${project.build.directory}/lightkeeper-server", required = true
     )
-    private Path serverWorkDirectory;
+    private Path serverWorkDirectoryRoot;
 
     @Parameter(property = "lightkeeper.versionedCacheDirectories", defaultValue = "false")
     private boolean versionedCacheDirectories;
@@ -74,16 +75,30 @@ public class PrepareServerMojo extends AbstractMojo
 
     @Override
     public void execute()
-        throws MojoExecutionException, MojoFailureException
+        throws MojoExecutionException
     {
-        FileUtil.createDirectories(jarCacheDirectory, "jar cache directory");
-        FileUtil.createDirectories(baseServerCacheDirectory, "base server cache directory");
-        FileUtil.createDirectories(serverWorkDirectory, "server work directory");
+        FileUtil.createDirectories(jarCacheDirectoryRoot, "jar cache directory root");
+        FileUtil.createDirectories(baseServerCacheDirectoryRoot, "base server cache directory root");
+        FileUtil.createDirectories(serverWorkDirectoryRoot, "server work directory root");
+
+        final ServerSpecification serverSpecification = new ServerSpecification(
+            serverVersion,
+            jarCacheDirectoryRoot,
+            baseServerCacheDirectoryRoot,
+            serverWorkDirectoryRoot,
+            versionedCacheDirectories,
+            jarCacheExpiryDays,
+            forceRebuildJar,
+            baseServerCacheExpiryDays,
+            forceRecreateBaseServer,
+            serverInitTimeoutSeconds,
+            serverStopTimeoutSeconds
+        );
 
         final ServerProvider serverProvider = switch (Objects.requireNonNull(serverType).toLowerCase(Locale.ROOT))
         {
-            case "spigot" -> new SpigotServerProvider(getLog());
-            case "paper" -> new PaperServerProvider(getLog());
+            case "spigot" -> new SpigotServerProvider(getLog(), serverSpecification);
+            case "paper" -> new PaperServerProvider(getLog(), serverSpecification);
             default -> throw new MojoExecutionException(
                 String.format(
                     "Unsupported server type: %s!\nSupported types: %s",
@@ -91,6 +106,8 @@ public class PrepareServerMojo extends AbstractMojo
                     SUPPORTED_SERVER_TYPES));
         };
 
-        getLog().info("Using server provider: " + serverProvider.getName());
+        getLog().info("Using server provider: " + serverProvider.name());
+
+        serverProvider.prepareServer();
     }
 }

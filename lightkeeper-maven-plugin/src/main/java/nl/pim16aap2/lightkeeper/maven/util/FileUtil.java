@@ -2,8 +2,11 @@ package nl.pim16aap2.lightkeeper.maven.util;
 
 import org.apache.maven.plugin.MojoExecutionException;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 
 public final class FileUtil
 {
@@ -41,6 +44,30 @@ public final class FileUtil
                 "Failed to create directory '" + name + "' at path '" + path + "'.",
                 exception
             );
+        }
+    }
+
+    /**
+     * Gets the age of a file in days based on its last modified time.
+     *
+     * @param file
+     *     the file to check.
+     * @return the age of the file in days.
+     *
+     * @throws RuntimeException
+     *     If the last modified time could not be retrieved.
+     */
+    public static long getFileAgeInDays(Path file)
+    {
+        try
+        {
+            final Instant fileInstant = Files.getLastModifiedTime(file).toInstant();
+            final Instant now = Instant.now();
+            return Duration.between(fileInstant, now).toDays();
+        }
+        catch (IOException exception)
+        {
+            throw new RuntimeException("Failed to get last modified time for file: " + file, exception);
         }
     }
 }
