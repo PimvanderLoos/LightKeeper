@@ -12,6 +12,7 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
+import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -70,6 +71,17 @@ public class PrepareServerMojo extends AbstractMojo
     @Parameter(property = "lightkeeper.serverStopTimeoutSeconds", defaultValue = "30")
     private int serverStopTimeoutSeconds;
 
+    @Parameter(property = "lightkeeper.memoryMb", defaultValue = "2048")
+    private int memoryMb;
+
+    @Parameter(property = "lightkeeper.javaExecutablePath", defaultValue = "${java.home}/bin/java")
+    @Nullable
+    private String javaExecutablePath;
+
+    @Parameter(property = "lightkeeper.extraJvmArgs")
+    @Nullable
+    private String extraJvmArgs;
+
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
     private MavenProject project;
 
@@ -92,7 +104,10 @@ public class PrepareServerMojo extends AbstractMojo
             baseServerCacheExpiryDays,
             forceRecreateBaseServer,
             serverInitTimeoutSeconds,
-            serverStopTimeoutSeconds
+            serverStopTimeoutSeconds,
+            memoryMb,
+            javaExecutablePath,
+            extraJvmArgs
         );
 
         final ServerProvider serverProvider = switch (Objects.requireNonNull(serverType).toLowerCase(Locale.ROOT))

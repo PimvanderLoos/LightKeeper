@@ -1,5 +1,7 @@
 package nl.pim16aap2.lightkeeper.maven;
 
+import org.jspecify.annotations.Nullable;
+
 import java.nio.file.Path;
 
 /**
@@ -33,6 +35,14 @@ import java.nio.file.Path;
  *     The number of seconds to wait for the server to initialize before timing out.
  * @param serverStopTimeoutSeconds
  *     The number of seconds to wait for the server to stop gracefully before timing out.
+ * @param memoryMb
+ *     The amount of memory (in MB) allocated to the server.
+ * @param javaExecutablePath
+ *     The optional path to the Java executable to use for running the server.
+ *     <p>
+ *     If null, the default Java executable will be used based on the system's PATH.
+ * @param extraJvmArgs
+ *     Additional JVM arguments to pass when starting the server.
  */
 public record ServerSpecification(
     String serverVersion,
@@ -45,7 +55,10 @@ public record ServerSpecification(
     int baseServerCacheExpiryDays,
     boolean forceRecreateBaseServer,
     int serverInitTimeoutSeconds,
-    int serverStopTimeoutSeconds
+    int serverStopTimeoutSeconds,
+    int memoryMb,
+    @Nullable String javaExecutablePath,
+    @Nullable String extraJvmArgs
 )
 {
 }
