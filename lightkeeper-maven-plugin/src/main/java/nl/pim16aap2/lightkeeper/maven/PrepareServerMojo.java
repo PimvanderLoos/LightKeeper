@@ -62,7 +62,7 @@ public class PrepareServerMojo extends AbstractMojo
     @Parameter(property = "lightkeeper.baseServerCacheExpiryDays", defaultValue = "30")
     private int baseServerCacheExpiryDays;
 
-    @Parameter(property = "lightkeeper.forceRecreateBaseServer", defaultValue = "false")
+    @Parameter(property = "lightkeeper.forceRecreateBaseServer", defaultValue = "true")
     private boolean forceRecreateBaseServer;
 
     @Parameter(property = "lightkeeper.serverInitTimeoutSeconds", defaultValue = "120")
