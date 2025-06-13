@@ -14,6 +14,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 
 /**
  * Represents a provider for a specific type of server.
@@ -26,7 +28,7 @@ import java.nio.file.Path;
 @ToString
 public abstract class ServerProvider
 {
-    private static final String EULA_FILE_NAME = "eula.txt";
+    public static final String EULA_FILE_NAME = "eula.txt";
 
     private final Log log;
 
@@ -62,6 +64,13 @@ public abstract class ServerProvider
      * The resolved path to the target JAR file for this server type.
      */
     private final Path targetJarFile;
+
+    /**
+     * The resolved path to the server JAR file in the cache.
+     * <p>
+     * This is used to copy the JAR file from the cache to the target server directory.
+     */
+    private final Path jarCacheFile;
 
     /**
      * Indicates whether the base server should be recreated.
@@ -112,6 +121,7 @@ public abstract class ServerProvider
         );
 
         this.targetJarFile = this.targetServerDirectory.resolve(outputJarFileName);
+        this.jarCacheFile = this.jarCacheDirectory.resolve(outputJarFileName);
 
         this.shouldRecreateBaseServer = shouldBeRecreated(
             serverSpecification.forceRecreateBaseServer(),
@@ -157,6 +167,72 @@ public abstract class ServerProvider
     }
 
     /**
+     * Accepts the EULA for the server by creating a file named {@code eula.txt} in the base server directory with the
+     * content {@code eula=true}.
+     *
+     * @throws MojoExecutionException
+     *     If the EULA file already exists or could not be created.
+     */
+    protected void acceptEula()
+        throws MojoExecutionException
+    {
+        final Path eulaFile = baseServerDirectory().resolve(EULA_FILE_NAME);
+        try
+        {
+            log.info("Creating EULA file at " + eulaFile);
+            Files.writeString(eulaFile, "eula=true", StandardOpenOption.CREATE_NEW);
+        }
+        catch (IOException e)
+        {
+            throw new MojoExecutionException("Failed to create EULA file at " + eulaFile, e);
+        }
+    }
+
+    /**
+     * Writes the server properties to the base server directory.
+     *
+     * @param properties
+     *     The properties to write to the server properties file.
+     * @throws MojoExecutionException
+     *     If the server properties file already exists or could not be created.
+     */
+    protected void writeServerProperties(String properties)
+        throws MojoExecutionException
+    {
+        final Path serverPropertiesFile = baseServerDirectory().resolve("server.properties");
+        try
+        {
+            log.info("Writing server properties to " + serverPropertiesFile);
+            Files.writeString(serverPropertiesFile, properties, StandardOpenOption.CREATE_NEW);
+        }
+        catch (IOException e)
+        {
+            throw new MojoExecutionException("Failed to write server properties to " + serverPropertiesFile, e);
+        }
+    }
+
+    /**
+     * Copies a JAR file from {@link #jarCacheFile()} to {@link #targetJarFile()}.
+     *
+     * @throws MojoExecutionException
+     *     If the JAR file could not be copied from the cache to the base server directory.
+     */
+    protected void copyJarFromCacheToBaseServer()
+        throws MojoExecutionException
+    {
+        try
+        {
+            final Path baseServerJarFile = baseServerDirectory().resolve(jarCacheFile().getFileName());
+            Files.copy(jarCacheFile(), baseServerJarFile, StandardCopyOption.REPLACE_EXISTING);
+            log().info("Copied " + jarCacheFile() + " to " + baseServerJarFile);
+        }
+        catch (IOException exception)
+        {
+            throw new MojoExecutionException("Failed to copy JAR file from cache", exception);
+        }
+    }
+
+    /**
      * Prepares the server for use.
      */
     public final void prepareServer()
@@ -165,19 +241,26 @@ public abstract class ServerProvider
         if (shouldRecreateJar())
         {
             log().info("Recreating server JAR file");
-            FileUtil.cleanDirectory(jarCacheDirectory, "jar cache directory");
+            FileUtil.cleanDirectory(jarCacheDirectory(), "jar cache directory");
             createBaseServerJar();
+
+            // The jar file can be updated without recreating the base server directory.
+            if (!shouldRecreateBaseServer())
+            {
+                copyJarFromCacheToBaseServer();
+            }
         }
 
         if (shouldRecreateBaseServer())
         {
             log().info("Recreating base server directory");
-            FileUtil.cleanDirectory(baseServerDirectory, "base server directory");
+            FileUtil.cleanDirectory(baseServerDirectory(), "base server directory");
+            copyJarFromCacheToBaseServer();
             createBaseServer();
         }
 
         log().info("Copying base server to target server directory");
-        FileUtil.cleanDirectory(targetServerDirectory, "target server directory");
+        FileUtil.cleanDirectory(targetServerDirectory(), "target server directory");
         createTargetServer();
     }
 

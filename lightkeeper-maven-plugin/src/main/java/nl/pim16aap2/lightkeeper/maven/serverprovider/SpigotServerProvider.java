@@ -5,7 +5,9 @@ import nl.pim16aap2.lightkeeper.maven.ServerSpecification;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
 
 /**
  * Represents a provider for the Spigot server type.
@@ -25,16 +27,65 @@ public class SpigotServerProvider extends ServerProvider
         super(log, SERVER_NAME, serverSpecification);
     }
 
+    private void buildSpigotServerJar(Path buildToolsJarPath)
+        throws MojoExecutionException
+    {
+        ProcessBuilder processBuilder = new ProcessBuilder(
+            Objects.requireNonNullElse(serverSpecification().javaExecutablePath(), "java"),
+            "-jar",
+            buildToolsJarPath.toAbsolutePath().toString(),
+            "--rev",
+            serverSpecification().serverVersion()
+        );
+
+        processBuilder.directory(jarCacheDirectory().toFile());
+        processBuilder.inheritIO();
+
+        int result;
+        try
+        {
+            final var process = processBuilder.start();
+            result = process.waitFor();
+        }
+        catch (InterruptedException exception)
+        {
+            Thread.currentThread().interrupt();
+            throw new MojoExecutionException("Interrupted while waiting for BuildTools process to finish", exception);
+        }
+        catch (Exception exception)
+        {
+            throw new MojoExecutionException("Failed to start BuildTools process", exception);
+        }
+
+        if (result != 0)
+        {
+            throw new MojoExecutionException(
+                "BuildTools process failed with exit code %d. Please check the output for more details."
+                    .formatted(result)
+            );
+        }
+
+        if (!Files.exists(jarCacheFile()))
+        {
+            throw new MojoExecutionException(
+                "BuildTools did not produce the expected server JAR file: %s. Please check the output for errors."
+                    .formatted(jarCacheFile())
+            );
+        }
+    }
+
     @Override
     protected void createBaseServerJar()
         throws MojoExecutionException
     {
-        final Path BUILD_TOOLS_JAR_PATH =
+        final Path buildToolsJarPath =
             jarCacheDirectory().resolve(BUILD_TOOLS_JAR_NAME);
 
         log().info("Building Spigot server JAR file using BuildTools...");
 
-        downloadFile(BUILD_TOOLS_JAR_URL, BUILD_TOOLS_JAR_PATH);
+        downloadFile(BUILD_TOOLS_JAR_URL, buildToolsJarPath);
+
+        buildSpigotServerJar(buildToolsJarPath);
 
         // Run `java -jar ../BuildTools.jar --rev ${serverVersion.serverVersion()}` in the jar cache directory to generate the correct files.
         // Or ${serverSpecification.javaExecutablePath()}?
@@ -44,8 +95,15 @@ public class SpigotServerProvider extends ServerProvider
     protected void createBaseServer()
         throws MojoExecutionException
     {
+        acceptEula();
+        writeServerProperties("""
+            enable-query=true
+            enable-rcon=true
+            rcon.password=lightkeeper
+            """
+        );
+
         // First, configure the server:
-        // - Accept the EULA by creating a file named `eula.txt` in the base server directory with the content `eula=true`.
         // - Create a `server.properties`:
         //   - Enable rcon, to be used with https://github.com/jobfeikens/rcon
         //
