@@ -67,10 +67,13 @@ public abstract class ServerProvider
 
     /**
      * The resolved path to the server JAR file in the cache.
-     * <p>
-     * This is used to copy the JAR file from the cache to the target server directory.
      */
     private final Path jarCacheFile;
+
+    /**
+     * The resolved path to the jar file in the base server directory.
+     */
+    private final Path baseServerJarFile;
 
     /**
      * Indicates whether the base server should be recreated.
@@ -114,23 +117,21 @@ public abstract class ServerProvider
         );
 
         final String outputJarFileName = getOutputJarFileName();
+        this.targetJarFile = this.targetServerDirectory.resolve(outputJarFileName);
+        this.jarCacheFile = this.jarCacheDirectory.resolve(outputJarFileName);
+        this.baseServerJarFile = this.baseServerDirectory.resolve(outputJarFileName);
+
         this.shouldRecreateJar = shouldBeRecreated(
             serverSpecification.forceRebuildJar(),
             serverSpecification.jarCacheExpiryDays(),
-            this.jarCacheDirectory.resolve(outputJarFileName)
+            this.jarCacheFile
         );
-
-        this.targetJarFile = this.targetServerDirectory.resolve(outputJarFileName);
-        this.jarCacheFile = this.jarCacheDirectory.resolve(outputJarFileName);
 
         this.shouldRecreateBaseServer = shouldBeRecreated(
             serverSpecification.forceRecreateBaseServer(),
             serverSpecification.baseServerCacheExpiryDays(),
             this.baseServerDirectory.resolve(EULA_FILE_NAME)
-        ) || !this.baseServerVersionMatches(
-            this.baseServerDirectory,
-            outputJarFileName
-        );
+        ) || !this.baseServerVersionMatches();
     }
 
     /**
@@ -139,16 +140,13 @@ public abstract class ServerProvider
      * If a base server was created for version {@code X} but the expected version is {@code Y} where {@code X != Y},
      * this method will return {@code false}, as the base server is not compatible with the expected version.
      *
-     * @param baseServerDirectory
-     *     The directory where the base server is cached.
      * @return {@code true} if the base server version matches the expected version,
      */
-    protected boolean baseServerVersionMatches(Path baseServerDirectory, String outputJarFileName)
+    protected boolean baseServerVersionMatches()
     {
-        final Path expectedJarFile = baseServerDirectory.resolve(outputJarFileName);
-        if (Files.notExists(expectedJarFile))
+        if (Files.notExists(baseServerJarFile()))
         {
-            log.info("Expected JAR file '" + expectedJarFile + "' does not exist.");
+            log.info("Expected JAR file '" + baseServerJarFile() + "' does not exist.");
             return false;
         }
         return true;
@@ -222,9 +220,8 @@ public abstract class ServerProvider
     {
         try
         {
-            final Path baseServerJarFile = baseServerDirectory().resolve(jarCacheFile().getFileName());
-            Files.copy(jarCacheFile(), baseServerJarFile, StandardCopyOption.REPLACE_EXISTING);
-            log().info("Copied " + jarCacheFile() + " to " + baseServerJarFile);
+            Files.copy(jarCacheFile(), baseServerJarFile(), StandardCopyOption.REPLACE_EXISTING);
+            log().info("Copied " + jarCacheFile() + " to " + baseServerJarFile());
         }
         catch (IOException exception)
         {

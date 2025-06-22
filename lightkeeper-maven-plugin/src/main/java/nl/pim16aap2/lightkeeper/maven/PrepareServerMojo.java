@@ -108,7 +108,7 @@ public class PrepareServerMojo extends AbstractMojo
             serverInitTimeoutSeconds,
             serverStopTimeoutSeconds,
             memoryMb,
-            javaExecutablePath,
+            Objects.requireNonNullElse(javaExecutablePath, "java"),
             extraJvmArgs
         );
 
