@@ -2,12 +2,12 @@ package nl.pim16aap2.lightkeeper.maven.serverprovider;
 
 import lombok.ToString;
 import nl.pim16aap2.lightkeeper.maven.ServerSpecification;
+import nl.pim16aap2.lightkeeper.maven.serverprocess.SpigotServerProcess;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Objects;
 
 /**
  * Represents a provider for the Spigot server type.
@@ -31,7 +31,7 @@ public class SpigotServerProvider extends ServerProvider
         throws MojoExecutionException
     {
         ProcessBuilder processBuilder = new ProcessBuilder(
-            Objects.requireNonNullElse(serverSpecification().javaExecutablePath(), "java"),
+            serverSpecification().javaExecutablePath(),
             "-jar",
             buildToolsJarPath.toAbsolutePath().toString(),
             "--rev",
@@ -86,9 +86,6 @@ public class SpigotServerProvider extends ServerProvider
         downloadFile(BUILD_TOOLS_JAR_URL, buildToolsJarPath);
 
         buildSpigotServerJar(buildToolsJarPath);
-
-        // Run `java -jar ../BuildTools.jar --rev ${serverVersion.serverVersion()}` in the jar cache directory to generate the correct files.
-        // Or ${serverSpecification.javaExecutablePath()}?
     }
 
     @Override
@@ -103,13 +100,15 @@ public class SpigotServerProvider extends ServerProvider
             """
         );
 
-        // First, configure the server:
-        // - Create a `server.properties`:
-        //   - Enable rcon, to be used with https://github.com/jobfeikens/rcon
-        //
+        final var serverProcess = new SpigotServerProcess(
+            baseServerDirectory(),
+            baseServerJarFile(),
+            serverSpecification().javaExecutablePath(),
+            serverSpecification().extraJvmArgs(),
+            serverSpecification().memoryMb()
+        );
 
-        // Run `java --Xmx${serverSpecification.memoryMb()}M --Xms${serverSpecification.memoryMb()}M -jar ${getOutputJarFileName()} ${serverSpecification.extraJvmArgs()} -jar ${targetJarFile} -nogui` in the ${targetServerDirectory} directory.
-        // Or ${serverSpecification.javaExecutablePath()}?
-        // Alternatively, run it in a container! Instead of javaExecutablePath, use image name/tag.
+        serverProcess.start(serverSpecification().serverInitTimeoutSeconds());
+        serverProcess.stop(serverSpecification().serverStopTimeoutSeconds());
     }
 }

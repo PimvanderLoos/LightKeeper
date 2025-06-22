@@ -57,7 +57,7 @@ public record ServerSpecification(
     int serverInitTimeoutSeconds,
     int serverStopTimeoutSeconds,
     int memoryMb,
-    @Nullable String javaExecutablePath,
+    String javaExecutablePath,
     @Nullable String extraJvmArgs
 )
 {
