@@ -30,7 +30,7 @@
         <version.jspecify>1.0.0</version.jspecify>
         <version.junit>5.14.1</version.junit>
         <version.lombok>1.18.42</version.lombok>
-        <version.mockito>5.17.0</version.mockito>
+        <version.mockito>5.20.0</version.mockito>
         <version.nullaway>0.12.11</version.nullaway>
         <version.pmd>7.14.0</version.pmd>
         <version.semver4j>5.8.0</version.semver4j>
