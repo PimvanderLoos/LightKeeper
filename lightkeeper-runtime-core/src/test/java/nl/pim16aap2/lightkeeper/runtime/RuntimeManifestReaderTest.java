@@ -70,5 +70,45 @@ class RuntimeManifestReaderTest
         // verify
         assertThat(runtimeManifest.serverType()).isEqualTo("paper");
         assertThat(runtimeManifest.udsSocketPath()).isEqualTo("/tmp/lightkeeper.sock");
+        assertThat(runtimeManifest.preloadedWorlds()).isEmpty();
+    }
+
+    @Test
+    void read_shouldParsePreloadedWorldsWhenPresent(@TempDir Path tempDirectory)
+        throws IOException
+    {
+        // setup
+        final Path manifestPath = tempDirectory.resolve("runtime-manifest.json");
+        Files.writeString(manifestPath, """
+            {
+              "serverType": "paper",
+              "serverVersion": "1.21.11",
+              "paperBuildId": 113,
+              "cacheKey": "cache-key",
+              "serverDirectory": "/tmp/server",
+              "serverJar": "/tmp/server/paper.jar",
+              "udsSocketPath": "/tmp/lightkeeper.sock",
+              "agentAuthToken": "token",
+              "runtimeProtocolVersion": "v1.1",
+              "agentCacheIdentity": "no-agent",
+              "preloadedWorlds": [
+                {
+                  "name": "fixture-world",
+                  "environment": "NORMAL",
+                  "worldType": "FLAT",
+                  "seed": 42
+                }
+              ]
+            }
+            """
+        );
+
+        // execute
+        final RuntimeManifest runtimeManifest = new RuntimeManifestReader().read(manifestPath);
+
+        // verify
+        assertThat(runtimeManifest.preloadedWorlds()).hasSize(1);
+        assertThat(runtimeManifest.preloadedWorlds().getFirst().name()).isEqualTo("fixture-world");
+        assertThat(runtimeManifest.preloadedWorlds().getFirst().worldType()).isEqualTo("FLAT");
     }
 }

@@ -344,6 +344,8 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         if (world == null)
             return errorResponse(requestId, "WORLD_CREATE_FAILED", "Failed to create world '%s'.".formatted(worldName));
 
+        getLogger().info("LK_AGENT: Created/loaded world '%s' (type=%s, environment=%s, seed=%d)."
+            .formatted(world.getName(), worldTypeValue, environmentValue, seed));
         return successResponse(requestId, Map.of("worldName", world.getName()));
     }
 
@@ -452,6 +454,8 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         });
 
         syntheticPlayers.put(uuid, player);
+        getLogger().info("LK_AGENT: Created synthetic player '%s' (%s) in world '%s'."
+            .formatted(player.getName(), player.getUniqueId(), worldName));
         return successResponse(requestId, Map.of(
             "uuid", player.getUniqueId().toString(),
             "name", player.getName()
@@ -469,6 +473,8 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
                 player.removeAttachment(attachment);
             botPlayerNmsAdapter.removePlayer(player);
             syntheticPlayers.remove(uuid);
+            getLogger().info("LK_AGENT: Removed synthetic player '%s' (%s)."
+                .formatted(player.getName(), player.getUniqueId()));
             return Boolean.TRUE;
         });
         return successResponse(requestId, Map.of("removed", "true"));

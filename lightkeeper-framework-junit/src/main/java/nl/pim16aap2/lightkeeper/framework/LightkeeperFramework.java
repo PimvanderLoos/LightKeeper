@@ -92,7 +92,7 @@ public interface LightkeeperFramework extends AutoCloseable
      *     Block coordinates.
      * @return Block material name.
      */
-    String blockType(WorldHandle world, Vector3Di position);
+    String getBlock(WorldHandle world, Vector3Di position);
 
     /**
      * Sets a block type at a position in a world.

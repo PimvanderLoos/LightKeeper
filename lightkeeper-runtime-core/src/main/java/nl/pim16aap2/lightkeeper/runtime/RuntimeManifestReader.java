@@ -56,5 +56,17 @@ public final class RuntimeManifestReader
             throw new IOException("Runtime manifest field 'runtimeProtocolVersion' is missing or blank.");
         if (manifest.agentCacheIdentity() == null || manifest.agentCacheIdentity().isBlank())
             throw new IOException("Runtime manifest field 'agentCacheIdentity' is missing or blank.");
+
+        for (RuntimeManifest.PreloadedWorld preloadedWorld : manifest.preloadedWorlds())
+        {
+            if (preloadedWorld.name() == null || preloadedWorld.name().isBlank())
+                throw new IOException("Runtime manifest contains preloaded world with missing name.");
+            if (preloadedWorld.environment() == null || preloadedWorld.environment().isBlank())
+                throw new IOException("Runtime manifest preloaded world '%s' is missing environment."
+                    .formatted(preloadedWorld.name()));
+            if (preloadedWorld.worldType() == null || preloadedWorld.worldType().isBlank())
+                throw new IOException("Runtime manifest preloaded world '%s' is missing worldType."
+                    .formatted(preloadedWorld.name()));
+        }
     }
 }

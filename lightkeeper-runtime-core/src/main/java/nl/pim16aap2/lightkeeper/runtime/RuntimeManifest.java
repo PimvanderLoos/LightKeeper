@@ -2,6 +2,8 @@ package nl.pim16aap2.lightkeeper.runtime;
 
 import org.jspecify.annotations.Nullable;
 
+import java.util.List;
+
 /**
  * Runtime manifest written by {@code prepare-server}.
  *
@@ -29,6 +31,8 @@ import org.jspecify.annotations.Nullable;
  *     The runtime protocol version.
  * @param agentCacheIdentity
  *     The cache identity for the resolved agent artifact.
+ * @param preloadedWorlds
+ *     Worlds that should be loaded by the framework before test execution.
  */
 public record RuntimeManifest(
     String serverType,
@@ -42,7 +46,33 @@ public record RuntimeManifest(
     @Nullable String agentJar,
     @Nullable String agentJarSha256,
     String runtimeProtocolVersion,
-    String agentCacheIdentity
+    String agentCacheIdentity,
+    @Nullable List<PreloadedWorld> preloadedWorlds
 )
 {
+    public RuntimeManifest
+    {
+        preloadedWorlds = preloadedWorlds == null ? List.of() : List.copyOf(preloadedWorlds);
+    }
+
+    /**
+     * World metadata for framework preloading.
+     *
+     * @param name
+     *     World name.
+     * @param environment
+     *     Environment enum name.
+     * @param worldType
+     *     World type enum name.
+     * @param seed
+     *     World seed.
+     */
+    public record PreloadedWorld(
+        String name,
+        String environment,
+        String worldType,
+        long seed
+    )
+    {
+    }
 }
