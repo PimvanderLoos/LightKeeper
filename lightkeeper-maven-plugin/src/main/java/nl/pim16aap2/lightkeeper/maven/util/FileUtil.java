@@ -11,6 +11,9 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Comparator;
+import java.io.UncheckedIOException;
+import java.util.stream.Stream;
 
 public final class FileUtil
 {
@@ -83,6 +86,52 @@ public final class FileUtil
         else
         {
             createDirectories(path, context);
+        }
+    }
+
+    /**
+     * Deletes a file or directory recursively.
+     *
+     * @param path
+     *     The file or directory to delete.
+     * @param context
+     *     Human-readable context for error messages.
+     * @throws MojoExecutionException
+     *     If deletion fails.
+     */
+    public static void deleteRecursively(Path path, String context)
+        throws MojoExecutionException
+    {
+        if (Files.notExists(path))
+            return;
+
+        try (Stream<Path> stream = Files.walk(path))
+        {
+            stream.sorted(Comparator.reverseOrder())
+                .forEach(current -> {
+                    try
+                    {
+                        Files.deleteIfExists(current);
+                    }
+                    catch (IOException exception)
+                    {
+                        throw new UncheckedIOException(exception);
+                    }
+                });
+        }
+        catch (UncheckedIOException exception)
+        {
+            throw new MojoExecutionException(
+                "Failed to delete %s with path '%s'.".formatted(context, path),
+                exception.getCause()
+            );
+        }
+        catch (IOException exception)
+        {
+            throw new MojoExecutionException(
+                "Failed to delete %s with path '%s'.".formatted(context, path),
+                exception
+            );
         }
     }
 

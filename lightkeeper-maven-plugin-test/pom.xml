@@ -6,7 +6,7 @@
     <parent>
         <groupId>nl.pim16aap2.lightkeeper</groupId>
         <artifactId>lightkeeper-parent</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>1.2.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>lightkeeper-maven-plugin-test</artifactId>
@@ -81,17 +81,33 @@
             <plugin>
                 <groupId>nl.pim16aap2.lightkeeper</groupId>
                 <artifactId>lightkeeper-maven-plugin</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
+                <version>${project.version}</version>
                 <configuration>
-                    <userAgent>LightKeeper/1.0.0 ([email protected])</userAgent>
+                    <userAgent>LightKeeper/1.2.0 ([email protected])</userAgent>
                     <runtimeManifestPath>${lightkeeper.runtime-manifest.path}</runtimeManifestPath>
                     <agentJarPath>${project.build.directory}/lightkeeper-agent/lightkeeper-agent-paper.jar</agentJarPath>
+                    <configOverlayPath>${project.basedir}/src/test/resources/provisioning/overlay</configOverlayPath>
+                    <worlds>
+                        <world>
+                            <name>lightkeeper-fixture-world</name>
+                            <sourceType>folder</sourceType>
+                            <sourcePath>${project.basedir}/src/test/resources/provisioning/worlds/world-template</sourcePath>
+                            <loadOnStartup>false</loadOnStartup>
+                        </world>
+                    </worlds>
                 </configuration>
                 <executions>
                     <execution>
                         <id>prepare-server</id>
                         <goals>
                             <goal>prepare-server</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>cleanup-server</id>
+                        <phase>post-integration-test</phase>
+                        <goals>
+                            <goal>cleanup-server</goal>
                         </goals>
                     </execution>
                 </executions>

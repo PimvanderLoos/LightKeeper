@@ -72,8 +72,12 @@ public class PaperServerProvider extends ServerProvider
 
             try
             {
+                log().info("LK_SERVER: Starting Paper base server process (attempt %d/%d).".formatted(attempt, maxAttempts));
                 serverProcess.start(serverSpecification().serverInitTimeoutSeconds());
+                log().info("LK_SERVER: Paper base server started successfully.");
+                log().info("LK_SERVER: Stopping Paper base server process.");
                 serverProcess.stop(serverSpecification().serverStopTimeoutSeconds());
+                log().info("LK_SERVER: Paper base server stopped successfully.");
                 return;
             }
             catch (MojoExecutionException exception)

@@ -2,25 +2,45 @@ package nl.pim16aap2.lightkeeper.maven;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
-import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestWriter;
-import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
+import nl.pim16aap2.lightkeeper.maven.provisioning.PluginArtifactSpec;
+import nl.pim16aap2.lightkeeper.maven.provisioning.ResolvedPluginArtifact;
+import nl.pim16aap2.lightkeeper.maven.provisioning.ServerAssetInstaller;
+import nl.pim16aap2.lightkeeper.maven.provisioning.WorldInputSpec;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.PaperServerProvider;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.ServerProvider;
 import nl.pim16aap2.lightkeeper.maven.util.CacheKeyUtil;
 import nl.pim16aap2.lightkeeper.maven.util.FileUtil;
 import nl.pim16aap2.lightkeeper.maven.util.HashUtil;
+import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
+import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestWriter;
+import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.RepositorySystemSession;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.collection.CollectRequest;
+import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.resolution.ArtifactRequest;
+import org.eclipse.aether.resolution.ArtifactResolutionException;
+import org.eclipse.aether.resolution.ArtifactResult;
+import org.eclipse.aether.resolution.DependencyRequest;
+import org.eclipse.aether.resolution.DependencyResolutionException;
+import org.eclipse.aether.resolution.DependencyResult;
+import org.eclipse.aether.util.artifact.JavaScopes;
 import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -121,6 +141,30 @@ public class PrepareServerMojo extends AbstractMojo
     @Nullable
     private Path agentJarPath;
 
+    @Parameter(property = "lightkeeper.configOverlayPath")
+    @Nullable
+    private Path configOverlayPath;
+
+    @Parameter
+    @Nullable
+    private List<WorldInputConfig> worlds;
+
+    @Parameter
+    @Nullable
+    private List<PluginArtifactConfig> plugins;
+
+    @Component
+    @Nullable
+    private RepositorySystem repositorySystem;
+
+    @Parameter(defaultValue = "${repositorySystemSession}", readonly = true)
+    @Nullable
+    private RepositorySystemSession repositorySystemSession;
+
+    @Parameter(defaultValue = "${project.remoteProjectRepositories}", readonly = true)
+    @Nullable
+    private List<RemoteRepository> remoteProjectRepositories;
+
     @Override
     public void execute()
         throws MojoExecutionException
@@ -133,6 +177,9 @@ public class PrepareServerMojo extends AbstractMojo
         final Path effectiveServerWorkDirectoryRoot = Objects.requireNonNull(serverWorkDirectoryRoot);
         final Path effectiveRuntimeManifestPath = Objects.requireNonNull(runtimeManifestPath);
         final Path effectiveAgentSocketDirectory = Objects.requireNonNull(agentSocketDirectory);
+
+        final List<WorldInputSpec> worldInputSpecs = resolveWorldInputSpecs();
+        final List<PluginArtifactSpec> pluginArtifactSpecs = resolvePluginArtifactSpecs();
 
         getLog().info(
             "Preparing server for platform: '" + serverType + "' with version: '" + effectiveServerVersion + "'."
@@ -194,19 +241,40 @@ public class PrepareServerMojo extends AbstractMojo
 
         serverProvider.prepareServer();
 
+        final Path targetServerDirectory = serverProvider.targetServerDirectoryPath();
+        ServerAssetInstaller.installWorlds(targetServerDirectory, worldInputSpecs, getLog());
+        ServerAssetInstaller.installPluginArtifacts(
+            targetServerDirectory,
+            resolvePluginArtifacts(pluginArtifactSpecs),
+            getLog()
+        );
+        if (configOverlayPath != null)
+            ServerAssetInstaller.applyConfigOverlay(configOverlayPath, targetServerDirectory, getLog());
+
+        final List<RuntimeManifest.PreloadedWorld> preloadedWorlds = worldInputSpecs.stream()
+            .filter(WorldInputSpec::loadOnStartup)
+            .map(worldInput -> new RuntimeManifest.PreloadedWorld(
+                worldInput.name(),
+                worldInput.environment(),
+                worldInput.worldType(),
+                worldInput.seed()
+            ))
+            .toList();
+
         final RuntimeManifest runtimeManifest = new RuntimeManifest(
             SERVER_TYPE_PAPER,
             paperBuildMetadata.minecraftVersion(),
             paperBuildMetadata.buildId(),
             cacheKey,
-            serverProvider.targetServerDirectoryPath().toAbsolutePath().toString(),
+            targetServerDirectory.toAbsolutePath().toString(),
             serverProvider.targetJarFilePath().toAbsolutePath().toString(),
             udsSocketPath.toAbsolutePath().toString(),
             agentAuthToken,
             agentJarPath != null ? agentJarPath.toAbsolutePath().toString() : null,
             agentMetadata.sha256(),
             runtimeProtocolVersion,
-            agentMetadata.cacheIdentity()
+            agentMetadata.cacheIdentity(),
+            preloadedWorlds
         );
         try
         {
@@ -238,6 +306,226 @@ public class PrepareServerMojo extends AbstractMojo
 
         if (serverStartMaxAttempts < 1)
             throw new MojoExecutionException("`lightkeeper.serverStartMaxAttempts` must be at least 1.");
+    }
+
+    private List<WorldInputSpec> resolveWorldInputSpecs()
+        throws MojoExecutionException
+    {
+        final List<WorldInputSpec> inputSpecs = new ArrayList<>();
+        final List<WorldInputConfig> configuredWorlds = worlds == null ? List.of() : worlds;
+        for (WorldInputConfig worldInputConfig : configuredWorlds)
+        {
+            if (worldInputConfig == null)
+                throw new MojoExecutionException("Configured world entry may not be null.");
+
+            final String worldName = validateWorldName(worldInputConfig.name);
+            final WorldInputSpec.SourceType sourceType = parseWorldSourceType(worldInputConfig.sourceType);
+            if (worldInputConfig.sourcePath == null)
+                throw new MojoExecutionException("Missing required configuration value 'lightkeeper.worlds.sourcePath'.");
+            final Path sourcePath = worldInputConfig.sourcePath.toAbsolutePath().normalize();
+
+            if (sourceType == WorldInputSpec.SourceType.FOLDER && !Files.isDirectory(sourcePath))
+            {
+                throw new MojoExecutionException(
+                    "Configured world '%s' requires a directory sourcePath, but '%s' is not a directory."
+                        .formatted(worldName, sourcePath)
+                );
+            }
+            if (sourceType == WorldInputSpec.SourceType.ARCHIVE && !Files.isRegularFile(sourcePath))
+            {
+                throw new MojoExecutionException(
+                    "Configured world '%s' requires a file archive sourcePath, but '%s' is not a regular file."
+                        .formatted(worldName, sourcePath)
+                );
+            }
+
+            inputSpecs.add(new WorldInputSpec(
+                worldName,
+                sourceType,
+                sourcePath,
+                worldInputConfig.overwrite == null || worldInputConfig.overwrite,
+                worldInputConfig.loadOnStartup == null || worldInputConfig.loadOnStartup,
+                normalizeWorldEnvironment(worldInputConfig.environment),
+                normalizeWorldType(worldInputConfig.worldType),
+                worldInputConfig.seed == null ? 0L : worldInputConfig.seed
+            ));
+        }
+
+        return inputSpecs;
+    }
+
+    private List<PluginArtifactSpec> resolvePluginArtifactSpecs()
+        throws MojoExecutionException
+    {
+        final List<PluginArtifactSpec> specs = new ArrayList<>();
+        final List<PluginArtifactConfig> configuredPlugins = plugins == null ? List.of() : plugins;
+        for (PluginArtifactConfig pluginArtifactConfig : configuredPlugins)
+        {
+            if (pluginArtifactConfig == null)
+                throw new MojoExecutionException("Configured plugin entry may not be null.");
+
+            final PluginArtifactSpec.SourceType sourceType = parsePluginSourceType(pluginArtifactConfig.sourceType);
+            final String renameTo = normalizeOptionalPluginFileName(pluginArtifactConfig.renameTo);
+
+            if (sourceType == PluginArtifactSpec.SourceType.PATH)
+            {
+                if (pluginArtifactConfig.path == null)
+                    throw new MojoExecutionException("Missing required configuration value 'lightkeeper.plugins.path'.");
+                final Path path = pluginArtifactConfig.path.toAbsolutePath().normalize();
+                if (!Files.isRegularFile(path))
+                {
+                    throw new MojoExecutionException(
+                        "Configured plugin path source '%s' does not exist as a regular file."
+                            .formatted(path)
+                    );
+                }
+
+                specs.add(new PluginArtifactSpec(
+                    sourceType,
+                    path,
+                    null,
+                    null,
+                    null,
+                    null,
+                    "jar",
+                    false,
+                    renameTo
+                ));
+                continue;
+            }
+
+            final String groupId = requireNonBlank(pluginArtifactConfig.groupId, "lightkeeper.plugins.groupId");
+            final String artifactId = requireNonBlank(pluginArtifactConfig.artifactId, "lightkeeper.plugins.artifactId");
+            final String version = requireNonBlank(pluginArtifactConfig.version, "lightkeeper.plugins.version");
+            final String classifier = normalizeOptionalString(pluginArtifactConfig.classifier);
+            final String type = normalizeOptionalString(pluginArtifactConfig.type) == null
+                ? "jar"
+                : normalizeOptionalString(pluginArtifactConfig.type);
+            final boolean includeTransitive = pluginArtifactConfig.includeTransitive != null &&
+                pluginArtifactConfig.includeTransitive;
+
+            if (includeTransitive && renameTo != null)
+            {
+                throw new MojoExecutionException(
+                    "Configured plugin '%s:%s:%s' cannot set renameTo when includeTransitive=true."
+                        .formatted(groupId, artifactId, version)
+                );
+            }
+
+            specs.add(new PluginArtifactSpec(
+                sourceType,
+                null,
+                groupId,
+                artifactId,
+                version,
+                classifier,
+                type,
+                includeTransitive,
+                renameTo
+            ));
+        }
+
+        return specs;
+    }
+
+    private List<ResolvedPluginArtifact> resolvePluginArtifacts(List<PluginArtifactSpec> specs)
+        throws MojoExecutionException
+    {
+        final List<ResolvedPluginArtifact> resolvedPluginArtifacts = new ArrayList<>();
+        for (PluginArtifactSpec spec : specs)
+        {
+            if (spec.sourceType() == PluginArtifactSpec.SourceType.PATH)
+            {
+                final Path sourceJar = Objects.requireNonNull(spec.path());
+                final String outputFileName = spec.renameTo() == null
+                    ? sourceJar.getFileName().toString()
+                    : spec.renameTo();
+                resolvedPluginArtifacts.add(new ResolvedPluginArtifact(
+                    sourceJar,
+                    outputFileName,
+                    "path:" + sourceJar
+                ));
+                continue;
+            }
+
+            resolvedPluginArtifacts.addAll(resolveMavenPluginArtifacts(spec));
+        }
+
+        return resolvedPluginArtifacts;
+    }
+
+    private List<ResolvedPluginArtifact> resolveMavenPluginArtifacts(PluginArtifactSpec spec)
+        throws MojoExecutionException
+    {
+        final RepositorySystem resolver = Objects.requireNonNull(repositorySystem,
+            "Maven RepositorySystem was not injected by the plugin runtime.");
+        final RepositorySystemSession session = Objects.requireNonNull(repositorySystemSession,
+            "Maven RepositorySystemSession was not injected by the plugin runtime.");
+        final List<RemoteRepository> repositories = Objects.requireNonNullElse(remoteProjectRepositories, List.of());
+
+        final Artifact rootArtifact = new DefaultArtifact(
+            Objects.requireNonNull(spec.groupId()),
+            Objects.requireNonNull(spec.artifactId()),
+            Objects.requireNonNullElse(spec.classifier(), ""),
+            Objects.requireNonNull(spec.type()),
+            Objects.requireNonNull(spec.version())
+        );
+
+        if (!spec.includeTransitive())
+        {
+            final ArtifactRequest request = new ArtifactRequest()
+                .setArtifact(rootArtifact)
+                .setRepositories(repositories);
+            try
+            {
+                final ArtifactResult result = resolver.resolveArtifact(session, request);
+                final Path sourceJar = result.getArtifact().getFile().toPath();
+                final String outputFileName = spec.renameTo() == null
+                    ? sourceJar.getFileName().toString()
+                    : spec.renameTo();
+                return List.of(new ResolvedPluginArtifact(
+                    sourceJar,
+                    outputFileName,
+                    "maven:" + result.getArtifact()
+                ));
+            }
+            catch (ArtifactResolutionException exception)
+            {
+                throw new MojoExecutionException(
+                    "Failed to resolve plugin artifact '%s'.".formatted(rootArtifact),
+                    exception
+                );
+            }
+        }
+
+        final CollectRequest collectRequest = new CollectRequest();
+        collectRequest.setRoot(new Dependency(rootArtifact, JavaScopes.RUNTIME));
+        collectRequest.setRepositories(repositories);
+
+        final DependencyRequest dependencyRequest = new DependencyRequest(collectRequest, null);
+        try
+        {
+            final DependencyResult dependencyResult = resolver.resolveDependencies(session, dependencyRequest);
+            final List<ResolvedPluginArtifact> resolvedPluginArtifacts = new ArrayList<>();
+            for (ArtifactResult artifactResult : dependencyResult.getArtifactResults())
+            {
+                final Artifact artifact = artifactResult.getArtifact();
+                final Path sourceJar = artifact.getFile().toPath();
+                resolvedPluginArtifacts.add(new ResolvedPluginArtifact(
+                    sourceJar,
+                    sourceJar.getFileName().toString(),
+                    "maven:" + artifact
+                ));
+            }
+            return resolvedPluginArtifacts;
+        }
+        catch (DependencyResolutionException exception)
+        {
+            throw new MojoExecutionException(
+                "Failed to resolve transitive plugin artifacts for '%s'.".formatted(rootArtifact),
+                exception
+            );
+        }
     }
 
     private AgentMetadata resolveAgentMetadata(@Nullable Path path)
@@ -286,7 +574,201 @@ public class PrepareServerMojo extends AbstractMojo
         return path.toString().getBytes(StandardCharsets.UTF_8).length <= UNIX_SOCKET_PATH_MAX_BYTES;
     }
 
+    private static WorldInputSpec.SourceType parseWorldSourceType(@Nullable String sourceType)
+        throws MojoExecutionException
+    {
+        final String normalized = requireNonBlank(sourceType, "lightkeeper.worlds.sourceType");
+        try
+        {
+            return WorldInputSpec.SourceType.valueOf(normalized.toUpperCase(Locale.ROOT));
+        }
+        catch (IllegalArgumentException exception)
+        {
+            throw new MojoExecutionException(
+                "Unsupported world sourceType '%s'. Supported values: %s"
+                    .formatted(sourceType, List.of(WorldInputSpec.SourceType.values())),
+                exception
+            );
+        }
+    }
+
+    private static PluginArtifactSpec.SourceType parsePluginSourceType(@Nullable String sourceType)
+        throws MojoExecutionException
+    {
+        final String normalized = requireNonBlank(sourceType, "lightkeeper.plugins.sourceType");
+        try
+        {
+            return PluginArtifactSpec.SourceType.valueOf(normalized.toUpperCase(Locale.ROOT));
+        }
+        catch (IllegalArgumentException exception)
+        {
+            throw new MojoExecutionException(
+                "Unsupported plugin sourceType '%s'. Supported values: %s"
+                    .formatted(sourceType, List.of(PluginArtifactSpec.SourceType.values())),
+                exception
+            );
+        }
+    }
+
+    private static String validateWorldName(@Nullable String worldName)
+        throws MojoExecutionException
+    {
+        final String name = requireNonBlank(worldName, "lightkeeper.worlds.name");
+        if (name.contains("/") || name.contains("\\") || name.contains(".."))
+        {
+            throw new MojoExecutionException(
+                "Invalid world name '%s'. World names may not contain path separators or '..'."
+                    .formatted(name)
+            );
+        }
+        return name;
+    }
+
+    private static String normalizeWorldEnvironment(@Nullable String environment)
+        throws MojoExecutionException
+    {
+        final String normalized = normalizeOptionalString(environment);
+        if (normalized == null)
+            return "NORMAL";
+
+        final String upperCase = normalized.toUpperCase(Locale.ROOT);
+        if (!List.of("NORMAL", "NETHER", "THE_END").contains(upperCase))
+        {
+            throw new MojoExecutionException(
+                "Unsupported world environment '%s'. Supported values: NORMAL, NETHER, THE_END."
+                    .formatted(environment)
+            );
+        }
+        return upperCase;
+    }
+
+    private static String normalizeWorldType(@Nullable String worldType)
+        throws MojoExecutionException
+    {
+        final String normalized = normalizeOptionalString(worldType);
+        if (normalized == null)
+            return "NORMAL";
+
+        final String upperCase = normalized.toUpperCase(Locale.ROOT);
+        if (!List.of("NORMAL", "FLAT").contains(upperCase))
+        {
+            throw new MojoExecutionException(
+                "Unsupported worldType '%s'. Supported values: NORMAL, FLAT."
+                    .formatted(worldType)
+            );
+        }
+        return upperCase;
+    }
+
+    private static @Nullable String normalizeOptionalPluginFileName(@Nullable String fileName)
+        throws MojoExecutionException
+    {
+        final String normalized = normalizeOptionalString(fileName);
+        if (normalized == null)
+            return null;
+        if (!normalized.toLowerCase(Locale.ROOT).endsWith(".jar"))
+            throw new MojoExecutionException("Configured renameTo '%s' must end with .jar.".formatted(normalized));
+        if (normalized.contains("/") || normalized.contains("\\"))
+        {
+            throw new MojoExecutionException(
+                "Configured renameTo '%s' may not contain path separators.".formatted(normalized)
+            );
+        }
+        return normalized;
+    }
+
+    private static String requireNonBlank(@Nullable String value, String fieldName)
+        throws MojoExecutionException
+    {
+        final String trimmed = value == null ? "" : value.trim();
+        if (trimmed.isEmpty())
+            throw new MojoExecutionException("Missing required configuration value '%s'.".formatted(fieldName));
+        return trimmed;
+    }
+
+    private static @Nullable String normalizeOptionalString(@Nullable String value)
+    {
+        if (value == null)
+            return null;
+        final String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
     private record AgentMetadata(@Nullable String sha256, String cacheIdentity)
     {
+    }
+
+    public static final class WorldInputConfig
+    {
+        @Parameter(required = true)
+        @Nullable
+        private String name;
+
+        @Parameter(required = true)
+        @Nullable
+        private String sourceType;
+
+        @Parameter(required = true)
+        @Nullable
+        private Path sourcePath;
+
+        @Parameter
+        @Nullable
+        private Boolean overwrite;
+
+        @Parameter
+        @Nullable
+        private Boolean loadOnStartup;
+
+        @Parameter
+        @Nullable
+        private String environment;
+
+        @Parameter
+        @Nullable
+        private String worldType;
+
+        @Parameter
+        @Nullable
+        private Long seed;
+    }
+
+    public static final class PluginArtifactConfig
+    {
+        @Parameter(required = true)
+        @Nullable
+        private String sourceType;
+
+        @Parameter
+        @Nullable
+        private Path path;
+
+        @Parameter
+        @Nullable
+        private String groupId;
+
+        @Parameter
+        @Nullable
+        private String artifactId;
+
+        @Parameter
+        @Nullable
+        private String version;
+
+        @Parameter
+        @Nullable
+        private String classifier;
+
+        @Parameter
+        @Nullable
+        private String type;
+
+        @Parameter
+        @Nullable
+        private Boolean includeTransitive;
+
+        @Parameter
+        @Nullable
+        private String renameTo;
     }
 }

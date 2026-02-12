@@ -48,12 +48,14 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.Logger;
 
 /**
  * Default LightKeeper framework implementation.
  */
 public final class DefaultLightkeeperFramework implements LightkeeperFramework
 {
+    private static final Logger LOGGER = Logger.getLogger(DefaultLightkeeperFramework.class.getName());
     private static final Duration STARTUP_TIMEOUT = Duration.ofMinutes(2);
     private static final Duration AGENT_CONNECT_TIMEOUT = Duration.ofSeconds(45);
     private static final Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(45);
@@ -108,6 +110,7 @@ public final class DefaultLightkeeperFramework implements LightkeeperFramework
 
         final Path diagnosticsDirectory = serverDirectory.resolveSibling("lightkeeper-diagnostics");
         final PaperServerHandle serverHandle = new PaperServerHandle(runtimeManifest, diagnosticsDirectory);
+        LOGGER.info(() -> "LK_FRAMEWORK: Starting Paper server from '" + serverDirectory + "'.");
         serverHandle.start(STARTUP_TIMEOUT);
 
         final DefaultLightkeeperFramework framework = new DefaultLightkeeperFramework(runtimeManifest, serverHandle);
@@ -120,6 +123,7 @@ public final class DefaultLightkeeperFramework implements LightkeeperFramework
             runtimeManifest.runtimeProtocolVersion(),
             Objects.requireNonNullElse(runtimeManifest.agentJarSha256(), "")
         );
+        framework.preloadConfiguredWorlds();
 
         return framework;
     }
@@ -143,6 +147,7 @@ public final class DefaultLightkeeperFramework implements LightkeeperFramework
         ensureOpen();
         final WorldSpec validatedWorldSpec = validateWorldSpec(worldSpec);
         final String worldName = agentClient.newWorld(validatedWorldSpec);
+        LOGGER.info(() -> "LK_FRAMEWORK: Created world '" + worldName + "'.");
         return new WorldHandle(this, worldName);
     }
 
@@ -172,6 +177,8 @@ public final class DefaultLightkeeperFramework implements LightkeeperFramework
             null
         );
         createdPlayers.put(playerHandle.uniqueId(), activeResourceScope.get());
+        LOGGER.info(() -> "LK_FRAMEWORK: Created player '%s' (%s) in world '%s'."
+            .formatted(playerHandle.name(), playerHandle.uniqueId(), worldName));
         return playerHandle;
     }
 
@@ -226,7 +233,7 @@ public final class DefaultLightkeeperFramework implements LightkeeperFramework
     }
 
     @Override
-    public String blockType(WorldHandle world, Vector3Di position)
+    public String getBlock(WorldHandle world, Vector3Di position)
     {
         ensureOpen();
         return agentClient.blockType(world.name(), position);
@@ -304,6 +311,8 @@ public final class DefaultLightkeeperFramework implements LightkeeperFramework
         Objects.requireNonNull(player, "player may not be null.");
         agentClient.removePlayer(player.uniqueId());
         createdPlayers.remove(player.uniqueId());
+        LOGGER.info(() -> "LK_FRAMEWORK: Removed player '%s' (%s)."
+            .formatted(player.name(), player.uniqueId()));
     }
 
     @Override
@@ -325,12 +334,29 @@ public final class DefaultLightkeeperFramework implements LightkeeperFramework
 
         try
         {
+            LOGGER.info("LK_FRAMEWORK: Closing framework and cleaning up players.");
             cleanupPlayersByScope(null);
             agentClient.close();
         }
         finally
         {
+            LOGGER.info("LK_FRAMEWORK: Stopping Paper server.");
             serverHandle.stop(SHUTDOWN_TIMEOUT);
+        }
+    }
+
+    private void preloadConfiguredWorlds()
+    {
+        for (RuntimeManifest.PreloadedWorld preloadedWorld : runtimeManifest.preloadedWorlds())
+        {
+            final WorldSpec worldSpec = new WorldSpec(
+                preloadedWorld.name(),
+                WorldSpec.WorldType.valueOf(preloadedWorld.worldType()),
+                WorldSpec.WorldEnvironment.valueOf(preloadedWorld.environment()),
+                preloadedWorld.seed()
+            );
+            final String worldName = agentClient.newWorld(worldSpec);
+            LOGGER.info(() -> "LK_FRAMEWORK: Preloaded world '%s' from runtime manifest.".formatted(worldName));
         }
     }
 
@@ -875,8 +901,9 @@ public final class DefaultLightkeeperFramework implements LightkeeperFramework
             {
                 if (process.isAlive())
                 {
-                    try (BufferedWriter writer = new BufferedWriter(
-                        new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8)))
+                    try (
+                        BufferedWriter writer = new BufferedWriter(
+                            new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8)))
                     {
                         writer.write("stop");
                         writer.newLine();
@@ -950,10 +977,12 @@ public final class DefaultLightkeeperFramework implements LightkeeperFramework
             return Thread.ofPlatform()
                 .name("lightkeeper-paper-output-reader")
                 .daemon(true)
-                .unstarted(() -> {
-                    try (BufferedReader reader =
-                             new BufferedReader(
-                                 new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8)))
+                .unstarted(() ->
+                {
+                    try (
+                        BufferedReader reader =
+                            new BufferedReader(
+                                new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8)))
                     {
                         String line;
                         while ((line = reader.readLine()) != null)

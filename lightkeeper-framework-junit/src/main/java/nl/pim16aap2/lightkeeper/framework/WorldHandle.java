@@ -30,7 +30,7 @@ public final class WorldHandle
      */
     public String blockTypeAt(Vector3Di position)
     {
-        return framework.blockType(this, position);
+        return framework.getBlock(this, position);
     }
 
     /**
