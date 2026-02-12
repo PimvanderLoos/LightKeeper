@@ -66,7 +66,9 @@ public record ServerSpecification(
     String paperUserAgent,
     @Nullable Path agentJarPath,
     @Nullable String agentJarSha256,
-    String agentAuthToken
+    String agentAuthToken,
+    String runtimeProtocolVersion,
+    String agentCacheIdentity
 )
 {
 }
