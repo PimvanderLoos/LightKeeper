@@ -16,7 +16,17 @@
         <maven.compiler.release>21</maven.compiler.release>
         <project.root-dir>${project.basedir}/..</project.root-dir>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <lightkeeper.runtime-manifest.path>${project.build.directory}/lightkeeper/runtime-manifest.json</lightkeeper.runtime-manifest.path>
     </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>nl.pim16aap2.lightkeeper</groupId>
+            <artifactId>lightkeeper-maven-plugin</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
     <build>
         <plugins>
@@ -26,6 +36,7 @@
                 <version>1.0.0-SNAPSHOT</version>
                 <configuration>
                     <userAgent>LightKeeper/1.0.0 ([email protected])</userAgent>
+                    <runtimeManifestPath>${lightkeeper.runtime-manifest.path}</runtimeManifestPath>
                 </configuration>
                 <executions>
                     <execution>
@@ -34,10 +45,26 @@
                             <goal>prepare-server</goal>
                         </goals>
                     </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>${version.maven-surefire-plugin}</version>
+                <configuration>
+                    <includes>
+                        <include>**/*IT.java</include>
+                    </includes>
+                    <systemPropertyVariables>
+                        <lightkeeper.runtimeManifestPath>${lightkeeper.runtime-manifest.path}</lightkeeper.runtimeManifestPath>
+                    </systemPropertyVariables>
+                </configuration>
+                <executions>
                     <execution>
-                        <id>test</id>
                         <goals>
-                            <goal>test</goal>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
                         </goals>
                     </execution>
                 </executions>
