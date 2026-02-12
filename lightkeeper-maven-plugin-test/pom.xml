@@ -21,9 +21,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>nl.pim16aap2.lightkeeper</groupId>
-            <artifactId>lightkeeper-maven-plugin</artifactId>
-            <version>${project.version}</version>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${version.jackson-databind}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
