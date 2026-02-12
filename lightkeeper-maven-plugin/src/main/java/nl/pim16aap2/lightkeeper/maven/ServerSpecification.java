@@ -49,6 +49,8 @@ public record ServerSpecification(
     Path jarCacheDirectoryRoot,
     Path baseServerCacheDirectoryRoot,
     Path serverWorkDirectoryRoot,
+    Path runtimeManifestPath,
+    Path agentSocketDirectory,
     boolean versionedCacheDirectories,
     int jarCacheExpiryDays,
     boolean forceRebuildJar,
@@ -56,9 +58,15 @@ public record ServerSpecification(
     boolean forceRecreateBaseServer,
     int serverInitTimeoutSeconds,
     int serverStopTimeoutSeconds,
+    int serverStartMaxAttempts,
     int memoryMb,
     String javaExecutablePath,
-    @Nullable String extraJvmArgs
+    @Nullable String extraJvmArgs,
+    String cacheKey,
+    String paperUserAgent,
+    @Nullable Path agentJarPath,
+    @Nullable String agentJarSha256,
+    String agentAuthToken
 )
 {
 }

@@ -5,8 +5,11 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.jspecify.annotations.Nullable;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -57,16 +60,26 @@ public abstract class MinecraftServerProcess
         if (!isRunning())
             throw new MojoExecutionException("Server is not running");
 
+        final Process runningProcess = requireRunningProcess();
+
         // Send "stop" command via stdin
-        try (PrintWriter writer = new PrintWriter(process.getOutputStream()))
+        try (
+            OutputStreamWriter outputStreamWriter =
+                new OutputStreamWriter(runningProcess.getOutputStream(), StandardCharsets.UTF_8);
+            PrintWriter writer = new PrintWriter(outputStreamWriter))
         {
             writer.println("stop");
             writer.flush();
         }
+        catch (IOException exception)
+        {
+            forceStopProcess();
+            throw new MojoExecutionException("Failed to send stop command to server process", exception);
+        }
 
         try
         {
-            if (!process.waitFor(timeoutSeconds, TimeUnit.SECONDS))
+            if (!runningProcess.waitFor(timeoutSeconds, TimeUnit.SECONDS))
             {
                 forceStopProcess();
                 throw new MojoExecutionException("Server didn't stop gracefully, force killed");
@@ -107,13 +120,12 @@ public abstract class MinecraftServerProcess
     protected void waitForStartup(int timeoutSeconds)
         throws MojoExecutionException
     {
-        if (process == null)
-            throw new IllegalStateException("Server is not running");
+        final Process runningProcess = requireRunningProcess();
 
         long deadline = System.currentTimeMillis() + (timeoutSeconds * 1000L);
 
         try (
-            InputStreamReader isr = new InputStreamReader(process.getInputStream());
+            InputStreamReader isr = new InputStreamReader(runningProcess.getInputStream(), StandardCharsets.UTF_8);
             BufferedReader reader = new BufferedReader(isr))
         {
 
@@ -121,7 +133,6 @@ public abstract class MinecraftServerProcess
             while (System.currentTimeMillis() < deadline &&
                 (line = reader.readLine()) != null)
             {
-                System.out.println("Processing line: '" + line + "'");
                 if (line.endsWith(")! For help, type \"help\"") && line.contains("Done ("))
                     return;
 
@@ -136,6 +147,13 @@ public abstract class MinecraftServerProcess
             forceStopProcess();
             throw new MojoExecutionException("Failed to monitor startup", e);
         }
+    }
+
+    private Process requireRunningProcess()
+    {
+        if (process == null)
+            throw new IllegalStateException("Server is not running");
+        return process;
     }
 
     private void forceStopProcess()

@@ -24,6 +24,9 @@
                 <groupId>nl.pim16aap2.lightkeeper</groupId>
                 <artifactId>lightkeeper-maven-plugin</artifactId>
                 <version>1.0.0-SNAPSHOT</version>
+                <configuration>
+                    <userAgent>LightKeeper/1.0.0 ([email protected])</userAgent>
+                </configuration>
                 <executions>
                     <execution>
                         <id>prepare-server</id>
