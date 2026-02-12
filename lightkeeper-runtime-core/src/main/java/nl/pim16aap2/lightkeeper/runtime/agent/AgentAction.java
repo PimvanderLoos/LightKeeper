@@ -18,6 +18,7 @@ public enum AgentAction
     GET_OPEN_MENU,
     CLICK_MENU_SLOT,
     DRAG_MENU_SLOTS,
+    GET_PLAYER_MESSAGES,
     WAIT_TICKS,
     GET_SERVER_TICK
 }

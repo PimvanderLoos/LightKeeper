@@ -1,6 +1,9 @@
 package nl.pim16aap2.lightkeeper.framework;
 
+import nl.pim16aap2.lightkeeper.framework.internal.FrameworkGateway;
+
 import java.time.Duration;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -11,13 +14,13 @@ public final class PlayerHandle
 {
     private static final Duration DEFAULT_MENU_WAIT_TIMEOUT = Duration.ofSeconds(10);
 
-    private final LightkeeperFramework framework;
+    private final FrameworkGateway frameworkGateway;
     private final UUID uniqueId;
     private final String name;
 
-    public PlayerHandle(LightkeeperFramework framework, UUID uniqueId, String name)
+    public PlayerHandle(FrameworkGateway frameworkGateway, UUID uniqueId, String name)
     {
-        this.framework = Objects.requireNonNull(framework, "framework may not be null.");
+        this.frameworkGateway = Objects.requireNonNull(frameworkGateway, "frameworkGateway may not be null.");
         this.uniqueId = Objects.requireNonNull(uniqueId, "uniqueId may not be null.");
         this.name = Objects.requireNonNull(name, "name may not be null.");
     }
@@ -34,26 +37,26 @@ public final class PlayerHandle
 
     public PlayerHandle executeCommand(String command)
     {
-        framework.executePlayerCommand(this, command);
+        frameworkGateway.executePlayerCommand(uniqueId, command);
         return this;
     }
 
     public PlayerHandle placeBlock(String materialKey, int x, int y, int z)
     {
-        framework.placePlayerBlock(this, materialKey, x, y, z);
+        frameworkGateway.placePlayerBlock(uniqueId, materialKey, x, y, z);
         return this;
     }
 
     public PlayerHandle andWaitTicks(int ticks)
     {
-        framework.waitTicks(ticks);
+        frameworkGateway.waitTicks(ticks);
         return this;
     }
 
     public MenuHandle andWaitForMenuOpen(int timeoutSeconds)
     {
-        final MenuHandle menuHandle = new MenuHandle(framework, this);
-        framework.waitUntil(
+        final MenuHandle menuHandle = new MenuHandle(frameworkGateway, this);
+        frameworkGateway.waitUntil(
             () -> menuHandle.snapshot().open(),
             Duration.ofSeconds(timeoutSeconds)
         );
@@ -62,8 +65,8 @@ public final class PlayerHandle
 
     public MenuHandle andWaitForMenuOpen()
     {
-        final MenuHandle menuHandle = new MenuHandle(framework, this);
-        framework.waitUntil(
+        final MenuHandle menuHandle = new MenuHandle(frameworkGateway, this);
+        frameworkGateway.waitUntil(
             () -> menuHandle.snapshot().open(),
             DEFAULT_MENU_WAIT_TIMEOUT
         );
@@ -72,12 +75,22 @@ public final class PlayerHandle
 
     public MenuHandle getMenu()
     {
-        final MenuHandle menuHandle = new MenuHandle(framework, this);
+        final MenuHandle menuHandle = new MenuHandle(frameworkGateway, this);
         return menuHandle.snapshot().open() ? menuHandle : null;
+    }
+
+    public List<String> receivedMessages()
+    {
+        return frameworkGateway.playerMessages(uniqueId);
+    }
+
+    public String receivedMessagesText()
+    {
+        return String.join(System.lineSeparator(), receivedMessages());
     }
 
     public void remove()
     {
-        framework.removePlayer(this);
+        frameworkGateway.removePlayer(this);
     }
 }

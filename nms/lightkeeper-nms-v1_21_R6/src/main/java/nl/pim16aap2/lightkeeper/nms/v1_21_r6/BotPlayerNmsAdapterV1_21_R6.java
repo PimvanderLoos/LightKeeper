@@ -6,20 +6,31 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Paper 1.21.11 (v1_21_R6) synthetic-player adapter.
  */
 public final class BotPlayerNmsAdapterV1_21_R6 implements BotPlayerNmsAdapter
 {
+    private static final int TEXT_EXTRACTION_MAX_DEPTH = 4;
+
     private final Object minecraftServer;
     private final Object playerList;
+    private final Map<UUID, Object> playerChannels = new ConcurrentHashMap<>();
 
     private final Class<?> gameProfileClass;
     private final Class<?> packetFlowClass;
@@ -42,6 +53,7 @@ public final class BotPlayerNmsAdapterV1_21_R6 implements BotPlayerNmsAdapter
     private final Method clientInformationCreateDefaultMethod;
     private final Field connectionChannelField;
     private final Field connectionAddressField;
+    private final Method embeddedChannelReadOutboundMethod;
 
     public BotPlayerNmsAdapterV1_21_R6()
     {
@@ -98,6 +110,7 @@ public final class BotPlayerNmsAdapterV1_21_R6 implements BotPlayerNmsAdapter
             craftPlayerGetHandleMethod = craftPlayerClass.getMethod("getHandle");
             connectionChannelField = connectionClass.getField("channel");
             connectionAddressField = connectionClass.getField("address");
+            embeddedChannelReadOutboundMethod = embeddedChannelClass.getMethod("readOutbound");
         }
         catch (Exception exception)
         {
@@ -133,7 +146,8 @@ public final class BotPlayerNmsAdapterV1_21_R6 implements BotPlayerNmsAdapter
                 "SERVERBOUND"
             );
             final Object connection = connectionConstructor.newInstance(serverboundPacketFlow);
-            connectionChannelField.set(connection, embeddedChannelConstructor.newInstance());
+            final Object embeddedChannel = embeddedChannelConstructor.newInstance();
+            connectionChannelField.set(connection, embeddedChannel);
             connectionAddressField.set(connection, new InetSocketAddress("127.0.0.1", 0));
             final Object listenerCookie = commonListenerCreateInitialMethod.invoke(null, gameProfile, false);
 
@@ -141,6 +155,7 @@ public final class BotPlayerNmsAdapterV1_21_R6 implements BotPlayerNmsAdapter
 
             final Player bukkitPlayer = (Player) serverPlayerGetBukkitEntityMethod.invoke(serverPlayer);
             bukkitPlayer.teleport(spawnLocation);
+            playerChannels.put(uuid, embeddedChannel);
             return bukkitPlayer;
         }
         catch (Exception exception)
@@ -164,6 +179,7 @@ public final class BotPlayerNmsAdapterV1_21_R6 implements BotPlayerNmsAdapter
         {
             final Object serverPlayer = craftPlayerGetHandleMethod.invoke(player);
             playerListRemoveMethod.invoke(playerList, serverPlayer);
+            playerChannels.remove(player.getUniqueId());
         }
         catch (Exception exception)
         {
@@ -175,6 +191,109 @@ public final class BotPlayerNmsAdapterV1_21_R6 implements BotPlayerNmsAdapter
                     .formatted(player.getName(), player.getUniqueId(), rootCause.getClass().getName(), rootCause.getMessage()),
                 exception
             );
+        }
+    }
+
+    @Override
+    public List<String> drainReceivedMessages(UUID playerId)
+    {
+        Objects.requireNonNull(playerId, "playerId may not be null.");
+        final Object embeddedChannel = playerChannels.get(playerId);
+        if (embeddedChannel == null)
+            return List.of();
+
+        final List<String> messages = new ArrayList<>();
+        try
+        {
+            Object outboundPacket;
+            while ((outboundPacket = embeddedChannelReadOutboundMethod.invoke(embeddedChannel)) != null)
+            {
+                final String message = extractText(outboundPacket, TEXT_EXTRACTION_MAX_DEPTH, new IdentityHashMap<>());
+                if (message != null && !message.isBlank())
+                    messages.add(message);
+            }
+        }
+        catch (Exception exception)
+        {
+            throw new IllegalStateException(
+                "Failed to drain received messages for synthetic player '%s'."
+                    .formatted(playerId),
+                exception
+            );
+        }
+        return List.copyOf(messages);
+    }
+
+    private static String extractText(Object value, int depth, IdentityHashMap<Object, Boolean> seen)
+    {
+        if (value == null || depth < 0 || seen.put(value, Boolean.TRUE) != null)
+            return null;
+
+        if (value instanceof String stringValue)
+            return stringValue;
+        if (value instanceof Optional<?> optional)
+            return optional.map(inner -> extractText(inner, depth - 1, seen)).orElse(null);
+        if (value instanceof Collection<?> collection)
+        {
+            for (Object element : collection)
+            {
+                final String extracted = extractText(element, depth - 1, seen);
+                if (extracted != null && !extracted.isBlank())
+                    return extracted;
+            }
+            return null;
+        }
+        if (value.getClass().isArray())
+        {
+            final int arrayLength = Array.getLength(value);
+            for (int index = 0; index < arrayLength; ++index)
+            {
+                final String extracted = extractText(Array.get(value, index), depth - 1, seen);
+                if (extracted != null && !extracted.isBlank())
+                    return extracted;
+            }
+            return null;
+        }
+
+        // net.minecraft.network.chat.Component has getString().
+        final String directText = invokeStringMethod(value, "getString");
+        if (directText != null && !directText.isBlank())
+            return directText;
+
+        for (Method method : value.getClass().getMethods())
+        {
+            if (method.getParameterCount() != 0)
+                continue;
+            final String methodName = method.getName();
+            if (methodName.equals("getClass") || methodName.equals("hashCode") || methodName.equals("toString"))
+                continue;
+
+            try
+            {
+                final Object nestedValue = method.invoke(value);
+                final String extracted = extractText(nestedValue, depth - 1, seen);
+                if (extracted != null && !extracted.isBlank())
+                    return extracted;
+            }
+            catch (Exception ignored)
+            {
+            }
+        }
+        return null;
+    }
+
+    private static String invokeStringMethod(Object target, String methodName)
+    {
+        try
+        {
+            final Method method = target.getClass().getMethod(methodName);
+            if (method.getReturnType() != String.class)
+                return null;
+            return (String) method.invoke(target);
+        }
+        catch (Exception ignored)
+        {
+            return null;
         }
     }
 }

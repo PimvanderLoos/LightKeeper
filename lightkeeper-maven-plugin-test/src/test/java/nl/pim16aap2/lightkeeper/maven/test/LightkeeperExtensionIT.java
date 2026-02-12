@@ -34,7 +34,7 @@ class LightkeeperExtensionIT
 
         // execute
         final var world = framework.newWorld();
-        framework.setBlock(world, position, "STONE");
+        world.setBlockAt(position, "STONE");
         framework.waitUntil(() -> "STONE".equals(world.blockTypeAt(position)), Duration.ofSeconds(20));
 
         // verify

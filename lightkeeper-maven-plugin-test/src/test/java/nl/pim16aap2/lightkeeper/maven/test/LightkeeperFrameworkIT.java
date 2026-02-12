@@ -59,7 +59,7 @@ class LightkeeperFrameworkIT
         try (LightkeeperFramework framework = Lightkeeper.start(runtimeManifestPath))
         {
             final WorldHandle worldHandle = framework.newWorld(worldSpec);
-            framework.setBlock(worldHandle, position, "STONE");
+            worldHandle.setBlockAt(position, "STONE");
             framework.waitUntil(
                 () -> "STONE".equals(worldHandle.blockTypeAt(position)),
                 Duration.ofSeconds(20)

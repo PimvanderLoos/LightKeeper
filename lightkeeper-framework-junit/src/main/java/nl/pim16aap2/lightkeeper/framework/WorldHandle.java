@@ -1,20 +1,20 @@
 package nl.pim16aap2.lightkeeper.framework;
 
+import lombok.EqualsAndHashCode;
+import lombok.RequiredArgsConstructor;
+import nl.pim16aap2.lightkeeper.framework.internal.FrameworkGateway;
+
 import java.util.Objects;
 
 /**
  * Handle to a world in the running Paper server.
  */
+@RequiredArgsConstructor
+@EqualsAndHashCode(of = "name")
 public final class WorldHandle
 {
-    private final LightkeeperFramework framework;
+    private final FrameworkGateway frameworkGateway;
     private final String name;
-
-    public WorldHandle(LightkeeperFramework framework, String name)
-    {
-        this.framework = framework;
-        this.name = name;
-    }
 
     public String name()
     {
@@ -30,7 +30,8 @@ public final class WorldHandle
      */
     public String blockTypeAt(Vector3Di position)
     {
-        return framework.getBlock(this, position);
+        Objects.requireNonNull(position, "position may not be null.");
+        return frameworkGateway.getBlock(name, position);
     }
 
     /**
@@ -43,22 +44,7 @@ public final class WorldHandle
      */
     public void setBlockAt(Vector3Di position, String material)
     {
-        framework.setBlock(this, position, material);
-    }
-
-    @Override
-    public boolean equals(Object other)
-    {
-        if (this == other)
-            return true;
-        if (!(other instanceof WorldHandle that))
-            return false;
-        return Objects.equals(name, that.name);
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return Objects.hash(name);
+        Objects.requireNonNull(position, "position may not be null.");
+        frameworkGateway.setBlock(name, position, material);
     }
 }

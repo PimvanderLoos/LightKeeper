@@ -1,5 +1,6 @@
 package nl.pim16aap2.lightkeeper.framework;
 
+import nl.pim16aap2.lightkeeper.framework.internal.FrameworkGateway;
 import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
 
@@ -15,12 +16,12 @@ public final class MenuHandle
 {
     private static final Duration DEFAULT_MENU_WAIT_TIMEOUT = Duration.ofSeconds(10);
 
-    private final LightkeeperFramework framework;
+    private final FrameworkGateway frameworkGateway;
     private final PlayerHandle player;
 
-    public MenuHandle(LightkeeperFramework framework, PlayerHandle player)
+    public MenuHandle(FrameworkGateway frameworkGateway, PlayerHandle player)
     {
-        this.framework = Objects.requireNonNull(framework, "framework may not be null.");
+        this.frameworkGateway = Objects.requireNonNull(frameworkGateway, "frameworkGateway may not be null.");
         this.player = Objects.requireNonNull(player, "player may not be null.");
     }
 
@@ -31,7 +32,7 @@ public final class MenuHandle
 
     public MenuSnapshot snapshot()
     {
-        return framework.menuSnapshot(player);
+        return frameworkGateway.menuSnapshot(player.uniqueId());
     }
 
     public MenuHandle verifyMenuName(String expectedTitle)
@@ -51,31 +52,31 @@ public final class MenuHandle
 
     public MenuHandle clickAtIndex(int slot)
     {
-        framework.clickMenuSlot(player, slot);
+        frameworkGateway.clickMenuSlot(player.uniqueId(), slot);
         return this;
     }
 
     public MenuHandle dragWithMaterial(String materialKey, int... slots)
     {
-        framework.dragMenuSlots(player, materialKey, slots);
+        frameworkGateway.dragMenuSlots(player.uniqueId(), materialKey, slots);
         return this;
     }
 
     public MenuHandle andWaitTicks(int ticks)
     {
-        framework.waitTicks(ticks);
+        frameworkGateway.waitTicks(ticks);
         return this;
     }
 
     public MenuHandle andWaitForMenuClose()
     {
-        framework.waitUntil(() -> !snapshot().open(), DEFAULT_MENU_WAIT_TIMEOUT);
+        frameworkGateway.waitUntil(() -> !snapshot().open(), DEFAULT_MENU_WAIT_TIMEOUT);
         return this;
     }
 
     public MenuHandle andWaitForMenuClose(Duration timeout)
     {
-        framework.waitUntil(() -> !snapshot().open(), timeout);
+        frameworkGateway.waitUntil(() -> !snapshot().open(), timeout);
         return this;
     }
 
