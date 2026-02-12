@@ -5,6 +5,7 @@ import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
 import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import org.assertj.core.api.AbstractAssert;
+import org.assertj.core.api.AbstractStringAssert;
 import org.assertj.core.api.Assertions;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
@@ -135,6 +136,20 @@ public final class LightkeeperAssertions extends Assertions
             if (!Objects.equals(actual.name(), expectedName))
                 failWithMessage("Expected player name '%s' but was '%s'.", expectedName, actual.name());
             return this;
+        }
+
+        public PlayerHandleAssert receivedMessage(String expectedFragment)
+        {
+            isNotNull();
+            Assertions.assertThat(actual.receivedMessagesText())
+                .contains(expectedFragment);
+            return this;
+        }
+
+        public AbstractStringAssert<?> receivedMessagesText()
+        {
+            isNotNull();
+            return Assertions.assertThat(actual.receivedMessagesText());
         }
     }
 

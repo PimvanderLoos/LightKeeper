@@ -65,6 +65,12 @@ class LightkeeperBotIT
         assertThat(world)
             .hasBlockAt(1, 100, 0)
             .ofType(Material.STONE);
+        assertThat(secondPlayer)
+            .receivedMessage("You clicked Button 1");
+        assertThat(secondPlayer)
+            .receivedMessagesText()
+            .contains("clicked")
+            .startsWith("You");
 
         // Keep explicit use so this path is covered in integration tests.
         org.assertj.core.api.Assertions.assertThat(thirdPlayer.name()).isNotBlank();

@@ -53,6 +53,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -72,6 +73,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     private final Map<UUID, Player> syntheticPlayers = new ConcurrentHashMap<>();
     private final Map<UUID, PermissionAttachment> permissionAttachments = new ConcurrentHashMap<>();
+    private final Map<UUID, List<String>> playerMessageHistory = new ConcurrentHashMap<>();
     private final AtomicLong tickCounter = new AtomicLong(0L);
 
     private final BotPlayerNmsAdapter botPlayerNmsAdapter = new BotPlayerNmsAdapterV1_21_R6();
@@ -154,7 +156,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
 
         if (MAIN_MENU_TITLE.equals(title) && event.getRawSlot() == 0)
         {
-            player.sendMessage("You clicked Button 1");
+            sendTrackedMessage(player, "You clicked Button 1");
             openSubMenu(player);
             return;
         }
@@ -280,6 +282,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
                 case GET_OPEN_MENU -> handleGetOpenMenu(requestId, arguments);
                 case CLICK_MENU_SLOT -> handleClickMenuSlot(requestId, arguments);
                 case DRAG_MENU_SLOTS -> handleDragMenuSlots(requestId, arguments);
+                case GET_PLAYER_MESSAGES -> handleGetPlayerMessages(requestId, arguments);
                 case WAIT_TICKS -> handleWaitTicks(requestId, arguments);
                 case GET_SERVER_TICK -> handleGetServerTick(requestId);
             };
@@ -454,6 +457,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         });
 
         syntheticPlayers.put(uuid, player);
+        playerMessageHistory.put(uuid, new CopyOnWriteArrayList<>());
         getLogger().info("LK_AGENT: Created synthetic player '%s' (%s) in world '%s'."
             .formatted(player.getName(), player.getUniqueId(), worldName));
         return successResponse(requestId, Map.of(
@@ -473,6 +477,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
                 player.removeAttachment(attachment);
             botPlayerNmsAdapter.removePlayer(player);
             syntheticPlayers.remove(uuid);
+            playerMessageHistory.remove(uuid);
             getLogger().info("LK_AGENT: Removed synthetic player '%s' (%s)."
                 .formatted(player.getName(), player.getUniqueId()));
             return Boolean.TRUE;
@@ -674,6 +679,19 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         ));
     }
 
+    private AgentResponse handleGetPlayerMessages(String requestId, Map<String, String> arguments)
+        throws Exception
+    {
+        final UUID uuid = UUID.fromString(arguments.getOrDefault("uuid", ""));
+        final String messagesJson = callOnMainThread(() -> {
+            getRequiredPlayer(uuid);
+            capturePlayerMessages(uuid);
+            final List<String> messages = playerMessageHistory.getOrDefault(uuid, List.of());
+            return objectMapper.writeValueAsString(messages);
+        });
+        return successResponse(requestId, Map.of("messagesJson", messagesJson));
+    }
+
     private AgentResponse handleGetServerTick(String requestId)
     {
         return successResponse(requestId, Map.of(
@@ -694,6 +712,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
                 if (attachment != null)
                     player.removeAttachment(attachment);
                 botPlayerNmsAdapter.removePlayer(player);
+                playerMessageHistory.remove(uuid);
             }
             catch (Exception ignored)
             {
@@ -723,6 +742,24 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         if (player == null)
             throw new IllegalArgumentException("Synthetic player '%s' is not registered.".formatted(uuid));
         return player;
+    }
+
+    private void sendTrackedMessage(Player player, String message)
+    {
+        player.sendMessage(message);
+        playerMessageHistory
+            .computeIfAbsent(player.getUniqueId(), ignored -> new CopyOnWriteArrayList<>())
+            .add(message);
+    }
+
+    private void capturePlayerMessages(UUID uuid)
+    {
+        final List<String> drainedMessages = botPlayerNmsAdapter.drainReceivedMessages(uuid);
+        if (drainedMessages.isEmpty())
+            return;
+        playerMessageHistory
+            .computeIfAbsent(uuid, ignored -> new CopyOnWriteArrayList<>())
+            .addAll(drainedMessages);
     }
 
     private static boolean isActionableOpenInventory(InventoryView view)
