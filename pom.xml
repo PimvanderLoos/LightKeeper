@@ -26,36 +26,36 @@
 
         <version.maven>3.9.10</version.maven>
 
-        <version.apache-commons-io>2.19.0</version.apache-commons-io>
+        <version.apache-commons-io>2.21.0</version.apache-commons-io>
         <version.assertj>4.0.0-M1</version.assertj>
-        <version.checkstyle>10.25.0</version.checkstyle>
+        <version.checkstyle>13.2.0</version.checkstyle>
         <version.dagger>2.56.1</version.dagger>
-        <version.errorprone>2.38.0</version.errorprone>
-        <version.jacoco>0.8.13</version.jacoco>
+        <version.errorprone>2.47.0</version.errorprone>
+        <version.jacoco>0.8.14</version.jacoco>
         <version.jackson-databind>2.21.0</version.jackson-databind>
-        <version.jimfs>1.3.0</version.jimfs>
+        <version.jimfs>1.3.1</version.jimfs>
         <version.jspecify>1.0.0</version.jspecify>
-        <version.junit>5.13.0</version.junit>
-        <version.lombok>1.18.38</version.lombok>
-        <version.mockito>5.17.0</version.mockito>
-        <version.nullaway>0.12.7</version.nullaway>
+        <version.junit>6.0.2</version.junit>
+        <version.lombok>1.18.42</version.lombok>
+        <version.mockito>5.21.0</version.mockito>
+        <version.nullaway>0.13.1</version.nullaway>
         <version.paper-api>1.21.11-R0.1-SNAPSHOT</version.paper-api>
-        <version.pmd>7.14.0</version.pmd>
-        <version.semver4j>5.7.1</version.semver4j>
+        <version.pmd>7.21.0</version.pmd>
+        <version.semver4j>6.0.0</version.semver4j>
 
         <version.maven-checkstyle-plugin>3.6.0</version.maven-checkstyle-plugin>
         <version.maven-clean-plugin>3.5.0</version.maven-clean-plugin>
-        <version.maven-compiler-plugin>3.14.0</version.maven-compiler-plugin>
+        <version.maven-compiler-plugin>3.15.0</version.maven-compiler-plugin>
         <version.maven-install-plugin>3.1.4</version.maven-install-plugin>
-        <version.maven-jar-plugin>3.4.2</version.maven-jar-plugin>
-        <version.maven-javadoc-plugin>3.11.2</version.maven-javadoc-plugin>
-        <version.maven-plugin-tools>3.15.1</version.maven-plugin-tools>
-        <version.maven-pmd-plugin>3.26.0</version.maven-pmd-plugin>
-        <version.maven-release-plugin>3.1.1</version.maven-release-plugin>
-        <version.maven-shade-plugin>3.6.0</version.maven-shade-plugin>
+        <version.maven-jar-plugin>3.5.0</version.maven-jar-plugin>
+        <version.maven-javadoc-plugin>3.12.0</version.maven-javadoc-plugin>
+        <version.maven-plugin-tools>3.15.2</version.maven-plugin-tools>
+        <version.maven-pmd-plugin>3.28.0</version.maven-pmd-plugin>
+        <version.maven-release-plugin>3.3.1</version.maven-release-plugin>
+        <version.maven-shade-plugin>3.6.1</version.maven-shade-plugin>
         <version.maven-site-plugin>3.21.0</version.maven-site-plugin>
-        <version.maven-source-plugin>3.3.1</version.maven-source-plugin>
-        <version.maven-surefire-plugin>3.5.3</version.maven-surefire-plugin>
+        <version.maven-source-plugin>3.4.0</version.maven-source-plugin>
+        <version.maven-surefire-plugin>3.5.4</version.maven-surefire-plugin>
     </properties>
 
     <scm>
@@ -373,6 +373,7 @@
                                 <release>${maven.compiler.release}</release>
                                 <showWarnings>true</showWarnings>
                                 <compilerArgs>
+                                    <arg>-XDaddTypeAnnotationsToSymbol=true</arg>
                                     <arg>-XDcompilePolicy=simple</arg>
                                     <arg>--should-stop=ifError=FLOW</arg>
                                     <arg>-Xplugin:ErrorProne -XepExcludedPaths:.*/(target)/.* -XepOpt:NullAway:ExcludedClassAnnotations=org.junit.jupiter.api.extension.ExtendWith,org.junit.jupiter.api.Timeout -XepOpt:NullAway:AnnotatedPackages=nl.pim16aap2 -Xep:NullAway:ERROR -XepDisableWarningsInGeneratedCode -Xep:MockNotUsedInProduction:OFF -Xep:NullableOnContainingClass:OFF -Xep:ParameterName:OFF -Xep:AnnotateFormatMethod:ERROR -Xep:AssistedInjectAndInjectOnSameConstructor:ERROR -Xep:BadComparable:ERROR -Xep:BadImport:ERROR -Xep:BadInstanceof:ERROR -Xep:BoxedPrimitiveConstructor:ERROR -Xep:CatchFail:ERROR -Xep:ClassCanBeStatic:ERROR -Xep:ClassInitializationDeadlock:ERROR -Xep:CloseableProvides:ERROR -Xep:ClosingStandardOutputStreams:ERROR -Xep:CollectionUndefinedEquality:ERROR -Xep:CollectorShouldNotUseState:ERROR -Xep:ComparableAndComparator:ERROR -Xep:CompareToZero:ERROR -Xep:ComplexBooleanConstant:ERROR -Xep:DateFormatConstant:ERROR -Xep:DefaultCharset:ERROR -Xep:DirectInvocationOnMock:ERROR -Xep:DoubleCheckedLocking:ERROR -Xep:EmptyCatch:ERROR -Xep:EmptyTopLevelDeclaration:ERROR -Xep:EqualsIncompatibleType:ERROR -Xep:EqualsUnsafeCast:ERROR -Xep:EqualsUsingHashCode:ERROR -Xep:EscapedEntity:ERROR -Xep:FallThrough:ERROR -Xep:Finally:ERROR -Xep:FloatCast:ERROR -Xep:FloggerArgumentToString:ERROR -Xep:FloggerStringConcatenation:ERROR -Xep:FutureReturnValueIgnored:ERROR -Xep:GetClassOnEnum:ERROR -Xep:HidingField:ERROR -Xep:IdentityHashMapUsage:ERROR -Xep:ImmutableAnnotationChecker:ERROR -Xep:ImmutableEnumChecker:OFF -Xep:InconsistentHashCode:ERROR -Xep:InheritDoc:ERROR -Xep:InjectOnConstructorOfAbstractClass:ERROR -Xep:InlineFormatString:ERROR -Xep:IntLongMath:ERROR -Xep:InvalidLink:ERROR -Xep:IterableAndIterator:ERROR -Xep:LockOnNonEnclosingClassLiteral:ERROR -Xep:LongDoubleConversion:ERROR -Xep:LongFloatConversion:ERROR -Xep:MathAbsoluteNegative:ERROR -Xep:MissingCasesInEnumSwitch:ERROR -Xep:MissingOverride:ERROR -Xep:MixedMutabilityReturnType:ERROR -Xep:ModifyCollectionInEnhancedForLoop:ERROR -Xep:ModifySourceCollectionInStream:ERROR -Xep:NarrowCalculation:ERROR -Xep:NarrowingCompoundAssignment:ERROR -Xep:NonAtomicVolatileUpdate:ERROR -Xep:NonOverridingEquals:ERROR -Xep:NullOptional:ERROR -Xep:NullableOptional:ERROR -Xep:ObjectEqualsForPrimitives:ERROR -Xep:ObjectToString:ERROR -Xep:OptionalMapToOptional:ERROR -Xep:OptionalNotPresent:ERROR -Xep:OverrideThrowableToString:ERROR -Xep:Overrides:ERROR -Xep:RedundantControlFlow:ERROR -Xep:ReturnFromVoid:ERROR -Xep:StatementSwitchToExpressionSwitch:ERROR -Xep:StaticAssignmentInConstructor:ERROR -Xep:StaticGuardedByInstance:ERROR -Xep:StreamResourceLeak:ERROR -Xep:StreamToIterable:ERROR -Xep:StringCaseLocaleUsage:ERROR -Xep:StringCharset:ERROR -Xep:StringSplitter:ERROR -Xep:SuperCallToObjectMethod:ERROR -Xep:SynchronizeOnNonFinalField:ERROR -Xep:ToStringReturnsNull:ERROR -Xep:TruthAssertExpected:ERROR -Xep:TruthIncompatibleType:ERROR -Xep:UnnecessaryBreakInSwitch:ERROR -Xep:UnnecessaryLambda:OFF -Xep:UnnecessaryLongToIntConversion:ERROR -Xep:UnnecessaryParentheses:ERROR -Xep:UnsafeReflectiveConstructionCast:ERROR -Xep:UnsynchronizedOverridesSynchronized:ERROR -Xep:UnusedMethod:ERROR -Xep:UnusedNestedClass:ERROR -Xep:UnusedTypeParameter:ERROR -Xep:UnusedVariable:ERROR -Xep:UseBinds:ERROR -Xep:VoidUsed:ERROR -Xep:WaitNotInLoop:ERROR -Xep:EffectivelyPrivate:OFF -Xep:AssignmentExpression:OFF -Xep:AmbiguousMethodReference:OFF -Xep:EnumOrdinal:OFF
@@ -403,6 +404,11 @@
                                         <groupId>com.uber.nullaway</groupId>
                                         <artifactId>nullaway</artifactId>
                                         <version>${version.nullaway}</version>
+                                    </path>
+                                    <path>
+                                        <groupId>com.google.dagger</groupId>
+                                        <artifactId>dagger-compiler</artifactId>
+                                        <version>${version.dagger}</version>
                                     </path>
                                 </annotationProcessorPaths>
                             </configuration>
