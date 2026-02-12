@@ -6,6 +6,9 @@ import org.apache.maven.plugin.MojoExecutionException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -104,6 +107,60 @@ public final class FileUtil
         catch (IOException exception)
         {
             throw new RuntimeException("Failed to get last modified time for file: " + file, exception);
+        }
+    }
+
+    /**
+     * Recursively copies all files and subdirectories from source to target.
+     *
+     * @param source
+     *     The source directory.
+     * @param target
+     *     The target directory.
+     * @throws MojoExecutionException
+     *     If copying fails.
+     */
+    public static void copyDirectoryRecursively(Path source, Path target)
+        throws MojoExecutionException
+    {
+        if (!Files.isDirectory(source))
+            throw new MojoExecutionException("Source path '%s' is not a directory.".formatted(source));
+
+        try
+        {
+            Files.createDirectories(target);
+            Files.walkFileTree(source, new SimpleFileVisitor<>()
+            {
+                @Override
+                public java.nio.file.FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+                    throws IOException
+                {
+                    final Path relative = source.relativize(dir);
+                    Files.createDirectories(target.resolve(relative));
+                    return java.nio.file.FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public java.nio.file.FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+                    throws IOException
+                {
+                    final Path relative = source.relativize(file);
+                    Files.copy(
+                        file,
+                        target.resolve(relative),
+                        StandardCopyOption.REPLACE_EXISTING,
+                        StandardCopyOption.COPY_ATTRIBUTES
+                    );
+                    return java.nio.file.FileVisitResult.CONTINUE;
+                }
+            });
+        }
+        catch (IOException exception)
+        {
+            throw new MojoExecutionException(
+                "Failed to copy source directory '%s' to '%s'.".formatted(source, target),
+                exception
+            );
         }
     }
 }

@@ -259,6 +259,7 @@ public abstract class ServerProvider
         log().info("Copying base server to target server directory");
         FileUtil.cleanDirectory(targetServerDirectory(), "target server directory");
         createTargetServer();
+        installAgentJarIfConfigured();
     }
 
     /**
@@ -278,6 +279,7 @@ public abstract class ServerProvider
      * When this method is called, {@link #baseServerDirectory()} is guaranteed to be empty.
      *
      * @throws MojoExecutionException
+     *     If the base server directory could not be initialized.
      */
     protected abstract void createBaseServer()
         throws MojoExecutionException;
@@ -317,19 +319,7 @@ public abstract class ServerProvider
     protected void createTargetServer()
         throws MojoExecutionException
     {
-        try
-        {
-            Files.deleteIfExists(targetServerDirectory);
-            Files.copy(baseServerDirectory, targetServerDirectory);
-        }
-        catch (IOException exception)
-        {
-            throw new MojoExecutionException(
-                "Failed to copy base server directory %s to target server directory %s"
-                    .formatted(baseServerDirectory, targetServerDirectory),
-                exception
-            );
-        }
+        FileUtil.copyDirectoryRecursively(baseServerDirectory, targetServerDirectory);
     }
 
     /**
@@ -352,12 +342,12 @@ public abstract class ServerProvider
         Path directoryRoot,
         boolean versionedDirectories)
     {
-        final Path ret = directoryRoot.resolve(name());
+        Path ret = directoryRoot.resolve(name());
 
         if (versionedDirectories)
-            return ret.resolve(serverVersion);
+            ret = ret.resolve(serverVersion);
 
-        return ret;
+        return ret.resolve(serverSpecification.cacheKey());
     }
 
     /**
@@ -394,5 +384,41 @@ public abstract class ServerProvider
         }
 
         return false;
+    }
+
+    private void installAgentJarIfConfigured()
+        throws MojoExecutionException
+    {
+        final Path agentJarPath = serverSpecification().agentJarPath();
+        if (agentJarPath == null)
+            return;
+
+        final Path pluginsDirectory = targetServerDirectory().resolve("plugins");
+        FileUtil.createDirectories(pluginsDirectory, "plugins directory");
+
+        try
+        {
+            final Path targetAgentJar = pluginsDirectory.resolve(agentJarPath.getFileName());
+            Files.copy(agentJarPath, targetAgentJar, StandardCopyOption.REPLACE_EXISTING);
+            log.info("Installed LightKeeper agent JAR at '%s'.".formatted(targetAgentJar));
+        }
+        catch (IOException exception)
+        {
+            throw new MojoExecutionException(
+                "Failed to install LightKeeper agent jar from '%s' to target server."
+                    .formatted(agentJarPath),
+                exception
+            );
+        }
+    }
+
+    public final Path targetServerDirectoryPath()
+    {
+        return targetServerDirectory;
+    }
+
+    public final Path targetJarFilePath()
+    {
+        return targetJarFile;
     }
 }

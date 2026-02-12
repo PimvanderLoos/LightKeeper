@@ -77,6 +77,25 @@ class FileUtilTest
             assertThat(Files.exists(path)).isTrue();
         }
 
+        @Test
+        void copyDirectoryRecursively_shouldCopyNestedFiles()
+            throws IOException, MojoExecutionException
+        {
+            // setup
+            final Path source = fs.getPath("source");
+            final Path target = fs.getPath("target");
+            Files.createDirectories(source.resolve("nested"));
+            Files.writeString(source.resolve("root.txt"), "root");
+            Files.writeString(source.resolve("nested").resolve("child.txt"), "child");
+
+            // execute
+            FileUtil.copyDirectoryRecursively(source, target);
+
+            // verify
+            assertThat(target.resolve("root.txt")).isRegularFile().hasContent("root");
+            assertThat(target.resolve("nested").resolve("child.txt")).isRegularFile().hasContent("child");
+        }
+
         static Stream<Configuration> fileSystemConfigurationProvider()
         {
             return Stream.of(
