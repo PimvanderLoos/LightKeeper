@@ -1,7 +1,7 @@
 package nl.pim16aap2.lightkeeper.runtime.agent;
 
 /**
- * Supported LightKeeper agent actions for v1.
+ * Supported LightKeeper agent actions for v1.1.
  */
 public enum AgentAction
 {
@@ -10,5 +10,14 @@ public enum AgentAction
     NEW_WORLD,
     EXECUTE_COMMAND,
     BLOCK_TYPE,
-    SET_BLOCK
+    SET_BLOCK,
+    CREATE_PLAYER,
+    REMOVE_PLAYER,
+    EXECUTE_PLAYER_COMMAND,
+    PLACE_PLAYER_BLOCK,
+    GET_OPEN_MENU,
+    CLICK_MENU_SLOT,
+    DRAG_MENU_SLOTS,
+    WAIT_TICKS,
+    GET_SERVER_TICK
 }

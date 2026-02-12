@@ -6,6 +6,10 @@ import nl.pim16aap2.lightkeeper.framework.CommandResult;
 import nl.pim16aap2.lightkeeper.framework.CommandSource;
 import nl.pim16aap2.lightkeeper.framework.Condition;
 import nl.pim16aap2.lightkeeper.framework.LightkeeperFramework;
+import nl.pim16aap2.lightkeeper.framework.MenuItemSnapshot;
+import nl.pim16aap2.lightkeeper.framework.MenuSnapshot;
+import nl.pim16aap2.lightkeeper.framework.PlayerBuilder;
+import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
 import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import nl.pim16aap2.lightkeeper.framework.WorldSpec;
@@ -32,10 +36,14 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -56,17 +64,17 @@ public final class DefaultLightkeeperFramework implements LightkeeperFramework
 
     private final RuntimeManifest runtimeManifest;
     private final PaperServerHandle serverHandle;
-    private final UdsAgentClient agentClient;
+    private UdsAgentClient agentClient;
     private final AtomicBoolean closed = new AtomicBoolean(false);
+    private final Map<UUID, ResourceScope> createdPlayers = new ConcurrentHashMap<>();
+    private final ThreadLocal<ResourceScope> activeResourceScope = ThreadLocal.withInitial(() -> ResourceScope.CLASS);
 
     private DefaultLightkeeperFramework(
         RuntimeManifest runtimeManifest,
-        PaperServerHandle serverHandle,
-        UdsAgentClient agentClient)
+        PaperServerHandle serverHandle)
     {
         this.runtimeManifest = runtimeManifest;
         this.serverHandle = serverHandle;
-        this.agentClient = agentClient;
     }
 
     /**
@@ -102,14 +110,18 @@ public final class DefaultLightkeeperFramework implements LightkeeperFramework
         final PaperServerHandle serverHandle = new PaperServerHandle(runtimeManifest, diagnosticsDirectory);
         serverHandle.start(STARTUP_TIMEOUT);
 
-        final UdsAgentClient agentClient = new UdsAgentClient(Path.of(runtimeManifest.udsSocketPath()), AGENT_CONNECT_TIMEOUT);
-        agentClient.handshake(
+        final DefaultLightkeeperFramework framework = new DefaultLightkeeperFramework(runtimeManifest, serverHandle);
+        framework.agentClient = framework.new UdsAgentClient(
+            Path.of(runtimeManifest.udsSocketPath()),
+            AGENT_CONNECT_TIMEOUT
+        );
+        framework.agentClient.handshake(
             runtimeManifest.agentAuthToken(),
             runtimeManifest.runtimeProtocolVersion(),
             Objects.requireNonNullElse(runtimeManifest.agentJarSha256(), "")
         );
 
-        return new DefaultLightkeeperFramework(runtimeManifest, serverHandle, agentClient);
+        return framework;
     }
 
     @Override
@@ -132,6 +144,42 @@ public final class DefaultLightkeeperFramework implements LightkeeperFramework
         final WorldSpec validatedWorldSpec = validateWorldSpec(worldSpec);
         final String worldName = agentClient.newWorld(validatedWorldSpec);
         return new WorldHandle(this, worldName);
+    }
+
+    @Override
+    public PlayerHandle createPlayer(String name, WorldHandle world)
+    {
+        return createPlayer(name, UUID.randomUUID(), world);
+    }
+
+    @Override
+    public PlayerHandle createPlayer(String name, UUID uuid, WorldHandle world)
+    {
+        ensureOpen();
+        final String trimmedName = validatePlayerName(name);
+        Objects.requireNonNull(uuid, "uuid may not be null.");
+        Objects.requireNonNull(world, "world may not be null.");
+        final String worldName = Objects.requireNonNull(world.name(), "world.name may not be null.");
+
+        final PlayerHandle playerHandle = agentClient.createPlayer(
+            trimmedName,
+            uuid,
+            worldName,
+            0.0D,
+            0.0D,
+            0.0D,
+            null,
+            null
+        );
+        createdPlayers.put(playerHandle.uniqueId(), activeResourceScope.get());
+        return playerHandle;
+    }
+
+    @Override
+    public PlayerBuilder buildPlayer()
+    {
+        ensureOpen();
+        return new DefaultPlayerBuilder();
     }
 
     @Override
@@ -192,6 +240,84 @@ public final class DefaultLightkeeperFramework implements LightkeeperFramework
     }
 
     @Override
+    public void executePlayerCommand(PlayerHandle player, String command)
+    {
+        ensureOpen();
+        Objects.requireNonNull(player, "player may not be null.");
+        final String trimmedCommand = Objects.requireNonNull(command, "command may not be null.").trim();
+        if (trimmedCommand.isEmpty())
+            throw new IllegalArgumentException("command may not be blank.");
+        agentClient.executePlayerCommand(player.uniqueId(), trimmedCommand);
+    }
+
+    @Override
+    public void placePlayerBlock(PlayerHandle player, String material, int x, int y, int z)
+    {
+        ensureOpen();
+        Objects.requireNonNull(player, "player may not be null.");
+        final String trimmedMaterial = Objects.requireNonNull(material, "material may not be null.").trim();
+        if (trimmedMaterial.isEmpty())
+            throw new IllegalArgumentException("material may not be blank.");
+        agentClient.placePlayerBlock(player.uniqueId(), trimmedMaterial, x, y, z);
+    }
+
+    @Override
+    public MenuSnapshot menuSnapshot(PlayerHandle player)
+    {
+        ensureOpen();
+        Objects.requireNonNull(player, "player may not be null.");
+        return agentClient.menuSnapshot(player.uniqueId());
+    }
+
+    @Override
+    public void clickMenuSlot(PlayerHandle player, int slot)
+    {
+        ensureOpen();
+        Objects.requireNonNull(player, "player may not be null.");
+        if (slot < 0)
+            throw new IllegalArgumentException("slot must be >= 0.");
+        agentClient.clickMenuSlot(player.uniqueId(), slot);
+    }
+
+    @Override
+    public void dragMenuSlots(PlayerHandle player, String materialKey, int... slots)
+    {
+        ensureOpen();
+        Objects.requireNonNull(player, "player may not be null.");
+        final String trimmedMaterial = Objects.requireNonNull(materialKey, "materialKey may not be null.").trim();
+        if (trimmedMaterial.isEmpty())
+            throw new IllegalArgumentException("materialKey may not be blank.");
+        if (slots == null || slots.length == 0)
+            throw new IllegalArgumentException("slots may not be empty.");
+        for (int slot : slots)
+        {
+            if (slot < 0)
+                throw new IllegalArgumentException("slot must be >= 0.");
+        }
+        agentClient.dragMenuSlots(player.uniqueId(), trimmedMaterial, slots);
+    }
+
+    @Override
+    public void removePlayer(PlayerHandle player)
+    {
+        ensureOpen();
+        Objects.requireNonNull(player, "player may not be null.");
+        agentClient.removePlayer(player.uniqueId());
+        createdPlayers.remove(player.uniqueId());
+    }
+
+    @Override
+    public void waitTicks(int ticks)
+    {
+        ensureOpen();
+        if (ticks < 0)
+            throw new IllegalArgumentException("ticks must be >= 0.");
+        if (ticks == 0)
+            return;
+        agentClient.waitTicks(ticks);
+    }
+
+    @Override
     public void close()
     {
         if (!closed.compareAndSet(false, true))
@@ -199,6 +325,7 @@ public final class DefaultLightkeeperFramework implements LightkeeperFramework
 
         try
         {
+            cleanupPlayersByScope(null);
             agentClient.close();
         }
         finally
@@ -211,6 +338,19 @@ public final class DefaultLightkeeperFramework implements LightkeeperFramework
     {
         if (closed.get())
             throw new IllegalStateException("Framework is already closed.");
+    }
+
+    public void beginMethodScope()
+    {
+        ensureOpen();
+        activeResourceScope.set(ResourceScope.METHOD);
+    }
+
+    public void endMethodScope()
+    {
+        ensureOpen();
+        cleanupPlayersByScope(ResourceScope.METHOD);
+        activeResourceScope.set(ResourceScope.CLASS);
     }
 
     private static WorldSpec validateWorldSpec(WorldSpec worldSpec)
@@ -233,7 +373,149 @@ public final class DefaultLightkeeperFramework implements LightkeeperFramework
         return new WorldSpec(worldName, DEFAULT_WORLD_TYPE, DEFAULT_WORLD_ENVIRONMENT, DEFAULT_WORLD_SEED);
     }
 
-    private static final class UdsAgentClient implements AutoCloseable
+    private static String validatePlayerName(String name)
+    {
+        final String trimmedName = Objects.requireNonNull(name, "name may not be null.").trim();
+        if (trimmedName.isEmpty())
+            throw new IllegalArgumentException("name may not be blank.");
+        if (trimmedName.length() > 16)
+            throw new IllegalArgumentException("name may not exceed 16 characters.");
+        return trimmedName;
+    }
+
+    private void cleanupPlayersByScope(ResourceScope scope)
+    {
+        final Set<UUID> playerIds = new HashSet<>(createdPlayers.keySet());
+        for (UUID playerId : playerIds)
+        {
+            final ResourceScope playerScope = createdPlayers.get(playerId);
+            if (playerScope == null)
+                continue;
+            if (scope != null && playerScope != scope)
+                continue;
+            try
+            {
+                agentClient.removePlayer(playerId);
+            }
+            catch (Exception ignored)
+            {
+            }
+            finally
+            {
+                createdPlayers.remove(playerId);
+            }
+        }
+    }
+
+    private enum ResourceScope
+    {
+        CLASS,
+        METHOD
+    }
+
+    private final class DefaultPlayerBuilder implements PlayerBuilder
+    {
+        private UUID uuid = UUID.randomUUID();
+        private String name = "lk_bot_" + uuid.toString().substring(0, 8);
+        private WorldHandle worldHandle;
+        private Double x;
+        private Double y;
+        private Double z;
+        private Double health;
+        private final Set<String> permissions = new HashSet<>();
+
+        @Override
+        public PlayerBuilder withName(String name)
+        {
+            this.name = validatePlayerName(name);
+            return this;
+        }
+
+        @Override
+        public PlayerBuilder withRandomName()
+        {
+            this.uuid = UUID.randomUUID();
+            this.name = "lk_bot_" + uuid.toString().substring(0, 8);
+            return this;
+        }
+
+        @Override
+        public PlayerBuilder inWorld(WorldHandle world)
+        {
+            this.worldHandle = Objects.requireNonNull(world, "world may not be null.");
+            this.x = null;
+            this.y = null;
+            this.z = null;
+            return this;
+        }
+
+        @Override
+        public PlayerBuilder atLocation(WorldHandle world, double x, double y, double z)
+        {
+            this.worldHandle = Objects.requireNonNull(world, "world may not be null.");
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            return this;
+        }
+
+        @Override
+        public PlayerBuilder atSpawn(WorldHandle world)
+        {
+            this.worldHandle = Objects.requireNonNull(world, "world may not be null.");
+            this.x = null;
+            this.y = null;
+            this.z = null;
+            return this;
+        }
+
+        @Override
+        public PlayerBuilder withHealth(double health)
+        {
+            if (health <= 0.0D)
+                throw new IllegalArgumentException("health must be > 0.");
+            this.health = health;
+            return this;
+        }
+
+        @Override
+        public PlayerBuilder withPermissions(String... permissions)
+        {
+            if (permissions == null || permissions.length == 0)
+                return this;
+            Arrays.stream(permissions)
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(permission -> !permission.isEmpty())
+                .forEach(this.permissions::add);
+            return this;
+        }
+
+        @Override
+        public PlayerHandle build()
+        {
+            ensureOpen();
+            final WorldHandle effectiveWorldHandle = Objects.requireNonNull(
+                worldHandle,
+                "world must be configured via inWorld/atLocation/atSpawn."
+            );
+
+            final PlayerHandle playerHandle = agentClient.createPlayer(
+                validatePlayerName(name),
+                uuid,
+                effectiveWorldHandle.name(),
+                x,
+                y,
+                z,
+                health,
+                permissions
+            );
+            createdPlayers.put(playerHandle.uniqueId(), activeResourceScope.get());
+            return playerHandle;
+        }
+    }
+
+    private final class UdsAgentClient implements AutoCloseable
     {
         private final ObjectMapper objectMapper = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -303,6 +585,113 @@ public final class DefaultLightkeeperFramework implements LightkeeperFramework
                 "y", Integer.toString(position.y()),
                 "z", Integer.toString(position.z()),
                 "material", material
+            ));
+        }
+
+        PlayerHandle createPlayer(
+            String name,
+            UUID uuid,
+            String worldName,
+            Double x,
+            Double y,
+            Double z,
+            Double health,
+            Set<String> permissions)
+        {
+            final Map<String, String> arguments = new java.util.HashMap<>();
+            arguments.put("name", name);
+            arguments.put("uuid", uuid.toString());
+            arguments.put("worldName", worldName);
+            if (x != null && y != null && z != null)
+            {
+                arguments.put("x", Double.toString(x));
+                arguments.put("y", Double.toString(y));
+                arguments.put("z", Double.toString(z));
+            }
+            if (health != null)
+                arguments.put("health", Double.toString(health));
+            if (permissions != null && !permissions.isEmpty())
+                arguments.put("permissions", String.join(",", permissions));
+
+            final AgentResponse response = send(AgentAction.CREATE_PLAYER, arguments);
+            final UUID createdUuid = UUID.fromString(getRequiredData(response, "uuid"));
+            final String createdName = getRequiredData(response, "name");
+            return new PlayerHandle(DefaultLightkeeperFramework.this, createdUuid, createdName);
+        }
+
+        void removePlayer(UUID uuid)
+        {
+            send(AgentAction.REMOVE_PLAYER, Map.of(
+                "uuid", uuid.toString()
+            ));
+        }
+
+        void executePlayerCommand(UUID uuid, String command)
+        {
+            send(AgentAction.EXECUTE_PLAYER_COMMAND, Map.of(
+                "uuid", uuid.toString(),
+                "command", command
+            ));
+        }
+
+        void placePlayerBlock(UUID uuid, String material, int x, int y, int z)
+        {
+            send(AgentAction.PLACE_PLAYER_BLOCK, Map.of(
+                "uuid", uuid.toString(),
+                "material", material,
+                "x", Integer.toString(x),
+                "y", Integer.toString(y),
+                "z", Integer.toString(z)
+            ));
+        }
+
+        MenuSnapshot menuSnapshot(UUID uuid)
+        {
+            final AgentResponse response = send(AgentAction.GET_OPEN_MENU, Map.of(
+                "uuid", uuid.toString()
+            ));
+            final boolean open = Boolean.parseBoolean(getRequiredData(response, "open"));
+            if (!open)
+                return new MenuSnapshot(false, "", List.of());
+
+            final String title = getRequiredData(response, "title");
+            final String itemsJson = response.data().getOrDefault("itemsJson", "[]");
+            try
+            {
+                final MenuItemSnapshot[] items = objectMapper.readValue(itemsJson, MenuItemSnapshot[].class);
+                return new MenuSnapshot(true, title, List.of(items));
+            }
+            catch (IOException exception)
+            {
+                throw new IllegalStateException("Failed to parse menu snapshot JSON.", exception);
+            }
+        }
+
+        void clickMenuSlot(UUID uuid, int slot)
+        {
+            send(AgentAction.CLICK_MENU_SLOT, Map.of(
+                "uuid", uuid.toString(),
+                "slot", Integer.toString(slot)
+            ));
+        }
+
+        void dragMenuSlots(UUID uuid, String materialKey, int... slots)
+        {
+            final String slotList = Arrays.stream(slots)
+                .mapToObj(Integer::toString)
+                .reduce((left, right) -> left + "," + right)
+                .orElse("");
+            send(AgentAction.DRAG_MENU_SLOTS, Map.of(
+                "uuid", uuid.toString(),
+                "material", materialKey,
+                "slots", slotList
+            ));
+        }
+
+        void waitTicks(int ticks)
+        {
+            send(AgentAction.WAIT_TICKS, Map.of(
+                "ticks", Integer.toString(ticks)
             ));
         }
 

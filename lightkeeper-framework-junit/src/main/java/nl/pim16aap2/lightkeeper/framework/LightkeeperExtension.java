@@ -1,5 +1,6 @@
 package nl.pim16aap2.lightkeeper.framework;
 
+import nl.pim16aap2.lightkeeper.framework.internal.DefaultLightkeeperFramework;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -38,14 +39,26 @@ public final class LightkeeperExtension implements
     public void beforeEach(ExtensionContext context)
     {
         if (isFreshServer(context))
+        {
             context.getStore(NAMESPACE).put(KEY_METHOD_FRAMEWORK, startFramework());
+            return;
+        }
+
+        final LightkeeperFramework sharedFramework = getFramework(context);
+        if (sharedFramework instanceof DefaultLightkeeperFramework defaultLightkeeperFramework)
+            defaultLightkeeperFramework.beginMethodScope();
     }
 
     @Override
     public void afterEach(ExtensionContext context)
     {
         if (!isFreshServer(context))
+        {
+            final LightkeeperFramework sharedFramework = getFramework(context);
+            if (sharedFramework instanceof DefaultLightkeeperFramework defaultLightkeeperFramework)
+                defaultLightkeeperFramework.endMethodScope();
             return;
+        }
 
         final LightkeeperFramework framework = context.getStore(NAMESPACE).remove(
             KEY_METHOD_FRAMEWORK,

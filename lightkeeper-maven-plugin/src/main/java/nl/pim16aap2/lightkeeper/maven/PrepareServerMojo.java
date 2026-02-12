@@ -148,6 +148,7 @@ public class PrepareServerMojo extends AbstractMojo
             new PaperDownloadsClient(getLog(), effectiveUserAgent).resolveBuild(effectiveServerVersion);
 
         final AgentMetadata agentMetadata = resolveAgentMetadata(agentJarPath);
+        final String runtimeProtocolVersion = RuntimeProtocol.VERSION;
         final String cacheKey = CacheKeyUtil.createCacheKey(List.of(
             SERVER_TYPE_PAPER,
             paperBuildMetadata.minecraftVersion(),
@@ -155,7 +156,7 @@ public class PrepareServerMojo extends AbstractMojo
             System.getProperty("java.specification.version"),
             System.getProperty("os.name"),
             System.getProperty("os.arch"),
-            RuntimeProtocol.VERSION,
+            runtimeProtocolVersion,
             agentMetadata.cacheIdentity()
         ));
 
@@ -185,7 +186,7 @@ public class PrepareServerMojo extends AbstractMojo
             agentJarPath,
             agentMetadata.sha256(),
             agentAuthToken,
-            RuntimeProtocol.VERSION,
+            runtimeProtocolVersion,
             agentMetadata.cacheIdentity()
         );
 
@@ -204,7 +205,7 @@ public class PrepareServerMojo extends AbstractMojo
             agentAuthToken,
             agentJarPath != null ? agentJarPath.toAbsolutePath().toString() : null,
             agentMetadata.sha256(),
-            RuntimeProtocol.VERSION,
+            runtimeProtocolVersion,
             agentMetadata.cacheIdentity()
         );
         try
