@@ -1,7 +1,6 @@
 package nl.pim16aap2.lightkeeper.maven.test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import nl.pim16aap2.lightkeeper.maven.RuntimeManifest;
 import org.junit.jupiter.api.Test;
 
 import java.io.BufferedReader;
@@ -17,12 +16,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class PrepareServerIT
 {
     private static final Duration STARTUP_TIMEOUT = Duration.ofMinutes(2);
+    private static final Duration LOG_WAIT_TIMEOUT = Duration.ofSeconds(30);
     private static final Duration STOP_TIMEOUT = Duration.ofSeconds(45);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -64,74 +65,193 @@ class PrepareServerIT
             getRuntimeManifestPath().toFile(),
             RuntimeManifest.class
         );
-        final Path serverDirectory = Path.of(runtimeManifest.serverDirectory());
-        final Path serverJar = Path.of(runtimeManifest.serverJar());
         final Path javaExecutable = Path.of(System.getProperty("java.home"), "bin", "java");
-        final List<String> outputLines = Collections.synchronizedList(new ArrayList<>());
-        final CountDownLatch startedLatch = new CountDownLatch(1);
-        final Process process = new ProcessBuilder(
-            javaExecutable.toString(),
-            "-Xmx1024M",
-            "-Xms1024M",
-            "-jar",
-            serverJar.toString(),
-            "--nogui")
-            .directory(serverDirectory.toFile())
-            .redirectErrorStream(true)
-            .start();
-        final Thread outputThread = createOutputThread(process, outputLines, startedLatch);
+        final ServerHandle serverHandle = ServerHandle.start(
+            Path.of(runtimeManifest.serverDirectory()),
+            Path.of(runtimeManifest.serverJar()),
+            javaExecutable
+        );
 
         // execute
-        final boolean started = startedLatch.await(STARTUP_TIMEOUT.toSeconds(), TimeUnit.SECONDS);
-        try (PrintWriter writer = new PrintWriter(
-            new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8), true))
-        {
-            writer.println("stop");
-            writer.flush();
-        }
-        final boolean stopped = process.waitFor(STOP_TIMEOUT.toSeconds(), TimeUnit.SECONDS);
-        final int exitCode = stopped ? process.exitValue() : -1;
-
-        if (!stopped && process.isAlive())
-            process.destroyForcibly();
-
-        outputThread.join(TimeUnit.SECONDS.toMillis(5));
+        final boolean started = serverHandle.awaitStartup(STARTUP_TIMEOUT);
+        final boolean stopped = serverHandle.stop(STOP_TIMEOUT);
+        final int exitCode = serverHandle.exitCode();
 
         // verify
         assertThat(started)
-            .withFailMessage("Server did not start within timeout. Output tail:%n%s", outputTail(outputLines))
+            .withFailMessage("Server did not start within timeout. Output tail:%n%s", serverHandle.outputTail())
             .isTrue();
         assertThat(stopped)
-            .withFailMessage("Server did not stop within timeout. Output tail:%n%s", outputTail(outputLines))
+            .withFailMessage("Server did not stop within timeout. Output tail:%n%s", serverHandle.outputTail())
             .isTrue();
         assertThat(exitCode)
-            .withFailMessage("Server exited with non-zero code. Output tail:%n%s", outputTail(outputLines))
+            .withFailMessage("Server exited with non-zero code. Output tail:%n%s", serverHandle.outputTail())
             .isZero();
     }
 
-    private static Thread createOutputThread(Process process, List<String> outputLines, CountDownLatch startedLatch)
+    @Test
+    void preparedServer_shouldExecuteCommandsAgainstRunningServer()
+        throws Exception
     {
-        final Thread outputThread = new Thread(() -> {
-            try (
-                BufferedReader reader =
-                    new BufferedReader(new java.io.InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8)))
+        // setup
+        final RuntimeManifest runtimeManifest = OBJECT_MAPPER.readValue(
+            getRuntimeManifestPath().toFile(),
+            RuntimeManifest.class
+        );
+        final Path javaExecutable = Path.of(System.getProperty("java.home"), "bin", "java");
+        final String marker = "LightKeeperCommandMarker";
+        final ServerHandle serverHandle = ServerHandle.start(
+            Path.of(runtimeManifest.serverDirectory()),
+            Path.of(runtimeManifest.serverJar()),
+            javaExecutable
+        );
+
+        // execute
+        final boolean started = serverHandle.awaitStartup(STARTUP_TIMEOUT);
+        serverHandle.sendCommand("say " + marker);
+        final boolean sawCommandOutput = serverHandle.awaitLogLine(line -> line.contains(marker), LOG_WAIT_TIMEOUT);
+        final boolean stopped = serverHandle.stop(STOP_TIMEOUT);
+
+        // verify
+        assertThat(started)
+            .withFailMessage("Server did not start within timeout. Output tail:%n%s", serverHandle.outputTail())
+            .isTrue();
+        assertThat(sawCommandOutput)
+            .withFailMessage("Did not observe command output in server logs. Output tail:%n%s", serverHandle.outputTail())
+            .isTrue();
+        assertThat(stopped)
+            .withFailMessage("Server did not stop within timeout. Output tail:%n%s", serverHandle.outputTail())
+            .isTrue();
+        assertThat(serverHandle.exitCode())
+            .withFailMessage("Server exited with non-zero code. Output tail:%n%s", serverHandle.outputTail())
+            .isZero();
+    }
+
+    private static final class ServerHandle
+    {
+        private final Process process;
+        private final PrintWriter commandWriter;
+        private final List<String> outputLines = Collections.synchronizedList(new ArrayList<>());
+        private final CountDownLatch startedLatch = new CountDownLatch(1);
+        private final Thread outputThread;
+
+        private ServerHandle(Process process)
+        {
+            this.process = process;
+            this.commandWriter = new PrintWriter(
+                new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8),
+                true
+            );
+            this.outputThread = createOutputThread(process, outputLines, startedLatch);
+        }
+
+        static ServerHandle start(Path serverDirectory, Path serverJar, Path javaExecutable)
+            throws IOException
+        {
+            final Process process = new ProcessBuilder(
+                javaExecutable.toString(),
+                "-Xmx1024M",
+                "-Xms1024M",
+                "-jar",
+                serverJar.toString(),
+                "--nogui")
+                .directory(serverDirectory.toFile())
+                .redirectErrorStream(true)
+                .start();
+
+            final ServerHandle serverHandle = new ServerHandle(process);
+            serverHandle.outputThread.start();
+            return serverHandle;
+        }
+
+        private static Thread createOutputThread(
+            Process process,
+            List<String> outputLines,
+            CountDownLatch startedLatch)
+        {
+            return new Thread(
+                () -> {
+                    try (
+                        BufferedReader reader =
+                            new BufferedReader(new java.io.InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8)))
+                    {
+                        String line;
+                        while ((line = reader.readLine()) != null)
+                        {
+                            outputLines.add(line);
+                            if (line.contains("Done (") && line.endsWith(")! For help, type \"help\""))
+                                startedLatch.countDown();
+                        }
+                    }
+                    catch (IOException exception)
+                    {
+                        if (process.isAlive())
+                            throw new RuntimeException("Failed to read server output", exception);
+                    }
+                },
+                "lightkeeper-paper-output-reader"
+            );
+        }
+
+        boolean awaitStartup(Duration timeout)
+            throws InterruptedException
+        {
+            return startedLatch.await(timeout.toSeconds(), TimeUnit.SECONDS);
+        }
+
+        void sendCommand(String command)
+        {
+            commandWriter.println(command);
+            commandWriter.flush();
+        }
+
+        boolean awaitLogLine(Predicate<String> predicate, Duration timeout)
+            throws InterruptedException
+        {
+            final long deadline = System.nanoTime() + timeout.toNanos();
+            while (System.nanoTime() < deadline)
             {
-                String line;
-                while ((line = reader.readLine()) != null)
+                synchronized (outputLines)
                 {
-                    outputLines.add(line);
-                    if (line.contains("Done (") && line.endsWith(")! For help, type \"help\""))
-                        startedLatch.countDown();
+                    for (String line : outputLines)
+                    {
+                        if (predicate.test(line))
+                            return true;
+                    }
                 }
+                Thread.sleep(50L);
             }
-            catch (IOException exception)
+            return false;
+        }
+
+        boolean stop(Duration timeout)
+            throws Exception
+        {
+            sendCommand("stop");
+            final boolean stopped = process.waitFor(timeout.toSeconds(), TimeUnit.SECONDS);
+            if (!stopped && process.isAlive())
+                process.destroyForcibly();
+            commandWriter.close();
+            outputThread.join(TimeUnit.SECONDS.toMillis(5));
+            return stopped;
+        }
+
+        int exitCode()
+        {
+            return process.isAlive() ? -1 : process.exitValue();
+        }
+
+        String outputTail()
+        {
+            if (outputLines.isEmpty())
+                return "<no output>";
+
+            synchronized (outputLines)
             {
-                throw new RuntimeException("Failed to read server output", exception);
+                final int startIndex = Math.max(0, outputLines.size() - 40);
+                return String.join(System.lineSeparator(), outputLines.subList(startIndex, outputLines.size()));
             }
-        }, "lightkeeper-paper-output-reader");
-        outputThread.setDaemon(true);
-        outputThread.start();
-        return outputThread;
+        }
     }
 
     private static Path getRuntimeManifestPath()
@@ -148,12 +268,18 @@ class PrepareServerIT
         return runtimeManifestPath;
     }
 
-    private static String outputTail(List<String> outputLines)
+    private record RuntimeManifest(
+        String serverType,
+        String serverVersion,
+        long paperBuildId,
+        String cacheKey,
+        String serverDirectory,
+        String serverJar,
+        String udsSocketPath,
+        String agentAuthToken,
+        String agentJar,
+        String agentJarSha256
+    )
     {
-        if (outputLines.isEmpty())
-            return "<no output>";
-
-        final int startIndex = Math.max(0, outputLines.size() - 40);
-        return String.join(System.lineSeparator(), outputLines.subList(startIndex, outputLines.size()));
     }
 }
