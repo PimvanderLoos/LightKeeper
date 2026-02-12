@@ -25,6 +25,10 @@ import org.jspecify.annotations.Nullable;
  *     Optional path to the deployed agent jar.
  * @param agentJarSha256
  *     Optional SHA-256 hash for the agent jar.
+ * @param runtimeProtocolVersion
+ *     The LightKeeper runtime protocol version for manifest/agent compatibility.
+ * @param agentCacheIdentity
+ *     Cache identity used for the resolved agent artifact.
  */
 public record RuntimeManifest(
     String serverType,
@@ -36,7 +40,9 @@ public record RuntimeManifest(
     String udsSocketPath,
     String agentAuthToken,
     @Nullable String agentJar,
-    @Nullable String agentJarSha256
+    @Nullable String agentJarSha256,
+    String runtimeProtocolVersion,
+    String agentCacheIdentity
 )
 {
 }

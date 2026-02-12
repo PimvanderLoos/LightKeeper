@@ -27,6 +27,7 @@ import java.util.UUID;
 public class PrepareServerMojo extends AbstractMojo
 {
     private static final String SERVER_TYPE_PAPER = "paper";
+    private static final String RUNTIME_PROTOCOL_VERSION = "v1";
     private static final List<String> SUPPORTED_SERVER_TYPES = List.of(SERVER_TYPE_PAPER);
 
     @Parameter(property = "lightkeeper.serverType", defaultValue = SERVER_TYPE_PAPER)
@@ -141,7 +142,7 @@ public class PrepareServerMojo extends AbstractMojo
         final PaperBuildMetadata paperBuildMetadata =
             new PaperDownloadsClient(getLog(), effectiveUserAgent).resolveBuild(effectiveServerVersion);
 
-        final String agentJarSha256 = resolveAgentJarSha256(agentJarPath);
+        final AgentMetadata agentMetadata = resolveAgentMetadata(agentJarPath);
         final String cacheKey = CacheKeyUtil.createCacheKey(List.of(
             SERVER_TYPE_PAPER,
             paperBuildMetadata.minecraftVersion(),
@@ -149,7 +150,8 @@ public class PrepareServerMojo extends AbstractMojo
             System.getProperty("java.specification.version"),
             System.getProperty("os.name"),
             System.getProperty("os.arch"),
-            Objects.requireNonNullElse(agentJarSha256, "no-agent")
+            RUNTIME_PROTOCOL_VERSION,
+            agentMetadata.cacheIdentity()
         ));
 
         final String agentAuthToken = UUID.randomUUID().toString();
@@ -178,8 +180,10 @@ public class PrepareServerMojo extends AbstractMojo
             cacheKey,
             effectiveUserAgent,
             agentJarPath,
-            agentJarSha256,
-            agentAuthToken
+            agentMetadata.sha256(),
+            agentAuthToken,
+            RUNTIME_PROTOCOL_VERSION,
+            agentMetadata.cacheIdentity()
         );
 
         final ServerProvider serverProvider = new PaperServerProvider(getLog(), serverSpecification, paperBuildMetadata);
@@ -196,7 +200,9 @@ public class PrepareServerMojo extends AbstractMojo
             udsSocketPath.toAbsolutePath().toString(),
             agentAuthToken,
             agentJarPath != null ? agentJarPath.toAbsolutePath().toString() : null,
-            agentJarSha256
+            agentMetadata.sha256(),
+            RUNTIME_PROTOCOL_VERSION,
+            agentMetadata.cacheIdentity()
         );
         new RuntimeManifestWriter().write(runtimeManifest, effectiveRuntimeManifestPath);
     }
@@ -220,15 +226,21 @@ public class PrepareServerMojo extends AbstractMojo
             throw new MojoExecutionException("`lightkeeper.serverStartMaxAttempts` must be at least 1.");
     }
 
-    private @Nullable String resolveAgentJarSha256(@Nullable Path path)
+    private AgentMetadata resolveAgentMetadata(@Nullable Path path)
         throws MojoExecutionException
     {
         if (path == null)
-            return null;
+            return new AgentMetadata(null, "no-agent");
 
         if (Files.notExists(path) || !Files.isRegularFile(path))
             throw new MojoExecutionException("Configured agent jar path '%s' does not exist.".formatted(path));
 
-        return HashUtil.sha256(path);
+        final String sha256 = HashUtil.sha256(path);
+        final String fileName = path.getFileName() == null ? path.toString() : path.getFileName().toString();
+        return new AgentMetadata(sha256, fileName + ":" + sha256);
+    }
+
+    private record AgentMetadata(@Nullable String sha256, String cacheIdentity)
+    {
     }
 }

@@ -37,6 +37,7 @@
                 <configuration>
                     <userAgent>LightKeeper/1.0.0 ([email protected])</userAgent>
                     <runtimeManifestPath>${lightkeeper.runtime-manifest.path}</runtimeManifestPath>
+                    <agentJarPath>${project.build.directory}/${project.build.finalName}.jar</agentJarPath>
                 </configuration>
                 <executions>
                     <execution>

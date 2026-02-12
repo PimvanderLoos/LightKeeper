@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
@@ -13,10 +14,14 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HexFormat;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -43,17 +48,23 @@ class PrepareServerIT
         assertThat(runtimeManifest.paperBuildId()).isPositive();
         assertThat(runtimeManifest.cacheKey()).hasSize(64);
         assertThat(runtimeManifest.agentAuthToken()).isNotBlank();
+        assertThat(runtimeManifest.runtimeProtocolVersion()).isEqualTo("v1");
+        assertThat(runtimeManifest.agentCacheIdentity()).isNotBlank();
 
         final Path serverDirectory = Path.of(runtimeManifest.serverDirectory());
         final Path serverJar = Path.of(runtimeManifest.serverJar());
         final Path udsSocketPath = Path.of(runtimeManifest.udsSocketPath());
+        final Path agentJarPath = Path.of(Objects.requireNonNull(runtimeManifest.agentJar()));
+        final Path installedAgentJarPath = serverDirectory.resolve("plugins").resolve(agentJarPath.getFileName());
 
         assertThat(serverDirectory).isDirectory();
         assertThat(serverJar).isRegularFile();
         assertThat(serverDirectory.resolve("eula.txt")).isRegularFile();
         assertThat(udsSocketPath.getParent()).isDirectory();
-        assertThat(runtimeManifest.agentJar()).isNull();
-        assertThat(runtimeManifest.agentJarSha256()).isNull();
+        assertThat(agentJarPath).isRegularFile();
+        assertThat(installedAgentJarPath).isRegularFile();
+        assertThat(runtimeManifest.agentJarSha256()).hasSize(64);
+        assertThat(sha256(installedAgentJarPath)).isEqualTo(runtimeManifest.agentJarSha256());
     }
 
     @Test
@@ -278,8 +289,34 @@ class PrepareServerIT
         String udsSocketPath,
         String agentAuthToken,
         String agentJar,
-        String agentJarSha256
+        String agentJarSha256,
+        String runtimeProtocolVersion,
+        String agentCacheIdentity
     )
     {
+    }
+
+    private static String sha256(Path path)
+        throws IOException
+    {
+        final MessageDigest messageDigest;
+        try
+        {
+            messageDigest = MessageDigest.getInstance("SHA-256");
+        }
+        catch (NoSuchAlgorithmException exception)
+        {
+            throw new IllegalStateException("SHA-256 algorithm is not available.", exception);
+        }
+
+        try (InputStream inputStream = Files.newInputStream(path))
+        {
+            final byte[] buffer = new byte[8_192];
+            int read;
+            while ((read = inputStream.read(buffer)) != -1)
+                messageDigest.update(buffer, 0, read);
+        }
+
+        return HexFormat.of().formatHex(messageDigest.digest());
     }
 }
