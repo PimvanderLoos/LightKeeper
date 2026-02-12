@@ -10,6 +10,9 @@
     <packaging>pom</packaging>
 
     <modules>
+        <module>lightkeeper-runtime-core</module>
+        <module>lightkeeper-agent-paper</module>
+        <module>lightkeeper-framework-junit</module>
         <module>lightkeeper-maven-plugin</module>
         <module>lightkeeper-maven-plugin-test</module>
         <module>lightkeeper-report-aggregate</module>
@@ -34,6 +37,7 @@
         <version.lombok>1.18.42</version.lombok>
         <version.mockito>5.21.0</version.mockito>
         <version.nullaway>0.13.1</version.nullaway>
+        <version.paper-api>1.21.11-R0.1-SNAPSHOT</version.paper-api>
         <version.pmd>7.21.0</version.pmd>
         <version.semver4j>5.8.0</version.semver4j>
 

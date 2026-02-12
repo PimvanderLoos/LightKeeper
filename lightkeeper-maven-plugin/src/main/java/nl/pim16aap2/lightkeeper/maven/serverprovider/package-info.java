@@ -1,8 +1,5 @@
 /**
- * This package contains classes that provide server jar files for different server types.
- * <p>
- * For example, {@link nl.pim16aap2.lightkeeper.maven.serverprovider.SpigotServerProvider} downloads
- * {@code BuildTools.jar} and compiles the Spigot server jar file.
+ * This package contains server provider implementations for the LightKeeper canonical Paper flow.
  */
 @NullMarked
 package nl.pim16aap2.lightkeeper.maven.serverprovider;

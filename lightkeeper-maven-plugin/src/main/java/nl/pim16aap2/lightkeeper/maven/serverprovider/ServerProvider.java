@@ -6,6 +6,7 @@ import lombok.ToString;
 import lombok.experimental.Accessors;
 import nl.pim16aap2.lightkeeper.maven.ServerSpecification;
 import nl.pim16aap2.lightkeeper.maven.util.FileUtil;
+import nl.pim16aap2.lightkeeper.maven.util.HashUtil;
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
@@ -20,8 +21,7 @@ import java.nio.file.StandardOpenOption;
 /**
  * Represents a provider for a specific type of server.
  * <p>
- * This class serves as a base for different server providers, such as Spigot or Paper. It contains common properties
- * and methods that can be shared among different server types.
+ * This class is the base for the canonical Paper server preparation flow.
  */
 @Accessors(fluent = true)
 @Getter(AccessLevel.PROTECTED)
@@ -155,7 +155,7 @@ public abstract class ServerProvider
     /**
      * Gets the file name of the output JAR file for this server type.
      * <p>
-     * For example, for Spigot, this would be {@code spigot-1.20.1.jar}.
+     * For Paper this is typically {@code paper-<version>.jar}.
      *
      * @return The file name of the output JAR file.
      */
@@ -400,6 +400,20 @@ public abstract class ServerProvider
         {
             final Path targetAgentJar = pluginsDirectory.resolve(agentJarPath.getFileName());
             Files.copy(agentJarPath, targetAgentJar, StandardCopyOption.REPLACE_EXISTING);
+
+            final String expectedSha256 = serverSpecification().agentJarSha256();
+            if (expectedSha256 != null)
+            {
+                final String actualSha256 = HashUtil.sha256(targetAgentJar);
+                if (!expectedSha256.equalsIgnoreCase(actualSha256))
+                {
+                    throw new MojoExecutionException(
+                        "Installed LightKeeper agent hash mismatch. Expected %s, got %s."
+                            .formatted(expectedSha256, actualSha256)
+                    );
+                }
+            }
+
             log.info("Installed LightKeeper agent JAR at '%s'.".formatted(targetAgentJar));
         }
         catch (IOException exception)

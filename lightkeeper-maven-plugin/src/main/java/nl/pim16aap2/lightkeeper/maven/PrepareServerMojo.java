@@ -2,6 +2,9 @@ package nl.pim16aap2.lightkeeper.maven;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
+import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestWriter;
+import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.PaperServerProvider;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.ServerProvider;
 import nl.pim16aap2.lightkeeper.maven.util.CacheKeyUtil;
@@ -14,6 +17,8 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.jspecify.annotations.Nullable;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -27,7 +32,7 @@ import java.util.UUID;
 public class PrepareServerMojo extends AbstractMojo
 {
     private static final String SERVER_TYPE_PAPER = "paper";
-    private static final String RUNTIME_PROTOCOL_VERSION = "v1";
+    private static final int UNIX_SOCKET_PATH_MAX_BYTES = 100;
     private static final List<String> SUPPORTED_SERVER_TYPES = List.of(SERVER_TYPE_PAPER);
 
     @Parameter(property = "lightkeeper.serverType", defaultValue = SERVER_TYPE_PAPER)
@@ -150,14 +155,12 @@ public class PrepareServerMojo extends AbstractMojo
             System.getProperty("java.specification.version"),
             System.getProperty("os.name"),
             System.getProperty("os.arch"),
-            RUNTIME_PROTOCOL_VERSION,
+            RuntimeProtocol.VERSION,
             agentMetadata.cacheIdentity()
         ));
 
         final String agentAuthToken = UUID.randomUUID().toString();
-        final Path udsSocketPath = effectiveAgentSocketDirectory.resolve("lightkeeper-agent-%s.sock".formatted(
-            agentAuthToken.substring(0, 8))
-        );
+        final Path udsSocketPath = resolveUdsSocketPath(effectiveAgentSocketDirectory, agentAuthToken);
 
         final ServerSpecification serverSpecification = new ServerSpecification(
             paperBuildMetadata.minecraftVersion(),
@@ -182,7 +185,7 @@ public class PrepareServerMojo extends AbstractMojo
             agentJarPath,
             agentMetadata.sha256(),
             agentAuthToken,
-            RUNTIME_PROTOCOL_VERSION,
+            RuntimeProtocol.VERSION,
             agentMetadata.cacheIdentity()
         );
 
@@ -201,10 +204,20 @@ public class PrepareServerMojo extends AbstractMojo
             agentAuthToken,
             agentJarPath != null ? agentJarPath.toAbsolutePath().toString() : null,
             agentMetadata.sha256(),
-            RUNTIME_PROTOCOL_VERSION,
+            RuntimeProtocol.VERSION,
             agentMetadata.cacheIdentity()
         );
-        new RuntimeManifestWriter().write(runtimeManifest, effectiveRuntimeManifestPath);
+        try
+        {
+            new RuntimeManifestWriter().write(runtimeManifest, effectiveRuntimeManifestPath);
+        }
+        catch (IOException exception)
+        {
+            throw new MojoExecutionException(
+                "Failed to write runtime manifest to '%s'.".formatted(effectiveRuntimeManifestPath),
+                exception
+            );
+        }
     }
 
     private void validateConfiguration()
@@ -238,6 +251,38 @@ public class PrepareServerMojo extends AbstractMojo
         final String sha256 = HashUtil.sha256(path);
         final String fileName = path.getFileName() == null ? path.toString() : path.getFileName().toString();
         return new AgentMetadata(sha256, fileName + ":" + sha256);
+    }
+
+    private Path resolveUdsSocketPath(Path preferredDirectory, String agentAuthToken)
+        throws MojoExecutionException
+    {
+        final String socketFileName = "lk-%s.sock".formatted(agentAuthToken.substring(0, 8));
+        final Path preferredPath = preferredDirectory.resolve(socketFileName).toAbsolutePath();
+        if (fitsUnixSocketPath(preferredPath))
+            return preferredPath;
+
+        final Path fallbackDirectory = Path.of(System.getProperty("java.io.tmpdir"), "lightkeeper-sockets");
+        FileUtil.createDirectories(fallbackDirectory, "fallback agent socket directory");
+
+        final Path fallbackPath = fallbackDirectory.resolve(socketFileName).toAbsolutePath();
+        if (fitsUnixSocketPath(fallbackPath))
+        {
+            getLog().warn(
+                "Configured socket path is too long for AF_UNIX. Falling back to short path '%s'."
+                    .formatted(fallbackPath)
+            );
+            return fallbackPath;
+        }
+
+        throw new MojoExecutionException(
+            "Unable to generate a valid AF_UNIX socket path. Tried '%s' and '%s'."
+                .formatted(preferredPath, fallbackPath)
+        );
+    }
+
+    private static boolean fitsUnixSocketPath(Path path)
+    {
+        return path.toString().getBytes(StandardCharsets.UTF_8).length <= UNIX_SOCKET_PATH_MAX_BYTES;
     }
 
     private record AgentMetadata(@Nullable String sha256, String cacheIdentity)

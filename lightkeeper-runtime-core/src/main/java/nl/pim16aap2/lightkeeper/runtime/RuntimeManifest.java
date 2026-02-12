@@ -1,4 +1,4 @@
-package nl.pim16aap2.lightkeeper.maven;
+package nl.pim16aap2.lightkeeper.runtime;
 
 import org.jspecify.annotations.Nullable;
 
@@ -26,9 +26,9 @@ import org.jspecify.annotations.Nullable;
  * @param agentJarSha256
  *     Optional SHA-256 hash for the agent jar.
  * @param runtimeProtocolVersion
- *     The LightKeeper runtime protocol version for manifest/agent compatibility.
+ *     The runtime protocol version.
  * @param agentCacheIdentity
- *     Cache identity used for the resolved agent artifact.
+ *     The cache identity for the resolved agent artifact.
  */
 public record RuntimeManifest(
     String serverType,
