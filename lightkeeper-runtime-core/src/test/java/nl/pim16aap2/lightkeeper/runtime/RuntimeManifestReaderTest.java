@@ -27,7 +27,7 @@ class RuntimeManifestReaderTest
               "serverDirectory": "/tmp/server",
               "serverJar": "/tmp/server/paper.jar",
               "agentAuthToken": "token",
-              "runtimeProtocolVersion": "v1",
+              "runtimeProtocolVersion": "v1.1",
               "agentCacheIdentity": "no-agent"
             }
             """
@@ -58,7 +58,7 @@ class RuntimeManifestReaderTest
               "serverJar": "/tmp/server/paper.jar",
               "udsSocketPath": "/tmp/lightkeeper.sock",
               "agentAuthToken": "token",
-              "runtimeProtocolVersion": "v1",
+              "runtimeProtocolVersion": "v1.1",
               "agentCacheIdentity": "no-agent"
             }
             """

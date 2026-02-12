@@ -1,11 +1,11 @@
 package nl.pim16aap2.lightkeeper.runtime;
 
 /**
- * Shared runtime protocol constants for LightKeeper v1.
+ * Shared runtime protocol constants for LightKeeper v1.1.
  */
 public final class RuntimeProtocol
 {
-    public static final String VERSION = "v1";
+    public static final String VERSION = "v1.1";
 
     public static final String PROPERTY_SOCKET_PATH = "lightkeeper.agent.socketPath";
     public static final String PROPERTY_AUTH_TOKEN = "lightkeeper.agent.authToken";

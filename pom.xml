@@ -11,6 +11,8 @@
 
     <modules>
         <module>lightkeeper-runtime-core</module>
+        <module>lightkeeper-nms-api</module>
+        <module>lightkeeper-nms-v1_21_R6</module>
         <module>lightkeeper-agent-paper</module>
         <module>lightkeeper-framework-junit</module>
         <module>lightkeeper-maven-plugin</module>

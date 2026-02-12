@@ -105,7 +105,7 @@ class PaperServerProviderTest
             null,
             null,
             "test-token",
-            "v1",
+            "v1.1",
             "no-agent"
         );
 

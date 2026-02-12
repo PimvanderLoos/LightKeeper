@@ -19,6 +19,13 @@
         <lightkeeper.runtime-manifest.path>${project.build.directory}/lightkeeper/runtime-manifest.json</lightkeeper.runtime-manifest.path>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>papermc</id>
+            <url>https://repo.papermc.io/repository/maven-public/</url>
+        </repository>
+    </repositories>
+
     <dependencies>
         <dependency>
             <groupId>nl.pim16aap2.lightkeeper</groupId>
@@ -31,6 +38,13 @@
             <groupId>nl.pim16aap2.lightkeeper</groupId>
             <artifactId>lightkeeper-framework-junit</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.papermc.paper</groupId>
+            <artifactId>paper-api</artifactId>
+            <version>${version.paper-api}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

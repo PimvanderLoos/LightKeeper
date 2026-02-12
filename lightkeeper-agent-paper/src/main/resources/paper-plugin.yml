@@ -5,3 +5,7 @@ api-version: "1.21"
 description: LightKeeper paper-side test agent
 authors:
   - pim16aap2
+commands:
+  lktestgui:
+    description: Opens the LightKeeper integration-test menu
+    usage: /lktestgui

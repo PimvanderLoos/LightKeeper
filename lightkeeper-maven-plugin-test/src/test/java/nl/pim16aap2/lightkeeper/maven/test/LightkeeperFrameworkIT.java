@@ -32,7 +32,7 @@ class LightkeeperFrameworkIT
 
             // verify
             assertThat(runtimeManifest.serverType()).isEqualTo("paper");
-            assertThat(runtimeManifest.runtimeProtocolVersion()).isEqualTo("v1");
+            assertThat(runtimeManifest.runtimeProtocolVersion()).isEqualTo("v1.1");
             assertThat(runtimeManifest.udsSocketPath()).isNotBlank();
             assertThat(runtimeManifest.agentAuthToken()).isNotBlank();
             assertThat(runtimeManifest.agentJar()).isNotBlank();
