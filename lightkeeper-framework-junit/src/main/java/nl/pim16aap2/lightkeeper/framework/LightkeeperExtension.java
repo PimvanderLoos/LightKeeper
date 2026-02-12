@@ -39,20 +39,6 @@ public final class LightkeeperExtension implements
     {
         if (isFreshServer(context))
             context.getStore(NAMESPACE).put(KEY_METHOD_FRAMEWORK, startFramework());
-
-        if (isFreshWorld(context))
-        {
-            final LightkeeperFramework framework = getFramework(context);
-            final String worldName = "lk_fresh_" +
-                context.getRequiredTestClass().getSimpleName().toLowerCase() + "_" +
-                context.getRequiredTestMethod().getName().toLowerCase();
-            framework.newWorld(new WorldSpec(
-                worldName,
-                WorldSpec.WorldType.NORMAL,
-                WorldSpec.WorldEnvironment.NORMAL,
-                0L
-            ));
-        }
     }
 
     @Override
@@ -99,15 +85,6 @@ public final class LightkeeperExtension implements
         final boolean classLevel = context.getRequiredTestClass().isAnnotationPresent(FreshServer.class);
         final boolean methodLevel = context.getTestMethod()
             .map(method -> method.isAnnotationPresent(FreshServer.class))
-            .orElse(false);
-        return classLevel || methodLevel;
-    }
-
-    private static boolean isFreshWorld(ExtensionContext context)
-    {
-        final boolean classLevel = context.getRequiredTestClass().isAnnotationPresent(FreshWorld.class);
-        final boolean methodLevel = context.getTestMethod()
-            .map(method -> method.isAnnotationPresent(FreshWorld.class))
             .orElse(false);
         return classLevel || methodLevel;
     }

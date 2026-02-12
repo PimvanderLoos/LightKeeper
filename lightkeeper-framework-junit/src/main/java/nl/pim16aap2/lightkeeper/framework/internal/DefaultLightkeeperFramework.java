@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -48,6 +49,10 @@ public final class DefaultLightkeeperFramework implements LightkeeperFramework
     private static final Duration STARTUP_TIMEOUT = Duration.ofMinutes(2);
     private static final Duration AGENT_CONNECT_TIMEOUT = Duration.ofSeconds(45);
     private static final Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(45);
+    private static final String DEFAULT_WORLD_NAME_PREFIX = "lk_world_";
+    private static final WorldSpec.WorldType DEFAULT_WORLD_TYPE = WorldSpec.WorldType.NORMAL;
+    private static final WorldSpec.WorldEnvironment DEFAULT_WORLD_ENVIRONMENT = WorldSpec.WorldEnvironment.NORMAL;
+    private static final long DEFAULT_WORLD_SEED = 0L;
 
     private final RuntimeManifest runtimeManifest;
     private final PaperServerHandle serverHandle;
@@ -115,10 +120,17 @@ public final class DefaultLightkeeperFramework implements LightkeeperFramework
     }
 
     @Override
+    public WorldHandle newWorld()
+    {
+        return newWorld(defaultWorldSpec());
+    }
+
+    @Override
     public WorldHandle newWorld(WorldSpec worldSpec)
     {
         ensureOpen();
-        final String worldName = agentClient.newWorld(worldSpec);
+        final WorldSpec validatedWorldSpec = validateWorldSpec(worldSpec);
+        final String worldName = agentClient.newWorld(validatedWorldSpec);
         return new WorldHandle(this, worldName);
     }
 
@@ -199,6 +211,26 @@ public final class DefaultLightkeeperFramework implements LightkeeperFramework
     {
         if (closed.get())
             throw new IllegalStateException("Framework is already closed.");
+    }
+
+    private static WorldSpec validateWorldSpec(WorldSpec worldSpec)
+    {
+        Objects.requireNonNull(worldSpec, "worldSpec may not be null.");
+        final String worldName = Objects.requireNonNull(worldSpec.name(), "worldSpec.name may not be null.").trim();
+        if (worldName.isEmpty())
+            throw new IllegalArgumentException("worldSpec.name may not be blank.");
+
+        final WorldSpec.WorldType worldType =
+            Objects.requireNonNull(worldSpec.worldType(), "worldSpec.worldType may not be null.");
+        final WorldSpec.WorldEnvironment worldEnvironment =
+            Objects.requireNonNull(worldSpec.environment(), "worldSpec.environment may not be null.");
+        return new WorldSpec(worldName, worldType, worldEnvironment, worldSpec.seed());
+    }
+
+    private static WorldSpec defaultWorldSpec()
+    {
+        final String worldName = DEFAULT_WORLD_NAME_PREFIX + UUID.randomUUID().toString().replace("-", "");
+        return new WorldSpec(worldName, DEFAULT_WORLD_TYPE, DEFAULT_WORLD_ENVIRONMENT, DEFAULT_WORLD_SEED);
     }
 
     private static final class UdsAgentClient implements AutoCloseable
