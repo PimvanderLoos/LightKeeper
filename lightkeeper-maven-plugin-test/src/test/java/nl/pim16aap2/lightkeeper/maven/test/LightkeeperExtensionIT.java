@@ -1,14 +1,12 @@
 package nl.pim16aap2.lightkeeper.maven.test;
 
-import nl.pim16aap2.lightkeeper.framework.CommandSource;
-import nl.pim16aap2.lightkeeper.framework.FreshWorld;
 import nl.pim16aap2.lightkeeper.framework.LightkeeperExtension;
 import nl.pim16aap2.lightkeeper.framework.LightkeeperFramework;
-import nl.pim16aap2.lightkeeper.framework.WorldSpec;
+import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.util.UUID;
+import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -28,23 +26,20 @@ class LightkeeperExtensionIT
     }
 
     @Test
-    @FreshWorld
-    void newWorld_shouldCreateIsolatedWorldWhenFreshWorldIsEnabled(LightkeeperFramework framework)
+    void newWorld_shouldCreateIsolatedWorldWhenRequestedFromFramework(LightkeeperFramework framework)
     {
         // setup
-        final String worldName = "lk_extension_" + UUID.randomUUID().toString().replace("-", "");
+        final var mainWorld = framework.mainWorld();
+        final Vector3Di position = new Vector3Di(2, 70, 2);
 
         // execute
-        final var world = framework.newWorld(new WorldSpec(
-            worldName,
-            WorldSpec.WorldType.NORMAL,
-            WorldSpec.WorldEnvironment.NORMAL,
-            0L
-        ));
-        framework.executeCommand(CommandSource.CONSOLE, "execute in %s run time set day".formatted(world.name()));
+        final var world = framework.newWorld();
+        framework.setBlock(world, position, "STONE");
+        framework.waitUntil(() -> "STONE".equals(world.blockTypeAt(position)), Duration.ofSeconds(20));
 
         // verify
-        assertThat(world.name()).isEqualTo(worldName);
+        assertThat(world.name()).isNotBlank();
+        assertThat(world.name()).isNotEqualTo(mainWorld.name());
+        assertThat(world.blockTypeAt(position)).isEqualTo("STONE");
     }
-
 }

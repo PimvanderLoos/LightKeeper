@@ -15,6 +15,13 @@ public interface LightkeeperFramework extends AutoCloseable
     WorldHandle mainWorld();
 
     /**
+     * Creates a new world using framework defaults.
+     *
+     * @return The created world handle.
+     */
+    WorldHandle newWorld();
+
+    /**
      * Creates a new world from a world spec.
      *
      * @param worldSpec
