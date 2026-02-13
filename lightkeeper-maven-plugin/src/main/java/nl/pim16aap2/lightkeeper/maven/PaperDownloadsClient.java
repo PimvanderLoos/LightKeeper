@@ -32,6 +32,7 @@ public final class PaperDownloadsClient
     private static final String STABLE_CHANNEL = "STABLE";
     private static final String SERVER_DOWNLOAD_KEY = "server:default";
     private static final String LATEST_SUPPORTED = "latest-supported";
+    private static final Pattern NUMERIC_VERSION_PATTERN = Pattern.compile("\\d+(?:\\.\\d+)*");
     private static final Pattern URL_HASH_PATTERN =
         Pattern.compile(".*/v1/objects/(?<hash>[a-fA-F0-9]{64})/.*");
 
@@ -85,13 +86,10 @@ public final class PaperDownloadsClient
         throws MojoExecutionException
     {
         final ProjectResponse projectResponse = fetchProject();
-        final Set<String> versions = flattenVersions(projectResponse.versions());
+        final List<String> versionsDescending = sortStableVersionsDescending(flattenVersions(projectResponse.versions()));
 
-        for (final String version : versions)
+        for (final String version : versionsDescending)
         {
-            if (version.contains("-"))
-                continue;
-
             final Optional<PaperBuildMetadata> buildMetadata = resolveStableBuildForVersion(version);
             if (buildMetadata.isPresent())
                 return buildMetadata.get();
@@ -240,6 +238,33 @@ public final class PaperDownloadsClient
         for (final List<String> versionsInGroup : versionsByGroup.values())
             versions.addAll(versionsInGroup);
         return versions;
+    }
+
+    static List<String> sortStableVersionsDescending(Set<String> versions)
+    {
+        return versions.stream()
+            .map(String::trim)
+            .filter(version -> NUMERIC_VERSION_PATTERN.matcher(version).matches())
+            .sorted((leftVersion, rightVersion) -> compareVersions(rightVersion, leftVersion))
+            .toList();
+    }
+
+    private static int compareVersions(String leftVersion, String rightVersion)
+    {
+        final String[] leftParts = leftVersion.split("\\.");
+        final String[] rightParts = rightVersion.split("\\.");
+        final int maxParts = Math.max(leftParts.length, rightParts.length);
+
+        for (int idx = 0; idx < maxParts; ++idx)
+        {
+            final int leftPart = idx < leftParts.length ? Integer.parseInt(leftParts[idx]) : 0;
+            final int rightPart = idx < rightParts.length ? Integer.parseInt(rightParts[idx]) : 0;
+            final int partComparison = Integer.compare(leftPart, rightPart);
+            if (partComparison != 0)
+                return partComparison;
+        }
+
+        return 0;
     }
 
     private static String validateUserAgent(String userAgent)
