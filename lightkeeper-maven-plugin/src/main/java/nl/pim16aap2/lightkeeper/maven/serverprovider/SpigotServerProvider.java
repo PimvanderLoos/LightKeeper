@@ -227,20 +227,21 @@ public class SpigotServerProvider extends ServerProvider
     private static Path resolveBuiltSpigotJar(Path jarCacheDirectory, String minecraftVersion)
         throws MojoExecutionException
     {
+        final String expectedJarFileName = "spigot-%s.jar".formatted(minecraftVersion).toLowerCase(Locale.ROOT);
+
         try (Stream<Path> files = Files.list(jarCacheDirectory))
         {
             final List<Path> candidates = files
                 .filter(Files::isRegularFile)
                 .filter(path -> path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".jar"))
-                .filter(path -> path.getFileName().toString().startsWith("spigot-"))
-                .filter(path -> path.getFileName().toString().contains(minecraftVersion))
+                .filter(path -> path.getFileName().toString().toLowerCase(Locale.ROOT).equals(expectedJarFileName))
                 .toList();
 
             if (candidates.isEmpty())
             {
                 throw new MojoExecutionException(
-                    "BuildTools did not produce a Spigot jar for version '%s' in '%s'."
-                        .formatted(minecraftVersion, jarCacheDirectory)
+                    "BuildTools did not produce the runtime Spigot jar '%s' in '%s'."
+                        .formatted(expectedJarFileName, jarCacheDirectory)
                 );
             }
 

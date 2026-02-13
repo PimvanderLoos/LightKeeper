@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -72,6 +74,56 @@ class SpigotServerProviderTest
             .hasMessageContaining("failed to start after 2 attempt(s)");
         assertThat(provider.createBaseServerJarInvocations()).isEqualTo(1);
         assertThat(provider.createServerProcessInvocations()).isEqualTo(2);
+    }
+
+    @Test
+    void resolveBuiltSpigotJar_shouldSelectRuntimeJarWhenApiJarExists(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        Files.writeString(tempDirectory.resolve("spigot-api-1.21.11-R0.1-SNAPSHOT.jar"), "api");
+        final Path runtimeJar = Files.writeString(tempDirectory.resolve("spigot-1.21.11.jar"), "runtime");
+
+        // execute
+        final Path resolvedJar = resolveBuiltSpigotJarForTests(tempDirectory, "1.21.11");
+
+        // verify
+        assertThat(resolvedJar).isEqualTo(runtimeJar);
+    }
+
+    @Test
+    void resolveBuiltSpigotJar_shouldThrowWhenRuntimeJarIsMissing(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        Files.writeString(tempDirectory.resolve("spigot-api-1.21.11-R0.1-SNAPSHOT.jar"), "api");
+
+        // execute
+        final var thrown = assertThatThrownBy(() -> resolveBuiltSpigotJarForTests(tempDirectory, "1.21.11"));
+
+        // verify
+        thrown.isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("spigot-1.21.11.jar");
+    }
+
+    private static Path resolveBuiltSpigotJarForTests(Path jarCacheDirectory, String minecraftVersion)
+        throws Exception
+    {
+        final Method resolveMethod =
+            SpigotServerProvider.class.getDeclaredMethod("resolveBuiltSpigotJar", Path.class, String.class);
+        resolveMethod.setAccessible(true);
+
+        try
+        {
+            return (Path) resolveMethod.invoke(null, jarCacheDirectory, minecraftVersion);
+        }
+        catch (InvocationTargetException exception)
+        {
+            final Throwable cause = exception.getCause();
+            if (cause instanceof Exception wrappedException)
+                throw wrappedException;
+            throw exception;
+        }
     }
 
     private TestSpigotServerProvider createProvider(
