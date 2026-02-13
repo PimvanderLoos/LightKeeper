@@ -17,6 +17,6 @@
 
     <modules>
         <module>lightkeeper-nms-api</module>
-        <module>lightkeeper-nms-v1_21_R6</module>
+        <module>lightkeeper-nms-v1_21_R7</module>
     </modules>
 </project>

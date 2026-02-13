@@ -1,11 +1,11 @@
-package nl.pim16aap2.lightkeeper.nms.v121r6;
+package nl.pim16aap2.lightkeeper.nms.v121r7;
 
 import nl.pim16aap2.lightkeeper.nms.api.IBotPlayerNmsAdapter;
-import org.jspecify.annotations.Nullable;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.jspecify.annotations.Nullable;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
@@ -27,13 +27,13 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Paper 1.21.11 (v1_21_R6) synthetic-player adapter.
+ * Paper 1.21.11 (v1_21_R7) synthetic-player adapter.
  */
-public final class BotPlayerNmsAdapterV1_21_R6 implements IBotPlayerNmsAdapter
+public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
 {
     private static final int TEXT_EXTRACTION_MAX_DEPTH = 4;
     private static final int TEXT_EXTRACTION_MAX_METHODS = 24;
-    private static final System.Logger LOGGER = System.getLogger(BotPlayerNmsAdapterV1_21_R6.class.getName());
+    private static final System.Logger LOGGER = System.getLogger(BotPlayerNmsAdapterV1_21_R7.class.getName());
 
     private final Object minecraftServer;
     private final Object playerList;
@@ -66,7 +66,7 @@ public final class BotPlayerNmsAdapterV1_21_R6 implements IBotPlayerNmsAdapter
     /**
      * Initializes reflective handles for the Paper 1.21.11 server internals.
      */
-    public BotPlayerNmsAdapterV1_21_R6()
+    public BotPlayerNmsAdapterV1_21_R7()
     {
         try
         {
@@ -161,7 +161,7 @@ public final class BotPlayerNmsAdapterV1_21_R6 implements IBotPlayerNmsAdapter
         }
         catch (Exception exception)
         {
-            throw new IllegalStateException("Failed to initialize v1_21_R6 NMS adapter.", exception);
+            throw new IllegalStateException("Failed to initialize v1_21_R7 NMS adapter.", exception);
         }
     }
 
@@ -273,7 +273,8 @@ public final class BotPlayerNmsAdapterV1_21_R6 implements IBotPlayerNmsAdapter
         Class<?> connectionClass,
         Class<?> serverPlayerClass,
         Class<?> commonListenerCookieClass
-    ) throws NoSuchMethodException
+    )
+        throws NoSuchMethodException
     {
         final @Nullable Method namedMethod = findNamedMethod(
             playerListClass,
@@ -304,7 +305,8 @@ public final class BotPlayerNmsAdapterV1_21_R6 implements IBotPlayerNmsAdapter
         Class<?> ownerClass,
         Class<?> returnTypeClass,
         Class<?>... parameterTypes
-    ) throws NoSuchMethodException
+    )
+        throws NoSuchMethodException
     {
         for (@Nullable Class<?> cursor = ownerClass; cursor != null; cursor = cursor.getSuperclass())
         {
@@ -380,7 +382,8 @@ public final class BotPlayerNmsAdapterV1_21_R6 implements IBotPlayerNmsAdapter
         Class<?> ownerClass,
         String preferredName,
         Class<?> acceptedType
-    ) throws NoSuchFieldException
+    )
+        throws NoSuchFieldException
     {
         try
         {
@@ -478,7 +481,8 @@ public final class BotPlayerNmsAdapterV1_21_R6 implements IBotPlayerNmsAdapter
         return null;
     }
 
-    private static Method findCompatibleMethod(Class<?> type, Class<?>... argumentTypes) throws NoSuchMethodException
+    private static Method findCompatibleMethod(Class<?> type, Class<?>... argumentTypes)
+        throws NoSuchMethodException
     {
         for (@Nullable Class<?> cursor = type; cursor != null; cursor = cursor.getSuperclass())
         {

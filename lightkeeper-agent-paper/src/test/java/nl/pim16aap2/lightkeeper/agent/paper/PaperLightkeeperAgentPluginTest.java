@@ -2,8 +2,7 @@ package nl.pim16aap2.lightkeeper.agent.paper;
 
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 
 class PaperLightkeeperAgentPluginTest
 {
@@ -11,13 +10,13 @@ class PaperLightkeeperAgentPluginTest
     void extractCraftBukkitRevision_shouldReturnRevisionForValidPackage()
     {
         // setup
-        final String packageName = "org.bukkit.craftbukkit.v1_21_R6";
+        final String packageName = "org.bukkit.craftbukkit.v1_21_R7";
 
         // execute
         final String revision = PaperLightkeeperAgentPlugin.extractCraftBukkitRevision(packageName);
 
         // verify
-        assertThat(revision).isEqualTo("v1_21_R6");
+        assertThat(revision).isEqualTo("v1_21_R7");
     }
 
     @Test
@@ -50,7 +49,7 @@ class PaperLightkeeperAgentPluginTest
     void extractCraftBukkitRevision_shouldThrowExceptionForUnexpectedPackagePrefix()
     {
         // setup
-        final String packageName = "org.bukkit.server.v1_21_R6";
+        final String packageName = "org.bukkit.server.v1_21_R7";
 
         // execute + verify
         assertThatThrownBy(() -> PaperLightkeeperAgentPlugin.extractCraftBukkitRevision(packageName))

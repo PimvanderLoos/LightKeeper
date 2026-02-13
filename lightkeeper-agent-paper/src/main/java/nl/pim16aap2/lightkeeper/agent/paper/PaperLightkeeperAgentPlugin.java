@@ -3,7 +3,7 @@ package nl.pim16aap2.lightkeeper.agent.paper;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import nl.pim16aap2.lightkeeper.nms.api.IBotPlayerNmsAdapter;
-import nl.pim16aap2.lightkeeper.nms.v121r6.BotPlayerNmsAdapterV1_21_R6;
+import nl.pim16aap2.lightkeeper.nms.v121r7.BotPlayerNmsAdapterV1_21_R7;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
 import nl.pim16aap2.lightkeeper.runtime.agent.AgentAction;
 import nl.pim16aap2.lightkeeper.runtime.agent.AgentRequest;
@@ -71,10 +71,10 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
     private static final long WAIT_TICKS_TIMEOUT_MILLIS = 60_000L;
     static final String SUPPORTED_MINECRAFT_VERSION = "1.21.11";
     static final String CRAFTBUKKIT_PACKAGE_PREFIX = "org.bukkit.craftbukkit.";
-    private static final String DEFAULT_NMS_REVISION = "v1_21_R6";
+    private static final String DEFAULT_NMS_REVISION = "v1_21_R7";
     private static final Map<String, Supplier<IBotPlayerNmsAdapter>> NMS_ADAPTERS = Map.of(
-        DEFAULT_NMS_REVISION, BotPlayerNmsAdapterV1_21_R6::new,
-        "v1_21_R7", BotPlayerNmsAdapterV1_21_R6::new
+        DEFAULT_NMS_REVISION, BotPlayerNmsAdapterV1_21_R7::new,
+        "v1_21_R7", BotPlayerNmsAdapterV1_21_R7::new
     );
     private static final String MAIN_MENU_TITLE = "Main Menu";
     private static final String SUB_MENU_TITLE = "Sub Menu";

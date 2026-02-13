@@ -11,10 +11,10 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>lightkeeper-nms-v1_21_R6</artifactId>
+    <artifactId>lightkeeper-nms-v1_21_R7</artifactId>
     <packaging>jar</packaging>
 
-    <name>Lightkeeper NMS v1_21_R6</name>
+    <name>Lightkeeper NMS v1_21_R7</name>
 
     <properties>
         <maven.compiler.release>21</maven.compiler.release>
