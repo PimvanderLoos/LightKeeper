@@ -67,6 +67,9 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
 {
     private static final long SYNC_OPERATION_TIMEOUT_SECONDS = 30L;
     private static final long WAIT_TICKS_TIMEOUT_MILLIS = 60_000L;
+    static final String SUPPORTED_MINECRAFT_VERSION = "1.21.11";
+    static final List<String> SUPPORTED_NMS_REVISIONS = List.of("v1_21_R6", "v1_21_R7");
+    static final String CRAFTBUKKIT_PACKAGE_PREFIX = "org.bukkit.craftbukkit.";
     private static final String MAIN_MENU_TITLE = "Main Menu";
     private static final String SUB_MENU_TITLE = "Sub Menu";
     private static final System.Logger LOGGER = System.getLogger(PaperLightkeeperAgentPlugin.class.getName());
@@ -78,7 +81,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
     private final Map<UUID, List<String>> playerMessageHistory = new ConcurrentHashMap<>();
     private final AtomicLong tickCounter = new AtomicLong(0L);
 
-    private final IBotPlayerNmsAdapter botPlayerNmsAdapter = new BotPlayerNmsAdapterV1_21_R6();
+    private @Nullable IBotPlayerNmsAdapter botPlayerNmsAdapter;
 
     private final ExecutorService acceptExecutor = Executors.newSingleThreadExecutor(
         Thread.ofPlatform().name("lightkeeper-agent-accept-", 0).factory()
@@ -101,6 +104,8 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         try
         {
             initializeConfiguration();
+            validateNmsCompatibility();
+            botPlayerNmsAdapter = new BotPlayerNmsAdapterV1_21_R6();
             Bukkit.getPluginManager().registerEvents(this, this);
             startTickLoop();
             startServer();
@@ -192,6 +197,58 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         authToken = requireNonBlankProperty(RuntimeProtocol.PROPERTY_AUTH_TOKEN);
         protocolVersion = requireNonBlankProperty(RuntimeProtocol.PROPERTY_PROTOCOL_VERSION);
         expectedAgentSha256 = System.getProperty(RuntimeProtocol.PROPERTY_EXPECTED_AGENT_SHA256, "");
+    }
+
+    private void validateNmsCompatibility()
+    {
+        final String bukkitVersion = Bukkit.getBukkitVersion();
+        if (!bukkitVersion.equals(SUPPORTED_MINECRAFT_VERSION)
+            && !bukkitVersion.startsWith(SUPPORTED_MINECRAFT_VERSION + "-"))
+        {
+            throw new IllegalStateException(
+                "Unsupported Bukkit version '%s'. This agent only supports Minecraft version '%s'."
+                    .formatted(bukkitVersion, SUPPORTED_MINECRAFT_VERSION)
+            );
+        }
+
+        final @Nullable String detectedNmsRevision = extractCraftBukkitRevision(
+            Bukkit.getServer().getClass().getPackageName()
+        );
+        if (detectedNmsRevision != null && !SUPPORTED_NMS_REVISIONS.contains(detectedNmsRevision))
+        {
+            throw new IllegalStateException(
+                "Unsupported server NMS revision '%s'. Supported revisions: %s (Bukkit version: %s)."
+                    .formatted(detectedNmsRevision, String.join(", ", SUPPORTED_NMS_REVISIONS), bukkitVersion)
+            );
+        }
+    }
+
+    static @Nullable String extractCraftBukkitRevision(String packageName)
+    {
+        final String normalizedPackageName = packageName == null ? "" : packageName.trim();
+        if ("org.bukkit.craftbukkit".equals(normalizedPackageName))
+            return null;
+        if (!normalizedPackageName.startsWith(CRAFTBUKKIT_PACKAGE_PREFIX))
+        {
+            throw new IllegalStateException(
+                "Unexpected CraftBukkit package '%s'. Expected prefix '%s'."
+                    .formatted(normalizedPackageName, CRAFTBUKKIT_PACKAGE_PREFIX)
+            );
+        }
+
+        final int separatorIndex = normalizedPackageName.lastIndexOf('.');
+        if (separatorIndex < 0 || separatorIndex == normalizedPackageName.length() - 1)
+        {
+            throw new IllegalStateException(
+                "Unable to resolve CraftBukkit NMS revision from package '%s'."
+                    .formatted(normalizedPackageName)
+            );
+        }
+
+        final String revision = normalizedPackageName.substring(separatorIndex + 1);
+        if (revision.equals("craftbukkit"))
+            return null;
+        return revision;
     }
 
     private void startTickLoop()
@@ -506,7 +563,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
             final Location spawnLocation = x == null || y == null || z == null
                 ? world.getSpawnLocation()
                 : new Location(world, x, y, z);
-            final Player spawnedPlayer = botPlayerNmsAdapter.spawnPlayer(uuid, name, world, spawnLocation);
+            final Player spawnedPlayer = requireBotPlayerNmsAdapter().spawnPlayer(uuid, name, world, spawnLocation);
             if (health != null)
                 spawnedPlayer.setHealth(Math.min(spawnedPlayer.getMaxHealth(), health));
 
@@ -543,7 +600,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
             final PermissionAttachment attachment = permissionAttachments.remove(uuid);
             if (attachment != null)
                 player.removeAttachment(attachment);
-            botPlayerNmsAdapter.removePlayer(player);
+            requireBotPlayerNmsAdapter().removePlayer(player);
             syntheticPlayers.remove(uuid);
             playerMessageHistory.remove(uuid);
             getLogger().info("LK_AGENT: Removed synthetic player '%s' (%s)."
@@ -780,6 +837,10 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
 
     private void cleanupSyntheticPlayers()
     {
+        final @Nullable IBotPlayerNmsAdapter nmsAdapter = botPlayerNmsAdapter;
+        if (nmsAdapter == null)
+            return;
+
         for (final UUID uuid : Set.copyOf(syntheticPlayers.keySet()))
         {
             try
@@ -790,7 +851,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
                 final PermissionAttachment attachment = permissionAttachments.remove(uuid);
                 if (attachment != null)
                     player.removeAttachment(attachment);
-                botPlayerNmsAdapter.removePlayer(player);
+                nmsAdapter.removePlayer(player);
                 playerMessageHistory.remove(uuid);
             }
             catch (Exception exception)
@@ -840,7 +901,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
 
     private void capturePlayerMessages(UUID uuid)
     {
-        final List<String> drainedMessages = botPlayerNmsAdapter.drainReceivedMessages(uuid);
+        final List<String> drainedMessages = requireBotPlayerNmsAdapter().drainReceivedMessages(uuid);
         if (drainedMessages.isEmpty())
             return;
         playerMessageHistory
@@ -888,6 +949,14 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
             return directMatch;
         final String normalized = trimmed.startsWith("minecraft:") ? trimmed.substring("minecraft:".length()) : trimmed;
         return Material.matchMaterial(normalized.toUpperCase(Locale.ROOT), true);
+    }
+
+    private IBotPlayerNmsAdapter requireBotPlayerNmsAdapter()
+    {
+        final @Nullable IBotPlayerNmsAdapter nmsAdapter = botPlayerNmsAdapter;
+        if (nmsAdapter == null)
+            throw new IllegalStateException("NMS adapter is not initialized.");
+        return nmsAdapter;
     }
 
     private String requireNonBlankProperty(String key)
