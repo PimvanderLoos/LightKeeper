@@ -26,6 +26,7 @@ class RuntimeManifestReaderTest
               "cacheKey": "cache-key",
               "serverDirectory": "/tmp/server",
               "serverJar": "/tmp/server/paper.jar",
+              "memoryMb": 2048,
               "agentAuthToken": "token",
               "runtimeProtocolVersion": "v1.1",
               "agentCacheIdentity": "no-agent"
@@ -56,6 +57,7 @@ class RuntimeManifestReaderTest
               "cacheKey": "cache-key",
               "serverDirectory": "/tmp/server",
               "serverJar": "/tmp/server/paper.jar",
+              "memoryMb": 2048,
               "udsSocketPath": "/tmp/lightkeeper.sock",
               "agentAuthToken": "token",
               "runtimeProtocolVersion": "v1.1",
@@ -70,6 +72,7 @@ class RuntimeManifestReaderTest
         // verify
         assertThat(runtimeManifest.serverType()).isEqualTo("paper");
         assertThat(runtimeManifest.udsSocketPath()).isEqualTo("/tmp/lightkeeper.sock");
+        assertThat(runtimeManifest.memoryMb()).isEqualTo(2048);
         assertThat(runtimeManifest.preloadedWorlds()).isEmpty();
     }
 
@@ -87,6 +90,7 @@ class RuntimeManifestReaderTest
               "cacheKey": "cache-key",
               "serverDirectory": "/tmp/server",
               "serverJar": "/tmp/server/paper.jar",
+              "memoryMb": 2048,
               "udsSocketPath": "/tmp/lightkeeper.sock",
               "agentAuthToken": "token",
               "runtimeProtocolVersion": "v1.1",

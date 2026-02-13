@@ -19,6 +19,8 @@ import java.util.List;
  *     The prepared target server directory.
  * @param serverJar
  *     The path to the prepared server jar.
+ * @param memoryMb
+ *     The memory (in MB) allocated to the server runtime.
  * @param udsSocketPath
  *     The UDS socket path for agent IPC.
  * @param agentAuthToken
@@ -41,6 +43,7 @@ public record RuntimeManifest(
     String cacheKey,
     String serverDirectory,
     String serverJar,
+    int memoryMb,
     String udsSocketPath,
     String agentAuthToken,
     @Nullable String agentJar,

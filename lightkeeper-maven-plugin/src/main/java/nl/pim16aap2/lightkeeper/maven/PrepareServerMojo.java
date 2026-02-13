@@ -308,6 +308,7 @@ public class PrepareServerMojo extends AbstractMojo
             resolvedCacheKey,
             targetServerDirectory.toAbsolutePath().toString(),
             serverProvider.targetJarFilePath().toAbsolutePath().toString(),
+            serverSpecification.memoryMb(),
             udsSocketPath.toAbsolutePath().toString(),
             agentAuthToken,
             agentJarPath != null ? agentJarPath.toAbsolutePath().toString() : null,

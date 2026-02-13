@@ -48,6 +48,8 @@ public final class RuntimeManifestReader
             throw new IOException("Runtime manifest field 'serverDirectory' is missing or blank.");
         if (manifest.serverJar() == null || manifest.serverJar().isBlank())
             throw new IOException("Runtime manifest field 'serverJar' is missing or blank.");
+        if (manifest.memoryMb() <= 0)
+            throw new IOException("Runtime manifest field 'memoryMb' is missing or invalid.");
         if (manifest.udsSocketPath() == null || manifest.udsSocketPath().isBlank())
             throw new IOException("Runtime manifest field 'udsSocketPath' is missing or blank.");
         if (manifest.agentAuthToken() == null || manifest.agentAuthToken().isBlank())
