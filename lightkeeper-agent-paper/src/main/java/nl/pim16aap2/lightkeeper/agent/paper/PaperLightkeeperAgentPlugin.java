@@ -60,6 +60,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 /**
@@ -73,8 +74,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
     static final String CRAFTBUKKIT_PACKAGE_PREFIX = "org.bukkit.craftbukkit.";
     private static final String DEFAULT_NMS_REVISION = "v1_21_R7";
     private static final Map<String, Supplier<IBotPlayerNmsAdapter>> NMS_ADAPTERS = Map.of(
-        DEFAULT_NMS_REVISION, BotPlayerNmsAdapterV1_21_R7::new,
-        "v1_21_R7", BotPlayerNmsAdapterV1_21_R7::new
+        DEFAULT_NMS_REVISION, BotPlayerNmsAdapterV1_21_R7::new
     );
     private static final String MAIN_MENU_TITLE = "Main Menu";
     private static final String SUB_MENU_TITLE = "Sub Menu";
@@ -110,7 +110,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         try
         {
             initializeConfiguration();
-            final @Nullable String detectedNmsRevision = validateNmsCompatibility();
+            final String detectedNmsRevision = validateNmsCompatibility();
             botPlayerNmsAdapter = createBotPlayerNmsAdapter(detectedNmsRevision);
             Bukkit.getPluginManager().registerEvents(this, this);
             startTickLoop();
@@ -135,16 +135,13 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         requestExecutor.shutdownNow();
         acceptExecutor.shutdownNow();
 
-        if (socketPath != null)
+        try
         {
-            try
-            {
-                Files.deleteIfExists(socketPath);
-            }
-            catch (IOException exception)
-            {
-                getLogger().warning("Failed to delete agent socket path '" + socketPath + "'.");
-            }
+            Files.deleteIfExists(socketPath);
+        }
+        catch (IOException exception)
+        {
+            getLogger().warning("Failed to delete agent socket path '" + socketPath + "'.");
         }
     }
 
@@ -167,6 +164,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
     /**
      * Handles menu click interactions for built-in test menus.
      */
+    @SuppressWarnings("unused")
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event)
     {
@@ -217,7 +215,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
             );
         }
 
-        final @Nullable String detectedNmsRevision = extractCraftBukkitRevision(
+        final String detectedNmsRevision = extractCraftBukkitRevision(
             Bukkit.getServer().getClass().getPackageName()
         );
         if (detectedNmsRevision != null && !NMS_ADAPTERS.containsKey(detectedNmsRevision))
@@ -240,7 +238,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
             );
         }
         final String resolvedRevision = detectedNmsRevision == null ? DEFAULT_NMS_REVISION : detectedNmsRevision;
-        final @Nullable Supplier<IBotPlayerNmsAdapter> adapterSupplier = NMS_ADAPTERS.get(resolvedRevision);
+        final Supplier<IBotPlayerNmsAdapter> adapterSupplier = NMS_ADAPTERS.get(resolvedRevision);
         if (adapterSupplier == null)
         {
             throw new IllegalStateException(
@@ -260,7 +258,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
 
     static @Nullable String extractCraftBukkitRevision(String packageName)
     {
-        final String normalizedPackageName = packageName == null ? "" : packageName.trim();
+        final String normalizedPackageName = packageName.trim();
         if ("org.bukkit.craftbukkit".equals(normalizedPackageName))
             return null;
         if (!normalizedPackageName.startsWith(CRAFTBUKKIT_PACKAGE_PREFIX))
@@ -288,7 +286,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
 
     private void startTickLoop()
     {
-        Bukkit.getScheduler().runTaskTimer(this, () -> tickCounter.incrementAndGet(), 1L, 1L);
+        Bukkit.getScheduler().runTaskTimer(this, tickCounter::incrementAndGet, 1L, 1L);
     }
 
     private void startServer()
@@ -383,8 +381,8 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
 
     private RequestDispatchResult dispatchRequest(AgentRequest request, boolean handshakeCompleted)
     {
-        final Map<String, String> arguments = request.arguments() == null ? Map.of() : request.arguments();
-        final String requestId = Objects.requireNonNullElse(request.requestId(), "unknown");
+        final Map<String, String> arguments = request.arguments();
+        final String requestId = request.requestId();
 
         try
         {
@@ -429,16 +427,17 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         }
         catch (Exception exception)
         {
-            getLogger().severe(
+            getLogger().log(
+                Level.SEVERE,
                 "Agent action '%s' failed for request '%s': %s"
                     .formatted(
                         request.action(),
                         requestId,
                         Objects.requireNonNullElse(exception.getMessage(), exception.getClass().getName())
-                    )
+                    ),
+                exception
             );
-            getLogger().severe("Agent failure stack trace:");
-            exception.printStackTrace();
+
             return new RequestDispatchResult(
                 errorResponse(
                     requestId,
@@ -497,11 +496,8 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
             worldCreator.type(WorldType.valueOf(worldTypeValue.toUpperCase(Locale.ROOT)));
             worldCreator.environment(World.Environment.valueOf(environmentValue.toUpperCase(Locale.ROOT)));
             worldCreator.seed(seed);
-            return worldCreator.createWorld();
+            return Objects.requireNonNull(worldCreator.createWorld());
         });
-
-        if (world == null)
-            return errorResponse(requestId, "WORLD_CREATE_FAILED", "Failed to create world '%s'.".formatted(worldName));
 
         getLogger().info("LK_AGENT: Created/loaded world '%s' (type=%s, environment=%s, seed=%d)."
             .formatted(world.getName(), worldTypeValue, environmentValue, seed));
@@ -705,14 +701,14 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
             if (!isActionableOpenInventory(view))
                 return Map.of("open", "false");
 
-            final List<Map<String, Object>> items = new ArrayList<>();
+            final List<Map<String, @Nullable Object>> items = new ArrayList<>();
             for (int rawSlot = 0; rawSlot < view.countSlots(); ++rawSlot)
             {
                 final ItemStack item = view.getItem(rawSlot);
                 if (item == null || item.getType().isAir())
                     continue;
 
-                final Map<String, Object> itemData = new HashMap<>();
+                final Map<String, @Nullable Object> itemData = new HashMap<>();
                 itemData.put("slot", rawSlot);
                 itemData.put("materialKey", item.getType().getKey().toString());
                 itemData.put("displayName", item.getItemMeta() == null ? null : item.getItemMeta().getDisplayName());
@@ -835,6 +831,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
 
             try
             {
+                //noinspection BusyWait
                 Thread.sleep(10L);
             }
             catch (InterruptedException exception)
@@ -872,7 +869,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
 
     private void cleanupSyntheticPlayers()
     {
-        final @Nullable IBotPlayerNmsAdapter nmsAdapter = botPlayerNmsAdapter;
+        final IBotPlayerNmsAdapter nmsAdapter = botPlayerNmsAdapter;
         if (nmsAdapter == null)
             return;
 
@@ -946,7 +943,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
 
     private static boolean isActionableOpenInventory(InventoryView view)
     {
-        return view != null && view.getTopInventory() != null && view.getType() != InventoryType.CRAFTING;
+        return view.getType() != InventoryType.CRAFTING;
     }
 
     private <T> T callOnMainThread(java.util.concurrent.Callable<T> callable)
@@ -988,7 +985,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
 
     private IBotPlayerNmsAdapter requireBotPlayerNmsAdapter()
     {
-        final @Nullable IBotPlayerNmsAdapter nmsAdapter = botPlayerNmsAdapter;
+        final IBotPlayerNmsAdapter nmsAdapter = botPlayerNmsAdapter;
         if (nmsAdapter == null)
             throw new IllegalStateException("NMS adapter is not initialized.");
         return nmsAdapter;

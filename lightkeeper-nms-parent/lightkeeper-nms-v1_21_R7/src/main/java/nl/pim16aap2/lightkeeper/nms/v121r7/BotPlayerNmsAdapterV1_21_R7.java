@@ -39,13 +39,6 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
     private final Object playerList;
     private final Map<UUID, Object> playerChannels = new ConcurrentHashMap<>();
 
-    private final Class<?> gameProfileClass;
-    private final Class<?> packetFlowClass;
-    private final Class<?> connectionClass;
-    private final Class<?> serverPlayerClass;
-    private final Class<?> commonListenerCookieClass;
-    private final Class<?> clientInformationClass;
-
     private final Constructor<?> gameProfileConstructor;
     private final Constructor<?> connectionConstructor;
     private final Constructor<?> embeddedChannelConstructor;
@@ -78,23 +71,26 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
             minecraftServer = craftServerGetServerMethod.invoke(craftServer);
             playerList = resolvePlayerList(minecraftServer, serverClassLoader);
 
-            gameProfileClass = resolveClass("com.mojang.authlib.GameProfile", serverClassLoader);
-            packetFlowClass = resolveFirstClass(
+            final Class<?> gameProfileClass = resolveClass(
+                "com.mojang.authlib.GameProfile",
+                serverClassLoader
+            );
+            final Class<?> packetFlowClass = resolveFirstClass(
                 serverClassLoader,
                 "net.minecraft.network.protocol.PacketFlow",
                 "net.minecraft.network.protocol.EnumProtocolDirection"
             );
-            connectionClass = resolveFirstClass(
+            final Class<?> connectionClass = resolveFirstClass(
                 serverClassLoader,
                 "net.minecraft.network.Connection",
                 "net.minecraft.network.NetworkManager"
             );
-            serverPlayerClass = resolveFirstClass(
+            final Class<?> serverPlayerClass = resolveFirstClass(
                 serverClassLoader,
                 "net.minecraft.server.level.ServerPlayer",
                 "net.minecraft.server.level.EntityPlayer"
             );
-            commonListenerCookieClass = resolveClass(
+            final Class<?> commonListenerCookieClass = resolveClass(
                 "net.minecraft.server.network.CommonListenerCookie",
                 serverClassLoader
             );
@@ -108,7 +104,10 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
                 "net.minecraft.server.level.ServerLevel",
                 "net.minecraft.server.level.WorldServer"
             );
-            clientInformationClass = resolveClass("net.minecraft.server.level.ClientInformation", serverClassLoader);
+            final Class<?> clientInformationClass = resolveClass(
+                "net.minecraft.server.level.ClientInformation",
+                serverClassLoader
+            );
             final Class<?> embeddedChannelClass = resolveClass(
                 "io.netty.channel.embedded.EmbeddedChannel",
                 serverClassLoader
@@ -215,7 +214,7 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
             }
         }
 
-        final @Nullable Method stringMethod = findNamedNoArgMethod(packetFlowEnumClass, "b");
+        final Method stringMethod = findNamedNoArgMethod(packetFlowEnumClass, "b");
         if (stringMethod != null)
         {
             for (final Object enumConstant : enumConstants)
@@ -243,7 +242,7 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
     private static Object resolvePlayerList(Object minecraftServer, ClassLoader serverClassLoader)
         throws ReflectiveOperationException
     {
-        final @Nullable Method namedMethod = findNamedNoArgMethod(minecraftServer.getClass(), "getPlayerList");
+        final Method namedMethod = findNamedNoArgMethod(minecraftServer.getClass(), "getPlayerList");
         if (namedMethod != null)
         {
             return namedMethod.invoke(minecraftServer);
@@ -251,13 +250,13 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
 
         final Class<?> playerListClass = resolveClass("net.minecraft.server.players.PlayerList", serverClassLoader);
 
-        final @Nullable Method typedMethod = findNoArgMethodByReturnType(minecraftServer.getClass(), playerListClass);
+        final Method typedMethod = findNoArgMethodByReturnType(minecraftServer.getClass(), playerListClass);
         if (typedMethod != null)
         {
             return typedMethod.invoke(minecraftServer);
         }
 
-        final @Nullable Field typedField = findFieldByType(minecraftServer.getClass(), playerListClass);
+        final Field typedField = findFieldByType(minecraftServer.getClass(), playerListClass);
         if (typedField != null)
         {
             return typedField.get(minecraftServer);
@@ -276,7 +275,7 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
     )
         throws NoSuchMethodException
     {
-        final @Nullable Method namedMethod = findNamedMethod(
+        final Method namedMethod = findNamedMethod(
             playerListClass,
             "placeNewPlayer",
             connectionClass,
@@ -293,7 +292,7 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
     private static Method resolvePlayerListRemoveMethod(Class<?> playerListClass, Class<?> serverPlayerClass)
         throws NoSuchMethodException
     {
-        final @Nullable Method namedMethod = findNamedMethod(playerListClass, "remove", serverPlayerClass);
+        final Method namedMethod = findNamedMethod(playerListClass, "remove", serverPlayerClass);
         if (namedMethod != null)
         {
             return namedMethod;
@@ -308,7 +307,7 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
     )
         throws NoSuchMethodException
     {
-        for (@Nullable Class<?> cursor = ownerClass; cursor != null; cursor = cursor.getSuperclass())
+        for (Class<?> cursor = ownerClass; cursor != null; cursor = cursor.getSuperclass())
         {
             for (final Method method : cursor.getDeclaredMethods())
             {
@@ -367,7 +366,7 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
         }
         catch (NoSuchFieldException ignored)
         {
-            final @Nullable Field typedField = findFieldByType(ownerClass, fieldType);
+            final Field typedField = findFieldByType(ownerClass, fieldType);
             if (typedField != null)
             {
                 return typedField;
@@ -393,7 +392,7 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
         }
         catch (NoSuchFieldException ignored)
         {
-            for (@Nullable Class<?> cursor = ownerClass; cursor != null; cursor = cursor.getSuperclass())
+            for (Class<?> cursor = ownerClass; cursor != null; cursor = cursor.getSuperclass())
             {
                 for (final Field field : cursor.getDeclaredFields())
                 {
@@ -413,7 +412,7 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
 
     private static @Nullable Method findNamedNoArgMethod(Class<?> type, String methodName)
     {
-        for (@Nullable Class<?> cursor = type; cursor != null; cursor = cursor.getSuperclass())
+        for (Class<?> cursor = type; cursor != null; cursor = cursor.getSuperclass())
         {
             try
             {
@@ -431,7 +430,7 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
 
     private static @Nullable Method findNoArgMethodByReturnType(Class<?> type, Class<?> returnType)
     {
-        for (@Nullable Class<?> cursor = type; cursor != null; cursor = cursor.getSuperclass())
+        for (Class<?> cursor = type; cursor != null; cursor = cursor.getSuperclass())
         {
             for (final Method method : cursor.getDeclaredMethods())
             {
@@ -448,7 +447,7 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
 
     private static @Nullable Field findFieldByType(Class<?> type, Class<?> fieldType)
     {
-        for (@Nullable Class<?> cursor = type; cursor != null; cursor = cursor.getSuperclass())
+        for (Class<?> cursor = type; cursor != null; cursor = cursor.getSuperclass())
         {
             for (final Field field : cursor.getDeclaredFields())
             {
@@ -465,7 +464,7 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
 
     private static @Nullable Method findNamedMethod(Class<?> type, String methodName, Class<?>... parameterTypes)
     {
-        for (@Nullable Class<?> cursor = type; cursor != null; cursor = cursor.getSuperclass())
+        for (Class<?> cursor = type; cursor != null; cursor = cursor.getSuperclass())
         {
             try
             {
@@ -484,7 +483,7 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
     private static Method findCompatibleMethod(Class<?> type, Class<?>... argumentTypes)
         throws NoSuchMethodException
     {
-        for (@Nullable Class<?> cursor = type; cursor != null; cursor = cursor.getSuperclass())
+        for (Class<?> cursor = type; cursor != null; cursor = cursor.getSuperclass())
         {
             for (final Method method : cursor.getDeclaredMethods())
             {
@@ -681,19 +680,29 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
         if (value == null || depth < 0 || seen.put(value, Boolean.TRUE) != null)
             return null;
 
-        if (value instanceof String stringValue)
-            return stringValue;
-        if (value instanceof Optional<?> optional)
-            return optional.map(inner -> extractText(inner, depth - 1, seen)).orElse(null);
-        if (value instanceof Collection<?> collection)
+        switch (value)
         {
-            for (final Object element : collection)
+            case String stringValue ->
             {
-                final String extracted = extractText(element, depth - 1, seen);
-                if (extracted != null && !extracted.isBlank())
-                    return extracted;
+                return stringValue;
             }
-            return null;
+            case Optional<?> optional ->
+            {
+                return optional.map(inner -> extractText(inner, depth - 1, seen)).orElse(null);
+            }
+            case Collection<?> collection ->
+            {
+                for (final Object element : collection)
+                {
+                    final String extracted = extractText(element, depth - 1, seen);
+                    if (extracted != null && !extracted.isBlank())
+                        return extracted;
+                }
+                return null;
+            }
+            default ->
+            {
+            }
         }
         if (value.getClass().isArray())
         {
