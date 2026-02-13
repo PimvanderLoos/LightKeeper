@@ -48,25 +48,7 @@ final class PaperServerProcess
     void start(Duration timeout)
     {
         final Path javaExecutable = Path.of(System.getProperty("java.home"), "bin", "java");
-        final Path serverDirectory = Path.of(runtimeManifest.serverDirectory());
-        final Path serverJar = Path.of(runtimeManifest.serverJar());
-        final int memoryMb = runtimeManifest.memoryMb();
-
-        final ProcessBuilder processBuilder = new ProcessBuilder(
-            javaExecutable.toString(),
-            "-Xmx" + memoryMb + "M",
-            "-Xms" + memoryMb + "M",
-            "-D" + RuntimeProtocol.PROPERTY_SOCKET_PATH + "=" + runtimeManifest.udsSocketPath(),
-            "-D" + RuntimeProtocol.PROPERTY_AUTH_TOKEN + "=" + runtimeManifest.agentAuthToken(),
-            "-D" + RuntimeProtocol.PROPERTY_PROTOCOL_VERSION + "=" + runtimeManifest.runtimeProtocolVersion(),
-            "-D" + RuntimeProtocol.PROPERTY_EXPECTED_AGENT_SHA256 + "=" +
-                Objects.requireNonNullElse(runtimeManifest.agentJarSha256(), ""),
-            "-jar",
-            serverJar.toString(),
-            "--nogui"
-        );
-        processBuilder.directory(serverDirectory.toFile());
-        processBuilder.redirectErrorStream(true);
+        final ProcessBuilder processBuilder = getProcessBuilder(javaExecutable);
 
         try
         {
@@ -89,6 +71,30 @@ final class PaperServerProcess
             stop(Duration.ofSeconds(5));
             throw new IllegalStateException("Failed to start Paper server.", exception);
         }
+    }
+
+    private ProcessBuilder getProcessBuilder(Path javaExecutable)
+    {
+        final Path serverDirectory = Path.of(runtimeManifest.serverDirectory());
+        final Path serverJar = Path.of(runtimeManifest.serverJar());
+        final int memoryMb = runtimeManifest.memoryMb();
+
+        final ProcessBuilder processBuilder = new ProcessBuilder(
+            javaExecutable.toString(),
+            "-Xmx" + memoryMb + "M",
+            "-Xms" + memoryMb + "M",
+            "-D" + RuntimeProtocol.PROPERTY_SOCKET_PATH + "=" + runtimeManifest.udsSocketPath(),
+            "-D" + RuntimeProtocol.PROPERTY_AUTH_TOKEN + "=" + runtimeManifest.agentAuthToken(),
+            "-D" + RuntimeProtocol.PROPERTY_PROTOCOL_VERSION + "=" + runtimeManifest.runtimeProtocolVersion(),
+            "-D" + RuntimeProtocol.PROPERTY_EXPECTED_AGENT_SHA256 + "=" +
+                Objects.requireNonNullElse(runtimeManifest.agentJarSha256(), ""),
+            "-jar",
+            serverJar.toString(),
+            "--nogui"
+        );
+        processBuilder.directory(serverDirectory.toFile());
+        processBuilder.redirectErrorStream(true);
+        return processBuilder;
     }
 
     void stop(Duration timeout)
