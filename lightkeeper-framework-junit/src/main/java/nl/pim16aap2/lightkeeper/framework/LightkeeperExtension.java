@@ -37,7 +37,7 @@ public final class LightkeeperExtension implements
     {
         if (usesFreshLifecycleForClass(context))
             return;
-        context.getStore(NAMESPACE).put(KEY_SHARED_FRAMEWORK, startFramework());
+        getClassStore(context).put(KEY_SHARED_FRAMEWORK, startFramework());
     }
 
     /**
@@ -48,7 +48,7 @@ public final class LightkeeperExtension implements
     {
         if (usesFreshLifecycleForClass(context))
         {
-            context.getStore(NAMESPACE).put(KEY_METHOD_FRAMEWORK, startFramework());
+            getMethodStore(context).put(KEY_METHOD_FRAMEWORK, startFramework());
             return;
         }
 
@@ -71,7 +71,7 @@ public final class LightkeeperExtension implements
             return;
         }
 
-        final ILightkeeperFramework framework = context.getStore(NAMESPACE).remove(
+        final ILightkeeperFramework framework = getMethodStore(context).remove(
             KEY_METHOD_FRAMEWORK,
             ILightkeeperFramework.class
         );
@@ -85,7 +85,7 @@ public final class LightkeeperExtension implements
     @Override
     public void afterAll(ExtensionContext context)
     {
-        final ILightkeeperFramework framework = context.getStore(NAMESPACE).remove(
+        final ILightkeeperFramework framework = getClassStore(context).remove(
             KEY_SHARED_FRAMEWORK,
             ILightkeeperFramework.class
         );
@@ -115,7 +115,7 @@ public final class LightkeeperExtension implements
 
     private static boolean usesFreshLifecycleForClass(ExtensionContext context)
     {
-        final ExtensionContext.Store store = context.getStore(NAMESPACE);
+        final ExtensionContext.Store store = getClassStore(context);
         final Boolean cachedDecision = store.get(KEY_CLASS_USES_FRESH_LIFECYCLE, Boolean.class);
         if (cachedDecision != null)
             return cachedDecision;
@@ -132,14 +132,14 @@ public final class LightkeeperExtension implements
 
     private static ILightkeeperFramework getFramework(ExtensionContext context)
     {
-        final ILightkeeperFramework methodFramework = context.getStore(NAMESPACE).get(
+        final ILightkeeperFramework methodFramework = getMethodStore(context).get(
             KEY_METHOD_FRAMEWORK,
             ILightkeeperFramework.class
         );
         if (methodFramework != null)
             return methodFramework;
 
-        final ILightkeeperFramework sharedFramework = context.getStore(NAMESPACE).get(
+        final ILightkeeperFramework sharedFramework = getClassStore(context).get(
             KEY_SHARED_FRAMEWORK,
             ILightkeeperFramework.class
         );
@@ -147,8 +147,22 @@ public final class LightkeeperExtension implements
             return sharedFramework;
 
         final ILightkeeperFramework startedFramework = startFramework();
-        context.getStore(NAMESPACE).put(KEY_METHOD_FRAMEWORK, startedFramework);
+        getMethodStore(context).put(KEY_METHOD_FRAMEWORK, startedFramework);
         return startedFramework;
+    }
+
+    private static ExtensionContext.Store getMethodStore(ExtensionContext context)
+    {
+        return context.getStore(NAMESPACE);
+    }
+
+    private static ExtensionContext.Store getClassStore(ExtensionContext context)
+    {
+        if (context.getTestMethod().isEmpty())
+            return context.getStore(NAMESPACE);
+        return context.getParent()
+            .map(parentContext -> parentContext.getStore(NAMESPACE))
+            .orElseGet(() -> context.getStore(NAMESPACE));
     }
 
     private static ILightkeeperFramework startFramework()
