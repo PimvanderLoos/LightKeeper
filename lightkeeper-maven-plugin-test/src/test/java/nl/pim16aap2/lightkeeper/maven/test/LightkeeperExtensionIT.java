@@ -1,7 +1,7 @@
 package nl.pim16aap2.lightkeeper.maven.test;
 
 import nl.pim16aap2.lightkeeper.framework.LightkeeperExtension;
-import nl.pim16aap2.lightkeeper.framework.LightkeeperFramework;
+import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class LightkeeperExtensionIT
 {
     @Test
-    void mainWorld_shouldInjectFrameworkFromExtension(LightkeeperFramework framework)
+    void mainWorld_shouldInjectFrameworkFromExtension(ILightkeeperFramework framework)
     {
         // setup
 
@@ -26,7 +26,7 @@ class LightkeeperExtensionIT
     }
 
     @Test
-    void newWorld_shouldCreateIsolatedWorldWhenRequestedFromFramework(LightkeeperFramework framework)
+    void newWorld_shouldCreateIsolatedWorldWhenRequestedFromFramework(ILightkeeperFramework framework)
     {
         // setup
         final var mainWorld = framework.mainWorld();

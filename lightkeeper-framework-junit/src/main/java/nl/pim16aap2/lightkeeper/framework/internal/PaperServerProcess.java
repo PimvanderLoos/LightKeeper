@@ -3,6 +3,7 @@ package nl.pim16aap2.lightkeeper.framework.internal;
 import lombok.extern.java.Log;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
+import org.jspecify.annotations.Nullable;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -31,13 +32,14 @@ final class PaperServerProcess
     private final Path diagnosticsDirectory;
     private final List<String> outputLines = new ArrayList<>();
     private final CountDownLatch startedLatch = new CountDownLatch(1);
-    private Process process;
-    private Thread outputThread;
+    private @Nullable Process process;
+    private @Nullable Thread outputThread;
 
     PaperServerProcess(RuntimeManifest runtimeManifest, Path diagnosticsDirectory)
     {
         this.runtimeManifest = Objects.requireNonNull(runtimeManifest, "runtimeManifest may not be null.");
-        this.diagnosticsDirectory = Objects.requireNonNull(diagnosticsDirectory, "diagnosticsDirectory may not be null.");
+        this.diagnosticsDirectory =
+            Objects.requireNonNull(diagnosticsDirectory, "diagnosticsDirectory may not be null.");
     }
 
     void start(Duration timeout)
@@ -157,8 +159,9 @@ final class PaperServerProcess
             Files.writeString(bundleDirectory.resolve("server-output.log"),
                 String.join(System.lineSeparator(), outputLines), StandardCharsets.UTF_8);
         }
-        catch (IOException ignored)
+        catch (IOException exception)
         {
+            log.fine(() -> "Failed to write diagnostics bundle: " + exception.getMessage());
         }
     }
 
@@ -189,8 +192,9 @@ final class PaperServerProcess
                             startedLatch.countDown();
                     }
                 }
-                catch (IOException ignored)
+                catch (IOException exception)
                 {
+                    log.fine(() -> "Paper output reader stopped: " + exception.getMessage());
                 }
             });
     }

@@ -2,10 +2,9 @@ package nl.pim16aap2.lightkeeper.agent.paper;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import nl.pim16aap2.lightkeeper.nms.api.BotPlayerNmsAdapter;
-import nl.pim16aap2.lightkeeper.nms.v1_21_r6.BotPlayerNmsAdapterV1_21_R6;
+import nl.pim16aap2.lightkeeper.nms.api.IBotPlayerNmsAdapter;
+import nl.pim16aap2.lightkeeper.nms.v121r6.BotPlayerNmsAdapterV1_21_R6;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
-import nl.pim16aap2.lightkeeper.runtime.agent.AgentAction;
 import nl.pim16aap2.lightkeeper.runtime.agent.AgentRequest;
 import nl.pim16aap2.lightkeeper.runtime.agent.AgentResponse;
 import org.bukkit.Bukkit;
@@ -29,6 +28,7 @@ import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jspecify.annotations.Nullable;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -68,6 +68,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
     private static final long WAIT_TICKS_TIMEOUT_MILLIS = 60_000L;
     private static final String MAIN_MENU_TITLE = "Main Menu";
     private static final String SUB_MENU_TITLE = "Sub Menu";
+    private static final System.Logger LOGGER = System.getLogger(PaperLightkeeperAgentPlugin.class.getName());
 
     private final ObjectMapper objectMapper = new ObjectMapper()
         .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -76,20 +77,23 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
     private final Map<UUID, List<String>> playerMessageHistory = new ConcurrentHashMap<>();
     private final AtomicLong tickCounter = new AtomicLong(0L);
 
-    private final BotPlayerNmsAdapter botPlayerNmsAdapter = new BotPlayerNmsAdapterV1_21_R6();
+    private final IBotPlayerNmsAdapter botPlayerNmsAdapter = new BotPlayerNmsAdapterV1_21_R6();
 
-    private ExecutorService acceptExecutor = Executors.newSingleThreadExecutor(
+    private final ExecutorService acceptExecutor = Executors.newSingleThreadExecutor(
         Thread.ofPlatform().name("lightkeeper-agent-accept-", 0).factory()
     );
-    private ExecutorService requestExecutor = Executors.newVirtualThreadPerTaskExecutor();
+    private final ExecutorService requestExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
     private volatile boolean running;
     private Path socketPath = Path.of("lightkeeper-agent.sock");
     private String authToken = "";
     private String protocolVersion = RuntimeProtocol.VERSION;
     private String expectedAgentSha256 = "";
-    private ServerSocketChannel serverSocketChannel;
+    private @Nullable ServerSocketChannel serverSocketChannel;
 
+    /**
+     * Initializes agent configuration, event listeners, and socket server.
+     */
     @Override
     public void onEnable()
     {
@@ -107,6 +111,9 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         }
     }
 
+    /**
+     * Stops the socket server and cleans up synthetic player state.
+     */
     @Override
     public void onDisable()
     {
@@ -129,6 +136,9 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         }
     }
 
+    /**
+     * Handles plugin commands used by integration tests.
+     */
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args)
     {
@@ -142,6 +152,9 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         return true;
     }
 
+    /**
+     * Handles menu click interactions for built-in test menus.
+     */
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event)
     {
@@ -206,7 +219,16 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         {
             try
             {
-                final SocketChannel socketChannel = serverSocketChannel.accept();
+                final ServerSocketChannel localServerSocketChannel = serverSocketChannel;
+                if (localServerSocketChannel == null)
+                {
+                    if (running)
+                        getLogger().warning(
+                            "Agent accept loop is running without an initialized server socket channel."
+                        );
+                    return;
+                }
+                final SocketChannel socketChannel = localServerSocketChannel.accept();
                 requestExecutor.execute(() -> handleConnection(socketChannel));
             }
             catch (IOException exception)
@@ -291,11 +313,19 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         {
             getLogger().severe(
                 "Agent action '%s' failed for request '%s': %s"
-                    .formatted(request.action(), requestId, exception.getMessage())
+                    .formatted(
+                        request.action(),
+                        requestId,
+                        Objects.requireNonNullElse(exception.getMessage(), exception.getClass().getName())
+                    )
             );
             getLogger().severe("Agent failure stack trace:");
             exception.printStackTrace();
-            return errorResponse(requestId, "REQUEST_FAILED", exception.getMessage());
+            return errorResponse(
+                requestId,
+                "REQUEST_FAILED",
+                Objects.requireNonNullElse(exception.getMessage(), exception.getClass().getName())
+            );
         }
     }
 
@@ -336,7 +366,8 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         final String environmentValue = arguments.getOrDefault("environment", "NORMAL");
         final long seed = parseLong(arguments.getOrDefault("seed", "0"));
 
-        final World world = callOnMainThread(() -> {
+        final World world = callOnMainThread(() ->
+        {
             final WorldCreator worldCreator = new WorldCreator(worldName);
             worldCreator.type(WorldType.valueOf(worldTypeValue.toUpperCase(Locale.ROOT)));
             worldCreator.environment(World.Environment.valueOf(environmentValue.toUpperCase(Locale.ROOT)));
@@ -377,7 +408,8 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         final int y = parseInt(arguments.getOrDefault("y", "0"));
         final int z = parseInt(arguments.getOrDefault("z", "0"));
 
-        final String materialName = callOnMainThread(() -> {
+        final String materialName = callOnMainThread(() ->
+        {
             final World world = Bukkit.getWorld(worldName);
             if (world == null)
                 throw new IllegalArgumentException("World '%s' does not exist.".formatted(worldName));
@@ -403,7 +435,8 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         if (material == null)
             return errorResponse(requestId, "INVALID_ARGUMENT", "Unknown material '%s'.".formatted(materialName));
 
-        final String setMaterial = callOnMainThread(() -> {
+        final String setMaterial = callOnMainThread(() ->
+        {
             final World world = Bukkit.getWorld(worldName);
             if (world == null)
                 throw new IllegalArgumentException("World '%s' does not exist.".formatted(worldName));
@@ -431,7 +464,8 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         final Double health = parseOptionalDouble(arguments.get("health"));
         final String permissionsCsv = arguments.getOrDefault("permissions", "");
 
-        final Player player = callOnMainThread(() -> {
+        final Player player = callOnMainThread(() ->
+        {
             final World world = Bukkit.getWorld(worldName);
             if (world == null)
                 throw new IllegalArgumentException("World '%s' does not exist.".formatted(worldName));
@@ -470,7 +504,8 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         throws Exception
     {
         final UUID uuid = UUID.fromString(arguments.getOrDefault("uuid", ""));
-        callOnMainThread(() -> {
+        callOnMainThread(() ->
+        {
             final Player player = getRequiredPlayer(uuid);
             final PermissionAttachment attachment = permissionAttachments.remove(uuid);
             if (attachment != null)
@@ -494,7 +529,8 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
             return errorResponse(requestId, "INVALID_ARGUMENT", "Argument 'command' must not be blank.");
 
         final String command = rawCommand.startsWith("/") ? rawCommand.substring(1) : rawCommand;
-        final Boolean success = callOnMainThread(() -> {
+        final Boolean success = callOnMainThread(() ->
+        {
             final Player player = getRequiredPlayer(uuid);
             if (command.equalsIgnoreCase("lktestgui") || command.equalsIgnoreCase("lightkeeper:testgui"))
             {
@@ -522,7 +558,8 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         if (material == null)
             return errorResponse(requestId, "INVALID_ARGUMENT", "Unknown material '%s'.".formatted(materialName));
 
-        final String finalMaterial = callOnMainThread(() -> {
+        final String finalMaterial = callOnMainThread(() ->
+        {
             final Player player = getRequiredPlayer(uuid);
             final World world = player.getWorld();
             world.getBlockAt(x, y, z).setType(material);
@@ -535,7 +572,8 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         throws Exception
     {
         final UUID uuid = UUID.fromString(arguments.getOrDefault("uuid", ""));
-        final Map<String, String> data = callOnMainThread(() -> {
+        final Map<String, String> data = callOnMainThread(() ->
+        {
             final Player player = getRequiredPlayer(uuid);
             final InventoryView view = player.getOpenInventory();
 
@@ -553,7 +591,12 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
                 itemData.put("slot", rawSlot);
                 itemData.put("materialKey", item.getType().getKey().toString());
                 itemData.put("displayName", item.getItemMeta() == null ? null : item.getItemMeta().getDisplayName());
-                itemData.put("lore", item.getItemMeta() == null ? List.of() : Objects.requireNonNullElse(item.getItemMeta().getLore(), List.of()));
+                itemData.put(
+                    "lore",
+                    item.getItemMeta() == null
+                        ? List.of()
+                        : Objects.requireNonNullElse(item.getItemMeta().getLore(), List.of())
+                );
                 items.add(itemData);
             }
 
@@ -575,7 +618,8 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         if (slot < 0)
             return errorResponse(requestId, "INVALID_ARGUMENT", "Argument 'slot' must be >= 0.");
 
-        callOnMainThread(() -> {
+        callOnMainThread(() ->
+        {
             final Player player = getRequiredPlayer(uuid);
             final InventoryView view = player.getOpenInventory();
             if (!isActionableOpenInventory(view))
@@ -612,7 +656,8 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
             .map(Integer::parseInt)
             .toList();
 
-        callOnMainThread(() -> {
+        callOnMainThread(() ->
+        {
             final Player player = getRequiredPlayer(uuid);
             final InventoryView view = player.getOpenInventory();
             if (!isActionableOpenInventory(view))
@@ -620,7 +665,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
 
             final ItemStack cursorItem = new ItemStack(material);
             final Map<Integer, ItemStack> newItems = new HashMap<>();
-            for (Integer rawSlot : rawSlots)
+            for (final Integer rawSlot : rawSlots)
                 newItems.put(rawSlot, cursorItem.clone());
 
             final InventoryDragEvent event = new InventoryDragEvent(
@@ -633,7 +678,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
             Bukkit.getPluginManager().callEvent(event);
             if (!event.isCancelled())
             {
-                for (Map.Entry<Integer, ItemStack> entry : newItems.entrySet())
+                for (final Map.Entry<Integer, ItemStack> entry : newItems.entrySet())
                     view.setItem(entry.getKey(), entry.getValue());
             }
             return Boolean.TRUE;
@@ -683,7 +728,8 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         throws Exception
     {
         final UUID uuid = UUID.fromString(arguments.getOrDefault("uuid", ""));
-        final String messagesJson = callOnMainThread(() -> {
+        final String messagesJson = callOnMainThread(() ->
+        {
             getRequiredPlayer(uuid);
             capturePlayerMessages(uuid);
             final List<String> messages = playerMessageHistory.getOrDefault(uuid, List.of());
@@ -701,7 +747,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
 
     private void cleanupSyntheticPlayers()
     {
-        for (UUID uuid : Set.copyOf(syntheticPlayers.keySet()))
+        for (final UUID uuid : Set.copyOf(syntheticPlayers.keySet()))
         {
             try
             {
@@ -714,8 +760,15 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
                 botPlayerNmsAdapter.removePlayer(player);
                 playerMessageHistory.remove(uuid);
             }
-            catch (Exception ignored)
+            catch (Exception exception)
             {
+                getLogger().warning(
+                    "Failed to cleanup synthetic player '%s': %s"
+                        .formatted(
+                            uuid,
+                            Objects.requireNonNullElse(exception.getMessage(), exception.getClass().getName())
+                        )
+                );
             }
         }
     }
@@ -785,14 +838,14 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         return Long.parseLong(value.trim());
     }
 
-    private static Double parseOptionalDouble(String value)
+    private static @Nullable Double parseOptionalDouble(@Nullable String value)
     {
         if (value == null || value.isBlank())
             return null;
         return Double.parseDouble(value.trim());
     }
 
-    private static Material parseMaterial(String materialName)
+    private static @Nullable Material parseMaterial(@Nullable String materialName)
     {
         final String trimmed = materialName == null ? "" : materialName.trim();
         if (trimmed.isEmpty())
@@ -822,7 +875,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         return new AgentResponse(requestId, false, errorCode, message, Map.of());
     }
 
-    private static void closeQuietly(ServerSocketChannel channel)
+    private static void closeQuietly(@Nullable ServerSocketChannel channel)
     {
         if (channel == null)
             return;
@@ -831,8 +884,13 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         {
             channel.close();
         }
-        catch (IOException ignored)
+        catch (IOException exception)
         {
+            LOGGER.log(
+                System.Logger.Level.WARNING,
+                "Failed to close server socket channel cleanly.",
+                exception
+            );
         }
     }
 }

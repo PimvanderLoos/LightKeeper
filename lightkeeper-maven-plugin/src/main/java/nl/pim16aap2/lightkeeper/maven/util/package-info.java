@@ -1,5 +1,5 @@
 /**
- * Utility classes for the Lightkeeper Maven plugin.
+ * Shared filesystem, hashing, and cache-key utility classes for Maven plugin modules.
  */
 @NullMarked
 package nl.pim16aap2.lightkeeper.maven.util;

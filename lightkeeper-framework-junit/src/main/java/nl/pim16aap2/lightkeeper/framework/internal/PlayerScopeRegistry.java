@@ -2,6 +2,8 @@ package nl.pim16aap2.lightkeeper.framework.internal;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.jspecify.annotations.Nullable;
+
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -15,6 +17,8 @@ import java.util.function.Consumer;
 @Singleton
 final class PlayerScopeRegistry
 {
+    private static final System.Logger LOGGER = System.getLogger(PlayerScopeRegistry.class.getName());
+
     private final Map<UUID, ResourceScope> createdPlayers = new ConcurrentHashMap<>();
     private final ThreadLocal<ResourceScope> activeResourceScope = ThreadLocal.withInitial(() -> ResourceScope.CLASS);
 
@@ -49,10 +53,10 @@ final class PlayerScopeRegistry
         cleanupPlayersByScope(null, playerRemover);
     }
 
-    private void cleanupPlayersByScope(ResourceScope scope, Consumer<UUID> playerRemover)
+    private void cleanupPlayersByScope(@Nullable ResourceScope scope, Consumer<UUID> playerRemover)
     {
         final Set<UUID> playerIds = new HashSet<>(createdPlayers.keySet());
-        for (UUID playerId : playerIds)
+        for (final UUID playerId : playerIds)
         {
             final ResourceScope playerScope = createdPlayers.get(playerId);
             if (playerScope == null)
@@ -63,8 +67,13 @@ final class PlayerScopeRegistry
             {
                 playerRemover.accept(playerId);
             }
-            catch (Exception ignored)
+            catch (Exception exception)
             {
+                LOGGER.log(
+                    System.Logger.Level.WARNING,
+                    "Failed to remove synthetic player from scope cleanup: " + playerId,
+                    exception
+                );
             }
             finally
             {

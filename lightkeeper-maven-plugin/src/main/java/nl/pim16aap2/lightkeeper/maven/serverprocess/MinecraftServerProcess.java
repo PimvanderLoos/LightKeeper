@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * specified Java executable and memory settings, and stopping it gracefully.
  */
 @RequiredArgsConstructor
-public abstract class MinecraftServerProcess
+public class MinecraftServerProcess
 {
     private final Path serverDirectory;
     private final Path jarFile;
@@ -105,7 +105,7 @@ public abstract class MinecraftServerProcess
 
     protected List<String> buildCommand()
     {
-        List<String> cmd = new ArrayList<>();
+        final List<String> cmd = new ArrayList<>();
         cmd.add(javaExecutable);
         cmd.add("-Xmx" + memoryMb + "M");
         cmd.add("-Xms" + memoryMb + "M");
@@ -122,7 +122,7 @@ public abstract class MinecraftServerProcess
     {
         final Process runningProcess = requireRunningProcess();
 
-        long deadline = System.currentTimeMillis() + (timeoutSeconds * 1000L);
+        final long deadline = System.currentTimeMillis() + (timeoutSeconds * 1000L);
 
         try (
             InputStreamReader isr = new InputStreamReader(runningProcess.getInputStream(), StandardCharsets.UTF_8);

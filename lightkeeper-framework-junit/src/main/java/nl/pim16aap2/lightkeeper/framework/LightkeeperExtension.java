@@ -27,6 +27,9 @@ public final class LightkeeperExtension implements
     private static final String KEY_SHARED_FRAMEWORK = "shared-framework";
     private static final String KEY_METHOD_FRAMEWORK = "method-framework";
 
+    /**
+     * Starts a shared framework when tests are not configured for per-method fresh servers.
+     */
     @Override
     public void beforeAll(ExtensionContext context)
     {
@@ -35,6 +38,9 @@ public final class LightkeeperExtension implements
         context.getStore(NAMESPACE).put(KEY_SHARED_FRAMEWORK, startFramework());
     }
 
+    /**
+     * Starts or scopes framework state before each test method.
+     */
     @Override
     public void beforeEach(ExtensionContext context)
     {
@@ -44,48 +50,60 @@ public final class LightkeeperExtension implements
             return;
         }
 
-        final LightkeeperFramework sharedFramework = getFramework(context);
+        final ILightkeeperFramework sharedFramework = getFramework(context);
         if (sharedFramework instanceof DefaultLightkeeperFramework defaultLightkeeperFramework)
             defaultLightkeeperFramework.beginMethodScope();
     }
 
+    /**
+     * Cleans up method-scoped framework resources after each test method.
+     */
     @Override
     public void afterEach(ExtensionContext context)
     {
         if (!isFreshServer(context))
         {
-            final LightkeeperFramework sharedFramework = getFramework(context);
+            final ILightkeeperFramework sharedFramework = getFramework(context);
             if (sharedFramework instanceof DefaultLightkeeperFramework defaultLightkeeperFramework)
                 defaultLightkeeperFramework.endMethodScope();
             return;
         }
 
-        final LightkeeperFramework framework = context.getStore(NAMESPACE).remove(
+        final ILightkeeperFramework framework = context.getStore(NAMESPACE).remove(
             KEY_METHOD_FRAMEWORK,
-            LightkeeperFramework.class
+            ILightkeeperFramework.class
         );
         if (framework != null)
             framework.close();
     }
 
+    /**
+     * Closes shared framework state after all tests in the class.
+     */
     @Override
     public void afterAll(ExtensionContext context)
     {
-        final LightkeeperFramework framework = context.getStore(NAMESPACE).remove(
+        final ILightkeeperFramework framework = context.getStore(NAMESPACE).remove(
             KEY_SHARED_FRAMEWORK,
-            LightkeeperFramework.class
+            ILightkeeperFramework.class
         );
         if (framework != null)
             framework.close();
     }
 
+    /**
+     * Supports injection of {@link ILightkeeperFramework} parameters.
+     */
     @Override
     public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
         throws ParameterResolutionException
     {
-        return parameterContext.getParameter().getType().equals(LightkeeperFramework.class);
+        return parameterContext.getParameter().getType().equals(ILightkeeperFramework.class);
     }
 
+    /**
+     * Resolves an active framework instance for parameter injection.
+     */
     @Override
     public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
         throws ParameterResolutionException
@@ -102,28 +120,28 @@ public final class LightkeeperExtension implements
         return classLevel || methodLevel;
     }
 
-    private static LightkeeperFramework getFramework(ExtensionContext context)
+    private static ILightkeeperFramework getFramework(ExtensionContext context)
     {
-        final LightkeeperFramework methodFramework = context.getStore(NAMESPACE).get(
+        final ILightkeeperFramework methodFramework = context.getStore(NAMESPACE).get(
             KEY_METHOD_FRAMEWORK,
-            LightkeeperFramework.class
+            ILightkeeperFramework.class
         );
         if (methodFramework != null)
             return methodFramework;
 
-        final LightkeeperFramework sharedFramework = context.getStore(NAMESPACE).get(
+        final ILightkeeperFramework sharedFramework = context.getStore(NAMESPACE).get(
             KEY_SHARED_FRAMEWORK,
-            LightkeeperFramework.class
+            ILightkeeperFramework.class
         );
         if (sharedFramework != null)
             return sharedFramework;
 
-        final LightkeeperFramework startedFramework = startFramework();
+        final ILightkeeperFramework startedFramework = startFramework();
         context.getStore(NAMESPACE).put(KEY_METHOD_FRAMEWORK, startedFramework);
         return startedFramework;
     }
 
-    private static LightkeeperFramework startFramework()
+    private static ILightkeeperFramework startFramework()
     {
         final String runtimeManifestPath = System.getProperty("lightkeeper.runtimeManifestPath", "").trim();
         if (runtimeManifestPath.isBlank())

@@ -40,6 +40,14 @@ public final class PaperDownloadsClient
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
 
+    /**
+     * Creates a client for querying Paper metadata and downloads.
+     *
+     * @param log
+     *     Maven log sink.
+     * @param userAgent
+     *     HTTP user-agent header value.
+     */
     public PaperDownloadsClient(Log log, String userAgent)
     {
         this.log = Objects.requireNonNull(log, "log");
@@ -52,6 +60,15 @@ public final class PaperDownloadsClient
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
+    /**
+     * Resolves a stable Paper build for a requested version or the {@code latest-supported} alias.
+     *
+     * @param requestedVersion
+     *     Requested Minecraft/Paper version or {@code latest-supported}.
+     * @return Resolved Paper build metadata.
+     * @throws MojoExecutionException
+     *     When metadata resolution fails.
+     */
     public PaperBuildMetadata resolveBuild(String requestedVersion)
         throws MojoExecutionException
     {
@@ -70,7 +87,7 @@ public final class PaperDownloadsClient
         final ProjectResponse projectResponse = fetchProject();
         final Set<String> versions = flattenVersions(projectResponse.versions());
 
-        for (String version : versions)
+        for (final String version : versions)
         {
             if (version.contains("-"))
                 continue;
@@ -95,7 +112,7 @@ public final class PaperDownloadsClient
             );
 
         final List<BuildResponse> buildResponses = parseBuildResponses(root);
-        for (BuildResponse buildResponse : buildResponses)
+        for (final BuildResponse buildResponse : buildResponses)
         {
             if (!STABLE_CHANNEL.equalsIgnoreCase(buildResponse.channel()))
                 continue;
@@ -186,10 +203,13 @@ public final class PaperDownloadsClient
         {
             response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         }
-        catch (IOException | InterruptedException exception)
+        catch (InterruptedException exception)
         {
-            if (exception instanceof InterruptedException)
-                Thread.currentThread().interrupt();
+            Thread.currentThread().interrupt();
+            throw new MojoExecutionException("Failed to query Fill API at '%s'.".formatted(uri), exception);
+        }
+        catch (IOException exception)
+        {
             throw new MojoExecutionException("Failed to query Fill API at '%s'.".formatted(uri), exception);
         }
 
@@ -217,7 +237,7 @@ public final class PaperDownloadsClient
     private Set<String> flattenVersions(Map<String, List<String>> versionsByGroup)
     {
         final Set<String> versions = new LinkedHashSet<>();
-        for (List<String> versionsInGroup : versionsByGroup.values())
+        for (final List<String> versionsInGroup : versionsByGroup.values())
             versions.addAll(versionsInGroup);
         return versions;
     }

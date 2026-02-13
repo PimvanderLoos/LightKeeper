@@ -1,7 +1,7 @@
 package nl.pim16aap2.lightkeeper.maven.test;
 
 import nl.pim16aap2.lightkeeper.framework.Lightkeeper;
-import nl.pim16aap2.lightkeeper.framework.LightkeeperFramework;
+import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import nl.pim16aap2.lightkeeper.framework.WorldSpec;
@@ -26,12 +26,13 @@ class LightkeeperFrameworkIT
         final RuntimeManifest runtimeManifest = new RuntimeManifestReader().read(runtimeManifestPath);
 
         // execute
-        try (LightkeeperFramework framework = Lightkeeper.start(runtimeManifestPath))
+        try (ILightkeeperFramework framework = Lightkeeper.start(runtimeManifestPath))
         {
             final WorldHandle worldHandle = framework.mainWorld();
+            final String expectedServerType = System.getProperty("lightkeeper.expectedServerType", "paper");
 
             // verify
-            assertThat(runtimeManifest.serverType()).isEqualTo("paper");
+            assertThat(runtimeManifest.serverType()).isEqualTo(expectedServerType);
             assertThat(runtimeManifest.runtimeProtocolVersion()).isEqualTo("v1.1");
             assertThat(runtimeManifest.udsSocketPath()).isNotBlank();
             assertThat(runtimeManifest.agentAuthToken()).isNotBlank();
@@ -56,7 +57,7 @@ class LightkeeperFrameworkIT
         );
 
         // execute
-        try (LightkeeperFramework framework = Lightkeeper.start(runtimeManifestPath))
+        try (ILightkeeperFramework framework = Lightkeeper.start(runtimeManifestPath))
         {
             final WorldHandle worldHandle = framework.newWorld(worldSpec);
             worldHandle.setBlockAt(position, "STONE");

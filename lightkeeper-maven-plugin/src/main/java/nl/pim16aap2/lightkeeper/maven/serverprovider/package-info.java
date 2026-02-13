@@ -1,5 +1,5 @@
 /**
- * This package contains server provider implementations for the LightKeeper canonical Paper flow.
+ * Server provider implementations that resolve, cache, prepare, and clone server installations.
  */
 @NullMarked
 package nl.pim16aap2.lightkeeper.maven.serverprovider;

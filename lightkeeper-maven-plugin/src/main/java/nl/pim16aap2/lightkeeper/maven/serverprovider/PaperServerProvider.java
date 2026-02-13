@@ -57,12 +57,7 @@ public class PaperServerProvider extends ServerProvider
         throws MojoExecutionException
     {
         acceptEula();
-        writeServerProperties("""
-            online-mode=false
-            enable-query=true
-            enable-rcon=false
-            """
-        );
+        writeServerProperties(createDefaultServerProperties());
 
         final int maxAttempts = Math.max(1, serverSpecification().serverStartMaxAttempts());
 
@@ -72,7 +67,10 @@ public class PaperServerProvider extends ServerProvider
 
             try
             {
-                log().info("LK_SERVER: Starting Paper base server process (attempt %d/%d).".formatted(attempt, maxAttempts));
+                log().info(
+                    "LK_SERVER: Starting Paper base server process (attempt %d/%d)."
+                        .formatted(attempt, maxAttempts)
+                );
                 serverProcess.start(serverSpecification().serverInitTimeoutSeconds());
                 log().info("LK_SERVER: Paper base server started successfully.");
                 log().info("LK_SERVER: Stopping Paper base server process.");
@@ -126,7 +124,7 @@ public class PaperServerProvider extends ServerProvider
             throw new MojoExecutionException(
                 "Failed to delete transient retry file in '%s'."
                     .formatted(baseServerDirectory()),
-                exception.getCause()
+                exception
             );
         }
         catch (IOException exception)

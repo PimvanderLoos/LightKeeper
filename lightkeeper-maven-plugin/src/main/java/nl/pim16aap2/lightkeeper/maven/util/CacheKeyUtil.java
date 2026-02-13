@@ -16,7 +16,7 @@ public final class CacheKeyUtil
     public static String createCacheKey(List<String> parts)
     {
         final StringJoiner joiner = new StringJoiner("|");
-        for (String part : parts)
+        for (final String part : parts)
             joiner.add(part);
         return HashUtil.sha256(joiner.toString()).toLowerCase(Locale.ROOT);
     }

@@ -1,5 +1,5 @@
 /**
- * This package contains classes that represent the server itself.
+ * Server process abstractions and implementations used by provisioning to start and stop Minecraft servers.
  */
 @NullMarked
 package nl.pim16aap2.lightkeeper.maven.serverprocess;

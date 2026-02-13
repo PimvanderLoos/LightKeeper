@@ -1,7 +1,7 @@
 package nl.pim16aap2.lightkeeper.maven.test;
 
 import nl.pim16aap2.lightkeeper.framework.LightkeeperExtension;
-import nl.pim16aap2.lightkeeper.framework.LightkeeperFramework;
+import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.MenuHandle;
 import org.bukkit.Material;
 import org.junit.jupiter.api.Test;
@@ -13,7 +13,7 @@ import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertion
 class LightkeeperBotIT
 {
     @Test
-    void playerBots_shouldExecuteCommandsAndInteractWithMenusAndBlocks(LightkeeperFramework framework)
+    void playerBots_shouldExecuteCommandsAndInteractWithMenusAndBlocks(ILightkeeperFramework framework)
     {
         // setup
         final var world = framework.mainWorld();

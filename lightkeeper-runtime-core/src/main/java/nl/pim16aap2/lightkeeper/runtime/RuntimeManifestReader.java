@@ -57,7 +57,7 @@ public final class RuntimeManifestReader
         if (manifest.agentCacheIdentity() == null || manifest.agentCacheIdentity().isBlank())
             throw new IOException("Runtime manifest field 'agentCacheIdentity' is missing or blank.");
 
-        for (RuntimeManifest.PreloadedWorld preloadedWorld : manifest.preloadedWorlds())
+        for (final RuntimeManifest.PreloadedWorld preloadedWorld : manifest.preloadedWorlds())
         {
             if (preloadedWorld.name() == null || preloadedWorld.name().isBlank())
                 throw new IOException("Runtime manifest contains preloaded world with missing name.");
