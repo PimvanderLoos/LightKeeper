@@ -9,11 +9,18 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -121,31 +128,128 @@ public class MinecraftServerProcess
         throws MojoExecutionException
     {
         final Process runningProcess = requireRunningProcess();
+        final long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(timeoutSeconds);
+        final BlockingQueue<String> outputLines = new LinkedBlockingQueue<>();
+        final ExecutorService outputReaderExecutor = Executors.newSingleThreadExecutor(
+            Thread.ofPlatform().name("lightkeeper-startup-output-reader-", 0).daemon(true).factory()
+        );
 
-        final long deadline = System.currentTimeMillis() + (timeoutSeconds * 1000L);
-
-        try (
-            InputStreamReader isr = new InputStreamReader(runningProcess.getInputStream(), StandardCharsets.UTF_8);
-            BufferedReader reader = new BufferedReader(isr))
+        try
         {
+            final Future<?> outputReaderFuture = outputReaderExecutor.submit(
+                () -> readProcessOutputLines(runningProcess, outputLines)
+            );
 
-            String line;
-            while (System.currentTimeMillis() < deadline &&
-                (line = reader.readLine()) != null)
+            while (System.nanoTime() < deadlineNanos)
             {
-                if (line.endsWith(")! For help, type \"help\"") && line.contains("Done ("))
-                    return;
+                final long remainingMillis = TimeUnit.NANOSECONDS.toMillis(deadlineNanos - System.nanoTime());
+                final long pollMillis = Math.min(Math.max(remainingMillis, 1L), 200L);
+                final String line = outputLines.poll(pollMillis, TimeUnit.MILLISECONDS);
+                if (line != null)
+                {
+                    if (line.endsWith(")! For help, type \"help\"") && line.contains("Done ("))
+                        return;
 
-                if (line.contains("Failed to initialize server"))
-                    throw new MojoExecutionException("Server startup failed: " + line);
+                    if (line.contains("Failed to initialize server"))
+                        throw new MojoExecutionException("Server startup failed: " + line);
+                }
+
+                if (!runningProcess.isAlive() && outputLines.isEmpty())
+                    throw new MojoExecutionException("Server process ended before startup completed.");
+
+                if (outputReaderFuture.isDone() && outputLines.isEmpty())
+                {
+                    awaitOutputReader(outputReaderFuture);
+                    throw new MojoExecutionException("Server output closed before startup completed.");
+                }
             }
 
-            throw new MojoExecutionException("Startup timeout or process ended unexpectedly");
+            throw new MojoExecutionException(
+                "Startup timeout after %d second(s) waiting for readiness output.".formatted(timeoutSeconds)
+            );
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+            forceStopProcess();
+            throw new MojoExecutionException("Interrupted while monitoring startup", e);
+        }
+        catch (MojoExecutionException e)
+        {
+            forceStopProcess();
+            throw e;
         }
         catch (Exception e)
         {
             forceStopProcess();
             throw new MojoExecutionException("Failed to monitor startup", e);
+        }
+        finally
+        {
+            closeInputStreamQuietly(runningProcess);
+            outputReaderExecutor.shutdownNow();
+        }
+    }
+
+    private static void readProcessOutputLines(Process runningProcess, BlockingQueue<String> outputLines)
+    {
+        try (
+            InputStreamReader isr = new InputStreamReader(runningProcess.getInputStream(), StandardCharsets.UTF_8);
+            BufferedReader reader = new BufferedReader(isr)
+        )
+        {
+            String line;
+            while ((line = reader.readLine()) != null)
+                outputLines.put(line);
+        }
+        catch (InterruptedException exception)
+        {
+            Thread.currentThread().interrupt();
+        }
+        catch (IOException exception)
+        {
+            throw new UncheckedIOException("Failed to read server startup output.", exception);
+        }
+    }
+
+    private static void awaitOutputReader(Future<?> outputReaderFuture)
+        throws MojoExecutionException
+    {
+        try
+        {
+            outputReaderFuture.get();
+        }
+        catch (InterruptedException exception)
+        {
+            Thread.currentThread().interrupt();
+            throw new MojoExecutionException("Interrupted while monitoring startup output.", exception);
+        }
+        catch (ExecutionException exception)
+        {
+            final Throwable cause = exception.getCause();
+            if (cause instanceof UncheckedIOException uncheckedIOException)
+            {
+                throw new MojoExecutionException(
+                    uncheckedIOException.getMessage(),
+                    uncheckedIOException.getCause()
+                );
+            }
+            throw new MojoExecutionException(
+                "Failed while reading server startup output.",
+                cause == null ? exception : cause
+            );
+        }
+    }
+
+    private static void closeInputStreamQuietly(Process process)
+    {
+        try
+        {
+            process.getInputStream().close();
+        }
+        catch (IOException ignored)
+        {
+            // ignored while cleaning up startup monitor resources
         }
     }
 

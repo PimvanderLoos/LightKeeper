@@ -153,9 +153,9 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
             trimmedName,
             uuid,
             worldName,
-            0.0D,
-            0.0D,
-            0.0D,
+            null,
+            null,
+            null,
             null,
             null
         );

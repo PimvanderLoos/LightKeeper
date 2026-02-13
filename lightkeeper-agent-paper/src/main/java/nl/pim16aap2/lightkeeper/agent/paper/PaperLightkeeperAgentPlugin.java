@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import nl.pim16aap2.lightkeeper.nms.api.IBotPlayerNmsAdapter;
 import nl.pim16aap2.lightkeeper.nms.v121r6.BotPlayerNmsAdapterV1_21_R6;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
+import nl.pim16aap2.lightkeeper.runtime.agent.AgentAction;
 import nl.pim16aap2.lightkeeper.runtime.agent.AgentRequest;
 import nl.pim16aap2.lightkeeper.runtime.agent.AgentResponse;
 import org.bukkit.Bukkit;
@@ -249,10 +250,13 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
                 new OutputStreamWriter(Channels.newOutputStream(socketChannel), StandardCharsets.UTF_8))
         )
         {
+            boolean handshakeCompleted = false;
             String line;
             while ((line = reader.readLine()) != null)
             {
-                final AgentResponse response = handleRequestLine(line);
+                final RequestDispatchResult dispatchResult = handleRequestLine(line, handshakeCompleted);
+                handshakeCompleted = dispatchResult.handshakeCompleted();
+                final AgentResponse response = dispatchResult.response();
                 writer.write(objectMapper.writeValueAsString(response));
                 writer.newLine();
                 writer.flush();
@@ -265,33 +269,54 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         }
     }
 
-    private AgentResponse handleRequestLine(String line)
+    private RequestDispatchResult handleRequestLine(String line, boolean handshakeCompleted)
     {
         try
         {
             final AgentRequest request = objectMapper.readValue(line, AgentRequest.class);
-            return dispatchRequest(request);
+            return dispatchRequest(request, handshakeCompleted);
         }
         catch (Exception exception)
         {
-            return errorResponse(
-                "unknown",
-                "INVALID_REQUEST",
-                "Failed to parse request: " + exception.getMessage()
+            return new RequestDispatchResult(
+                errorResponse(
+                    "unknown",
+                    "INVALID_REQUEST",
+                    "Failed to parse request: " + exception.getMessage()
+                ),
+                handshakeCompleted
             );
         }
     }
 
-    private AgentResponse dispatchRequest(AgentRequest request)
+    private RequestDispatchResult dispatchRequest(AgentRequest request, boolean handshakeCompleted)
     {
         final Map<String, String> arguments = request.arguments() == null ? Map.of() : request.arguments();
         final String requestId = Objects.requireNonNullElse(request.requestId(), "unknown");
 
         try
         {
-            return switch (request.action())
+            if (request.action() == AgentAction.HANDSHAKE)
             {
-                case HANDSHAKE -> handleHandshake(requestId, arguments);
+                final AgentResponse handshakeResponse = handleHandshake(requestId, arguments);
+                return new RequestDispatchResult(handshakeResponse, handshakeCompleted || handshakeResponse.success());
+            }
+
+            if (!handshakeCompleted)
+            {
+                return new RequestDispatchResult(
+                    errorResponse(
+                        requestId,
+                        "HANDSHAKE_REQUIRED",
+                        "A successful HANDSHAKE action is required before '%s'."
+                            .formatted(String.valueOf(request.action()))
+                    ),
+                    false
+                );
+            }
+
+            return new RequestDispatchResult(switch (request.action())
+            {
                 case MAIN_WORLD -> handleMainWorld(requestId);
                 case NEW_WORLD -> handleNewWorld(requestId, arguments);
                 case EXECUTE_COMMAND -> handleExecuteCommand(requestId, arguments);
@@ -307,7 +332,8 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
                 case GET_PLAYER_MESSAGES -> handleGetPlayerMessages(requestId, arguments);
                 case WAIT_TICKS -> handleWaitTicks(requestId, arguments);
                 case GET_SERVER_TICK -> handleGetServerTick(requestId);
-            };
+                case HANDSHAKE -> throw new IllegalStateException("Unreachable HANDSHAKE dispatch branch.");
+            }, true);
         }
         catch (Exception exception)
         {
@@ -321,12 +347,19 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
             );
             getLogger().severe("Agent failure stack trace:");
             exception.printStackTrace();
-            return errorResponse(
-                requestId,
-                "REQUEST_FAILED",
-                Objects.requireNonNullElse(exception.getMessage(), exception.getClass().getName())
+            return new RequestDispatchResult(
+                errorResponse(
+                    requestId,
+                    "REQUEST_FAILED",
+                    Objects.requireNonNullElse(exception.getMessage(), exception.getClass().getName())
+                ),
+                handshakeCompleted
             );
         }
+    }
+
+    private record RequestDispatchResult(AgentResponse response, boolean handshakeCompleted)
+    {
     }
 
     private AgentResponse handleHandshake(String requestId, Map<String, String> arguments)
