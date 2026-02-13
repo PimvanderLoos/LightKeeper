@@ -86,7 +86,8 @@ public final class PaperDownloadsClient
         throws MojoExecutionException
     {
         final ProjectResponse projectResponse = fetchProject();
-        final List<String> versionsDescending = sortStableVersionsDescending(flattenVersions(projectResponse.versions()));
+        final List<String> versionsDescending =
+            sortStableVersionsDescending(flattenVersions(projectResponse.versions()));
 
         for (final String version : versionsDescending)
         {
@@ -251,20 +252,36 @@ public final class PaperDownloadsClient
 
     private static int compareVersions(String leftVersion, String rightVersion)
     {
-        final String[] leftParts = leftVersion.split("\\.");
-        final String[] rightParts = rightVersion.split("\\.");
-        final int maxParts = Math.max(leftParts.length, rightParts.length);
+        int leftTokenStart = 0;
+        int rightTokenStart = 0;
 
-        for (int idx = 0; idx < maxParts; ++idx)
+        while (leftTokenStart < leftVersion.length() || rightTokenStart < rightVersion.length())
         {
-            final int leftPart = idx < leftParts.length ? Integer.parseInt(leftParts[idx]) : 0;
-            final int rightPart = idx < rightParts.length ? Integer.parseInt(rightParts[idx]) : 0;
+            final int leftTokenEnd = findTokenEnd(leftVersion, leftTokenStart);
+            final int rightTokenEnd = findTokenEnd(rightVersion, rightTokenStart);
+
+            final int leftPart = leftTokenStart < leftVersion.length()
+                ? Integer.parseInt(leftVersion.substring(leftTokenStart, leftTokenEnd))
+                : 0;
+            final int rightPart = rightTokenStart < rightVersion.length()
+                ? Integer.parseInt(rightVersion.substring(rightTokenStart, rightTokenEnd))
+                : 0;
+
             final int partComparison = Integer.compare(leftPart, rightPart);
             if (partComparison != 0)
                 return partComparison;
+
+            leftTokenStart = leftTokenEnd + 1;
+            rightTokenStart = rightTokenEnd + 1;
         }
 
         return 0;
+    }
+
+    private static int findTokenEnd(String version, int startIndex)
+    {
+        final int nextDotIndex = version.indexOf('.', startIndex);
+        return nextDotIndex < 0 ? version.length() : nextDotIndex;
     }
 
     private static String validateUserAgent(String userAgent)
