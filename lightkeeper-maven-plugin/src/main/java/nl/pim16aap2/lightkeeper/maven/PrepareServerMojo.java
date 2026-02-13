@@ -208,6 +208,7 @@ public class PrepareServerMojo extends AbstractMojo
         final String resolvedManifestServerVersion;
         final long resolvedManifestBuildId;
         final String resolvedCacheKey;
+        final int resolvedMemoryMb;
         if (SERVER_TYPE_PAPER.equals(normalizedServerType))
         {
             final PaperBuildMetadata paperBuildMetadata = paperDownloadsClient.resolveBuild(effectiveServerVersion);
@@ -238,6 +239,7 @@ public class PrepareServerMojo extends AbstractMojo
             resolvedManifestServerVersion = paperBuildMetadata.minecraftVersion();
             resolvedManifestBuildId = paperBuildMetadata.buildId();
             resolvedCacheKey = cacheKey;
+            resolvedMemoryMb = serverSpecification.memoryMb();
         }
         else if (SERVER_TYPE_SPIGOT.equals(normalizedServerType))
         {
@@ -270,6 +272,7 @@ public class PrepareServerMojo extends AbstractMojo
             resolvedManifestServerVersion = spigotBuildMetadata.minecraftVersion();
             resolvedManifestBuildId = 0L;
             resolvedCacheKey = cacheKey;
+            resolvedMemoryMb = serverSpecification.memoryMb();
         }
         else
         {
@@ -308,7 +311,7 @@ public class PrepareServerMojo extends AbstractMojo
             resolvedCacheKey,
             targetServerDirectory.toAbsolutePath().toString(),
             serverProvider.targetJarFilePath().toAbsolutePath().toString(),
-            serverSpecification.memoryMb(),
+            resolvedMemoryMb,
             udsSocketPath.toAbsolutePath().toString(),
             agentAuthToken,
             agentJarPath != null ? agentJarPath.toAbsolutePath().toString() : null,
