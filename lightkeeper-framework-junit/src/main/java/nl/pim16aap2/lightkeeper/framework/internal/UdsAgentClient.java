@@ -11,6 +11,7 @@ import nl.pim16aap2.lightkeeper.framework.WorldSpec;
 import nl.pim16aap2.lightkeeper.runtime.agent.AgentAction;
 import nl.pim16aap2.lightkeeper.runtime.agent.AgentRequest;
 import nl.pim16aap2.lightkeeper.runtime.agent.AgentResponse;
+import org.jspecify.annotations.Nullable;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -114,11 +115,11 @@ final class UdsAgentClient implements AutoCloseable
         String name,
         UUID uuid,
         String worldName,
-        Double x,
-        Double y,
-        Double z,
-        Double health,
-        Set<String> permissions)
+        @Nullable Double x,
+        @Nullable Double y,
+        @Nullable Double z,
+        @Nullable Double health,
+        @Nullable Set<String> permissions)
     {
         final Map<String, String> arguments = new java.util.HashMap<>();
         arguments.put("name", name);
@@ -286,6 +287,7 @@ final class UdsAgentClient implements AutoCloseable
         }
         catch (IOException ignored)
         {
+            log.fine(() -> "Failed to close agent socket channel cleanly.");
         }
     }
 

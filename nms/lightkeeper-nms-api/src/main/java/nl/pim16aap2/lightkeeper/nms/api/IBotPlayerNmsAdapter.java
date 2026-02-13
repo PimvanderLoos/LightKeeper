@@ -10,7 +10,7 @@ import java.util.UUID;
 /**
  * Version-specific NMS bridge for synthetic player lifecycle.
  */
-public interface BotPlayerNmsAdapter
+public interface IBotPlayerNmsAdapter
 {
     /**
      * Spawns and registers a synthetic player.

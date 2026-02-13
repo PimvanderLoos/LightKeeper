@@ -8,6 +8,7 @@ import nl.pim16aap2.lightkeeper.maven.provisioning.ServerAssetInstaller;
 import nl.pim16aap2.lightkeeper.maven.provisioning.WorldInputSpec;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.PaperServerProvider;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.ServerProvider;
+import nl.pim16aap2.lightkeeper.maven.serverprovider.SpigotServerProvider;
 import nl.pim16aap2.lightkeeper.maven.util.CacheKeyUtil;
 import nl.pim16aap2.lightkeeper.maven.util.FileUtil;
 import nl.pim16aap2.lightkeeper.maven.util.HashUtil;
@@ -52,8 +53,9 @@ import java.util.UUID;
 public class PrepareServerMojo extends AbstractMojo
 {
     private static final String SERVER_TYPE_PAPER = "paper";
+    private static final String SERVER_TYPE_SPIGOT = "spigot";
     private static final int UNIX_SOCKET_PATH_MAX_BYTES = 100;
-    private static final List<String> SUPPORTED_SERVER_TYPES = List.of(SERVER_TYPE_PAPER);
+    private static final List<String> SUPPORTED_SERVER_TYPES = List.of(SERVER_TYPE_PAPER, SERVER_TYPE_SPIGOT);
 
     @Parameter(property = "lightkeeper.serverType", defaultValue = SERVER_TYPE_PAPER)
     @Nullable
@@ -165,11 +167,15 @@ public class PrepareServerMojo extends AbstractMojo
     @Nullable
     private List<RemoteRepository> remoteProjectRepositories;
 
+    /**
+     * Resolves/caches the server runtime, installs test assets, and writes the runtime manifest.
+     */
     @Override
     public void execute()
         throws MojoExecutionException
     {
         validateConfiguration();
+        final String normalizedServerType = normalizeServerType();
 
         final String effectiveServerVersion = Objects.requireNonNull(serverVersion);
         final Path effectiveJarCacheDirectoryRoot = Objects.requireNonNull(jarCacheDirectoryRoot);
@@ -182,7 +188,8 @@ public class PrepareServerMojo extends AbstractMojo
         final List<PluginArtifactSpec> pluginArtifactSpecs = resolvePluginArtifactSpecs();
 
         getLog().info(
-            "Preparing server for platform: '" + serverType + "' with version: '" + effectiveServerVersion + "'."
+            "Preparing server for platform: '%s' with version: '%s'."
+                .formatted(normalizedServerType, effectiveServerVersion)
         );
 
         FileUtil.createDirectories(effectiveJarCacheDirectoryRoot, "jar cache directory root");
@@ -191,53 +198,86 @@ public class PrepareServerMojo extends AbstractMojo
         FileUtil.createDirectories(effectiveAgentSocketDirectory, "agent socket directory");
 
         final String effectiveUserAgent = Objects.requireNonNull(userAgent);
-        final PaperBuildMetadata paperBuildMetadata =
-            new PaperDownloadsClient(getLog(), effectiveUserAgent).resolveBuild(effectiveServerVersion);
+        final PaperDownloadsClient paperDownloadsClient = new PaperDownloadsClient(getLog(), effectiveUserAgent);
 
         final AgentMetadata agentMetadata = resolveAgentMetadata(agentJarPath);
         final String runtimeProtocolVersion = RuntimeProtocol.VERSION;
-        final String cacheKey = CacheKeyUtil.createCacheKey(List.of(
-            SERVER_TYPE_PAPER,
-            paperBuildMetadata.minecraftVersion(),
-            Long.toString(paperBuildMetadata.buildId()),
-            System.getProperty("java.specification.version"),
-            System.getProperty("os.name"),
-            System.getProperty("os.arch"),
-            runtimeProtocolVersion,
-            agentMetadata.cacheIdentity()
-        ));
-
         final String agentAuthToken = UUID.randomUUID().toString();
         final Path udsSocketPath = resolveUdsSocketPath(effectiveAgentSocketDirectory, agentAuthToken);
-
-        final ServerSpecification serverSpecification = new ServerSpecification(
-            paperBuildMetadata.minecraftVersion(),
-            effectiveJarCacheDirectoryRoot,
-            effectiveBaseServerCacheDirectoryRoot,
-            effectiveServerWorkDirectoryRoot,
-            effectiveRuntimeManifestPath,
-            effectiveAgentSocketDirectory,
-            versionedCacheDirectories,
-            jarCacheExpiryDays,
-            forceRebuildJar,
-            baseServerCacheExpiryDays,
-            forceRecreateBaseServer,
-            serverInitTimeoutSeconds,
-            serverStopTimeoutSeconds,
-            serverStartMaxAttempts,
-            memoryMb,
-            Objects.requireNonNullElse(javaExecutablePath, "java"),
-            extraJvmArgs,
-            cacheKey,
-            effectiveUserAgent,
-            agentJarPath,
-            agentMetadata.sha256(),
-            agentAuthToken,
-            runtimeProtocolVersion,
-            agentMetadata.cacheIdentity()
-        );
-
-        final ServerProvider serverProvider = new PaperServerProvider(getLog(), serverSpecification, paperBuildMetadata);
+        final ServerProvider serverProvider;
+        final String resolvedManifestServerVersion;
+        final long resolvedManifestBuildId;
+        final String resolvedCacheKey;
+        if (SERVER_TYPE_PAPER.equals(normalizedServerType))
+        {
+            final PaperBuildMetadata paperBuildMetadata = paperDownloadsClient.resolveBuild(effectiveServerVersion);
+            final String cacheKey = CacheKeyUtil.createCacheKey(List.of(
+                SERVER_TYPE_PAPER,
+                paperBuildMetadata.minecraftVersion(),
+                Long.toString(paperBuildMetadata.buildId()),
+                System.getProperty("java.specification.version"),
+                System.getProperty("os.name"),
+                System.getProperty("os.arch"),
+                runtimeProtocolVersion,
+                agentMetadata.cacheIdentity()
+            ));
+            final ServerSpecification serverSpecification = createServerSpecification(
+                paperBuildMetadata.minecraftVersion(),
+                effectiveJarCacheDirectoryRoot,
+                effectiveBaseServerCacheDirectoryRoot,
+                effectiveServerWorkDirectoryRoot,
+                effectiveRuntimeManifestPath,
+                effectiveAgentSocketDirectory,
+                cacheKey,
+                effectiveUserAgent,
+                agentMetadata,
+                agentAuthToken,
+                runtimeProtocolVersion
+            );
+            serverProvider = new PaperServerProvider(getLog(), serverSpecification, paperBuildMetadata);
+            resolvedManifestServerVersion = paperBuildMetadata.minecraftVersion();
+            resolvedManifestBuildId = paperBuildMetadata.buildId();
+            resolvedCacheKey = cacheKey;
+        }
+        else if (SERVER_TYPE_SPIGOT.equals(normalizedServerType))
+        {
+            final SpigotBuildMetadata spigotBuildMetadata =
+                new SpigotDownloadsClient(getLog(), paperDownloadsClient).resolveBuild(effectiveServerVersion);
+            final String cacheKey = CacheKeyUtil.createCacheKey(List.of(
+                SERVER_TYPE_SPIGOT,
+                spigotBuildMetadata.minecraftVersion(),
+                spigotBuildMetadata.buildToolsIdentity(),
+                System.getProperty("java.specification.version"),
+                System.getProperty("os.name"),
+                System.getProperty("os.arch"),
+                runtimeProtocolVersion,
+                agentMetadata.cacheIdentity()
+            ));
+            final ServerSpecification serverSpecification = createServerSpecification(
+                spigotBuildMetadata.minecraftVersion(),
+                effectiveJarCacheDirectoryRoot,
+                effectiveBaseServerCacheDirectoryRoot,
+                effectiveServerWorkDirectoryRoot,
+                effectiveRuntimeManifestPath,
+                effectiveAgentSocketDirectory,
+                cacheKey,
+                effectiveUserAgent,
+                agentMetadata,
+                agentAuthToken,
+                runtimeProtocolVersion
+            );
+            serverProvider = new SpigotServerProvider(getLog(), serverSpecification, spigotBuildMetadata);
+            resolvedManifestServerVersion = spigotBuildMetadata.minecraftVersion();
+            resolvedManifestBuildId = 0L;
+            resolvedCacheKey = cacheKey;
+        }
+        else
+        {
+            throw new MojoExecutionException(
+                "Unsupported server type '%s'. Supported types: %s"
+                    .formatted(normalizedServerType, SUPPORTED_SERVER_TYPES)
+            );
+        }
 
         serverProvider.prepareServer();
 
@@ -262,10 +302,10 @@ public class PrepareServerMojo extends AbstractMojo
             .toList();
 
         final RuntimeManifest runtimeManifest = new RuntimeManifest(
-            SERVER_TYPE_PAPER,
-            paperBuildMetadata.minecraftVersion(),
-            paperBuildMetadata.buildId(),
-            cacheKey,
+            normalizedServerType,
+            resolvedManifestServerVersion,
+            resolvedManifestBuildId,
+            resolvedCacheKey,
             targetServerDirectory.toAbsolutePath().toString(),
             serverProvider.targetJarFilePath().toAbsolutePath().toString(),
             udsSocketPath.toAbsolutePath().toString(),
@@ -289,10 +329,58 @@ public class PrepareServerMojo extends AbstractMojo
         }
     }
 
+    private ServerSpecification createServerSpecification(
+        String resolvedServerVersion,
+        Path jarCacheDirectoryRootValue,
+        Path baseServerCacheDirectoryRootValue,
+        Path serverWorkDirectoryRootValue,
+        Path runtimeManifestPathValue,
+        Path agentSocketDirectoryValue,
+        String cacheKey,
+        String effectiveUserAgent,
+        AgentMetadata agentMetadata,
+        String agentAuthToken,
+        String runtimeProtocolVersion)
+    {
+        return new ServerSpecification(
+            resolvedServerVersion,
+            jarCacheDirectoryRootValue,
+            baseServerCacheDirectoryRootValue,
+            serverWorkDirectoryRootValue,
+            runtimeManifestPathValue,
+            agentSocketDirectoryValue,
+            versionedCacheDirectories,
+            jarCacheExpiryDays,
+            forceRebuildJar,
+            baseServerCacheExpiryDays,
+            forceRecreateBaseServer,
+            serverInitTimeoutSeconds,
+            serverStopTimeoutSeconds,
+            serverStartMaxAttempts,
+            memoryMb,
+            Objects.requireNonNullElse(javaExecutablePath, "java"),
+            extraJvmArgs,
+            cacheKey,
+            effectiveUserAgent,
+            agentJarPath,
+            agentMetadata.sha256(),
+            agentAuthToken,
+            runtimeProtocolVersion,
+            agentMetadata.cacheIdentity()
+        );
+    }
+
+    private String normalizeServerType()
+    {
+        return Objects.requireNonNull(serverType, "serverType may not be null.")
+            .trim()
+            .toLowerCase(Locale.ROOT);
+    }
+
     private void validateConfiguration()
         throws MojoExecutionException
     {
-        final String normalizedType = Objects.requireNonNull(serverType).toLowerCase(Locale.ROOT);
+        final String normalizedType = normalizeServerType();
         if (!SUPPORTED_SERVER_TYPES.contains(normalizedType))
         {
             throw new MojoExecutionException(
@@ -313,7 +401,7 @@ public class PrepareServerMojo extends AbstractMojo
     {
         final List<WorldInputSpec> inputSpecs = new ArrayList<>();
         final List<WorldInputConfig> configuredWorlds = worlds == null ? List.of() : worlds;
-        for (WorldInputConfig worldInputConfig : configuredWorlds)
+        for (final WorldInputConfig worldInputConfig : configuredWorlds)
         {
             if (worldInputConfig == null)
                 throw new MojoExecutionException("Configured world entry may not be null.");
@@ -321,7 +409,11 @@ public class PrepareServerMojo extends AbstractMojo
             final String worldName = validateWorldName(worldInputConfig.name);
             final WorldInputSpec.SourceType sourceType = parseWorldSourceType(worldInputConfig.sourceType);
             if (worldInputConfig.sourcePath == null)
-                throw new MojoExecutionException("Missing required configuration value 'lightkeeper.worlds.sourcePath'.");
+            {
+                throw new MojoExecutionException(
+                    "Missing required configuration value 'lightkeeper.worlds.sourcePath'."
+                );
+            }
             final Path sourcePath = worldInputConfig.sourcePath.toAbsolutePath().normalize();
 
             if (sourceType == WorldInputSpec.SourceType.FOLDER && !Files.isDirectory(sourcePath))
@@ -359,7 +451,7 @@ public class PrepareServerMojo extends AbstractMojo
     {
         final List<PluginArtifactSpec> specs = new ArrayList<>();
         final List<PluginArtifactConfig> configuredPlugins = plugins == null ? List.of() : plugins;
-        for (PluginArtifactConfig pluginArtifactConfig : configuredPlugins)
+        for (final PluginArtifactConfig pluginArtifactConfig : configuredPlugins)
         {
             if (pluginArtifactConfig == null)
                 throw new MojoExecutionException("Configured plugin entry may not be null.");
@@ -370,7 +462,9 @@ public class PrepareServerMojo extends AbstractMojo
             if (sourceType == PluginArtifactSpec.SourceType.PATH)
             {
                 if (pluginArtifactConfig.path == null)
-                    throw new MojoExecutionException("Missing required configuration value 'lightkeeper.plugins.path'.");
+                    throw new MojoExecutionException(
+                        "Missing required configuration value 'lightkeeper.plugins.path'."
+                    );
                 final Path path = pluginArtifactConfig.path.toAbsolutePath().normalize();
                 if (!Files.isRegularFile(path))
                 {
@@ -395,12 +489,14 @@ public class PrepareServerMojo extends AbstractMojo
             }
 
             final String groupId = requireNonBlank(pluginArtifactConfig.groupId, "lightkeeper.plugins.groupId");
-            final String artifactId = requireNonBlank(pluginArtifactConfig.artifactId, "lightkeeper.plugins.artifactId");
+            final String artifactId = requireNonBlank(
+                pluginArtifactConfig.artifactId,
+                "lightkeeper.plugins.artifactId"
+            );
             final String version = requireNonBlank(pluginArtifactConfig.version, "lightkeeper.plugins.version");
             final String classifier = normalizeOptionalString(pluginArtifactConfig.classifier);
-            final String type = normalizeOptionalString(pluginArtifactConfig.type) == null
-                ? "jar"
-                : normalizeOptionalString(pluginArtifactConfig.type);
+            final @Nullable String configuredType = normalizeOptionalString(pluginArtifactConfig.type);
+            final String type = configuredType == null ? "jar" : configuredType;
             final boolean includeTransitive = pluginArtifactConfig.includeTransitive != null &&
                 pluginArtifactConfig.includeTransitive;
 
@@ -432,7 +528,7 @@ public class PrepareServerMojo extends AbstractMojo
         throws MojoExecutionException
     {
         final List<ResolvedPluginArtifact> resolvedPluginArtifacts = new ArrayList<>();
-        for (PluginArtifactSpec spec : specs)
+        for (final PluginArtifactSpec spec : specs)
         {
             if (spec.sourceType() == PluginArtifactSpec.SourceType.PATH)
             {
@@ -507,7 +603,7 @@ public class PrepareServerMojo extends AbstractMojo
         {
             final DependencyResult dependencyResult = resolver.resolveDependencies(session, dependencyRequest);
             final List<ResolvedPluginArtifact> resolvedPluginArtifacts = new ArrayList<>();
-            for (ArtifactResult artifactResult : dependencyResult.getArtifactResults())
+            for (final ArtifactResult artifactResult : dependencyResult.getArtifactResults())
             {
                 final Artifact artifact = artifactResult.getArtifact();
                 final Path sourceJar = artifact.getFile().toPath();

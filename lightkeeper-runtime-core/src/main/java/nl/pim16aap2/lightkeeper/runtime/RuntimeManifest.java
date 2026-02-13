@@ -47,7 +47,7 @@ public record RuntimeManifest(
     @Nullable String agentJarSha256,
     String runtimeProtocolVersion,
     String agentCacheIdentity,
-    @Nullable List<PreloadedWorld> preloadedWorlds
+    List<PreloadedWorld> preloadedWorlds
 )
 {
     public RuntimeManifest

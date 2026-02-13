@@ -1,7 +1,7 @@
 package nl.pim16aap2.lightkeeper.framework;
 
 /**
- * Condition callback used by {@link LightkeeperFramework#waitUntil(Condition, java.time.Duration)}.
+ * Condition callback used by {@link ILightkeeperFramework#waitUntil(Condition, java.time.Duration)}.
  */
 @FunctionalInterface
 public interface Condition

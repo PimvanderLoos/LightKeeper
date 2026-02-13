@@ -22,6 +22,7 @@ class LightkeeperProvisioningIT
         // execute
         final RuntimeManifest runtimeManifest = new RuntimeManifestReader().read(runtimeManifestPath);
         final Path serverDirectory = Path.of(runtimeManifest.serverDirectory());
+        final String expectedServerType = System.getProperty("lightkeeper.expectedServerType", "paper");
 
         // verify
         assertThat(serverDirectory.resolve("lightkeeper-fixture-world/fixtures/marker.txt"))
@@ -31,5 +32,6 @@ class LightkeeperProvisioningIT
             .isRegularFile()
             .hasContent("overlay: true\n");
         assertThat(runtimeManifest.preloadedWorlds()).isEmpty();
+        assertThat(runtimeManifest.serverType()).isEqualTo(expectedServerType);
     }
 }

@@ -32,7 +32,7 @@ public final class ServerAssetInstaller
     public static void installWorlds(Path targetServerDirectory, List<WorldInputSpec> worlds, Log log)
         throws MojoExecutionException
     {
-        for (WorldInputSpec world : worlds)
+        for (final WorldInputSpec world : worlds)
         {
             final long startTimeNanos = System.nanoTime();
             final Path targetWorldDirectory = resolveChildPath(targetServerDirectory, world.name(), "world name");
@@ -78,7 +78,7 @@ public final class ServerAssetInstaller
         FileUtil.createDirectories(pluginsDirectory, "plugins directory");
 
         final Set<String> usedFileNames = new HashSet<>();
-        for (ResolvedPluginArtifact pluginArtifact : pluginArtifacts)
+        for (final ResolvedPluginArtifact pluginArtifact : pluginArtifacts)
         {
             final Path sourceJar = pluginArtifact.sourceJar();
             if (!Files.isRegularFile(sourceJar))
@@ -179,7 +179,12 @@ public final class ServerAssetInstaller
                     final Path targetFile = targetRoot.resolve(relative).normalize();
                     ensureInsideRootIo(targetFile, targetRoot, "config overlay file");
                     Files.createDirectories(targetFile.getParent());
-                    Files.copy(file, targetFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
+                    Files.copy(
+                        file,
+                        targetFile,
+                        StandardCopyOption.REPLACE_EXISTING,
+                        StandardCopyOption.COPY_ATTRIBUTES
+                    );
                     copiedFileCount.incrementAndGet();
                     return FileVisitResult.CONTINUE;
                 }

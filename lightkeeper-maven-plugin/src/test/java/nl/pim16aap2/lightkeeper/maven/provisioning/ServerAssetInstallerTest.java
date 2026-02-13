@@ -2,10 +2,12 @@ package nl.pim16aap2.lightkeeper.maven.provisioning;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.SystemStreamLog;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -179,13 +181,13 @@ class ServerAssetInstallerTest
             {
                 zipOutputStream.putNextEntry(new ZipEntry(entry.path()));
                 if (entry.content() != null)
-                    zipOutputStream.write(entry.content().getBytes());
+                    zipOutputStream.write(entry.content().getBytes(StandardCharsets.UTF_8));
                 zipOutputStream.closeEntry();
             }
         }
     }
 
-    private record ArchiveEntry(String path, String content)
+    private record ArchiveEntry(String path, @Nullable String content)
     {
     }
 }

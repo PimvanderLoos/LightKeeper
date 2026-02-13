@@ -6,7 +6,7 @@ import java.util.UUID;
 /**
  * LightKeeper end-to-end test framework entrypoint.
  */
-public interface LightkeeperFramework extends AutoCloseable
+public interface ILightkeeperFramework extends AutoCloseable
 {
     /**
      * Gets the main world handle.
@@ -60,7 +60,7 @@ public interface LightkeeperFramework extends AutoCloseable
      *
      * @return A new player builder.
      */
-    PlayerBuilder buildPlayer();
+    IPlayerBuilder buildPlayer();
 
     /**
      * Executes a command from the requested source.

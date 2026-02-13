@@ -6,6 +6,7 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.jspecify.annotations.Nullable;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -14,6 +15,7 @@ import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
 
 /**
  * Cleans target server directories after successful integration tests.
@@ -29,15 +31,18 @@ public final class CleanupServerMojo extends AbstractMojo
         defaultValue = "${project.build.directory}/lightkeeper-server",
         required = true
     )
-    private Path serverWorkDirectoryRoot;
+    private @Nullable Path serverWorkDirectoryRoot;
 
     @Parameter(
         property = "lightkeeper.failsafeSummaryPath",
         defaultValue = "${project.build.directory}/failsafe-reports/failsafe-summary.xml",
         required = true
     )
-    private Path failsafeSummaryPath;
+    private @Nullable Path failsafeSummaryPath;
 
+    /**
+     * Deletes the prepared target server directory when integration tests succeeded and cleanup is enabled.
+     */
     @Override
     public void execute()
         throws MojoExecutionException
@@ -48,16 +53,21 @@ public final class CleanupServerMojo extends AbstractMojo
             return;
         }
 
-        if (Files.notExists(failsafeSummaryPath))
+        final Path effectiveFailsafeSummaryPath =
+            Objects.requireNonNull(failsafeSummaryPath, "failsafeSummaryPath may not be null.");
+        final Path effectiveServerWorkDirectoryRoot =
+            Objects.requireNonNull(serverWorkDirectoryRoot, "serverWorkDirectoryRoot may not be null.");
+
+        if (Files.notExists(effectiveFailsafeSummaryPath))
         {
             getLog().warn(
                 "LK_CLEANUP: Failsafe summary '%s' does not exist. Keeping target server directory."
-                    .formatted(failsafeSummaryPath)
+                    .formatted(effectiveFailsafeSummaryPath)
             );
             return;
         }
 
-        final FailsafeSummary summary = readFailsafeSummary(failsafeSummaryPath);
+        final FailsafeSummary summary = readFailsafeSummary(effectiveFailsafeSummaryPath);
         if (summary.failures() > 0 || summary.errors() > 0)
         {
             getLog().warn(
@@ -67,17 +77,17 @@ public final class CleanupServerMojo extends AbstractMojo
             return;
         }
 
-        if (Files.notExists(serverWorkDirectoryRoot))
+        if (Files.notExists(effectiveServerWorkDirectoryRoot))
         {
             getLog().info(
                 "LK_CLEANUP: Target server directory '%s' does not exist. Nothing to delete."
-                    .formatted(serverWorkDirectoryRoot)
+                    .formatted(effectiveServerWorkDirectoryRoot)
             );
             return;
         }
 
-        getLog().info("LK_CLEANUP: Deleting target server directory '%s'.".formatted(serverWorkDirectoryRoot));
-        FileUtil.deleteRecursively(serverWorkDirectoryRoot, "target server directory");
+        getLog().info("LK_CLEANUP: Deleting target server directory '%s'.".formatted(effectiveServerWorkDirectoryRoot));
+        FileUtil.deleteRecursively(effectiveServerWorkDirectoryRoot, "target server directory");
     }
 
     private static FailsafeSummary readFailsafeSummary(Path path)

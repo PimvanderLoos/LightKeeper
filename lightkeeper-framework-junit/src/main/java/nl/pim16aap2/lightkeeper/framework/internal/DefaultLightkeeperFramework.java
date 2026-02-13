@@ -4,15 +4,16 @@ import lombok.extern.java.Log;
 import nl.pim16aap2.lightkeeper.framework.CommandResult;
 import nl.pim16aap2.lightkeeper.framework.CommandSource;
 import nl.pim16aap2.lightkeeper.framework.Condition;
-import nl.pim16aap2.lightkeeper.framework.LightkeeperFramework;
+import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.MenuSnapshot;
-import nl.pim16aap2.lightkeeper.framework.PlayerBuilder;
+import nl.pim16aap2.lightkeeper.framework.IPlayerBuilder;
 import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
 import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import nl.pim16aap2.lightkeeper.framework.WorldSpec;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestReader;
+import org.jspecify.annotations.Nullable;
 
 import javax.inject.Inject;
 import java.io.IOException;
@@ -31,7 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Default LightKeeper framework implementation.
  */
 @Log
-public final class DefaultLightkeeperFramework implements LightkeeperFramework, FrameworkGateway
+public final class DefaultLightkeeperFramework implements ILightkeeperFramework, IFrameworkGateway
 {
     private static final Duration STARTUP_TIMEOUT = Duration.ofMinutes(2);
     private static final Duration AGENT_CONNECT_TIMEOUT = Duration.ofSeconds(45);
@@ -165,7 +166,7 @@ public final class DefaultLightkeeperFramework implements LightkeeperFramework, 
     }
 
     @Override
-    public PlayerBuilder buildPlayer()
+    public IPlayerBuilder buildPlayer()
     {
         ensureOpen();
         return new DefaultPlayerBuilder();
@@ -286,7 +287,7 @@ public final class DefaultLightkeeperFramework implements LightkeeperFramework, 
             throw new IllegalArgumentException("materialKey may not be blank.");
         if (slots == null || slots.length == 0)
             throw new IllegalArgumentException("slots may not be empty.");
-        for (int slot : slots)
+        for (final int slot : slots)
         {
             if (slot < 0)
                 throw new IllegalArgumentException("slot must be >= 0.");
@@ -357,7 +358,7 @@ public final class DefaultLightkeeperFramework implements LightkeeperFramework, 
 
     private void preloadConfiguredWorlds()
     {
-        for (RuntimeManifest.PreloadedWorld preloadedWorld : runtimeManifest.preloadedWorlds())
+        for (final RuntimeManifest.PreloadedWorld preloadedWorld : runtimeManifest.preloadedWorlds())
         {
             final WorldSpec worldSpec = new WorldSpec(
                 preloadedWorld.name(),
@@ -431,26 +432,26 @@ public final class DefaultLightkeeperFramework implements LightkeeperFramework, 
         return trimmedName;
     }
 
-    private final class DefaultPlayerBuilder implements PlayerBuilder
+    private final class DefaultPlayerBuilder implements IPlayerBuilder
     {
         private UUID uuid = UUID.randomUUID();
         private String name = "lk_bot_" + uuid.toString().substring(0, 8);
-        private WorldHandle worldHandle;
-        private Double x;
-        private Double y;
-        private Double z;
-        private Double health;
+        private @Nullable WorldHandle worldHandle;
+        private @Nullable Double x;
+        private @Nullable Double y;
+        private @Nullable Double z;
+        private @Nullable Double health;
         private final Set<String> permissions = new HashSet<>();
 
         @Override
-        public PlayerBuilder withName(String name)
+        public IPlayerBuilder withName(String name)
         {
             this.name = validatePlayerName(name);
             return this;
         }
 
         @Override
-        public PlayerBuilder withRandomName()
+        public IPlayerBuilder withRandomName()
         {
             this.uuid = UUID.randomUUID();
             this.name = "lk_bot_" + uuid.toString().substring(0, 8);
@@ -458,7 +459,7 @@ public final class DefaultLightkeeperFramework implements LightkeeperFramework, 
         }
 
         @Override
-        public PlayerBuilder inWorld(WorldHandle world)
+        public IPlayerBuilder inWorld(WorldHandle world)
         {
             this.worldHandle = Objects.requireNonNull(world, "world may not be null.");
             this.x = null;
@@ -468,7 +469,7 @@ public final class DefaultLightkeeperFramework implements LightkeeperFramework, 
         }
 
         @Override
-        public PlayerBuilder atLocation(WorldHandle world, double x, double y, double z)
+        public IPlayerBuilder atLocation(WorldHandle world, double x, double y, double z)
         {
             this.worldHandle = Objects.requireNonNull(world, "world may not be null.");
             this.x = x;
@@ -478,7 +479,7 @@ public final class DefaultLightkeeperFramework implements LightkeeperFramework, 
         }
 
         @Override
-        public PlayerBuilder atSpawn(WorldHandle world)
+        public IPlayerBuilder atSpawn(WorldHandle world)
         {
             this.worldHandle = Objects.requireNonNull(world, "world may not be null.");
             this.x = null;
@@ -488,7 +489,7 @@ public final class DefaultLightkeeperFramework implements LightkeeperFramework, 
         }
 
         @Override
-        public PlayerBuilder withHealth(double health)
+        public IPlayerBuilder withHealth(double health)
         {
             if (health <= 0.0D)
                 throw new IllegalArgumentException("health must be > 0.");
@@ -497,7 +498,7 @@ public final class DefaultLightkeeperFramework implements LightkeeperFramework, 
         }
 
         @Override
-        public PlayerBuilder withPermissions(String... permissions)
+        public IPlayerBuilder withPermissions(String... permissions)
         {
             if (permissions == null || permissions.length == 0)
                 return this;

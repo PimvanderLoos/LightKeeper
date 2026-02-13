@@ -108,7 +108,8 @@ public final class FileUtil
         try (Stream<Path> stream = Files.walk(path))
         {
             stream.sorted(Comparator.reverseOrder())
-                .forEach(current -> {
+                .forEach(current ->
+                {
                     try
                     {
                         Files.deleteIfExists(current);
@@ -119,14 +120,7 @@ public final class FileUtil
                     }
                 });
         }
-        catch (UncheckedIOException exception)
-        {
-            throw new MojoExecutionException(
-                "Failed to delete %s with path '%s'.".formatted(context, path),
-                exception.getCause()
-            );
-        }
-        catch (IOException exception)
+        catch (IOException | UncheckedIOException exception)
         {
             throw new MojoExecutionException(
                 "Failed to delete %s with path '%s'.".formatted(context, path),

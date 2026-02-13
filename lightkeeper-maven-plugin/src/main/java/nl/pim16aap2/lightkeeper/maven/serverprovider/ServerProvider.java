@@ -12,6 +12,8 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.ServerSocket;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -206,6 +208,49 @@ public abstract class ServerProvider
         catch (IOException e)
         {
             throw new MojoExecutionException("Failed to write server properties to " + serverPropertiesFile, e);
+        }
+    }
+
+    /**
+     * Creates the default server properties content for an offline-mode integration server.
+     *
+     * @return The server properties content.
+     * @throws MojoExecutionException
+     *     If no free local TCP port can be reserved.
+     */
+    protected String createDefaultServerProperties()
+        throws MojoExecutionException
+    {
+        final int port = reserveAvailableTcpPort();
+        log().info("Using dynamically reserved server port: " + port);
+        return """
+            online-mode=false
+            enable-query=true
+            query.port=%d
+            server-port=%d
+            enable-rcon=false
+            """
+            .formatted(port, port);
+    }
+
+    /**
+     * Reserves an available local TCP port.
+     *
+     * @return A currently available local TCP port.
+     * @throws MojoExecutionException
+     *     If no local TCP port could be reserved.
+     */
+    protected static int reserveAvailableTcpPort()
+        throws MojoExecutionException
+    {
+        try (ServerSocket socket = new ServerSocket(0, 0, InetAddress.getLoopbackAddress()))
+        {
+            socket.setReuseAddress(true);
+            return socket.getLocalPort();
+        }
+        catch (IOException exception)
+        {
+            throw new MojoExecutionException("Failed to reserve an available TCP port for server startup.", exception);
         }
     }
 
