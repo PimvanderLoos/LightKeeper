@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>LightKeeper - Feature Overview</title>
+    <meta name="description" content="Feature overview for LightKeeper Minecraft plugin E2E testing.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/styles.css">
+    <script defer src="assets/main.js"></script>
+</head>
+<body>
+<header class="site-header">
+    <a class="brand" href="index.html">LightKeeper</a>
+    <button class="menu-toggle" type="button" aria-expanded="false" aria-label="Toggle navigation">Menu</button>
+    <nav class="site-nav">
+        <a href="getting-started.html">Getting Started</a>
+        <a href="features.html">Features</a>
+        <a href="architecture.html">Architecture</a>
+        <a href="faq.html">FAQ</a>
+    </nav>
+</header>
+
+<main>
+    <section class="hero reveal">
+        <p class="eyebrow">Feature Overview</p>
+        <h1>Everything needed for production-grade plugin E2E tests.</h1>
+        <p class="lead">
+            LightKeeper focuses on deterministic setup, realistic runtime behavior, and developer-friendly test APIs.
+        </p>
+    </section>
+
+    <section class="panel reveal">
+        <h2>Server Runtime Provisioning</h2>
+        <div class="grid two">
+            <article class="card">
+                <h3>Paper + Spigot support</h3>
+                <p>Select platform via <code>serverType</code>. Spigot runtimes are built via BuildTools and cached.</p>
+            </article>
+            <article class="card">
+                <h3>Cache-aware startup</h3>
+                <p>Separates jar cache and base-server cache, minimizing repeated setup cost in CI and local loops.</p>
+            </article>
+            <article class="card">
+                <h3>Manifest-based runtime handoff</h3>
+                <p>Tests consume a runtime manifest so setup and execution phases stay cleanly separated.</p>
+            </article>
+            <article class="card">
+                <h3>Configurable cleanup</h3>
+                <p>Auto-delete target server directories on success using failsafe summary checks.</p>
+            </article>
+        </div>
+    </section>
+
+    <section class="panel reveal">
+        <h2>Test Framework API</h2>
+        <div class="grid two">
+            <article class="card">
+                <h3>World handles</h3>
+                <p>Create worlds and read/write blocks through <code>WorldHandle</code>.</p>
+            </article>
+            <article class="card">
+                <h3>Player bots</h3>
+                <p>Create synthetic players with fluent builders, permissions, positioning, and health settings.</p>
+            </article>
+            <article class="card">
+                <h3>Menu interaction</h3>
+                <p>Open, click, drag, wait, and verify inventory menu state via <code>MenuHandle</code>.</p>
+            </article>
+            <article class="card">
+                <h3>AssertJ integration</h3>
+                <p>World/menu/player assertions including message text checks with full AssertJ string chaining.</p>
+            </article>
+        </div>
+    </section>
+
+    <section class="panel reveal">
+        <h2>Provisioning Features</h2>
+        <ul class="checklist">
+            <li>World sources from folders or archives</li>
+            <li>Plugin sources from local paths or Maven coordinates</li>
+            <li>Optional transitive plugin resolution</li>
+            <li>Server config overlays copied into prepared server directories</li>
+            <li>World startup preload metadata captured in runtime manifest</li>
+        </ul>
+    </section>
+</main>
+
+<footer class="site-footer">
+    <p>Feature requests and roadmap ideas: <code>docs/future-suggestions.md</code> in the repository.</p>
+</footer>
+</body>
+</html>

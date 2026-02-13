@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>LightKeeper - Minecraft Plugin E2E Testing</title>
+    <meta name="description" content="LightKeeper runs real Minecraft server end-to-end tests for Paper and Spigot with synthetic players, world provisioning, and fluent assertions.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/styles.css">
+    <script defer src="assets/main.js"></script>
+</head>
+<body>
+<header class="site-header">
+    <a class="brand" href="index.html">LightKeeper</a>
+    <button class="menu-toggle" type="button" aria-expanded="false" aria-label="Toggle navigation">Menu</button>
+    <nav class="site-nav">
+        <a href="getting-started.html">Getting Started</a>
+        <a href="features.html">Features</a>
+        <a href="architecture.html">Architecture</a>
+        <a href="faq.html">FAQ</a>
+    </nav>
+</header>
+
+<main>
+    <section class="hero reveal">
+        <p class="eyebrow">Minecraft Plugin Quality Platform</p>
+        <h1>Real server integration tests for Paper and Spigot.</h1>
+        <p class="lead">
+            LightKeeper provisions, caches, and launches full server runtimes, then gives your JUnit tests fluent
+            handles for worlds, bots, menus, commands, and assertions.
+        </p>
+        <div class="button-row">
+            <a class="button button-primary" href="getting-started.html">Start in 10 Minutes</a>
+            <a class="button button-ghost" href="https://github.com/PimvanderLoos/LightKeeper">Repository</a>
+        </div>
+    </section>
+
+    <section class="panel reveal">
+        <h2>Why LightKeeper</h2>
+        <div class="grid two">
+            <article class="card">
+                <h3>Not mocks. Not simulators.</h3>
+                <p>
+                    Execute tests against an actual Minecraft server process, with your plugin and dependencies loaded
+                    exactly as they would be in production.
+                </p>
+            </article>
+            <article class="card">
+                <h3>Fast repeated runs</h3>
+                <p>
+                    Server binaries and base server directories are cached, so retry and CI loops avoid unnecessary
+                    re-downloads and rebuilds.
+                </p>
+            </article>
+            <article class="card">
+                <h3>Bot-level API</h3>
+                <p>
+                    Create synthetic players, execute commands, place blocks, interact with inventories, and verify
+                    world/menu/player state with fluent assertions.
+                </p>
+            </article>
+            <article class="card">
+                <h3>First-class provisioning</h3>
+                <p>
+                    Bring your own world folders or archives, plugin jars or Maven artifacts, and overlay config trees
+                    into the prepared server.
+                </p>
+            </article>
+        </div>
+    </section>
+
+    <section class="panel reveal">
+        <h2>How it works</h2>
+        <ol class="timeline">
+            <li><code>lightkeeper:prepare-server</code> resolves/builds and caches the server runtime.</li>
+            <li>LightKeeper writes a runtime manifest with socket/auth/config metadata.</li>
+            <li>JUnit tests connect through <code>LightkeeperExtension</code> and framework handles.</li>
+            <li>Tests drive synthetic players and validate world/menu/chat behavior.</li>
+            <li><code>lightkeeper:cleanup-server</code> optionally removes target server directories on success.</li>
+        </ol>
+    </section>
+
+    <section class="panel reveal">
+        <h2>Core test example</h2>
+        <pre><code>@ExtendWith(LightkeeperExtension.class)
+class MyPluginIT {
+    @Test
+    void botCanOpenMenuAndPlaceBlock(ILightkeeperFramework framework) {
+        final WorldHandle world = framework.mainWorld();
+        final PlayerHandle player = framework.buildPlayer()
+            .withName("lk_tester")
+            .atSpawn(world)
+            .build();
+
+        player.executeCommand("myplugin open")
+            .andWaitForMenuOpen(10)
+            .verifyMenuName("Main Menu")
+            .clickAtIndex(0)
+            .andWaitTicks(1);
+
+        player.placeBlock("minecraft:stone", 1, 100, 0).andWaitTicks(1);
+        assertThat(world).hasBlockAt(1, 100, 0).ofType("minecraft:stone");
+    }
+}</code></pre>
+    </section>
+</main>
+
+<footer class="site-footer">
+    <p>LightKeeper documentation site. Built for GitHub Pages on the <code>gh_pages</code> branch.</p>
+</footer>
+</body>
+</html>

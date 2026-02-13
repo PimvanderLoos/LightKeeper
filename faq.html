@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>LightKeeper - FAQ</title>
+    <meta name="description" content="FAQ and troubleshooting for LightKeeper server integration tests.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/styles.css">
+    <script defer src="assets/main.js"></script>
+</head>
+<body>
+<header class="site-header">
+    <a class="brand" href="index.html">LightKeeper</a>
+    <button class="menu-toggle" type="button" aria-expanded="false" aria-label="Toggle navigation">Menu</button>
+    <nav class="site-nav">
+        <a href="getting-started.html">Getting Started</a>
+        <a href="features.html">Features</a>
+        <a href="architecture.html">Architecture</a>
+        <a href="faq.html">FAQ</a>
+    </nav>
+</header>
+
+<main>
+    <section class="hero reveal">
+        <p class="eyebrow">FAQ</p>
+        <h1>Common setup and troubleshooting questions.</h1>
+        <p class="lead">Use these answers to diagnose provisioning issues, cache behavior, and integration-test output paths.</p>
+    </section>
+
+    <section class="panel reveal">
+        <h2>Where are integration-test logs?</h2>
+        <p>See Failsafe output and summaries under:</p>
+        <pre><code>lightkeeper-maven-plugin-test/target/failsafe-reports/</code></pre>
+    </section>
+
+    <section class="panel reveal">
+        <h2>Does <code>mvn clean verify</code> always re-download servers?</h2>
+        <p>
+            No. <code>clean</code> wipes module target directories, but LightKeeper reuses jar/base-server caches under the configured
+            cache roots (by default under your Maven local repository).
+        </p>
+    </section>
+
+    <section class="panel reveal">
+        <h2>Can I supply a custom world folder?</h2>
+        <p>Yes. Configure a world with <code>sourceType=folder</code> and a local <code>sourcePath</code>.</p>
+    </section>
+
+    <section class="panel reveal">
+        <h2>Can I add extra plugins and config files?</h2>
+        <p>
+            Yes. Add plugins from local jars or Maven coordinates, and use <code>configOverlayPath</code> to copy a complete config
+            tree into the prepared server.
+        </p>
+    </section>
+
+    <section class="panel reveal">
+        <h2>Can LightKeeper remove server folders after successful tests?</h2>
+        <p>
+            Yes. Use <code>lightkeeper:cleanup-server</code> and set <code>deleteTargetServerOnSuccess=true</code>. It checks
+            failsafe summaries and only cleans on success.
+        </p>
+    </section>
+
+    <section class="panel reveal">
+        <h2>How can I run the same tests on Paper and Spigot?</h2>
+        <p>
+            Configure two plugin executions and two Failsafe executions with different runtime manifest/system property values.
+            The module <code>lightkeeper-maven-plugin-test</code> demonstrates this.
+        </p>
+    </section>
+</main>
+
+<footer class="site-footer">
+    <p>Still stuck? Open an issue with your Maven command, platform, Java version, and relevant report files.</p>
+</footer>
+</body>
+</html>

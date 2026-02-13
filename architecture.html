@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>LightKeeper - Architecture</title>
+    <meta name="description" content="Architecture and data flow of LightKeeper runtime provisioning and test framework.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/styles.css">
+    <script defer src="assets/main.js"></script>
+</head>
+<body>
+<header class="site-header">
+    <a class="brand" href="index.html">LightKeeper</a>
+    <button class="menu-toggle" type="button" aria-expanded="false" aria-label="Toggle navigation">Menu</button>
+    <nav class="site-nav">
+        <a href="getting-started.html">Getting Started</a>
+        <a href="features.html">Features</a>
+        <a href="architecture.html">Architecture</a>
+        <a href="faq.html">FAQ</a>
+    </nav>
+</header>
+
+<main>
+    <section class="hero reveal">
+        <p class="eyebrow">Architecture</p>
+        <h1>Provisioning pipeline + test-runtime API layers.</h1>
+        <p class="lead">A quick map of how Maven, server runtime, agent, and JUnit framework components interact.</p>
+    </section>
+
+    <section class="panel reveal">
+        <h2>Execution flow</h2>
+        <div class="flow">
+            <article class="flow-step">
+                <h3>1. Maven Prepare Phase</h3>
+                <p><code>lightkeeper:prepare-server</code> resolves platform build metadata, server binaries, and agent artifact.</p>
+            </article>
+            <article class="flow-step">
+                <h3>2. Cache Resolution</h3>
+                <p>Jar/base-server caches are checked with keys that include platform/version/build, Java/OS, protocol, and agent identity.</p>
+            </article>
+            <article class="flow-step">
+                <h3>3. Server Assembly</h3>
+                <p>Worlds, plugins, and overlay files are installed into the target server work directory.</p>
+            </article>
+            <article class="flow-step">
+                <h3>4. Runtime Manifest Emission</h3>
+                <p>Manifest captures server path, jar path, UDS socket path, auth token, and preloaded world metadata.</p>
+            </article>
+            <article class="flow-step">
+                <h3>5. Test Execution</h3>
+                <p><code>LightkeeperExtension</code> starts framework sessions from runtime manifest and injects <code>ILightkeeperFramework</code>.</p>
+            </article>
+            <article class="flow-step">
+                <h3>6. Optional Cleanup</h3>
+                <p><code>lightkeeper:cleanup-server</code> reads failsafe summary and removes target server folders when configured and successful.</p>
+            </article>
+        </div>
+    </section>
+
+    <section class="panel reveal">
+        <h2>Module responsibilities</h2>
+        <ul class="checklist">
+            <li><code>lightkeeper-maven-plugin</code>: provisioning, caching, runtime manifest creation, cleanup</li>
+            <li><code>lightkeeper-runtime-core</code>: manifest and protocol contracts</li>
+            <li><code>lightkeeper-agent-paper</code>: in-server command execution and data collection</li>
+            <li><code>lightkeeper-framework-junit</code>: user-facing handles, extension lifecycle, assertions</li>
+            <li><code>lightkeeper-nms-parent</code>: version-specific internals for low-level behavior</li>
+            <li><code>lightkeeper-maven-plugin-test</code>: full integration test matrix for supported platforms</li>
+        </ul>
+    </section>
+</main>
+
+<footer class="site-footer">
+    <p>For implementation details, read module package docs and integration tests in this repository.</p>
+</footer>
+</body>
+</html>
