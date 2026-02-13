@@ -11,6 +11,7 @@ import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 
 import java.nio.file.Path;
+import java.util.Arrays;
 
 /**
  * JUnit extension for framework lifecycle management.
@@ -26,6 +27,7 @@ public final class LightkeeperExtension implements
         ExtensionContext.Namespace.create(LightkeeperExtension.class);
     private static final String KEY_SHARED_FRAMEWORK = "shared-framework";
     private static final String KEY_METHOD_FRAMEWORK = "method-framework";
+    private static final String KEY_CLASS_USES_FRESH_LIFECYCLE = "class-uses-fresh-lifecycle";
 
     /**
      * Starts a shared framework when tests are not configured for per-method fresh servers.
@@ -33,7 +35,7 @@ public final class LightkeeperExtension implements
     @Override
     public void beforeAll(ExtensionContext context)
     {
-        if (isFreshServer(context))
+        if (usesFreshLifecycleForClass(context))
             return;
         context.getStore(NAMESPACE).put(KEY_SHARED_FRAMEWORK, startFramework());
     }
@@ -44,7 +46,7 @@ public final class LightkeeperExtension implements
     @Override
     public void beforeEach(ExtensionContext context)
     {
-        if (isFreshServer(context))
+        if (usesFreshLifecycleForClass(context))
         {
             context.getStore(NAMESPACE).put(KEY_METHOD_FRAMEWORK, startFramework());
             return;
@@ -61,7 +63,7 @@ public final class LightkeeperExtension implements
     @Override
     public void afterEach(ExtensionContext context)
     {
-        if (!isFreshServer(context))
+        if (!usesFreshLifecycleForClass(context))
         {
             final ILightkeeperFramework sharedFramework = getFramework(context);
             if (sharedFramework instanceof DefaultLightkeeperFramework defaultLightkeeperFramework)
@@ -111,13 +113,21 @@ public final class LightkeeperExtension implements
         return getFramework(extensionContext);
     }
 
-    private static boolean isFreshServer(ExtensionContext context)
+    private static boolean usesFreshLifecycleForClass(ExtensionContext context)
     {
-        final boolean classLevel = context.getRequiredTestClass().isAnnotationPresent(FreshServer.class);
-        final boolean methodLevel = context.getTestMethod()
-            .map(method -> method.isAnnotationPresent(FreshServer.class))
-            .orElse(false);
-        return classLevel || methodLevel;
+        final ExtensionContext.Store store = context.getStore(NAMESPACE);
+        final Boolean cachedDecision = store.get(KEY_CLASS_USES_FRESH_LIFECYCLE, Boolean.class);
+        if (cachedDecision != null)
+            return cachedDecision;
+
+        final Class<?> testClass = context.getRequiredTestClass();
+        final boolean classLevel = testClass.isAnnotationPresent(FreshServer.class);
+        final boolean methodLevel = Arrays.stream(testClass.getDeclaredMethods())
+            .anyMatch(method -> method.isAnnotationPresent(FreshServer.class));
+        final boolean usesFreshLifecycle = classLevel || methodLevel;
+
+        store.put(KEY_CLASS_USES_FRESH_LIFECYCLE, usesFreshLifecycle);
+        return usesFreshLifecycle;
     }
 
     private static ILightkeeperFramework getFramework(ExtensionContext context)
