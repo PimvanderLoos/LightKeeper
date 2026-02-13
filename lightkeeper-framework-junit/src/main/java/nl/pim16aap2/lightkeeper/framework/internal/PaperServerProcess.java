@@ -1,5 +1,6 @@
 package nl.pim16aap2.lightkeeper.framework.internal;
 
+import com.google.errorprone.annotations.concurrent.GuardedBy;
 import lombok.extern.java.Log;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
@@ -30,6 +31,8 @@ final class PaperServerProcess
 {
     private final RuntimeManifest runtimeManifest;
     private final Path diagnosticsDirectory;
+    private final Object outputLinesLock = new Object();
+    @GuardedBy("outputLinesLock")
     private final List<String> outputLines = new ArrayList<>();
     private final CountDownLatch startedLatch = new CountDownLatch(1);
     private @Nullable Process process;
@@ -67,7 +70,7 @@ final class PaperServerProcess
         try
         {
             process = processBuilder.start();
-            outputThread = createOutputReaderThread(process, outputLines, startedLatch);
+            outputThread = createOutputReaderThread(process);
             outputThread.start();
             final boolean started = startedLatch.await(timeout.toSeconds(), TimeUnit.SECONDS);
             if (!started)
@@ -132,11 +135,12 @@ final class PaperServerProcess
 
     private String outputTail()
     {
-        synchronized (outputLines)
-        {
-            final int startIndex = Math.max(0, outputLines.size() - 40);
-            return String.join(System.lineSeparator(), outputLines.subList(startIndex, outputLines.size()));
-        }
+        final List<String> outputLinesSnapshot = snapshotOutputLines();
+        final int startIndex = Math.max(0, outputLinesSnapshot.size() - 40);
+        return String.join(
+            System.lineSeparator(),
+            outputLinesSnapshot.subList(startIndex, outputLinesSnapshot.size())
+        );
     }
 
     private void writeDiagnostics(String reason)
@@ -156,8 +160,11 @@ final class PaperServerProcess
                 runtimeManifest.udsSocketPath(), StandardCharsets.UTF_8);
             Files.writeString(bundleDirectory.resolve("manifest-protocol-version.txt"),
                 runtimeManifest.runtimeProtocolVersion(), StandardCharsets.UTF_8);
-            Files.writeString(bundleDirectory.resolve("server-output.log"),
-                String.join(System.lineSeparator(), outputLines), StandardCharsets.UTF_8);
+            Files.writeString(
+                bundleDirectory.resolve("server-output.log"),
+                String.join(System.lineSeparator(), snapshotOutputLines()),
+                StandardCharsets.UTF_8
+            );
         }
         catch (IOException exception)
         {
@@ -165,10 +172,15 @@ final class PaperServerProcess
         }
     }
 
-    private static Thread createOutputReaderThread(
-        Process process,
-        List<String> outputLines,
-        CountDownLatch startedLatch)
+    private List<String> snapshotOutputLines()
+    {
+        synchronized (outputLinesLock)
+        {
+            return List.copyOf(outputLines);
+        }
+    }
+
+    private Thread createOutputReaderThread(Process process)
     {
         return Thread.ofPlatform()
             .name("lightkeeper-paper-output-reader")
@@ -183,7 +195,7 @@ final class PaperServerProcess
                     String line;
                     while ((line = reader.readLine()) != null)
                     {
-                        synchronized (outputLines)
+                        synchronized (outputLinesLock)
                         {
                             outputLines.add(line);
                         }
