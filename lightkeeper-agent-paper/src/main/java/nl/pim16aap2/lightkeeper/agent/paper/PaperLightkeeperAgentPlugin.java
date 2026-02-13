@@ -73,7 +73,8 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
     static final String CRAFTBUKKIT_PACKAGE_PREFIX = "org.bukkit.craftbukkit.";
     private static final String DEFAULT_NMS_REVISION = "v1_21_R6";
     private static final Map<String, Supplier<IBotPlayerNmsAdapter>> NMS_ADAPTERS = Map.of(
-        DEFAULT_NMS_REVISION, BotPlayerNmsAdapterV1_21_R6::new
+        DEFAULT_NMS_REVISION, BotPlayerNmsAdapterV1_21_R6::new,
+        "v1_21_R7", BotPlayerNmsAdapterV1_21_R6::new
     );
     private static final String MAIN_MENU_TITLE = "Main Menu";
     private static final String SUB_MENU_TITLE = "Sub Menu";
