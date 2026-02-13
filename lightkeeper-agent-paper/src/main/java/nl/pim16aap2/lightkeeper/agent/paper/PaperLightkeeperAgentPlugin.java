@@ -59,6 +59,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * Paper plugin that exposes a UDS control channel for LightKeeper tests.
@@ -68,8 +70,11 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
     private static final long SYNC_OPERATION_TIMEOUT_SECONDS = 30L;
     private static final long WAIT_TICKS_TIMEOUT_MILLIS = 60_000L;
     static final String SUPPORTED_MINECRAFT_VERSION = "1.21.11";
-    static final List<String> SUPPORTED_NMS_REVISIONS = List.of("v1_21_R6", "v1_21_R7");
     static final String CRAFTBUKKIT_PACKAGE_PREFIX = "org.bukkit.craftbukkit.";
+    private static final String DEFAULT_NMS_REVISION = "v1_21_R6";
+    private static final Map<String, Supplier<IBotPlayerNmsAdapter>> NMS_ADAPTERS = Map.of(
+        DEFAULT_NMS_REVISION, BotPlayerNmsAdapterV1_21_R6::new
+    );
     private static final String MAIN_MENU_TITLE = "Main Menu";
     private static final String SUB_MENU_TITLE = "Sub Menu";
     private static final System.Logger LOGGER = System.getLogger(PaperLightkeeperAgentPlugin.class.getName());
@@ -104,8 +109,8 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         try
         {
             initializeConfiguration();
-            validateNmsCompatibility();
-            botPlayerNmsAdapter = new BotPlayerNmsAdapterV1_21_R6();
+            final @Nullable String detectedNmsRevision = validateNmsCompatibility();
+            botPlayerNmsAdapter = createBotPlayerNmsAdapter(detectedNmsRevision);
             Bukkit.getPluginManager().registerEvents(this, this);
             startTickLoop();
             startServer();
@@ -199,7 +204,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         expectedAgentSha256 = System.getProperty(RuntimeProtocol.PROPERTY_EXPECTED_AGENT_SHA256, "");
     }
 
-    private void validateNmsCompatibility()
+    private @Nullable String validateNmsCompatibility()
     {
         final String bukkitVersion = Bukkit.getBukkitVersion();
         if (!bukkitVersion.equals(SUPPORTED_MINECRAFT_VERSION)
@@ -214,13 +219,42 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         final @Nullable String detectedNmsRevision = extractCraftBukkitRevision(
             Bukkit.getServer().getClass().getPackageName()
         );
-        if (detectedNmsRevision != null && !SUPPORTED_NMS_REVISIONS.contains(detectedNmsRevision))
+        if (detectedNmsRevision != null && !NMS_ADAPTERS.containsKey(detectedNmsRevision))
         {
             throw new IllegalStateException(
                 "Unsupported server NMS revision '%s'. Supported revisions: %s (Bukkit version: %s)."
-                    .formatted(detectedNmsRevision, String.join(", ", SUPPORTED_NMS_REVISIONS), bukkitVersion)
+                    .formatted(detectedNmsRevision, supportedNmsRevisions(), bukkitVersion)
             );
         }
+        return detectedNmsRevision;
+    }
+
+    private IBotPlayerNmsAdapter createBotPlayerNmsAdapter(@Nullable String detectedNmsRevision)
+    {
+        if (detectedNmsRevision == null)
+        {
+            getLogger().warning(
+                "CraftBukkit revision could not be detected. Defaulting to %s adapter."
+                    .formatted(DEFAULT_NMS_REVISION)
+            );
+        }
+        final String resolvedRevision = detectedNmsRevision == null ? DEFAULT_NMS_REVISION : detectedNmsRevision;
+        final @Nullable Supplier<IBotPlayerNmsAdapter> adapterSupplier = NMS_ADAPTERS.get(resolvedRevision);
+        if (adapterSupplier == null)
+        {
+            throw new IllegalStateException(
+                "No NMS adapter registered for revision '%s'. Supported revisions: %s."
+                    .formatted(resolvedRevision, supportedNmsRevisions())
+            );
+        }
+        return adapterSupplier.get();
+    }
+
+    private static String supportedNmsRevisions()
+    {
+        return NMS_ADAPTERS.keySet().stream()
+            .sorted()
+            .collect(Collectors.joining(", "));
     }
 
     static @Nullable String extractCraftBukkitRevision(String packageName)
