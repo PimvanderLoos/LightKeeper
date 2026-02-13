@@ -133,9 +133,6 @@
                         <goals>
                             <goal>cleanup-server</goal>
                         </goals>
-                        <configuration>
-                            <runtimeManifestPath>${lightkeeper.paper.runtime-manifest.path}</runtimeManifestPath>
-                        </configuration>
                     </execution>
                     <execution>
                         <id>cleanup-server-spigot</id>
@@ -143,9 +140,6 @@
                         <goals>
                             <goal>cleanup-server</goal>
                         </goals>
-                        <configuration>
-                            <runtimeManifestPath>${lightkeeper.spigot.runtime-manifest.path}</runtimeManifestPath>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
