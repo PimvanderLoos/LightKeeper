@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -230,13 +231,16 @@ public class MinecraftServerProcess
             if (cause instanceof UncheckedIOException uncheckedIOException)
             {
                 throw new MojoExecutionException(
-                    uncheckedIOException.getMessage(),
-                    uncheckedIOException.getCause()
+                    Objects.requireNonNullElse(
+                        uncheckedIOException.getMessage(),
+                        "Failed while reading server startup output."
+                    ),
+                    exception
                 );
             }
             throw new MojoExecutionException(
                 "Failed while reading server startup output.",
-                cause == null ? exception : cause
+                exception
             );
         }
     }
