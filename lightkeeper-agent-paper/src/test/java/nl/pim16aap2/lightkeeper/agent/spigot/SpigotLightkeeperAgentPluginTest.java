@@ -1,10 +1,10 @@
-package nl.pim16aap2.lightkeeper.agent.paper;
+package nl.pim16aap2.lightkeeper.agent.spigot;
 
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.*;
 
-class PaperLightkeeperAgentPluginTest
+class SpigotLightkeeperAgentPluginTest
 {
     @Test
     void extractCraftBukkitRevision_shouldReturnRevisionForValidPackage()
@@ -13,7 +13,7 @@ class PaperLightkeeperAgentPluginTest
         final String packageName = "org.bukkit.craftbukkit.v1_21_R7";
 
         // execute
-        final String revision = PaperLightkeeperAgentPlugin.extractCraftBukkitRevision(packageName);
+        final String revision = SpigotLightkeeperAgentPlugin.extractCraftBukkitRevision(packageName);
 
         // verify
         assertThat(revision).isEqualTo("v1_21_R7");
@@ -26,7 +26,7 @@ class PaperLightkeeperAgentPluginTest
         final String packageName = "org.bukkit.craftbukkit.v1_21_R7";
 
         // execute
-        final String revision = PaperLightkeeperAgentPlugin.extractCraftBukkitRevision(packageName);
+        final String revision = SpigotLightkeeperAgentPlugin.extractCraftBukkitRevision(packageName);
 
         // verify
         assertThat(revision).isEqualTo("v1_21_R7");
@@ -39,7 +39,7 @@ class PaperLightkeeperAgentPluginTest
         final String packageName = "org.bukkit.craftbukkit";
 
         // execute
-        final String revision = PaperLightkeeperAgentPlugin.extractCraftBukkitRevision(packageName);
+        final String revision = SpigotLightkeeperAgentPlugin.extractCraftBukkitRevision(packageName);
 
         // verify
         assertThat(revision).isNull();
@@ -52,7 +52,7 @@ class PaperLightkeeperAgentPluginTest
         final String packageName = "org.bukkit.server.v1_21_R7";
 
         // execute + verify
-        assertThatThrownBy(() -> PaperLightkeeperAgentPlugin.extractCraftBukkitRevision(packageName))
+        assertThatThrownBy(() -> SpigotLightkeeperAgentPlugin.extractCraftBukkitRevision(packageName))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("Unexpected CraftBukkit package");
     }
@@ -64,7 +64,7 @@ class PaperLightkeeperAgentPluginTest
         final String packageName = "org.bukkit.craftbukkit.";
 
         // execute + verify
-        assertThatThrownBy(() -> PaperLightkeeperAgentPlugin.extractCraftBukkitRevision(packageName))
+        assertThatThrownBy(() -> SpigotLightkeeperAgentPlugin.extractCraftBukkitRevision(packageName))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("Unable to resolve CraftBukkit NMS revision");
     }

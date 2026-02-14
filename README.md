@@ -16,7 +16,7 @@ planned and reviewed by a human.
   directories (`cleanup-server`).
 - `lightkeeper-framework-junit`  
   JUnit-facing API (`ILightkeeperFramework`, `LightkeeperExtension`, handles + AssertJ assertions).
-- `lightkeeper-agent-paper`  
+- `lightkeeper-agent-spigot`  
   In-server plugin agent that exposes test operations over a local UDS channel.
 - `lightkeeper-runtime-core`  
   Shared runtime protocol + runtime manifest model.
@@ -53,7 +53,7 @@ planned and reviewed by a human.
             <version>${lightkeeper.version}</version>
             <configuration>
                 <userAgent>LightKeeper/${project.version} ([email protected])</userAgent>
-                <agentJarPath>${project.build.directory}/lightkeeper-agent/lightkeeper-agent-paper.jar</agentJarPath>
+                <agentJarPath>${project.build.directory}/lightkeeper-agent/lightkeeper-agent-spigot.jar</agentJarPath>
             </configuration>
             <executions>
                 <execution>
@@ -130,8 +130,8 @@ class MyPluginIT
             .andWaitTicks(1);
 
         // verify
-        assertThat(player).receivedMessage("clicked");
-        assertThat(world).hasBlockAt(1, 100, 0).ofType("minecraft:stone");
+        assertPlayer(player).receivedMessage("clicked");
+        assertWorld(world).hasBlockAt(1, 100, 0).ofType("minecraft:stone");
     }
 }
 ```
@@ -205,4 +205,3 @@ class MyPluginIT
     - `lightkeeper-maven-plugin-test/target/lightkeeper/*-runtime-manifest.json`
 - Prepared server directories:
     - `lightkeeper-maven-plugin-test/target/lightkeeper-server/`
-

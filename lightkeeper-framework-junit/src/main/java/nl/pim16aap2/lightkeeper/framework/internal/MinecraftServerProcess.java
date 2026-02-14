@@ -24,10 +24,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Manages the Paper server process lifecycle.
+ * Manages the Minecraft server process lifecycle.
  */
 @Log
-final class PaperServerProcess
+final class MinecraftServerProcess
 {
     private final RuntimeManifest runtimeManifest;
     private final Path diagnosticsDirectory;
@@ -38,7 +38,7 @@ final class PaperServerProcess
     private @Nullable Process process;
     private @Nullable Thread outputThread;
 
-    PaperServerProcess(RuntimeManifest runtimeManifest, Path diagnosticsDirectory)
+    MinecraftServerProcess(RuntimeManifest runtimeManifest, Path diagnosticsDirectory)
     {
         this.runtimeManifest = Objects.requireNonNull(runtimeManifest, "runtimeManifest may not be null.");
         this.diagnosticsDirectory =
@@ -61,7 +61,7 @@ final class PaperServerProcess
                 writeDiagnostics("startup-timeout");
                 stop(Duration.ofSeconds(5));
                 throw new IllegalStateException(
-                    "Paper server did not start within timeout. Tail:%n%s".formatted(outputTail())
+                    "Minecraft server did not start within timeout. Tail:%n%s".formatted(outputTail())
                 );
             }
         }
@@ -69,7 +69,7 @@ final class PaperServerProcess
         {
             writeDiagnostics("startup-failure");
             stop(Duration.ofSeconds(5));
-            throw new IllegalStateException("Failed to start Paper server.", exception);
+            throw new IllegalStateException("Failed to start Minecraft server.", exception);
         }
     }
 
@@ -88,6 +88,7 @@ final class PaperServerProcess
             "-D" + RuntimeProtocol.PROPERTY_PROTOCOL_VERSION + "=" + runtimeManifest.runtimeProtocolVersion(),
             "-D" + RuntimeProtocol.PROPERTY_EXPECTED_AGENT_SHA256 + "=" +
                 Objects.requireNonNullElse(runtimeManifest.agentJarSha256(), ""),
+            "-DIReallyKnowWhatIAmDoingISwear=true",
             "-jar",
             serverJar.toString(),
             "--nogui"
@@ -190,7 +191,7 @@ final class PaperServerProcess
     private Thread createOutputReaderThread(Process process)
     {
         return Thread.ofPlatform()
-            .name("lightkeeper-paper-output-reader")
+            .name("lightkeeper-minecraft-output-reader")
             .daemon(true)
             .unstarted(() ->
             {
@@ -213,7 +214,7 @@ final class PaperServerProcess
                 }
                 catch (IOException exception)
                 {
-                    log.fine(() -> "Paper output reader stopped: " + exception.getMessage());
+                    log.fine(() -> "Minecraft output reader stopped: " + exception.getMessage());
                 }
             });
     }

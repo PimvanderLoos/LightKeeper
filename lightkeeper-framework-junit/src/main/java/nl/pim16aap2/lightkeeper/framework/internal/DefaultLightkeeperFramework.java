@@ -5,6 +5,7 @@ import nl.pim16aap2.lightkeeper.framework.CommandResult;
 import nl.pim16aap2.lightkeeper.framework.CommandSource;
 import nl.pim16aap2.lightkeeper.framework.Condition;
 import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
+import nl.pim16aap2.lightkeeper.framework.IWorldBuilder;
 import nl.pim16aap2.lightkeeper.framework.MenuSnapshot;
 import nl.pim16aap2.lightkeeper.framework.IPlayerBuilder;
 import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
@@ -20,11 +21,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -38,12 +36,12 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     private static final Duration AGENT_CONNECT_TIMEOUT = Duration.ofSeconds(45);
     private static final Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(45);
     private static final String DEFAULT_WORLD_NAME_PREFIX = "lk_world_";
-    private static final WorldSpec.WorldType DEFAULT_WORLD_TYPE = WorldSpec.WorldType.NORMAL;
-    private static final WorldSpec.WorldEnvironment DEFAULT_WORLD_ENVIRONMENT = WorldSpec.WorldEnvironment.NORMAL;
-    private static final long DEFAULT_WORLD_SEED = 0L;
+    static final WorldSpec.WorldType DEFAULT_WORLD_TYPE = WorldSpec.WorldType.NORMAL;
+    static final WorldSpec.WorldEnvironment DEFAULT_WORLD_ENVIRONMENT = WorldSpec.WorldEnvironment.NORMAL;
+    static final long DEFAULT_WORLD_SEED = 0L;
 
     private final RuntimeManifest runtimeManifest;
-    private final PaperServerProcess paperServerProcess;
+    private final MinecraftServerProcess minecraftServerProcess;
     private final UdsAgentClient agentClient;
     private final PlayerScopeRegistry playerScopeRegistry;
     private final AtomicBoolean closed = new AtomicBoolean(false);
@@ -51,12 +49,13 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     @Inject
     DefaultLightkeeperFramework(
         RuntimeManifest runtimeManifest,
-        PaperServerProcess paperServerProcess,
+        MinecraftServerProcess minecraftServerProcess,
         UdsAgentClient agentClient,
         PlayerScopeRegistry playerScopeRegistry)
     {
         this.runtimeManifest = Objects.requireNonNull(runtimeManifest, "runtimeManifest may not be null.");
-        this.paperServerProcess = Objects.requireNonNull(paperServerProcess, "paperServerProcess may not be null.");
+        this.minecraftServerProcess =
+            Objects.requireNonNull(minecraftServerProcess, "minecraftServerProcess may not be null.");
         this.agentClient = Objects.requireNonNull(agentClient, "agentClient may not be null.");
         this.playerScopeRegistry = Objects.requireNonNull(playerScopeRegistry, "playerScopeRegistry may not be null.");
     }
@@ -75,13 +74,14 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
 
         final Path serverDirectory = Path.of(runtimeManifest.serverDirectory());
         final Path diagnosticsDirectory = serverDirectory.resolveSibling("lightkeeper-diagnostics");
-        final PaperServerProcess paperServerProcess = new PaperServerProcess(runtimeManifest, diagnosticsDirectory);
+        final MinecraftServerProcess minecraftServerProcess =
+            new MinecraftServerProcess(runtimeManifest, diagnosticsDirectory);
 
         UdsAgentClient agentClient = null;
         try
         {
-            log.info(() -> "LK_FRAMEWORK: Starting Paper server from '" + serverDirectory + "'.");
-            paperServerProcess.start(STARTUP_TIMEOUT);
+            log.info(() -> "LK_FRAMEWORK: Starting Minecraft server from '" + serverDirectory + "'.");
+            minecraftServerProcess.start(STARTUP_TIMEOUT);
 
             agentClient = new UdsAgentClient(
                 Path.of(runtimeManifest.udsSocketPath()),
@@ -95,7 +95,7 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
 
             final FrameworkInternalComponent component = DaggerFrameworkInternalComponent.factory().create(
                 runtimeManifest,
-                paperServerProcess,
+                minecraftServerProcess,
                 agentClient
             );
             final DefaultLightkeeperFramework framework = component.framework();
@@ -106,7 +106,7 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
         {
             if (agentClient != null)
                 agentClient.close();
-            paperServerProcess.stop(SHUTDOWN_TIMEOUT);
+            minecraftServerProcess.stop(SHUTDOWN_TIMEOUT);
             throw exception;
         }
     }
@@ -169,7 +169,14 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     public IPlayerBuilder buildPlayer()
     {
         ensureOpen();
-        return new DefaultPlayerBuilder();
+        return new DefaultPlayerBuilder(this);
+    }
+
+    @Override
+    public IWorldBuilder buildWorld()
+    {
+        ensureOpen();
+        return new DefaultWorldBuilder(this);
     }
 
     @Override
@@ -339,8 +346,8 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
         }
         finally
         {
-            log.info("LK_FRAMEWORK: Stopping Paper server.");
-            paperServerProcess.stop(SHUTDOWN_TIMEOUT);
+            log.info("LK_FRAMEWORK: Stopping Minecraft server.");
+            minecraftServerProcess.stop(SHUTDOWN_TIMEOUT);
         }
     }
 
@@ -371,7 +378,7 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
         }
     }
 
-    private void ensureOpen()
+    void ensureOpen()
     {
         if (closed.get())
             throw new IllegalStateException("Framework is already closed.");
@@ -416,13 +423,22 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
         return new WorldSpec(worldName, worldType, worldEnvironment, worldSpec.seed());
     }
 
-    private static WorldSpec defaultWorldSpec()
+    static String createDefaultWorldName()
     {
-        final String worldName = DEFAULT_WORLD_NAME_PREFIX + UUID.randomUUID().toString().replace("-", "");
-        return new WorldSpec(worldName, DEFAULT_WORLD_TYPE, DEFAULT_WORLD_ENVIRONMENT, DEFAULT_WORLD_SEED);
+        return DEFAULT_WORLD_NAME_PREFIX + UUID.randomUUID().toString().replace("-", "");
     }
 
-    private static String validatePlayerName(String name)
+    private static WorldSpec defaultWorldSpec()
+    {
+        return new WorldSpec(
+            createDefaultWorldName(),
+            DEFAULT_WORLD_TYPE,
+            DEFAULT_WORLD_ENVIRONMENT,
+            DEFAULT_WORLD_SEED
+        );
+    }
+
+    static String validatePlayerName(String name)
     {
         final String trimmedName = Objects.requireNonNull(name, "name may not be null.").trim();
         if (trimmedName.isEmpty())
@@ -432,105 +448,32 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
         return trimmedName;
     }
 
-    private final class DefaultPlayerBuilder implements IPlayerBuilder
+    WorldHandle createWorldFromBuilder(WorldSpec worldSpec)
     {
-        private UUID uuid = UUID.randomUUID();
-        private String name = "lk_bot_" + uuid.toString().substring(0, 8);
-        private @Nullable WorldHandle worldHandle;
-        private @Nullable Double x;
-        private @Nullable Double y;
-        private @Nullable Double z;
-        private @Nullable Double health;
-        private final Set<String> permissions = new HashSet<>();
+        return newWorld(worldSpec);
+    }
 
-        @Override
-        public IPlayerBuilder withName(String name)
-        {
-            this.name = validatePlayerName(name);
-            return this;
-        }
-
-        @Override
-        public IPlayerBuilder withRandomName()
-        {
-            this.uuid = UUID.randomUUID();
-            this.name = "lk_bot_" + uuid.toString().substring(0, 8);
-            return this;
-        }
-
-        @Override
-        public IPlayerBuilder inWorld(WorldHandle world)
-        {
-            this.worldHandle = Objects.requireNonNull(world, "world may not be null.");
-            this.x = null;
-            this.y = null;
-            this.z = null;
-            return this;
-        }
-
-        @Override
-        public IPlayerBuilder atLocation(WorldHandle world, double x, double y, double z)
-        {
-            this.worldHandle = Objects.requireNonNull(world, "world may not be null.");
-            this.x = x;
-            this.y = y;
-            this.z = z;
-            return this;
-        }
-
-        @Override
-        public IPlayerBuilder atSpawn(WorldHandle world)
-        {
-            this.worldHandle = Objects.requireNonNull(world, "world may not be null.");
-            this.x = null;
-            this.y = null;
-            this.z = null;
-            return this;
-        }
-
-        @Override
-        public IPlayerBuilder withHealth(double health)
-        {
-            if (health <= 0.0D)
-                throw new IllegalArgumentException("health must be > 0.");
-            this.health = health;
-            return this;
-        }
-
-        @Override
-        public IPlayerBuilder withPermissions(String... permissions)
-        {
-            if (permissions == null || permissions.length == 0)
-                return this;
-            Arrays.stream(permissions)
-                .filter(Objects::nonNull)
-                .map(String::trim)
-                .filter(permission -> !permission.isEmpty())
-                .forEach(this.permissions::add);
-            return this;
-        }
-
-        @Override
-        public PlayerHandle build()
-        {
-            ensureOpen();
-            final WorldHandle effectiveWorldHandle = Objects.requireNonNull(
-                worldHandle,
-                "world must be configured via inWorld/atLocation/atSpawn."
-            );
-
-            final AgentPlayerData createdPlayer = agentClient.createPlayer(
-                validatePlayerName(name),
-                uuid,
-                effectiveWorldHandle.name(),
-                x,
-                y,
-                z,
-                health,
-                permissions
-            );
-            playerScopeRegistry.register(createdPlayer.uniqueId());
-            return new PlayerHandle(DefaultLightkeeperFramework.this, createdPlayer.uniqueId(), createdPlayer.name());
-        }
+    PlayerHandle createPlayerFromBuilder(
+        String name,
+        UUID uuid,
+        WorldHandle worldHandle,
+        @Nullable Double x,
+        @Nullable Double y,
+        @Nullable Double z,
+        @Nullable Double health,
+        java.util.Set<String> permissions)
+    {
+        final AgentPlayerData createdPlayer = agentClient.createPlayer(
+            name,
+            uuid,
+            worldHandle.name(),
+            x,
+            y,
+            z,
+            health,
+            permissions
+        );
+        playerScopeRegistry.register(createdPlayer.uniqueId());
+        return new PlayerHandle(this, createdPlayer.uniqueId(), createdPlayer.name());
     }
 }

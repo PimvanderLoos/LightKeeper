@@ -7,7 +7,9 @@ import org.bukkit.Material;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
+import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertMenu;
+import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertPlayer;
+import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertWorld;
 
 @ExtendWith(LightkeeperExtension.class)
 class LightkeeperBotIT
@@ -48,7 +50,7 @@ class LightkeeperBotIT
 
         final MenuHandle menu = secondPlayer.getMenu();
         org.assertj.core.api.Assertions.assertThat(menu).isNotNull();
-        assertThat(menu)
+        assertMenu(menu)
             .hasTitle("Sub Menu")
             .hasItemAt(0, "minecraft:barrier")
             .hasItemAt(3, "minecraft:stone")
@@ -62,12 +64,12 @@ class LightkeeperBotIT
             .andWaitTicks(1);
 
         // verify
-        assertThat(world)
+        assertWorld(world)
             .hasBlockAt(1, 100, 0)
             .ofType(Material.STONE);
-        assertThat(secondPlayer)
+        assertPlayer(secondPlayer)
             .receivedMessage("You clicked Button 1");
-        assertThat(secondPlayer)
+        assertPlayer(secondPlayer)
             .receivedMessagesText()
             .contains("clicked")
             .startsWith("You");

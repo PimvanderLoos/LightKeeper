@@ -20,7 +20,7 @@ interface FrameworkInternalComponent
     {
         FrameworkInternalComponent create(
             @BindsInstance RuntimeManifest runtimeManifest,
-            @BindsInstance PaperServerProcess paperServerProcess,
+            @BindsInstance MinecraftServerProcess minecraftServerProcess,
             @BindsInstance UdsAgentClient udsAgentClient
         );
     }

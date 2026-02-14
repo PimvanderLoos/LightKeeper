@@ -1,4 +1,4 @@
-package nl.pim16aap2.lightkeeper.agent.paper;
+package nl.pim16aap2.lightkeeper.agent.spigot;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,7 +24,6 @@ import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryType;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.PermissionAttachment;
@@ -64,9 +63,9 @@ import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 /**
- * Paper plugin that exposes a UDS control channel for LightKeeper tests.
+ * Spigot-compatible plugin that exposes a UDS control channel for LightKeeper tests.
  */
-public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Listener
+public final class SpigotLightkeeperAgentPlugin extends JavaPlugin implements Listener
 {
     private static final long SYNC_OPERATION_TIMEOUT_SECONDS = 30L;
     private static final long WAIT_TICKS_TIMEOUT_MILLIS = 60_000L;
@@ -76,9 +75,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
     private static final Map<String, Supplier<IBotPlayerNmsAdapter>> NMS_ADAPTERS = Map.of(
         DEFAULT_NMS_REVISION, BotPlayerNmsAdapterV1_21_R7::new
     );
-    private static final String MAIN_MENU_TITLE = "Main Menu";
-    private static final String SUB_MENU_TITLE = "Sub Menu";
-    private static final System.Logger LOGGER = System.getLogger(PaperLightkeeperAgentPlugin.class.getName());
+    private static final System.Logger LOGGER = System.getLogger(SpigotLightkeeperAgentPlugin.class.getName());
 
     private final ObjectMapper objectMapper = new ObjectMapper()
         .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -86,6 +83,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
     private final Map<UUID, PermissionAttachment> permissionAttachments = new ConcurrentHashMap<>();
     private final Map<UUID, List<String>> playerMessageHistory = new ConcurrentHashMap<>();
     private final AtomicLong tickCounter = new AtomicLong(0L);
+    private final AgentMenuController menuController = new AgentMenuController();
 
     private @Nullable IBotPlayerNmsAdapter botPlayerNmsAdapter;
 
@@ -118,7 +116,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         }
         catch (Exception exception)
         {
-            getLogger().severe("Failed to start LightKeeper Paper agent: " + exception.getMessage());
+            getLogger().severe("Failed to start LightKeeper Spigot agent: " + exception.getMessage());
             getServer().getPluginManager().disablePlugin(this);
         }
     }
@@ -157,7 +155,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
         if (!command.getName().equalsIgnoreCase("lktestgui"))
             return false;
 
-        openMainMenu(player);
+        menuController.openMainMenu(player);
         return true;
     }
 
@@ -168,30 +166,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event)
     {
-        final InventoryView view = event.getView();
-        final String title = view.getTitle();
-        if (!MAIN_MENU_TITLE.equals(title) && !SUB_MENU_TITLE.equals(title))
-            return;
-
-        event.setCancelled(true);
-        if (!(event.getWhoClicked() instanceof Player player))
-            return;
-
-        if (MAIN_MENU_TITLE.equals(title) && event.getRawSlot() == 0)
-        {
-            sendTrackedMessage(player, "You clicked Button 1");
-            openSubMenu(player);
-            return;
-        }
-
-        if (SUB_MENU_TITLE.equals(title) && event.getRawSlot() == 0)
-        {
-            openMainMenu(player);
-            return;
-        }
-
-        if (SUB_MENU_TITLE.equals(title) && event.getRawSlot() == 2)
-            player.closeInventory();
+        menuController.handleInventoryClick(event, this::sendTrackedMessage);
     }
 
     private void initializeConfiguration()
@@ -655,7 +630,7 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
             final Player player = getRequiredPlayer(uuid);
             if (command.equalsIgnoreCase("lktestgui") || command.equalsIgnoreCase("lightkeeper:testgui"))
             {
-                openMainMenu(player);
+                menuController.openMainMenu(player);
                 return true;
             }
 
@@ -897,22 +872,6 @@ public final class PaperLightkeeperAgentPlugin extends JavaPlugin implements Lis
                 );
             }
         }
-    }
-
-    private void openMainMenu(Player player)
-    {
-        final Inventory inventory = Bukkit.createInventory(player, 9, MAIN_MENU_TITLE);
-        inventory.setItem(0, new ItemStack(Material.STONE));
-        inventory.setItem(2, new ItemStack(Material.DIAMOND_SWORD));
-        player.openInventory(inventory);
-    }
-
-    private void openSubMenu(Player player)
-    {
-        final Inventory inventory = Bukkit.createInventory(player, 9, SUB_MENU_TITLE);
-        inventory.setItem(0, new ItemStack(Material.BARRIER));
-        inventory.setItem(2, new ItemStack(Material.DIAMOND_SWORD));
-        player.openInventory(inventory);
     }
 
     private Player getRequiredPlayer(UUID uuid)

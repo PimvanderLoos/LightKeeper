@@ -10,10 +10,10 @@
         <version>1.2.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>lightkeeper-agent-paper</artifactId>
+    <artifactId>lightkeeper-agent-spigot</artifactId>
     <packaging>jar</packaging>
 
-    <name>Lightkeeper Agent Paper</name>
+    <name>Lightkeeper Agent Spigot</name>
 
     <properties>
         <maven.compiler.release>21</maven.compiler.release>

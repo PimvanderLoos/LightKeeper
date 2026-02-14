@@ -63,6 +63,13 @@ public interface ILightkeeperFramework extends AutoCloseable
     IPlayerBuilder buildPlayer();
 
     /**
+     * Creates a world builder.
+     *
+     * @return A new world builder.
+     */
+    IWorldBuilder buildWorld();
+
+    /**
      * Executes a command from the requested source.
      *
      * @param source

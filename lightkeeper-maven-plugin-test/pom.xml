@@ -35,7 +35,7 @@
     <dependencies>
         <dependency>
             <groupId>nl.pim16aap2.lightkeeper</groupId>
-            <artifactId>lightkeeper-agent-paper</artifactId>
+            <artifactId>lightkeeper-agent-spigot</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
@@ -71,11 +71,11 @@
                             <artifactItems>
                                 <artifactItem>
                                     <groupId>nl.pim16aap2.lightkeeper</groupId>
-                                    <artifactId>lightkeeper-agent-paper</artifactId>
+                                    <artifactId>lightkeeper-agent-spigot</artifactId>
                                     <version>${project.version}</version>
                                     <type>jar</type>
                                     <outputDirectory>${project.build.directory}/lightkeeper-agent</outputDirectory>
-                                    <destFileName>lightkeeper-agent-paper.jar</destFileName>
+                                    <destFileName>lightkeeper-agent-spigot.jar</destFileName>
                                 </artifactItem>
                             </artifactItems>
                             <overWriteReleases>true</overWriteReleases>
@@ -90,7 +90,7 @@
                 <version>${project.version}</version>
                 <configuration>
                     <userAgent>LightKeeper/1.2.0 ([email protected])</userAgent>
-                    <agentJarPath>${project.build.directory}/lightkeeper-agent/lightkeeper-agent-paper.jar</agentJarPath>
+                    <agentJarPath>${project.build.directory}/lightkeeper-agent/lightkeeper-agent-spigot.jar</agentJarPath>
                     <configOverlayPath>${project.basedir}/src/test/resources/provisioning/overlay</configOverlayPath>
                     <worlds>
                         <world>

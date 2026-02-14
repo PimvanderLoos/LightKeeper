@@ -28,7 +28,7 @@ class LightkeeperProvisioningIT
         assertThat(serverDirectory.resolve("lightkeeper-fixture-world/fixtures/marker.txt"))
             .isRegularFile()
             .hasContent("fixture-marker\n");
-        assertThat(serverDirectory.resolve("plugins/lightkeeper-agent-paper/test-overlay.yml"))
+        assertThat(serverDirectory.resolve("plugins/lightkeeper-agent-spigot/test-overlay.yml"))
             .isRegularFile()
             .hasContent("overlay: true\n");
         assertThat(runtimeManifest.preloadedWorlds()).isEmpty();
