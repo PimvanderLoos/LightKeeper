@@ -1,0 +1,11 @@
+name: LightkeeperAgentSpigot
+version: ${project.version}
+main: nl.pim16aap2.lightkeeper.agent.spigot.SpigotLightkeeperAgentPlugin
+api-version: "1.21"
+description: LightKeeper spigot-side test agent
+authors:
+  - pim16aap2
+commands:
+  lktestgui:
+    description: Opens the LightKeeper integration-test menu
+    usage: /lktestgui

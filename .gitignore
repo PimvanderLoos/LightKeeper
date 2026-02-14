@@ -49,3 +49,5 @@ ignoredFiles
 *.sh
 
 **/delombok/*
+docs/*
+codecov

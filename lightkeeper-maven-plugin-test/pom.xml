@@ -6,7 +6,7 @@
     <parent>
         <groupId>nl.pim16aap2.lightkeeper</groupId>
         <artifactId>lightkeeper-parent</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>1.2.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>lightkeeper-maven-plugin-test</artifactId>
@@ -16,19 +16,175 @@
         <maven.compiler.release>21</maven.compiler.release>
         <project.root-dir>${project.basedir}/..</project.root-dir>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <lightkeeper.paper.runtime-manifest.path>${project.build.directory}/lightkeeper/paper-runtime-manifest.json</lightkeeper.paper.runtime-manifest.path>
+        <lightkeeper.spigot.runtime-manifest.path>${project.build.directory}/lightkeeper/spigot-runtime-manifest.json</lightkeeper.spigot.runtime-manifest.path>
+        <lightkeeper.paper.server-work-directory>${project.build.directory}/lightkeeper-server/paper</lightkeeper.paper.server-work-directory>
+        <lightkeeper.spigot.server-work-directory>${project.build.directory}/lightkeeper-server/spigot</lightkeeper.spigot.server-work-directory>
+        <lightkeeper.paper.socket-directory>${project.build.directory}/lightkeeper/sockets/paper</lightkeeper.paper.socket-directory>
+        <lightkeeper.spigot.socket-directory>${project.build.directory}/lightkeeper/sockets/spigot</lightkeeper.spigot.socket-directory>
+        <lightkeeper.spigot.server-version>latest-supported</lightkeeper.spigot.server-version>
     </properties>
+
+    <repositories>
+        <repository>
+            <id>papermc</id>
+            <url>https://repo.papermc.io/repository/maven-public/</url>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>nl.pim16aap2.lightkeeper</groupId>
+            <artifactId>lightkeeper-agent-spigot</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>nl.pim16aap2.lightkeeper</groupId>
+            <artifactId>lightkeeper-framework-junit</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.papermc.paper</groupId>
+            <artifactId>paper-api</artifactId>
+            <version>${version.paper-api}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
     <build>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-agent-jar</id>
+                        <phase>process-test-classes</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>nl.pim16aap2.lightkeeper</groupId>
+                                    <artifactId>lightkeeper-agent-spigot</artifactId>
+                                    <version>${project.version}</version>
+                                    <type>jar</type>
+                                    <outputDirectory>${project.build.directory}/lightkeeper-agent</outputDirectory>
+                                    <destFileName>lightkeeper-agent-spigot.jar</destFileName>
+                                </artifactItem>
+                            </artifactItems>
+                            <overWriteReleases>true</overWriteReleases>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
                 <groupId>nl.pim16aap2.lightkeeper</groupId>
                 <artifactId>lightkeeper-maven-plugin</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
+                <version>${project.version}</version>
+                <configuration>
+                    <userAgent>LightKeeper/1.2.0 ([email protected])</userAgent>
+                    <agentJarPath>${project.build.directory}/lightkeeper-agent/lightkeeper-agent-spigot.jar</agentJarPath>
+                    <configOverlayPath>${project.basedir}/src/test/resources/provisioning/overlay</configOverlayPath>
+                    <worlds>
+                        <world>
+                            <name>lightkeeper-fixture-world</name>
+                            <sourceType>folder</sourceType>
+                            <sourcePath>${project.basedir}/src/test/resources/provisioning/worlds/world-template</sourcePath>
+                            <loadOnStartup>false</loadOnStartup>
+                        </world>
+                    </worlds>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>prepare-server-paper</id>
+                        <goals>
+                            <goal>prepare-server</goal>
+                        </goals>
+                        <configuration>
+                            <serverType>paper</serverType>
+                            <runtimeManifestPath>${lightkeeper.paper.runtime-manifest.path}</runtimeManifestPath>
+                            <serverWorkDirectoryRoot>${lightkeeper.paper.server-work-directory}</serverWorkDirectoryRoot>
+                            <agentSocketDirectory>${lightkeeper.paper.socket-directory}</agentSocketDirectory>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>prepare-server-spigot</id>
+                        <goals>
+                            <goal>prepare-server</goal>
+                        </goals>
+                        <configuration>
+                            <serverType>spigot</serverType>
+                            <serverVersion>${lightkeeper.spigot.server-version}</serverVersion>
+                            <runtimeManifestPath>${lightkeeper.spigot.runtime-manifest.path}</runtimeManifestPath>
+                            <serverWorkDirectoryRoot>${lightkeeper.spigot.server-work-directory}</serverWorkDirectoryRoot>
+                            <agentSocketDirectory>${lightkeeper.spigot.socket-directory}</agentSocketDirectory>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>cleanup-server-paper</id>
+                        <phase>post-integration-test</phase>
+                        <goals>
+                            <goal>cleanup-server</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>cleanup-server-spigot</id>
+                        <phase>post-integration-test</phase>
+                        <goals>
+                            <goal>cleanup-server</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>${version.maven-surefire-plugin}</version>
+                <configuration>
+                    <includes>
+                        <include>**/*IT.java</include>
+                    </includes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>integration-paper</id>
+                        <configuration>
+                            <reportsDirectory>${project.build.directory}/failsafe-reports/paper</reportsDirectory>
+                            <summaryFile>${project.build.directory}/failsafe-reports/paper/failsafe-summary.xml</summaryFile>
+                            <systemPropertyVariables>
+                                <lightkeeper.runtimeManifestPath>${lightkeeper.paper.runtime-manifest.path}</lightkeeper.runtimeManifestPath>
+                                <lightkeeper.expectedServerType>paper</lightkeeper.expectedServerType>
+                            </systemPropertyVariables>
+                        </configuration>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>integration-spigot</id>
+                        <configuration>
+                            <reportsDirectory>${project.build.directory}/failsafe-reports/spigot</reportsDirectory>
+                            <summaryFile>${project.build.directory}/failsafe-reports/spigot/failsafe-summary.xml</summaryFile>
+                            <systemPropertyVariables>
+                                <lightkeeper.runtimeManifestPath>${lightkeeper.spigot.runtime-manifest.path}</lightkeeper.runtimeManifestPath>
+                                <lightkeeper.expectedServerType>spigot</lightkeeper.expectedServerType>
+                            </systemPropertyVariables>
+                        </configuration>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
