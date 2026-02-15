@@ -351,16 +351,16 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
         }
     }
 
-    public void beginMethodScope()
+    public void beginMethodScope(String methodExecutionId)
     {
         ensureOpen();
-        playerScopeRegistry.beginMethodScope();
+        playerScopeRegistry.beginMethodScope(methodExecutionId);
     }
 
-    public void endMethodScope()
+    public void endMethodScope(String methodExecutionId)
     {
         ensureOpen();
-        playerScopeRegistry.endMethodScope(agentClient::removePlayer);
+        playerScopeRegistry.endMethodScope(methodExecutionId, agentClient::removePlayer);
     }
 
     private void preloadConfiguredWorlds()

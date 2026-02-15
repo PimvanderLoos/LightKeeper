@@ -56,7 +56,7 @@ public final class LightkeeperExtension implements
 
         final ILightkeeperFramework sharedFramework = getOrStartSharedFramework(context);
         if (sharedFramework instanceof DefaultLightkeeperFramework defaultLightkeeperFramework)
-            defaultLightkeeperFramework.beginMethodScope();
+            defaultLightkeeperFramework.beginMethodScope(context.getUniqueId());
     }
 
     /**
@@ -72,7 +72,7 @@ public final class LightkeeperExtension implements
                 ILightkeeperFramework.class
             );
             if (sharedFramework instanceof DefaultLightkeeperFramework defaultLightkeeperFramework)
-                defaultLightkeeperFramework.endMethodScope();
+                defaultLightkeeperFramework.endMethodScope(context.getUniqueId());
             return;
         }
 
