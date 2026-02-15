@@ -17,6 +17,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -30,11 +31,15 @@ import java.util.concurrent.TimeUnit;
 @Log
 final class MinecraftServerProcess
 {
+    private static final int MAX_CAPTURED_OUTPUT_LINES = 10_000;
+
     private final RuntimeManifest runtimeManifest;
     private final Path diagnosticsDirectory;
     private final Object outputLinesLock = new Object();
     @GuardedBy("outputLinesLock")
-    private final List<String> outputLines = new ArrayList<>();
+    private final ArrayDeque<String> outputLines = new ArrayDeque<>(MAX_CAPTURED_OUTPUT_LINES);
+    @GuardedBy("outputLinesLock")
+    private long discardedOutputLineCount = 0L;
     private final CountDownLatch startedLatch = new CountDownLatch(1);
     private @Nullable Process process;
     private @Nullable Thread outputThread;
@@ -192,7 +197,29 @@ final class MinecraftServerProcess
     {
         synchronized (outputLinesLock)
         {
-            return List.copyOf(outputLines);
+            if (discardedOutputLineCount == 0L)
+                return List.copyOf(outputLines);
+
+            final List<String> snapshot = new ArrayList<>(outputLines.size() + 1);
+            snapshot.add(
+                "[lightkeeper] Discarded %d older server log lines before this captured tail."
+                    .formatted(discardedOutputLineCount)
+            );
+            snapshot.addAll(outputLines);
+            return List.copyOf(snapshot);
+        }
+    }
+
+    private void appendOutputLine(String line)
+    {
+        synchronized (outputLinesLock)
+        {
+            if (outputLines.size() == MAX_CAPTURED_OUTPUT_LINES)
+            {
+                outputLines.removeFirst();
+                discardedOutputLineCount++;
+            }
+            outputLines.addLast(line);
         }
     }
 
@@ -211,10 +238,7 @@ final class MinecraftServerProcess
                     String line;
                     while ((line = reader.readLine()) != null)
                     {
-                        synchronized (outputLinesLock)
-                        {
-                            outputLines.add(line);
-                        }
+                        appendOutputLine(line);
 
                         if (line.contains("Done (") && line.endsWith(")! For help, type \"help\""))
                             startedLatch.countDown();
