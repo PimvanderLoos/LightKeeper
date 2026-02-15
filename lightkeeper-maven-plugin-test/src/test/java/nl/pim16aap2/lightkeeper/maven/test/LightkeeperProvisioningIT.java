@@ -6,7 +6,8 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
+
 
 class LightkeeperProvisioningIT
 {

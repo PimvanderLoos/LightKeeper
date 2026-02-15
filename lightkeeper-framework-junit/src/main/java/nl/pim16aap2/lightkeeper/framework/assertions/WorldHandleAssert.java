@@ -3,13 +3,14 @@ package nl.pim16aap2.lightkeeper.framework.assertions;
 import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import org.assertj.core.api.AbstractAssert;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Assertions for world handles.
  */
-public final class WorldHandleAssert extends AbstractAssert<WorldHandleAssert, WorldHandle>
+public final class WorldHandleAssert extends AbstractAssert<WorldHandleAssert, @Nullable WorldHandle>
 {
-    WorldHandleAssert(WorldHandle actual)
+    WorldHandleAssert(@Nullable WorldHandle actual)
     {
         super(actual, WorldHandleAssert.class);
     }

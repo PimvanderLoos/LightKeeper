@@ -6,7 +6,7 @@ import nl.pim16aap2.lightkeeper.framework.LightkeeperExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
 
 @ExtendWith(LightkeeperExtension.class)
 class LightkeeperMethodFreshServerIT

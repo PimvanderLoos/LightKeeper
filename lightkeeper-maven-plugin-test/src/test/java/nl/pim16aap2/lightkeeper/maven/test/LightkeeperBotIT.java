@@ -1,15 +1,13 @@
 package nl.pim16aap2.lightkeeper.maven.test;
 
-import nl.pim16aap2.lightkeeper.framework.LightkeeperExtension;
 import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
+import nl.pim16aap2.lightkeeper.framework.LightkeeperExtension;
 import nl.pim16aap2.lightkeeper.framework.MenuHandle;
 import org.bukkit.Material;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertMenu;
-import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertPlayer;
-import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertWorld;
+import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
 
 @ExtendWith(LightkeeperExtension.class)
 class LightkeeperBotIT
@@ -49,8 +47,8 @@ class LightkeeperBotIT
             .verifyMenuName("Sub Menu");
 
         final MenuHandle menu = secondPlayer.getMenu();
-        org.assertj.core.api.Assertions.assertThat(menu).isNotNull();
-        assertMenu(menu)
+        assertThat(menu).isNotNull();
+        assertThat(menu)
             .hasTitle("Sub Menu")
             .hasItemAt(0, "minecraft:barrier")
             .hasItemAt(3, "minecraft:stone")
@@ -64,17 +62,17 @@ class LightkeeperBotIT
             .andWaitTicks(1);
 
         // verify
-        assertWorld(world)
+        assertThat(world)
             .hasBlockAt(1, 100, 0)
             .ofType(Material.STONE);
-        assertPlayer(secondPlayer)
+        assertThat(secondPlayer)
             .receivedMessage("You clicked Button 1");
-        assertPlayer(secondPlayer)
+        assertThat(secondPlayer)
             .receivedMessagesText()
             .contains("clicked")
             .startsWith("You");
 
         // Keep explicit use so this path is covered in integration tests.
-        org.assertj.core.api.Assertions.assertThat(thirdPlayer.name()).isNotBlank();
+        assertThat(thirdPlayer.name()).isNotBlank();
     }
 }

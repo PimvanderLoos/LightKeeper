@@ -3,13 +3,14 @@ package nl.pim16aap2.lightkeeper.framework.assertions;
 import nl.pim16aap2.lightkeeper.framework.MenuHandle;
 import org.assertj.core.api.AbstractAssert;
 import org.bukkit.inventory.ItemStack;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Assertions for open menu state.
  */
-public final class MenuHandleAssert extends AbstractAssert<MenuHandleAssert, MenuHandle>
+public final class MenuHandleAssert extends AbstractAssert<MenuHandleAssert, @Nullable MenuHandle>
 {
-    MenuHandleAssert(MenuHandle actual)
+    MenuHandleAssert(@Nullable MenuHandle actual)
     {
         super(actual, MenuHandleAssert.class);
     }
@@ -21,6 +22,7 @@ public final class MenuHandleAssert extends AbstractAssert<MenuHandleAssert, Men
      *     Expected menu title.
      * @return This assertion for fluent chaining.
      */
+    @SuppressWarnings({"NullAway", "DataFlowIssue"}) // we call isNotNull() first, so actual is not null after that
     public MenuHandleAssert hasTitle(String expectedTitle)
     {
         isNotNull();
@@ -40,6 +42,7 @@ public final class MenuHandleAssert extends AbstractAssert<MenuHandleAssert, Men
      *     Expected material key.
      * @return This assertion for fluent chaining.
      */
+    @SuppressWarnings({"NullAway", "DataFlowIssue"}) // we call isNotNull() first, so actual is not null after that
     public MenuHandleAssert hasItemAt(int slot, String materialKey)
     {
         isNotNull();
@@ -59,6 +62,7 @@ public final class MenuHandleAssert extends AbstractAssert<MenuHandleAssert, Men
      *     Expected item stack.
      * @return This assertion for fluent chaining.
      */
+    @SuppressWarnings({"NullAway", "DataFlowIssue"}) // we call isNotNull() first, so actual is not null after that
     public MenuHandleAssert hasItemAt(int slot, ItemStack itemStack)
     {
         isNotNull();

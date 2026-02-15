@@ -4,6 +4,7 @@ import nl.pim16aap2.lightkeeper.framework.MenuHandle;
 import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import org.assertj.core.api.Assertions;
+import org.jspecify.annotations.Nullable;
 
 /**
  * AssertJ entrypoints for LightKeeper handles.
@@ -21,7 +22,7 @@ public final class LightkeeperAssertions extends Assertions
      *     World handle under test.
      * @return World assertion entrypoint.
      */
-    public static WorldHandleAssert assertWorld(WorldHandle actual)
+    public static WorldHandleAssert assertThat(@Nullable WorldHandle actual)
     {
         return new WorldHandleAssert(actual);
     }
@@ -33,7 +34,7 @@ public final class LightkeeperAssertions extends Assertions
      *     Menu handle under test.
      * @return Menu assertion entrypoint.
      */
-    public static MenuHandleAssert assertMenu(MenuHandle actual)
+    public static MenuHandleAssert assertThat(@Nullable MenuHandle actual)
     {
         return new MenuHandleAssert(actual);
     }
@@ -45,7 +46,7 @@ public final class LightkeeperAssertions extends Assertions
      *     Player handle under test.
      * @return Player assertion entrypoint.
      */
-    public static PlayerHandleAssert assertPlayer(PlayerHandle actual)
+    public static PlayerHandleAssert assertThat(@Nullable PlayerHandle actual)
     {
         return new PlayerHandleAssert(actual);
     }

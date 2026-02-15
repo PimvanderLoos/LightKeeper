@@ -11,7 +11,8 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
+
 
 @ExtendWith(LightkeeperExtension.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)

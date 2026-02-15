@@ -4,15 +4,16 @@ import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.AbstractStringAssert;
 import org.assertj.core.api.Assertions;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Objects;
 
 /**
  * Assertions for synthetic player state.
  */
-public final class PlayerHandleAssert extends AbstractAssert<PlayerHandleAssert, PlayerHandle>
+public final class PlayerHandleAssert extends AbstractAssert<PlayerHandleAssert, @Nullable PlayerHandle>
 {
-    PlayerHandleAssert(PlayerHandle actual)
+    PlayerHandleAssert(@Nullable PlayerHandle actual)
     {
         super(actual, PlayerHandleAssert.class);
     }
@@ -24,6 +25,7 @@ public final class PlayerHandleAssert extends AbstractAssert<PlayerHandleAssert,
      *     Expected player name.
      * @return This assertion for fluent chaining.
      */
+    @SuppressWarnings({"NullAway", "DataFlowIssue"}) // we call isNotNull() first, so actual is not null after that
     public PlayerHandleAssert hasName(String expectedName)
     {
         isNotNull();
@@ -39,6 +41,7 @@ public final class PlayerHandleAssert extends AbstractAssert<PlayerHandleAssert,
      *     Required message fragment.
      * @return This assertion for fluent chaining.
      */
+    @SuppressWarnings({"NullAway", "DataFlowIssue"}) // we call isNotNull() first, so actual is not null after that
     public PlayerHandleAssert receivedMessage(String expectedFragment)
     {
         isNotNull();
@@ -52,6 +55,7 @@ public final class PlayerHandleAssert extends AbstractAssert<PlayerHandleAssert,
      *
      * @return AssertJ string assertion.
      */
+    @SuppressWarnings({"NullAway", "DataFlowIssue"}) // we call isNotNull() first, so actual is not null after that
     public AbstractStringAssert<?> receivedMessagesText()
     {
         isNotNull();

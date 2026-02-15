@@ -1,7 +1,7 @@
 package nl.pim16aap2.lightkeeper.maven.test;
 
-import nl.pim16aap2.lightkeeper.framework.Lightkeeper;
 import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
+import nl.pim16aap2.lightkeeper.framework.Lightkeeper;
 import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import nl.pim16aap2.lightkeeper.framework.WorldSpec;
@@ -13,7 +13,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
 
 class LightkeeperFrameworkIT
 {

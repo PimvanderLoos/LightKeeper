@@ -8,7 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.time.Duration;
 
-import static org.assertj.core.api.Assertions.*;
+import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
 
 @ExtendWith(LightkeeperExtension.class)
 class LightkeeperExtensionIT
