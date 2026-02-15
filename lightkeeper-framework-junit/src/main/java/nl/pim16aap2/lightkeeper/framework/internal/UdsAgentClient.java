@@ -298,9 +298,10 @@ final class UdsAgentClient implements AutoCloseable
 
         while (System.nanoTime() < deadline)
         {
+            SocketChannel channel = null;
             try
             {
-                final SocketChannel channel = SocketChannel.open(StandardProtocolFamily.UNIX);
+                channel = SocketChannel.open(StandardProtocolFamily.UNIX);
                 channel.connect(UnixDomainSocketAddress.of(socketPath));
                 this.socketChannel = channel;
                 this.reader = new BufferedReader(
@@ -314,6 +315,7 @@ final class UdsAgentClient implements AutoCloseable
             catch (Exception exception)
             {
                 lastException = exception;
+                closeFailedChannel(channel, exception);
                 sleep(100L);
             }
         }
@@ -323,6 +325,20 @@ final class UdsAgentClient implements AutoCloseable
                 .formatted(socketPath, timeout),
             lastException
         );
+    }
+
+    private static void closeFailedChannel(@Nullable SocketChannel channel, Exception connectionException)
+    {
+        if (channel == null)
+            return;
+        try
+        {
+            channel.close();
+        }
+        catch (IOException closeException)
+        {
+            connectionException.addSuppressed(closeException);
+        }
     }
 
     private static String getRequiredData(AgentResponse response, String key)
