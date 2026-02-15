@@ -241,7 +241,8 @@ public class PrepareServerMojo extends AbstractMojo
         else if (SERVER_TYPE_SPIGOT.equals(normalizedServerType))
         {
             final SpigotBuildMetadata spigotBuildMetadata =
-                new SpigotDownloadsClient(getLog(), paperDownloadsClient).resolveBuild(effectiveServerVersion);
+                new SpigotDownloadsClient(getLog(), paperDownloadsClient, effectiveUserAgent)
+                    .resolveBuild(effectiveServerVersion);
             final String cacheKey = CacheKeyUtil.createSpigotCacheKey(
                 spigotBuildMetadata.minecraftVersion(),
                 spigotBuildMetadata.buildToolsIdentity(),
