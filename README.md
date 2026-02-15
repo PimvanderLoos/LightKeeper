@@ -184,8 +184,8 @@ class MyPluginIT
 ## Caching and Retry Behavior
 
 - JAR cache and base-server cache are separate.
-- Cache keys include server type/version/build identity, Java version, OS/arch, runtime protocol version, and agent
-  identity.
+- Cache keys include stable server artifact identity (Paper jar SHA-256 or Spigot BuildTools identity), with
+  Java/OS included for build-sensitive Spigot outputs.
 - Start retries reuse the prepared artifacts; failed starts do not force a full re-download/rebuild unless explicitly
   configured via force flags.
 

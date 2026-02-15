@@ -12,8 +12,8 @@ class CacheKeyUtilTest
     void createCacheKey_shouldGenerateDifferentHashWhenInputChanges()
     {
         // setup
-        final List<String> baseParts = List.of("paper", "1.21.11", "42", "21", "linux", "amd64", "agent-a");
-        final List<String> changedParts = List.of("paper", "1.21.11", "42", "21", "linux", "amd64", "agent-b");
+        final List<String> baseParts = List.of("paper", "1.21.11", "sha-a");
+        final List<String> changedParts = List.of("paper", "1.21.11", "sha-b");
 
         // execute
         final String first = CacheKeyUtil.createCacheKey(baseParts);
@@ -27,7 +27,7 @@ class CacheKeyUtilTest
     void createCacheKey_shouldGenerateDeterministicHash()
     {
         // setup
-        final List<String> parts = List.of("paper", "1.21.11", "42", "21", "linux", "amd64", "agent-a");
+        final List<String> parts = List.of("paper", "1.21.11", "sha-a");
 
         // execute
         final String first = CacheKeyUtil.createCacheKey(parts);
@@ -35,5 +35,46 @@ class CacheKeyUtilTest
 
         // verify
         assertThat(first).isEqualTo(second);
+    }
+
+    @Test
+    void createPaperCacheKey_shouldGenerateDifferentHashWhenJarShaChanges()
+    {
+        // setup
+        final String version = "1.21.11";
+
+        // execute
+        final String first = CacheKeyUtil.createPaperCacheKey(version, "sha-a");
+        final String second = CacheKeyUtil.createPaperCacheKey(version, "sha-b");
+
+        // verify
+        assertThat(first).isNotEqualTo(second);
+    }
+
+    @Test
+    void createSpigotCacheKey_shouldGenerateDifferentHashWhenEnvironmentChanges()
+    {
+        // setup
+        final String version = "1.21.11";
+        final String buildToolsIdentity = "buildtools-lastSuccessfulBuild";
+
+        // execute
+        final String first = CacheKeyUtil.createSpigotCacheKey(
+            version,
+            buildToolsIdentity,
+            "21",
+            "Linux",
+            "amd64"
+        );
+        final String second = CacheKeyUtil.createSpigotCacheKey(
+            version,
+            buildToolsIdentity,
+            "21",
+            "Windows 11",
+            "amd64"
+        );
+
+        // verify
+        assertThat(first).isNotEqualTo(second);
     }
 }

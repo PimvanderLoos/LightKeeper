@@ -212,16 +212,10 @@ public class PrepareServerMojo extends AbstractMojo
         if (SERVER_TYPE_PAPER.equals(normalizedServerType))
         {
             final PaperBuildMetadata paperBuildMetadata = paperDownloadsClient.resolveBuild(effectiveServerVersion);
-            final String cacheKey = CacheKeyUtil.createCacheKey(List.of(
-                SERVER_TYPE_PAPER,
+            final String cacheKey = CacheKeyUtil.createPaperCacheKey(
                 paperBuildMetadata.minecraftVersion(),
-                Long.toString(paperBuildMetadata.buildId()),
-                System.getProperty("java.specification.version"),
-                System.getProperty("os.name"),
-                System.getProperty("os.arch"),
-                runtimeProtocolVersion,
-                agentMetadata.cacheIdentity()
-            ));
+                paperBuildMetadata.sha256()
+            );
             final ServerSpecification serverSpecification = createServerSpecification(
                 paperBuildMetadata.minecraftVersion(),
                 effectiveJarCacheDirectoryRoot,
@@ -245,16 +239,13 @@ public class PrepareServerMojo extends AbstractMojo
         {
             final SpigotBuildMetadata spigotBuildMetadata =
                 new SpigotDownloadsClient(getLog(), paperDownloadsClient).resolveBuild(effectiveServerVersion);
-            final String cacheKey = CacheKeyUtil.createCacheKey(List.of(
-                SERVER_TYPE_SPIGOT,
+            final String cacheKey = CacheKeyUtil.createSpigotCacheKey(
                 spigotBuildMetadata.minecraftVersion(),
                 spigotBuildMetadata.buildToolsIdentity(),
                 System.getProperty("java.specification.version"),
                 System.getProperty("os.name"),
-                System.getProperty("os.arch"),
-                runtimeProtocolVersion,
-                agentMetadata.cacheIdentity()
-            ));
+                System.getProperty("os.arch")
+            );
             final ServerSpecification serverSpecification = createServerSpecification(
                 spigotBuildMetadata.minecraftVersion(),
                 effectiveJarCacheDirectoryRoot,
