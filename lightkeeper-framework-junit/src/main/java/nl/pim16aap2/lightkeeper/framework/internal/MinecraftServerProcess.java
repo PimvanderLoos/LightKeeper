@@ -61,15 +61,7 @@ final class MinecraftServerProcess
             process = processBuilder.start();
             outputThread = createOutputReaderThread(process);
             outputThread.start();
-            final boolean started = startedLatch.await(timeout.toSeconds(), TimeUnit.SECONDS);
-            if (!started)
-            {
-                writeDiagnostics("startup-timeout");
-                stop(Duration.ofSeconds(5));
-                throw new IllegalStateException(
-                    "Minecraft server did not start within timeout. Tail:%n%s".formatted(outputTail())
-                );
-            }
+            awaitStartupOrFail(timeout);
         }
         catch (Exception exception)
         {
@@ -77,6 +69,30 @@ final class MinecraftServerProcess
             stop(Duration.ofSeconds(5));
             throw new IllegalStateException("Failed to start Minecraft server.", exception);
         }
+    }
+
+    private void awaitStartupOrFail(Duration timeout)
+        throws InterruptedException
+    {
+        final long startupDeadlineNanos = System.nanoTime() + timeout.toNanos();
+        while (System.nanoTime() < startupDeadlineNanos)
+        {
+            if (startedLatch.await(200L, TimeUnit.MILLISECONDS))
+                return;
+
+            final Process runningProcess = Objects.requireNonNull(process, "process may not be null.");
+            if (!runningProcess.isAlive())
+            {
+                throw new IllegalStateException(
+                    "Minecraft server exited before readiness marker. Exit code: %d. Tail:%n%s"
+                        .formatted(runningProcess.exitValue(), outputTail())
+                );
+            }
+        }
+
+        throw new IllegalStateException(
+            "Minecraft server did not start within timeout. Tail:%n%s".formatted(outputTail())
+        );
     }
 
     private ProcessBuilder getProcessBuilder(Path javaExecutable)
