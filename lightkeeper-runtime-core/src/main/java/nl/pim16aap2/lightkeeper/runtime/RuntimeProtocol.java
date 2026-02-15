@@ -11,6 +11,8 @@ public final class RuntimeProtocol
     public static final String PROPERTY_AUTH_TOKEN = "lightkeeper.agent.authToken";
     public static final String PROPERTY_PROTOCOL_VERSION = "lightkeeper.agent.protocolVersion";
     public static final String PROPERTY_EXPECTED_AGENT_SHA256 = "lightkeeper.agent.expectedSha256";
+    public static final String PROPERTY_SYNC_OPERATION_TIMEOUT_SECONDS =
+        "lightkeeper.agent.syncOperationTimeoutSeconds";
 
     private RuntimeProtocol()
     {
