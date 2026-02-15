@@ -13,14 +13,40 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * Protocol action handler for world-level and server-level operations.
+ *
+ * <p>This handler covers world discovery/creation, console command execution, block reads/writes, and server
+ * tick synchronization features used by runtime integration tests.
+ */
 final class AgentWorldActions
 {
+    /**
+     * Maximum wall-clock time for {@code WAIT_TICKS} polling.
+     */
     private static final long WAIT_TICKS_TIMEOUT_MILLIS = 60_000L;
 
+    /**
+     * Owning plugin used for logging.
+     */
     private final JavaPlugin plugin;
+    /**
+     * Scheduler bridge for Bukkit main-thread execution.
+     */
     private final AgentMainThreadExecutor mainThreadExecutor;
+    /**
+     * Monotonic tick counter incremented by the plugin scheduler loop.
+     */
     private final AtomicLong tickCounter;
 
+    /**
+     * @param plugin
+     *     Plugin context used for logging.
+     * @param mainThreadExecutor
+     *     Main-thread execution bridge for Bukkit-safe operations.
+     * @param tickCounter
+     *     Shared tick counter maintained by the plugin tick loop.
+     */
     AgentWorldActions(JavaPlugin plugin, AgentMainThreadExecutor mainThreadExecutor, AtomicLong tickCounter)
     {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
@@ -28,11 +54,24 @@ final class AgentWorldActions
         this.tickCounter = Objects.requireNonNull(tickCounter, "tickCounter");
     }
 
+    /**
+     * Increments the shared server tick counter by one.
+     */
     void incrementTick()
     {
         tickCounter.incrementAndGet();
     }
 
+    /**
+     * Handles {@code MAIN_WORLD} by returning the name of Bukkit's first loaded world.
+     *
+     * @param requestId
+     *     Runtime request identifier.
+     * @return
+     *     Success response containing {@code worldName}.
+     * @throws Exception
+     *     Propagates main-thread execution failures.
+     */
     AgentResponse handleMainWorld(String requestId)
         throws Exception
     {
@@ -40,6 +79,18 @@ final class AgentWorldActions
         return AgentResponses.successResponse(requestId, Map.of("worldName", mainWorld.getName()));
     }
 
+    /**
+     * Handles {@code NEW_WORLD} by creating or loading a world with deterministic creator settings.
+     *
+     * @param requestId
+     *     Runtime request identifier.
+     * @param arguments
+     *     Request arguments; requires {@code worldName}. Optional type/environment/seed override defaults.
+     * @return
+     *     Success response containing resolved world name, or validation error response.
+     * @throws Exception
+     *     Propagates parsing and main-thread execution failures.
+     */
     AgentResponse handleNewWorld(String requestId, Map<String, String> arguments)
         throws Exception
     {
@@ -73,6 +124,18 @@ final class AgentWorldActions
         return AgentResponses.successResponse(requestId, Map.of("worldName", world.getName()));
     }
 
+    /**
+     * Handles {@code EXECUTE_COMMAND} by running a console command.
+     *
+     * @param requestId
+     *     Runtime request identifier.
+     * @param arguments
+     *     Request arguments; requires non-blank {@code command}. Only {@code CONSOLE} source is supported.
+     * @return
+     *     Success or validation error response with command execution result.
+     * @throws Exception
+     *     Propagates main-thread execution failures.
+     */
     AgentResponse handleExecuteCommand(String requestId, Map<String, String> arguments)
         throws Exception
     {
@@ -104,6 +167,18 @@ final class AgentWorldActions
         return AgentResponses.successResponse(requestId, Map.of("success", success.toString()));
     }
 
+    /**
+     * Handles {@code BLOCK_TYPE} by returning the material at target coordinates.
+     *
+     * @param requestId
+     *     Runtime request identifier.
+     * @param arguments
+     *     Request arguments; expects {@code worldName}, {@code x}, {@code y}, and {@code z}.
+     * @return
+     *     Success response containing the resolved block material.
+     * @throws Exception
+     *     Propagates parsing and main-thread execution failures.
+     */
     AgentResponse handleBlockType(String requestId, Map<String, String> arguments)
         throws Exception
     {
@@ -123,6 +198,18 @@ final class AgentWorldActions
         return AgentResponses.successResponse(requestId, Map.of("material", materialName));
     }
 
+    /**
+     * Handles {@code SET_BLOCK} by setting a block to the requested material.
+     *
+     * @param requestId
+     *     Runtime request identifier.
+     * @param arguments
+     *     Request arguments; expects world coordinates and non-blank {@code material}.
+     * @return
+     *     Success response containing resulting material name, or validation error response.
+     * @throws Exception
+     *     Propagates parsing, validation, and main-thread execution failures.
+     */
     AgentResponse handleSetBlock(String requestId, Map<String, String> arguments)
         throws Exception
     {
@@ -163,6 +250,16 @@ final class AgentWorldActions
         return AgentResponses.successResponse(requestId, Map.of("material", setMaterial));
     }
 
+    /**
+     * Handles {@code WAIT_TICKS} by polling until the tick counter reaches the target value.
+     *
+     * @param requestId
+     *     Runtime request identifier.
+     * @param arguments
+     *     Request arguments; expects non-negative {@code ticks}.
+     * @return
+     *     Success response with start/end tick values, or timeout/interruption/validation error response.
+     */
     AgentResponse handleWaitTicks(String requestId, Map<String, String> arguments)
     {
         final int ticks = AgentRequestParsers.parseInt(arguments.getOrDefault("ticks", "0"));
@@ -212,6 +309,14 @@ final class AgentWorldActions
         ));
     }
 
+    /**
+     * Handles {@code GET_SERVER_TICK}.
+     *
+     * @param requestId
+     *     Runtime request identifier.
+     * @return
+     *     Success response with current tick counter value.
+     */
     AgentResponse handleGetServerTick(String requestId)
     {
         return AgentResponses.successResponse(requestId, Map.of("tick", Long.toString(tickCounter.get())));

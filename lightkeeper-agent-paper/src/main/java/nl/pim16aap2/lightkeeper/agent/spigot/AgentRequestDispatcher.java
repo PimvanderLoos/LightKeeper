@@ -12,18 +12,66 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 
+/**
+ * Central request router for the Spigot agent protocol.
+ *
+ * <p>This class parses request lines into protocol objects, enforces handshake preconditions, dispatches actions
+ * to domain handlers, and maps failures into canonical error responses.
+ */
 final class AgentRequestDispatcher
 {
+    /**
+     * JSON mapper used to deserialize raw request lines.
+     */
     private final ObjectMapper objectMapper;
+    /**
+     * Handler for world and server-level protocol actions.
+     */
     private final AgentWorldActions worldActions;
+    /**
+     * Handler for synthetic player and player-context protocol actions.
+     */
     private final AgentPlayerActions playerActions;
+    /**
+     * Handler for inventory/menu protocol actions.
+     */
     private final AgentMenuActions menuActions;
+    /**
+     * Plugin logger used for operational diagnostics.
+     */
     private final java.util.logging.Logger logger;
 
+    /**
+     * Expected handshake token.
+     */
     private final String authToken;
+    /**
+     * Expected runtime protocol version.
+     */
     private final String protocolVersion;
+    /**
+     * Optional expected SHA-256 hash of the running agent artifact.
+     */
     private final String expectedAgentSha256;
 
+    /**
+     * @param objectMapper
+     *     Request JSON deserializer.
+     * @param worldActions
+     *     World action handler.
+     * @param playerActions
+     *     Player action handler.
+     * @param menuActions
+     *     Menu action handler.
+     * @param logger
+     *     Logger for request and error diagnostics.
+     * @param authToken
+     *     Expected handshake token.
+     * @param protocolVersion
+     *     Expected protocol version.
+     * @param expectedAgentSha256
+     *     Optional expected agent artifact hash.
+     */
     AgentRequestDispatcher(
         ObjectMapper objectMapper,
         AgentWorldActions worldActions,
@@ -44,21 +92,46 @@ final class AgentRequestDispatcher
         this.expectedAgentSha256 = Objects.requireNonNull(expectedAgentSha256, "expectedAgentSha256");
     }
 
+    /**
+     * Opens the built-in main menu for a player.
+     *
+     * @param player
+     *     Target player.
+     */
     void openMainMenu(Player player)
     {
         menuActions.openMainMenu(player);
     }
 
+    /**
+     * Forwards inventory click events to menu action handling.
+     *
+     * @param event
+     *     Bukkit click event.
+     */
     void onInventoryClick(InventoryClickEvent event)
     {
         menuActions.onInventoryClick(event);
     }
 
+    /**
+     * Performs best-effort cleanup of registered synthetic players.
+     */
     void cleanupSyntheticPlayers()
     {
         playerActions.cleanupSyntheticPlayers();
     }
 
+    /**
+     * Parses and dispatches a single raw request line.
+     *
+     * @param line
+     *     Raw JSON request line.
+     * @param handshakeCompleted
+     *     Whether the current connection has already completed handshake successfully.
+     * @return
+     *     Dispatch result containing response payload and updated handshake state.
+     */
     RequestDispatchResult handleRequestLine(String line, boolean handshakeCompleted)
     {
         try
@@ -79,6 +152,16 @@ final class AgentRequestDispatcher
         }
     }
 
+    /**
+     * Dispatches a parsed request to the relevant action handler.
+     *
+     * @param request
+     *     Parsed protocol request.
+     * @param handshakeCompleted
+     *     Current connection handshake state.
+     * @return
+     *     Dispatch result containing response payload and updated handshake state.
+     */
     private RequestDispatchResult dispatchRequest(AgentRequest request, boolean handshakeCompleted)
     {
         final Map<String, String> arguments = request.arguments();
@@ -149,6 +232,16 @@ final class AgentRequestDispatcher
         }
     }
 
+    /**
+     * Validates handshake credentials and compatibility metadata.
+     *
+     * @param requestId
+     *     Runtime request identifier.
+     * @param arguments
+     *     Handshake arguments containing token/protocol/hash values.
+     * @return
+     *     Success response when validation succeeds; otherwise a specific handshake error response.
+     */
     private AgentResponse handleHandshake(String requestId, Map<String, String> arguments)
     {
         final String token = arguments.getOrDefault("token", "");
@@ -174,6 +267,14 @@ final class AgentRequestDispatcher
         ));
     }
 
+    /**
+     * Immutable transport object describing a dispatched response and resulting handshake state.
+     *
+     * @param response
+     *     Protocol response generated for the processed request.
+     * @param handshakeCompleted
+     *     Whether handshake is completed after processing the request.
+     */
     record RequestDispatchResult(AgentResponse response, boolean handshakeCompleted)
     {
     }

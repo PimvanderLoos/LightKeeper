@@ -14,15 +14,53 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
+/**
+ * Protocol action handler for synthetic player lifecycle and player-driven interactions.
+ *
+ * <p>This class is responsible for creating/removing synthetic players, executing commands as those players,
+ * placing blocks through player context, and returning captured player-facing messages.
+ */
 final class AgentPlayerActions
 {
+    /**
+     * Owning plugin used for logging and permission attachment scope.
+     */
     private final JavaPlugin plugin;
+    /**
+     * Scheduler bridge to execute Bukkit mutations on the main server thread.
+     */
     private final AgentMainThreadExecutor mainThreadExecutor;
+    /**
+     * Synthetic player state and message registry.
+     */
     private final AgentSyntheticPlayerStore playerStore;
+    /**
+     * Menu action handler used when command flows open built-in menus.
+     */
     private final AgentMenuActions menuActions;
+    /**
+     * JSON mapper used to serialize message payloads.
+     */
     private final ObjectMapper objectMapper;
+    /**
+     * NMS-backed synthetic player implementation.
+     */
     private final IBotPlayerNmsAdapter botPlayerNmsAdapter;
 
+    /**
+     * @param plugin
+     *     Plugin context for logger and permission attachment scope.
+     * @param mainThreadExecutor
+     *     Main-thread execution bridge for Bukkit-safe operations.
+     * @param playerStore
+     *     Registry containing synthetic players and related state.
+     * @param menuActions
+     *     Menu handler used by command shortcuts.
+     * @param objectMapper
+     *     JSON serializer for message lists.
+     * @param botPlayerNmsAdapter
+     *     NMS adapter used to spawn/remove synthetic players and drain received messages.
+     */
     AgentPlayerActions(
         JavaPlugin plugin,
         AgentMainThreadExecutor mainThreadExecutor,
@@ -39,6 +77,18 @@ final class AgentPlayerActions
         this.botPlayerNmsAdapter = Objects.requireNonNull(botPlayerNmsAdapter, "botPlayerNmsAdapter");
     }
 
+    /**
+     * Handles {@code CREATE_PLAYER} by spawning a synthetic player and registering it in the store.
+     *
+     * @param requestId
+     *     Runtime request identifier.
+     * @param arguments
+     *     Request arguments. Requires {@code name} and {@code worldName}; optional spawn/health/permission fields.
+     * @return
+     *     Success response containing the created player's UUID and name, or a validation error response.
+     * @throws Exception
+     *     Propagates parsing, validation, and main-thread execution failures.
+     */
     AgentResponse handleCreatePlayer(String requestId, Map<String, String> arguments)
         throws Exception
     {
@@ -93,6 +143,18 @@ final class AgentPlayerActions
         ));
     }
 
+    /**
+     * Handles {@code REMOVE_PLAYER} by removing permissions, despawning the synthetic player, and cleaning state.
+     *
+     * @param requestId
+     *     Runtime request identifier.
+     * @param arguments
+     *     Request arguments; requires {@code uuid}.
+     * @return
+     *     Success response when cleanup completes.
+     * @throws Exception
+     *     Propagates parsing and main-thread execution failures.
+     */
     AgentResponse handleRemovePlayer(String requestId, Map<String, String> arguments)
         throws Exception
     {
@@ -113,6 +175,18 @@ final class AgentPlayerActions
         return AgentResponses.successResponse(requestId, Map.of("removed", "true"));
     }
 
+    /**
+     * Handles {@code EXECUTE_PLAYER_COMMAND} by dispatching the command in the player's execution context.
+     *
+     * @param requestId
+     *     Runtime request identifier.
+     * @param arguments
+     *     Request arguments; requires {@code uuid} and non-blank {@code command}.
+     * @return
+     *     Success response containing whether dispatch succeeded.
+     * @throws Exception
+     *     Propagates parsing and main-thread execution failures.
+     */
     AgentResponse handleExecutePlayerCommand(String requestId, Map<String, String> arguments)
         throws Exception
     {
@@ -146,6 +220,18 @@ final class AgentPlayerActions
         return AgentResponses.successResponse(requestId, Map.of("success", success.toString()));
     }
 
+    /**
+     * Handles {@code PLACE_PLAYER_BLOCK} by setting the target block type in the player's current world.
+     *
+     * @param requestId
+     *     Runtime request identifier.
+     * @param arguments
+     *     Request arguments; requires {@code uuid}, block coordinates, and {@code material}.
+     * @return
+     *     Success response containing the resulting block material key.
+     * @throws Exception
+     *     Propagates parsing, validation, and main-thread execution failures.
+     */
     AgentResponse handlePlacePlayerBlock(String requestId, Map<String, String> arguments)
         throws Exception
     {
@@ -175,6 +261,18 @@ final class AgentPlayerActions
         return AgentResponses.successResponse(requestId, Map.of("material", finalMaterial));
     }
 
+    /**
+     * Handles {@code GET_PLAYER_MESSAGES} by draining adapter messages and returning full tracked history.
+     *
+     * @param requestId
+     *     Runtime request identifier.
+     * @param arguments
+     *     Request arguments; requires {@code uuid}.
+     * @return
+     *     Success response with {@code messagesJson}.
+     * @throws Exception
+     *     Propagates parsing and main-thread execution failures.
+     */
     AgentResponse handleGetPlayerMessages(String requestId, Map<String, String> arguments)
         throws Exception
     {
@@ -189,6 +287,11 @@ final class AgentPlayerActions
         return AgentResponses.successResponse(requestId, Map.of("messagesJson", messagesJson));
     }
 
+    /**
+     * Best-effort shutdown cleanup for all registered synthetic players.
+     *
+     * <p>Failures for individual players are logged and do not abort cleanup of other players.
+     */
     void cleanupSyntheticPlayers()
     {
         for (final UUID uuid : playerStore.syntheticPlayerIds())

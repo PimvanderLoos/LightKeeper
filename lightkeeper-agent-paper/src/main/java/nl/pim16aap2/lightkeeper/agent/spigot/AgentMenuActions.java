@@ -22,14 +22,42 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
+/**
+ * Protocol action handler for inventory/menu-related agent actions.
+ *
+ * <p>This class provides the executable behavior behind menu protocol calls such as opening menus, reading
+ * open inventory state, and simulating click/drag interactions.
+ */
 @SuppressWarnings({"deprecation", "UnstableApiUsage"})
 final class AgentMenuActions
 {
+    /**
+     * Scheduler bridge for Bukkit main-thread execution.
+     */
     private final AgentMainThreadExecutor mainThreadExecutor;
+    /**
+     * Deterministic controller for menu structure and click outcomes.
+     */
     private final AgentMenuController menuController;
+    /**
+     * Synthetic player lookup and tracked message persistence.
+     */
     private final AgentSyntheticPlayerStore playerStore;
+    /**
+     * JSON mapper used to serialize structured inventory item payloads.
+     */
     private final ObjectMapper objectMapper;
 
+    /**
+     * @param mainThreadExecutor
+     *     Main-thread executor for Bukkit-safe menu interactions.
+     * @param menuController
+     *     Controller that defines menu structure and click routing.
+     * @param playerStore
+     *     Synthetic player registry used to resolve protocol UUIDs.
+     * @param objectMapper
+     *     JSON serializer for response payloads.
+     */
     AgentMenuActions(
         AgentMainThreadExecutor mainThreadExecutor,
         AgentMenuController menuController,
@@ -42,16 +70,40 @@ final class AgentMenuActions
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper");
     }
 
+    /**
+     * Opens the main test menu for the provided player.
+     *
+     * @param player
+     *     Player who should receive the menu.
+     */
     void openMainMenu(Player player)
     {
         menuController.openMainMenu(player);
     }
 
+    /**
+     * Processes inventory click events for managed test menus.
+     *
+     * @param event
+     *     Inventory click event fired by Bukkit.
+     */
     void onInventoryClick(InventoryClickEvent event)
     {
         menuController.handleInventoryClick(event, playerStore::sendTrackedMessage);
     }
 
+    /**
+     * Handles {@code GET_OPEN_MENU} by returning title and non-air slot metadata for the active inventory.
+     *
+     * @param requestId
+     *     Runtime request identifier.
+     * @param arguments
+     *     Request arguments; requires {@code uuid}.
+     * @return
+     *     Success response with menu state or {@code open=false} when no actionable menu is open.
+     * @throws Exception
+     *     Propagates parsing and Bukkit execution failures.
+     */
     AgentResponse handleGetOpenMenu(String requestId, Map<String, String> arguments)
         throws Exception
     {
@@ -94,6 +146,18 @@ final class AgentMenuActions
         return AgentResponses.successResponse(requestId, data);
     }
 
+    /**
+     * Handles {@code CLICK_MENU_SLOT} by synthesizing and dispatching an inventory click event.
+     *
+     * @param requestId
+     *     Runtime request identifier.
+     * @param arguments
+     *     Request arguments; requires {@code uuid} and non-negative {@code slot}.
+     * @return
+     *     Success or validation error response.
+     * @throws Exception
+     *     Propagates parsing and Bukkit execution failures.
+     */
     AgentResponse handleClickMenuSlot(String requestId, Map<String, String> arguments)
         throws Exception
     {
@@ -125,6 +189,18 @@ final class AgentMenuActions
         return AgentResponses.successResponse(requestId, Map.of("clicked", "true"));
     }
 
+    /**
+     * Handles {@code DRAG_MENU_SLOTS} by creating and dispatching an inventory drag event.
+     *
+     * @param requestId
+     *     Runtime request identifier.
+     * @param arguments
+     *     Request arguments; requires {@code uuid}, {@code material}, and comma-separated {@code slots}.
+     * @return
+     *     Success or validation error response.
+     * @throws Exception
+     *     Propagates parsing and Bukkit execution failures.
+     */
     AgentResponse handleDragMenuSlots(String requestId, Map<String, String> arguments)
         throws Exception
     {
@@ -187,6 +263,14 @@ final class AgentMenuActions
         return AgentResponses.successResponse(requestId, Map.of("dragged", "true"));
     }
 
+    /**
+     * Determines whether the currently open inventory should be considered actionable by agent menu commands.
+     *
+     * @param view
+     *     Active inventory view.
+     * @return
+     *     {@code true} when the inventory can be interacted with as a menu action target.
+     */
     private static boolean isActionableOpenInventory(InventoryView view)
     {
         return view.getType() != InventoryType.CRAFTING;

@@ -36,29 +36,69 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
- * Spigot-compatible plugin that exposes a UDS control channel for LightKeeper tests.
+ * Spigot/Paper plugin entry point for the LightKeeper runtime agent.
+ *
+ * <p>The plugin opens a Unix domain socket server, receives JSON protocol requests, routes them to
+ * action handlers, and returns JSON responses. It is the composition root for all agent components
+ * in this package and owns startup/shutdown lifecycle behavior.
  */
 public final class SpigotLightkeeperAgentPlugin extends JavaPlugin implements Listener
 {
+    /**
+     * Bukkit version prefix this plugin is compiled and validated against.
+     */
     static final String SUPPORTED_MINECRAFT_VERSION = "1.21.11";
+    /**
+     * Prefix used to extract CraftBukkit package revision identifiers.
+     */
     static final String CRAFTBUKKIT_PACKAGE_PREFIX = "org.bukkit.craftbukkit.";
+    /**
+     * Fallback NMS revision when runtime detection is unavailable.
+     */
     private static final String DEFAULT_NMS_REVISION = "v1_21_R7";
+    /**
+     * Registered NMS adapter providers by CraftBukkit package revision.
+     */
     private static final Map<String, Supplier<IBotPlayerNmsAdapter>> NMS_ADAPTERS = Map.of(
         DEFAULT_NMS_REVISION, BotPlayerNmsAdapterV1_21_R7::new
     );
+    /**
+     * Internal logger for static utility methods.
+     */
     private static final System.Logger LOGGER = System.getLogger(SpigotLightkeeperAgentPlugin.class.getName());
 
+    /**
+     * Shared object mapper for request/response serialization.
+     */
     private final ObjectMapper objectMapper = new ObjectMapper()
         .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
+    /**
+     * Single-thread executor that accepts incoming socket connections.
+     */
     private final ExecutorService acceptExecutor = Executors.newSingleThreadExecutor(
         Thread.ofPlatform().name("lightkeeper-agent-accept-", 0).factory()
     );
+    /**
+     * Per-connection request handling executor.
+     */
     private final ExecutorService requestExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
+    /**
+     * Indicates whether the socket server should keep accepting connections.
+     */
     private volatile boolean running;
+    /**
+     * Active filesystem path for the Unix domain socket.
+     */
     private Path socketPath = Path.of("lightkeeper-agent.sock");
+    /**
+     * Bound server socket channel, initialized during startup.
+     */
     private @Nullable ServerSocketChannel serverSocketChannel;
+    /**
+     * Request dispatcher wired during startup.
+     */
     private @Nullable AgentRequestDispatcher requestDispatcher;
 
     /**
@@ -178,6 +218,14 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin implements Li
             dispatcher.onInventoryClick(event);
     }
 
+    /**
+     * Validates Bukkit/NMS compatibility with supported adapters.
+     *
+     * @return
+     *     Detected CraftBukkit revision, or {@code null} when no revision suffix is present.
+     * @throws IllegalStateException
+     *     When Bukkit version or NMS revision is unsupported.
+     */
     private @Nullable String validateNmsCompatibility()
     {
         final String bukkitVersion = Bukkit.getBukkitVersion();
@@ -203,6 +251,14 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin implements Li
         return detectedNmsRevision;
     }
 
+    /**
+     * Creates the NMS adapter matching the detected or fallback revision.
+     *
+     * @param detectedNmsRevision
+     *     Detected CraftBukkit package revision, or {@code null} if unavailable.
+     * @return
+     *     Initialized NMS adapter.
+     */
     private IBotPlayerNmsAdapter createBotPlayerNmsAdapter(@Nullable String detectedNmsRevision)
     {
         if (detectedNmsRevision == null)
@@ -225,6 +281,12 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin implements Li
         return adapterSupplier.get();
     }
 
+    /**
+     * Returns a sorted, comma-separated list of registered NMS revisions.
+     *
+     * @return
+     *     Human-readable revision list.
+     */
     private static String supportedNmsRevisions()
     {
         return NMS_ADAPTERS.keySet().stream()
@@ -232,6 +294,16 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin implements Li
             .collect(Collectors.joining(", "));
     }
 
+    /**
+     * Extracts the CraftBukkit revision segment from a server package name.
+     *
+     * @param packageName
+     *     Fully-qualified server package name.
+     * @return
+     *     Revision value such as {@code v1_21_R7}, or {@code null} when no explicit revision suffix exists.
+     * @throws IllegalStateException
+     *     When the package name does not match expected CraftBukkit structure.
+     */
     static @Nullable String extractCraftBukkitRevision(String packageName)
     {
         final String normalizedPackageName = packageName.trim();
@@ -260,11 +332,25 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin implements Li
         return revision;
     }
 
+    /**
+     * Starts the scheduler task that increments the shared world action tick counter.
+     *
+     * @param worldActions
+     *     World action handler that owns the tick counter.
+     */
     private void startTickLoop(AgentWorldActions worldActions)
     {
         Bukkit.getScheduler().runTaskTimer(this, worldActions::incrementTick, 1L, 1L);
     }
 
+    /**
+     * Initializes and binds the Unix domain socket server.
+     *
+     * @param resolvedSocketPath
+     *     Absolute socket path to bind.
+     * @throws IOException
+     *     When directory creation, socket cleanup, or binding fails.
+     */
     private void startServer(Path resolvedSocketPath)
         throws IOException
     {
@@ -280,6 +366,11 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin implements Li
         getLogger().info("LightKeeper agent started at socket path: " + resolvedSocketPath);
     }
 
+    /**
+     * Accept loop for incoming UDS connections.
+     *
+     * <p>Each accepted connection is handed to the request executor for independent processing.
+     */
     private void acceptLoop()
     {
         while (running)
@@ -309,6 +400,12 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin implements Li
         }
     }
 
+    /**
+     * Processes a single request/response stream over a connected socket channel.
+     *
+     * @param socketChannel
+     *     Accepted socket channel.
+     */
     private void handleConnection(SocketChannel socketChannel)
     {
         final AgentRequestDispatcher dispatcher = requestDispatcher;
@@ -347,6 +444,12 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin implements Li
         }
     }
 
+    /**
+     * Closes a socket channel while suppressing close failures.
+     *
+     * @param channel
+     *     Channel to close; may be {@code null}.
+     */
     private static void closeQuietly(@Nullable SocketChannel channel)
     {
         if (channel == null)
@@ -366,6 +469,12 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin implements Li
         }
     }
 
+    /**
+     * Closes a server socket channel while suppressing close failures.
+     *
+     * @param channel
+     *     Channel to close; may be {@code null}.
+     */
     private static void closeQuietly(@Nullable ServerSocketChannel channel)
     {
         if (channel == null)
