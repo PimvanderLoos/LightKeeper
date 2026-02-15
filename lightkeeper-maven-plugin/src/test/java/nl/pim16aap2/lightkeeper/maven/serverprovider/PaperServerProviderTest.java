@@ -15,9 +15,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
+import java.util.Objects;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 
 class PaperServerProviderTest
 {
@@ -83,8 +83,10 @@ class PaperServerProviderTest
     {
         // setup
         final TestPaperServerProvider provider = createProvider(tempDirectory, 2, 0, false, true);
-        final Path expiredJarSibling = provider.jarCacheDirectoryForTests().getParent().resolve("old-jar-key");
-        final Path expiredBaseSibling = provider.baseServerDirectoryForTests().getParent().resolve("old-base-key");
+        final Path expiredJarSibling =
+            Objects.requireNonNull(provider.jarCacheDirectoryForTests().getParent()).resolve("old-jar-key");
+        final Path expiredBaseSibling =
+            Objects.requireNonNull(provider.baseServerDirectoryForTests().getParent()).resolve("old-base-key");
         Files.createDirectories(expiredJarSibling);
         Files.createDirectories(expiredBaseSibling);
         Files.setLastModifiedTime(expiredJarSibling, FileTime.from(Instant.now().minusSeconds(40L * 24 * 60 * 60)));
@@ -104,8 +106,10 @@ class PaperServerProviderTest
     {
         // setup
         final TestPaperServerProvider provider = createProvider(tempDirectory, 2, 0, false, false);
-        final Path expiredJarSibling = provider.jarCacheDirectoryForTests().getParent().resolve("old-jar-key");
-        final Path expiredBaseSibling = provider.baseServerDirectoryForTests().getParent().resolve("old-base-key");
+        final Path expiredJarSibling =
+            Objects.requireNonNull(provider.jarCacheDirectoryForTests().getParent()).resolve("old-jar-key");
+        final Path expiredBaseSibling =
+            Objects.requireNonNull(provider.baseServerDirectoryForTests().getParent()).resolve("old-base-key");
         Files.createDirectories(expiredJarSibling);
         Files.createDirectories(expiredBaseSibling);
         Files.setLastModifiedTime(expiredJarSibling, FileTime.from(Instant.now().minusSeconds(40L * 24 * 60 * 60)));
@@ -125,8 +129,10 @@ class PaperServerProviderTest
     {
         // setup
         final TestPaperServerProvider provider = createProvider(tempDirectory, 2, 0, false, true);
-        final Path freshJarSibling = provider.jarCacheDirectoryForTests().getParent().resolve("fresh-jar-key");
-        final Path freshBaseSibling = provider.baseServerDirectoryForTests().getParent().resolve("fresh-base-key");
+        final Path freshJarSibling =
+            Objects.requireNonNull(provider.jarCacheDirectoryForTests().getParent()).resolve("fresh-jar-key");
+        final Path freshBaseSibling =
+            Objects.requireNonNull(provider.baseServerDirectoryForTests().getParent()).resolve("fresh-base-key");
         Files.createDirectories(freshJarSibling);
         Files.createDirectories(freshBaseSibling);
         Files.setLastModifiedTime(freshJarSibling, FileTime.from(Instant.now().minusSeconds(2L * 24 * 60 * 60)));
