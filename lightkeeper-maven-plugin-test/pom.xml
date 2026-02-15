@@ -85,12 +85,33 @@
             </plugin>
 
             <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${version.jacoco}</version>
+                <executions>
+                    <execution>
+                        <id>prepare-it-server-agent</id>
+                        <phase>pre-integration-test</phase>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                        <configuration>
+                            <propertyName>lightkeeper.server.jacocoArgLine</propertyName>
+                            <destFile>${project.build.directory}/jacoco.exec</destFile>
+                            <append>true</append>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
                 <groupId>nl.pim16aap2.lightkeeper</groupId>
                 <artifactId>lightkeeper-maven-plugin</artifactId>
                 <version>${project.version}</version>
                 <configuration>
                     <userAgent>LightKeeper/1.2.0 ([email protected])</userAgent>
                     <agentJarPath>${project.build.directory}/lightkeeper-agent/lightkeeper-agent-spigot.jar</agentJarPath>
+                    <extraJvmArgs>${lightkeeper.server.jacocoArgLine}</extraJvmArgs>
                     <configOverlayPath>${project.basedir}/src/test/resources/provisioning/overlay</configOverlayPath>
                     <worlds>
                         <world>

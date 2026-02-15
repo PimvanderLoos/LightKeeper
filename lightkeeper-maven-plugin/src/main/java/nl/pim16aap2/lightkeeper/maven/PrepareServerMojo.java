@@ -312,6 +312,7 @@ public class PrepareServerMojo extends AbstractMojo
             agentMetadata.sha256(),
             runtimeProtocolVersion,
             agentMetadata.cacheIdentity(),
+            normalizeOptionalString(extraJvmArgs),
             preloadedWorlds
         );
         try

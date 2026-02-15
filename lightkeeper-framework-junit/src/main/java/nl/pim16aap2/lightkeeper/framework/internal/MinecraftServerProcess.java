@@ -18,6 +18,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
@@ -78,24 +79,31 @@ final class MinecraftServerProcess
         final Path serverDirectory = Path.of(runtimeManifest.serverDirectory());
         final Path serverJar = Path.of(runtimeManifest.serverJar());
         final int memoryMb = runtimeManifest.memoryMb();
-
-        final ProcessBuilder processBuilder = new ProcessBuilder(
-            javaExecutable.toString(),
-            "-Xmx" + memoryMb + "M",
-            "-Xms" + memoryMb + "M",
-            "-D" + RuntimeProtocol.PROPERTY_SOCKET_PATH + "=" + runtimeManifest.udsSocketPath(),
-            "-D" + RuntimeProtocol.PROPERTY_AUTH_TOKEN + "=" + runtimeManifest.agentAuthToken(),
-            "-D" + RuntimeProtocol.PROPERTY_PROTOCOL_VERSION + "=" + runtimeManifest.runtimeProtocolVersion(),
-            "-D" + RuntimeProtocol.PROPERTY_EXPECTED_AGENT_SHA256 + "=" +
-                Objects.requireNonNullElse(runtimeManifest.agentJarSha256(), ""),
-            "-DIReallyKnowWhatIAmDoingISwear=true",
-            "-jar",
-            serverJar.toString(),
-            "--nogui"
-        );
+        final List<String> command = new ArrayList<>();
+        command.add(javaExecutable.toString());
+        command.add("-Xmx" + memoryMb + "M");
+        command.add("-Xms" + memoryMb + "M");
+        appendExtraJvmArgs(command, runtimeManifest.extraJvmArgs());
+        command.add("-D" + RuntimeProtocol.PROPERTY_SOCKET_PATH + "=" + runtimeManifest.udsSocketPath());
+        command.add("-D" + RuntimeProtocol.PROPERTY_AUTH_TOKEN + "=" + runtimeManifest.agentAuthToken());
+        command.add("-D" + RuntimeProtocol.PROPERTY_PROTOCOL_VERSION + "=" + runtimeManifest.runtimeProtocolVersion());
+        command.add("-D" + RuntimeProtocol.PROPERTY_EXPECTED_AGENT_SHA256 + "=" +
+            Objects.requireNonNullElse(runtimeManifest.agentJarSha256(), ""));
+        command.add("-DIReallyKnowWhatIAmDoingISwear=true");
+        command.add("-jar");
+        command.add(serverJar.toString());
+        command.add("--nogui");
+        final ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.directory(serverDirectory.toFile());
         processBuilder.redirectErrorStream(true);
         return processBuilder;
+    }
+
+    private static void appendExtraJvmArgs(List<String> command, @Nullable String extraJvmArgs)
+    {
+        if (extraJvmArgs == null || extraJvmArgs.isBlank())
+            return;
+        command.addAll(Arrays.asList(extraJvmArgs.split("\\s+")));
     }
 
     void stop(Duration timeout)

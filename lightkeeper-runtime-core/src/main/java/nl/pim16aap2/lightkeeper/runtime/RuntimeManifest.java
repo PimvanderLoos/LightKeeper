@@ -33,6 +33,8 @@ import java.util.List;
  *     The runtime protocol version.
  * @param agentCacheIdentity
  *     The cache identity for the resolved agent artifact.
+ * @param extraJvmArgs
+ *     Optional extra JVM arguments that must be applied when launching the test server runtime.
  * @param preloadedWorlds
  *     Worlds that should be loaded by the framework before test execution.
  */
@@ -50,6 +52,7 @@ public record RuntimeManifest(
     @Nullable String agentJarSha256,
     String runtimeProtocolVersion,
     String agentCacheIdentity,
+    @Nullable String extraJvmArgs,
     List<PreloadedWorld> preloadedWorlds
 )
 {
