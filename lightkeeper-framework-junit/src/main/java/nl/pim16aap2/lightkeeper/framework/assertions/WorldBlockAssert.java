@@ -4,13 +4,14 @@ import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import org.assertj.core.api.AbstractAssert;
 import org.bukkit.Material;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Objects;
 
 /**
  * Assertions for a specific block position in a world.
  */
-public final class WorldBlockAssert extends AbstractAssert<WorldBlockAssert, WorldHandle>
+public final class WorldBlockAssert extends AbstractAssert<WorldBlockAssert, @Nullable WorldHandle>
 {
     private final Vector3Di position;
 
@@ -41,7 +42,7 @@ public final class WorldBlockAssert extends AbstractAssert<WorldBlockAssert, Wor
      */
     public WorldBlockAssert ofType(String materialKey)
     {
-        isNotNull();
+        final var actual = nonNullActual();
         final String actualMaterial = MaterialKeyNormalizer.normalizeMaterial(actual.blockTypeAt(position));
         final String expectedMaterial = MaterialKeyNormalizer.normalizeMaterial(materialKey);
         if (!Objects.equals(actualMaterial, expectedMaterial))
@@ -56,5 +57,12 @@ public final class WorldBlockAssert extends AbstractAssert<WorldBlockAssert, Wor
             );
         }
         return this;
+    }
+
+    @SuppressWarnings({"NullAway", "DataFlowIssue"}) // we call isNotNull() first, so actual is not null after that
+    private WorldHandle nonNullActual()
+    {
+        isNotNull();
+        return actual;
     }
 }

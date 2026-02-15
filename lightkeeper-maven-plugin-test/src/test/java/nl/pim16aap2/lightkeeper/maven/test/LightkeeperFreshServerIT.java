@@ -3,9 +3,10 @@ package nl.pim16aap2.lightkeeper.maven.test;
 import nl.pim16aap2.lightkeeper.framework.FreshServer;
 import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.LightkeeperExtension;
-import nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
 
 
 @ExtendWith(LightkeeperExtension.class)
@@ -19,6 +20,6 @@ class LightkeeperFreshServerIT
         final var mainWorld = framework.mainWorld();
 
         // verify
-        LightkeeperAssertions.assertThat(mainWorld.name()).isNotBlank();
+        assertThat(mainWorld).hasNonBlankName();
     }
 }

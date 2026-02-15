@@ -25,10 +25,9 @@ public final class PlayerHandleAssert extends AbstractAssert<PlayerHandleAssert,
      *     Expected player name.
      * @return This assertion for fluent chaining.
      */
-    @SuppressWarnings({"NullAway", "DataFlowIssue"}) // we call isNotNull() first, so actual is not null after that
     public PlayerHandleAssert hasName(String expectedName)
     {
-        isNotNull();
+        final var actual = nonNullActual();
         if (!Objects.equals(actual.name(), expectedName))
             failWithMessage("Expected player name '%s' but was '%s'.", expectedName, actual.name());
         return this;
@@ -41,11 +40,11 @@ public final class PlayerHandleAssert extends AbstractAssert<PlayerHandleAssert,
      *     Required message fragment.
      * @return This assertion for fluent chaining.
      */
-    @SuppressWarnings({"NullAway", "DataFlowIssue"}) // we call isNotNull() first, so actual is not null after that
     public PlayerHandleAssert receivedMessage(String expectedFragment)
     {
-        isNotNull();
-        Assertions.assertThat(actual.receivedMessagesText())
+        final var actual = nonNullActual();
+        Assertions
+            .assertThat(actual.receivedMessagesText())
             .contains(expectedFragment);
         return this;
     }
@@ -55,10 +54,16 @@ public final class PlayerHandleAssert extends AbstractAssert<PlayerHandleAssert,
      *
      * @return AssertJ string assertion.
      */
-    @SuppressWarnings({"NullAway", "DataFlowIssue"}) // we call isNotNull() first, so actual is not null after that
     public AbstractStringAssert<?> receivedMessagesText()
     {
-        isNotNull();
+        final var actual = nonNullActual();
         return Assertions.assertThat(actual.receivedMessagesText());
+    }
+
+    @SuppressWarnings({"NullAway", "DataFlowIssue"}) // we call isNotNull() first, so actual is not null after that
+    private PlayerHandle nonNullActual()
+    {
+        isNotNull();
+        return actual;
     }
 }

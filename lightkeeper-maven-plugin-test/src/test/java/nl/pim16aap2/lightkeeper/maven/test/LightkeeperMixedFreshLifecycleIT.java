@@ -21,6 +21,7 @@ class LightkeeperMixedFreshLifecycleIT
 {
     private @Nullable ILightkeeperFramework firstSharedFramework;
     private @Nullable ILightkeeperFramework freshFramework;
+    @SuppressWarnings("FieldCanBeLocal")
     private @Nullable ILightkeeperFramework secondSharedFramework;
 
     @Test
@@ -34,7 +35,7 @@ class LightkeeperMixedFreshLifecycleIT
         final var mainWorld = framework.mainWorld();
 
         // verify
-        assertThat(mainWorld.name()).isNotBlank();
+        assertThat(mainWorld).hasNonBlankName();
     }
 
     @Test
@@ -49,7 +50,7 @@ class LightkeeperMixedFreshLifecycleIT
 
         // verify
         assertThat(framework).isSameAs(firstSharedFramework);
-        assertThat(mainWorld.name()).isNotBlank();
+        assertThat(mainWorld).hasNonBlankName();
     }
 
     @Test
@@ -66,7 +67,7 @@ class LightkeeperMixedFreshLifecycleIT
 
         // verify
         assertThat(framework).isNotSameAs(firstSharedFramework);
-        assertThat(mainWorld.name()).isNotBlank();
+        assertThat(mainWorld).hasNonBlankName();
     }
 
     @Test
@@ -85,6 +86,6 @@ class LightkeeperMixedFreshLifecycleIT
         assertThat(secondSharedFramework).isNotNull();
         assertThat(framework).isNotSameAs(firstSharedFramework);
         assertThat(framework).isNotSameAs(freshFramework);
-        assertThat(mainWorld.name()).isNotBlank();
+        assertThat(mainWorld).hasNonBlankName();
     }
 }

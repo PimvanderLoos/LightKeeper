@@ -20,7 +20,7 @@ class LightkeeperExtensionIT
         final var mainWorld = framework.mainWorld();
 
         // verify
-        assertThat(mainWorld.name()).isNotBlank();
+        assertThat(mainWorld).hasNonBlankName();
     }
 
     @Test
@@ -36,8 +36,11 @@ class LightkeeperExtensionIT
         framework.waitUntil(() -> "STONE".equals(world.blockTypeAt(position)), Duration.ofSeconds(20));
 
         // verify
-        assertThat(world.name()).isNotBlank();
-        assertThat(world.name()).isNotEqualTo(mainWorld.name());
-        assertThat(world.blockTypeAt(position)).isEqualTo("STONE");
+        assertThat(world.name())
+            .isNotBlank()
+            .isNotEqualTo(mainWorld.name());
+        assertThat(world)
+            .hasBlockAt(position)
+            .ofType("STONE");
     }
 }

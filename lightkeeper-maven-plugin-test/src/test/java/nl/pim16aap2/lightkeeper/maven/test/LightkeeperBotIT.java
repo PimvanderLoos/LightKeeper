@@ -47,8 +47,8 @@ class LightkeeperBotIT
             .verifyMenuName("Sub Menu");
 
         final MenuHandle menu = secondPlayer.getMenu();
-        assertThat(menu).isNotNull();
         assertThat(menu)
+            .isNotNull()
             .hasTitle("Sub Menu")
             .hasItemAt(0, "minecraft:barrier")
             .hasItemAt(3, "minecraft:stone")

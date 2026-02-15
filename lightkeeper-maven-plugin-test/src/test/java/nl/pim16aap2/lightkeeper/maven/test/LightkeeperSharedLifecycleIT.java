@@ -31,7 +31,7 @@ class LightkeeperSharedLifecycleIT
         final var mainWorld = framework.mainWorld();
 
         // verify
-        assertThat(mainWorld.name()).isNotBlank();
+        assertThat(mainWorld).hasNonBlankName();
     }
 
     @Test
@@ -44,6 +44,6 @@ class LightkeeperSharedLifecycleIT
         // verify
         assertThat(initialFramework).isNotNull();
         assertThat(framework).isSameAs(initialFramework);
-        assertThat(mainWorld.name()).isNotBlank();
+        assertThat(mainWorld).hasNonBlankName();
     }
 }

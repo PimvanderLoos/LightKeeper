@@ -19,6 +19,6 @@ class LightkeeperMethodFreshServerIT
         final var mainWorld = framework.mainWorld();
 
         // verify
-        assertThat(mainWorld.name()).isNotBlank();
+        assertThat(mainWorld).hasNonBlankName();
     }
 }

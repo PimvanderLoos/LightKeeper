@@ -38,7 +38,7 @@ class LightkeeperFrameworkIT
             assertThat(runtimeManifest.agentAuthToken()).isNotBlank();
             assertThat(runtimeManifest.agentJar()).isNotBlank();
             assertThat(runtimeManifest.agentJarSha256()).hasSize(64);
-            assertThat(worldHandle.name()).isNotBlank();
+            assertThat(worldHandle).hasNonBlankName();
         }
     }
 
@@ -67,8 +67,10 @@ class LightkeeperFrameworkIT
             );
 
             // verify
-            assertThat(worldHandle.name()).isEqualTo(worldName);
-            assertThat(worldHandle.blockTypeAt(position)).isEqualTo("STONE");
+            assertThat(worldHandle)
+                .hasNameEqualTo(worldName)
+                .hasBlockAt(position)
+                .ofType("STONE");
         }
     }
 

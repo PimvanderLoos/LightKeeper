@@ -22,10 +22,9 @@ public final class MenuHandleAssert extends AbstractAssert<MenuHandleAssert, @Nu
      *     Expected menu title.
      * @return This assertion for fluent chaining.
      */
-    @SuppressWarnings({"NullAway", "DataFlowIssue"}) // we call isNotNull() first, so actual is not null after that
     public MenuHandleAssert hasTitle(String expectedTitle)
     {
-        isNotNull();
+        final var actual = nonNullActual();
         if (!actual.hasTitle(expectedTitle))
         {
             failWithMessage("Expected open menu title '%s'.", expectedTitle);
@@ -42,10 +41,9 @@ public final class MenuHandleAssert extends AbstractAssert<MenuHandleAssert, @Nu
      *     Expected material key.
      * @return This assertion for fluent chaining.
      */
-    @SuppressWarnings({"NullAway", "DataFlowIssue"}) // we call isNotNull() first, so actual is not null after that
     public MenuHandleAssert hasItemAt(int slot, String materialKey)
     {
-        isNotNull();
+        final var actual = nonNullActual();
         if (!actual.hasItemAt(slot, materialKey))
         {
             failWithMessage("Expected menu item at slot %d with material '%s'.", slot, materialKey);
@@ -62,14 +60,20 @@ public final class MenuHandleAssert extends AbstractAssert<MenuHandleAssert, @Nu
      *     Expected item stack.
      * @return This assertion for fluent chaining.
      */
-    @SuppressWarnings({"NullAway", "DataFlowIssue"}) // we call isNotNull() first, so actual is not null after that
     public MenuHandleAssert hasItemAt(int slot, ItemStack itemStack)
     {
-        isNotNull();
+        final var actual = nonNullActual();
         if (!actual.hasItemAt(slot, itemStack))
         {
             failWithMessage("Expected menu item at slot %d with expected ItemStack.", slot);
         }
         return this;
+    }
+
+    @SuppressWarnings({"NullAway", "DataFlowIssue"}) // we call isNotNull() first, so actual is not null after that
+    private MenuHandle nonNullActual()
+    {
+        isNotNull();
+        return actual;
     }
 }
