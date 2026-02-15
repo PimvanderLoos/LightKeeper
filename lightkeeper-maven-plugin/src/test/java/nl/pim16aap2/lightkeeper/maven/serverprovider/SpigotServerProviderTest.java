@@ -145,6 +145,7 @@ class SpigotServerProviderTest
             true,
             30,
             true,
+            true,
             5,
             5,
             maxAttempts,

@@ -13,6 +13,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -75,11 +77,84 @@ class PaperServerProviderTest
         assertThat(provider.createServerProcessInvocations()).isEqualTo(2);
     }
 
+    @Test
+    void prepareServer_shouldPruneExpiredUnusedCacheDirectoriesWhenCleanupEnabled(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final TestPaperServerProvider provider = createProvider(tempDirectory, 2, 0, false, true);
+        final Path expiredJarSibling = provider.jarCacheDirectoryForTests().getParent().resolve("old-jar-key");
+        final Path expiredBaseSibling = provider.baseServerDirectoryForTests().getParent().resolve("old-base-key");
+        Files.createDirectories(expiredJarSibling);
+        Files.createDirectories(expiredBaseSibling);
+        Files.setLastModifiedTime(expiredJarSibling, FileTime.from(Instant.now().minusSeconds(40L * 24 * 60 * 60)));
+        Files.setLastModifiedTime(expiredBaseSibling, FileTime.from(Instant.now().minusSeconds(40L * 24 * 60 * 60)));
+
+        // execute
+        provider.prepareServer();
+
+        // verify
+        assertThat(expiredJarSibling).doesNotExist();
+        assertThat(expiredBaseSibling).doesNotExist();
+    }
+
+    @Test
+    void prepareServer_shouldNotPruneUnusedCacheDirectoriesWhenCleanupDisabled(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final TestPaperServerProvider provider = createProvider(tempDirectory, 2, 0, false, false);
+        final Path expiredJarSibling = provider.jarCacheDirectoryForTests().getParent().resolve("old-jar-key");
+        final Path expiredBaseSibling = provider.baseServerDirectoryForTests().getParent().resolve("old-base-key");
+        Files.createDirectories(expiredJarSibling);
+        Files.createDirectories(expiredBaseSibling);
+        Files.setLastModifiedTime(expiredJarSibling, FileTime.from(Instant.now().minusSeconds(40L * 24 * 60 * 60)));
+        Files.setLastModifiedTime(expiredBaseSibling, FileTime.from(Instant.now().minusSeconds(40L * 24 * 60 * 60)));
+
+        // execute
+        provider.prepareServer();
+
+        // verify
+        assertThat(expiredJarSibling).isDirectory();
+        assertThat(expiredBaseSibling).isDirectory();
+    }
+
+    @Test
+    void prepareServer_shouldRetainFreshUnusedCacheDirectories(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final TestPaperServerProvider provider = createProvider(tempDirectory, 2, 0, false, true);
+        final Path freshJarSibling = provider.jarCacheDirectoryForTests().getParent().resolve("fresh-jar-key");
+        final Path freshBaseSibling = provider.baseServerDirectoryForTests().getParent().resolve("fresh-base-key");
+        Files.createDirectories(freshJarSibling);
+        Files.createDirectories(freshBaseSibling);
+        Files.setLastModifiedTime(freshJarSibling, FileTime.from(Instant.now().minusSeconds(2L * 24 * 60 * 60)));
+        Files.setLastModifiedTime(freshBaseSibling, FileTime.from(Instant.now().minusSeconds(2L * 24 * 60 * 60)));
+
+        // execute
+        provider.prepareServer();
+
+        // verify
+        assertThat(freshJarSibling).isDirectory();
+        assertThat(freshBaseSibling).isDirectory();
+    }
+
     private TestPaperServerProvider createProvider(
         Path tempDirectory,
         int maxAttempts,
         int failingAttempts,
         boolean createTransientLockOnFailure)
+    {
+        return createProvider(tempDirectory, maxAttempts, failingAttempts, createTransientLockOnFailure, true);
+    }
+
+    private TestPaperServerProvider createProvider(
+        Path tempDirectory,
+        int maxAttempts,
+        int failingAttempts,
+        boolean createTransientLockOnFailure,
+        boolean cleanupUnusedCacheDirectories)
     {
         final Log log = new SystemStreamLog();
         final ServerSpecification serverSpecification = new ServerSpecification(
@@ -94,6 +169,7 @@ class PaperServerProviderTest
             true,
             30,
             true,
+            cleanupUnusedCacheDirectories,
             5,
             5,
             maxAttempts,
@@ -174,6 +250,11 @@ class PaperServerProviderTest
         Path baseServerDirectoryForTests()
         {
             return baseServerDirectory();
+        }
+
+        Path jarCacheDirectoryForTests()
+        {
+            return jarCacheDirectory();
         }
     }
 

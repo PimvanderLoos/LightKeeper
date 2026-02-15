@@ -280,6 +280,8 @@ public abstract class ServerProvider
     public final void prepareServer()
         throws MojoExecutionException
     {
+        pruneUnusedCacheDirectoriesIfConfigured();
+
         if (shouldRecreateJar())
         {
             log().info("Recreating server JAR file");
@@ -305,6 +307,52 @@ public abstract class ServerProvider
         FileUtil.cleanDirectory(targetServerDirectory(), "target server directory");
         createTargetServer();
         installAgentJarIfConfigured();
+    }
+
+    private void pruneUnusedCacheDirectoriesIfConfigured()
+    {
+        if (!serverSpecification().cleanupUnusedCacheDirectories())
+        {
+            log().info("Unused cache directory cleanup disabled.");
+            return;
+        }
+
+        pruneUnusedCacheDirectoriesFor(jarCacheDirectory(), serverSpecification().jarCacheExpiryDays(), "jar cache");
+        pruneUnusedCacheDirectoriesFor(
+            baseServerDirectory(),
+            serverSpecification().baseServerCacheExpiryDays(),
+            "base server cache"
+        );
+    }
+
+    private void pruneUnusedCacheDirectoriesFor(Path currentDirectory, int expiryDays, String cacheKind)
+    {
+        final FileUtil.PruneResult pruneResult;
+        try
+        {
+            pruneResult = FileUtil.pruneSiblingDirectoriesOlderThan(currentDirectory, expiryDays);
+        }
+        catch (MojoExecutionException exception)
+        {
+            log().warn(
+                "Failed to enumerate unused %s directories for cleanup under '%s'. Cause: %s"
+                    .formatted(cacheKind, currentDirectory.getParent(), exception.getMessage())
+            );
+            return;
+        }
+
+        for (final Path deletedDirectory : pruneResult.deletedDirectories())
+        {
+            log().info("Deleted unused %s directory: '%s'.".formatted(cacheKind, deletedDirectory));
+        }
+
+        for (final Path failedDirectory : pruneResult.failedDirectories())
+        {
+            log().warn("Failed to delete unused %s directory: '%s'. Keeping directory.".formatted(
+                cacheKind,
+                failedDirectory
+            ));
+        }
     }
 
     /**

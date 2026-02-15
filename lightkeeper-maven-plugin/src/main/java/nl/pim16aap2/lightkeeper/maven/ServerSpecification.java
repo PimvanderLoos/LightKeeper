@@ -31,6 +31,8 @@ import java.nio.file.Path;
  *     The number of days after which the cached base server files expire and should be recreated.
  * @param forceRecreateBaseServer
  *     Whether to force the base server to be recreated, even if it is already cached.
+ * @param cleanupUnusedCacheDirectories
+ *     Whether to prune expired sibling cache-key directories in jar/base cache parents during prepare.
  * @param serverInitTimeoutSeconds
  *     The number of seconds to wait for the server to initialize before timing out.
  * @param serverStopTimeoutSeconds
@@ -56,6 +58,7 @@ public record ServerSpecification(
     boolean forceRebuildJar,
     int baseServerCacheExpiryDays,
     boolean forceRecreateBaseServer,
+    boolean cleanupUnusedCacheDirectories,
     int serverInitTimeoutSeconds,
     int serverStopTimeoutSeconds,
     int serverStartMaxAttempts,

@@ -115,6 +115,9 @@ public class PrepareServerMojo extends AbstractMojo
     @Parameter(property = "lightkeeper.forceRecreateBaseServer", defaultValue = "false")
     private boolean forceRecreateBaseServer;
 
+    @Parameter(property = "lightkeeper.cleanupUnusedCacheDirectories", defaultValue = "true")
+    private boolean cleanupUnusedCacheDirectories;
+
     @Parameter(property = "lightkeeper.serverInitTimeoutSeconds", defaultValue = "120")
     private int serverInitTimeoutSeconds;
 
@@ -349,6 +352,7 @@ public class PrepareServerMojo extends AbstractMojo
             forceRebuildJar,
             baseServerCacheExpiryDays,
             forceRecreateBaseServer,
+            cleanupUnusedCacheDirectories,
             serverInitTimeoutSeconds,
             serverStopTimeoutSeconds,
             serverStartMaxAttempts,
@@ -389,6 +393,12 @@ public class PrepareServerMojo extends AbstractMojo
 
         if (serverStartMaxAttempts < 1)
             throw new MojoExecutionException("`lightkeeper.serverStartMaxAttempts` must be at least 1.");
+
+        if (jarCacheExpiryDays < 0)
+            throw new MojoExecutionException("`lightkeeper.jarCacheExpiryDays` must be at least 0.");
+
+        if (baseServerCacheExpiryDays < 0)
+            throw new MojoExecutionException("`lightkeeper.baseServerCacheExpiryDays` must be at least 0.");
     }
 
     private List<WorldInputSpec> resolveWorldInputSpecs()

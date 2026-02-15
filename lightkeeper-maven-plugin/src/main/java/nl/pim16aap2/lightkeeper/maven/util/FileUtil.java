@@ -11,8 +11,10 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.io.UncheckedIOException;
+import java.util.List;
 import java.util.stream.Stream;
 
 public final class FileUtil
@@ -130,6 +132,75 @@ public final class FileUtil
     }
 
     /**
+     * Prunes expired sibling directories of the given current directory.
+     * <p>
+     * A sibling directory is pruned when it is a direct child of the same parent directory, is not the current
+     * directory itself, and its age in days is greater than or equal to {@code expiryDays}.
+     * <p>
+     * Deletion failures are collected and returned in the result without failing the operation.
+     *
+     * @param currentDirectory
+     *     The directory to keep while pruning sibling directories from its parent.
+     * @param expiryDays
+     *     Age threshold in days. Directories with age greater than or equal to this value are eligible.
+     * @return The result containing deleted and failed directory paths.
+     * @throws MojoExecutionException
+     *     If sibling directories cannot be enumerated.
+     */
+    public static PruneResult pruneSiblingDirectoriesOlderThan(Path currentDirectory, int expiryDays)
+        throws MojoExecutionException
+    {
+        final Path normalizedCurrent = currentDirectory.toAbsolutePath().normalize();
+        final Path parent = normalizedCurrent.getParent();
+        if (parent == null || Files.notExists(parent))
+            return new PruneResult(List.of(), List.of());
+
+        final List<Path> deleted = new ArrayList<>();
+        final List<Path> failed = new ArrayList<>();
+        try (Stream<Path> siblings = Files.list(parent))
+        {
+            siblings
+                .filter(Files::isDirectory)
+                .map(path -> path.toAbsolutePath().normalize())
+                .filter(path -> !path.equals(normalizedCurrent))
+                .forEach(path ->
+                {
+                    final long age;
+                    try
+                    {
+                        age = getFileAgeInDays(path);
+                    }
+                    catch (RuntimeException exception)
+                    {
+                        failed.add(path);
+                        return;
+                    }
+
+                    if (age < expiryDays)
+                        return;
+
+                    try
+                    {
+                        deleteRecursively(path, "unused cache directory");
+                        deleted.add(path);
+                    }
+                    catch (MojoExecutionException exception)
+                    {
+                        failed.add(path);
+                    }
+                });
+        }
+        catch (IOException exception)
+        {
+            throw new MojoExecutionException(
+                "Failed to enumerate sibling directories under '%s'.".formatted(parent),
+                exception
+            );
+        }
+        return new PruneResult(List.copyOf(deleted), List.copyOf(failed));
+    }
+
+    /**
      * Gets the age of a file in days based on its last modified time.
      *
      * @param file
@@ -151,6 +222,21 @@ public final class FileUtil
         {
             throw new RuntimeException("Failed to get last modified time for file: " + file, exception);
         }
+    }
+
+    /**
+     * Result of pruning sibling directories.
+     *
+     * @param deletedDirectories
+     *     Sibling directories that were successfully deleted.
+     * @param failedDirectories
+     *     Sibling directories that could not be deleted or inspected.
+     */
+    public record PruneResult(
+        List<Path> deletedDirectories,
+        List<Path> failedDirectories
+    )
+    {
     }
 
     /**
