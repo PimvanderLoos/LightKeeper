@@ -190,6 +190,11 @@
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
+                        <configuration>
+                            <includes>
+                                <include>nl/pim16aap2/lightkeeper/*</include>
+                            </includes>
+                        </configuration>
                     </execution>
                     <execution>
                         <id>prepare-agent</id>
@@ -197,6 +202,11 @@
                             <goal>prepare-agent</goal>
                         </goals>
                         <phase>pre-integration-test</phase>
+                        <configuration>
+                            <includes>
+                                <include>nl/pim16aap2/lightkeeper/*</include>
+                            </includes>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

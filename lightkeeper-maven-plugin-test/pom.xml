@@ -16,6 +16,7 @@
         <maven.compiler.release>21</maven.compiler.release>
         <project.root-dir>${project.basedir}/..</project.root-dir>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <lightkeeper.server.jacoco.class-dump-dir>${project.build.directory}/jacoco-classdump</lightkeeper.server.jacoco.class-dump-dir>
         <lightkeeper.paper.runtime-manifest.path>${project.build.directory}/lightkeeper/paper-runtime-manifest.json</lightkeeper.paper.runtime-manifest.path>
         <lightkeeper.spigot.runtime-manifest.path>${project.build.directory}/lightkeeper/spigot-runtime-manifest.json</lightkeeper.spigot.runtime-manifest.path>
         <lightkeeper.paper.server-work-directory>${project.build.directory}/lightkeeper-server/paper</lightkeeper.paper.server-work-directory>
@@ -99,6 +100,10 @@
                             <propertyName>lightkeeper.server.jacocoArgLine</propertyName>
                             <destFile>${project.build.directory}/jacoco.exec</destFile>
                             <append>true</append>
+                            <classDumpDir>${lightkeeper.server.jacoco.class-dump-dir}</classDumpDir>
+                            <includes>
+                                <include>nl/pim16aap2/lightkeeper/*</include>
+                            </includes>
                         </configuration>
                     </execution>
                 </executions>
