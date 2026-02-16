@@ -318,6 +318,7 @@ public class PrepareServerMojo extends AbstractMojo
         );
         try
         {
+            ensureRuntimeManifestParentDirectoryExists(effectiveRuntimeManifestPath);
             new RuntimeManifestWriter().write(runtimeManifest, effectiveRuntimeManifestPath);
         }
         catch (IOException exception)
@@ -327,6 +328,16 @@ public class PrepareServerMojo extends AbstractMojo
                 exception
             );
         }
+    }
+
+    static void ensureRuntimeManifestParentDirectoryExists(Path runtimeManifestPath)
+        throws MojoExecutionException
+    {
+        final Path runtimeManifestParentDirectory = runtimeManifestPath.getParent();
+        if (runtimeManifestParentDirectory == null)
+            return;
+
+        FileUtil.createDirectories(runtimeManifestParentDirectory, "runtime manifest directory");
     }
 
     private ServerSpecification createServerSpecification(
