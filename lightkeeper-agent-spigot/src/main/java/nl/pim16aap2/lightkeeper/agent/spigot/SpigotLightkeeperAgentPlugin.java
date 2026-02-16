@@ -39,11 +39,13 @@ import java.util.stream.Collectors;
  * Spigot/Paper plugin entry point for the LightKeeper runtime agent.
  *
  * <p>The plugin opens a Unix domain socket server, receives JSON protocol requests, routes them to
- * action handlers, and returns JSON responses. It is the composition root for all agent components
- * in this package and owns startup/shutdown lifecycle behavior.
+ * action handlers, and returns JSON responses. It is the composition root for all agent components in this package and
+ * owns startup/shutdown lifecycle behavior.
  */
 public final class SpigotLightkeeperAgentPlugin extends JavaPlugin implements Listener
 {
+    private static final System.Logger LOG = System.getLogger(SpigotLightkeeperAgentPlugin.class.getName());
+
     /**
      * Bukkit version prefix this plugin is compiled and validated against.
      */
@@ -62,10 +64,6 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin implements Li
     private static final Map<String, Supplier<IBotPlayerNmsAdapter>> NMS_ADAPTERS = Map.of(
         DEFAULT_NMS_REVISION, BotPlayerNmsAdapterV1_21_R7::new
     );
-    /**
-     * Internal logger for static utility methods.
-     */
-    private static final System.Logger LOGGER = System.getLogger(SpigotLightkeeperAgentPlugin.class.getName());
 
     /**
      * Shared object mapper for request/response serialization.
@@ -221,8 +219,8 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin implements Li
     /**
      * Validates Bukkit/NMS compatibility with supported adapters.
      *
-     * @return
-     *     Detected CraftBukkit revision, or {@code null} when no revision suffix is present.
+     * @return Detected CraftBukkit revision, or {@code null} when no revision suffix is present.
+     *
      * @throws IllegalStateException
      *     When Bukkit version or NMS revision is unsupported.
      */
@@ -256,8 +254,7 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin implements Li
      *
      * @param detectedNmsRevision
      *     Detected CraftBukkit package revision, or {@code null} if unavailable.
-     * @return
-     *     Initialized NMS adapter.
+     * @return Initialized NMS adapter.
      */
     private IBotPlayerNmsAdapter createBotPlayerNmsAdapter(@Nullable String detectedNmsRevision)
     {
@@ -284,8 +281,7 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin implements Li
     /**
      * Returns a sorted, comma-separated list of registered NMS revisions.
      *
-     * @return
-     *     Human-readable revision list.
+     * @return Human-readable revision list.
      */
     private static String supportedNmsRevisions()
     {
@@ -299,8 +295,8 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin implements Li
      *
      * @param packageName
      *     Fully-qualified server package name.
-     * @return
-     *     Revision value such as {@code v1_21_R7}, or {@code null} when no explicit revision suffix exists.
+     * @return Revision value such as {@code v1_21_R7}, or {@code null} when no explicit revision suffix exists.
+     *
      * @throws IllegalStateException
      *     When the package name does not match expected CraftBukkit structure.
      */
@@ -461,7 +457,7 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin implements Li
         }
         catch (IOException exception)
         {
-            LOGGER.log(
+            LOG.log(
                 System.Logger.Level.WARNING,
                 "Failed to close socket channel cleanly.",
                 exception
@@ -486,7 +482,7 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin implements Li
         }
         catch (IOException exception)
         {
-            LOGGER.log(
+            LOG.log(
                 System.Logger.Level.WARNING,
                 "Failed to close server socket channel cleanly.",
                 exception

@@ -1,13 +1,12 @@
 package nl.pim16aap2.lightkeeper.framework.internal;
 
-import lombok.extern.java.Log;
 import nl.pim16aap2.lightkeeper.framework.CommandResult;
 import nl.pim16aap2.lightkeeper.framework.CommandSource;
 import nl.pim16aap2.lightkeeper.framework.Condition;
 import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
+import nl.pim16aap2.lightkeeper.framework.IPlayerBuilder;
 import nl.pim16aap2.lightkeeper.framework.IWorldBuilder;
 import nl.pim16aap2.lightkeeper.framework.MenuSnapshot;
-import nl.pim16aap2.lightkeeper.framework.IPlayerBuilder;
 import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
 import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
@@ -29,9 +28,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * Default LightKeeper framework implementation.
  */
-@Log
 public final class DefaultLightkeeperFramework implements ILightkeeperFramework, IFrameworkGateway
 {
+    private static final System.Logger LOG = System.getLogger(DefaultLightkeeperFramework.class.getName());
+
     private static final Duration STARTUP_TIMEOUT = Duration.ofMinutes(2);
     private static final Duration AGENT_CONNECT_TIMEOUT = Duration.ofSeconds(45);
     private static final Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(45);
@@ -80,7 +80,10 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
         UdsAgentClient agentClient = null;
         try
         {
-            log.info(() -> "LK_FRAMEWORK: Starting Minecraft server from '" + serverDirectory + "'.");
+            LOG.log(
+                System.Logger.Level.INFO,
+                () -> "LK_FRAMEWORK: Starting Minecraft server from '" + serverDirectory + "'."
+            );
             minecraftServerProcess.start(STARTUP_TIMEOUT);
 
             agentClient = new UdsAgentClient(
@@ -130,7 +133,10 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
         ensureOpen();
         final WorldSpec validatedWorldSpec = validateWorldSpec(worldSpec);
         final String worldName = agentClient.newWorld(validatedWorldSpec);
-        log.info(() -> "LK_FRAMEWORK: Created world '" + worldName + "'.");
+        LOG.log(
+            System.Logger.Level.INFO,
+            () -> "LK_FRAMEWORK: Created world '" + worldName + "'."
+        );
         return new WorldHandle(this, worldName);
     }
 
@@ -160,8 +166,11 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
             null
         );
         playerScopeRegistry.register(createdPlayer.uniqueId());
-        log.info(() -> "LK_FRAMEWORK: Created player '%s' (%s) in world '%s'."
-            .formatted(createdPlayer.name(), createdPlayer.uniqueId(), worldName));
+        LOG.log(
+            System.Logger.Level.INFO,
+            () -> "LK_FRAMEWORK: Created player '%s' (%s) in world '%s'."
+                .formatted(createdPlayer.name(), createdPlayer.uniqueId(), worldName)
+        );
         return new PlayerHandle(this, createdPlayer.uniqueId(), createdPlayer.name());
     }
 
@@ -292,7 +301,7 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
         final String trimmedMaterial = Objects.requireNonNull(materialKey, "materialKey may not be null.").trim();
         if (trimmedMaterial.isEmpty())
             throw new IllegalArgumentException("materialKey may not be blank.");
-        if (slots == null || slots.length == 0)
+        if (slots.length == 0)
             throw new IllegalArgumentException("slots may not be empty.");
         for (final int slot : slots)
         {
@@ -309,8 +318,11 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
         Objects.requireNonNull(player, "player may not be null.");
         agentClient.removePlayer(player.uniqueId());
         playerScopeRegistry.unregister(player.uniqueId());
-        log.info(() -> "LK_FRAMEWORK: Removed player '%s' (%s)."
-            .formatted(player.name(), player.uniqueId()));
+        LOG.log(
+            System.Logger.Level.INFO,
+            () -> "LK_FRAMEWORK: Removed player '%s' (%s)."
+                .formatted(player.name(), player.uniqueId())
+        );
     }
 
     @Override
@@ -340,13 +352,19 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
 
         try
         {
-            log.info("LK_FRAMEWORK: Closing framework and cleaning up players.");
+            LOG.log(
+                System.Logger.Level.INFO,
+                "LK_FRAMEWORK: Closing framework and cleaning up players."
+            );
             playerScopeRegistry.cleanupAll(agentClient::removePlayer);
             agentClient.close();
         }
         finally
         {
-            log.info("LK_FRAMEWORK: Stopping Minecraft server.");
+            LOG.log(
+                System.Logger.Level.INFO,
+                "LK_FRAMEWORK: Stopping Minecraft server."
+            );
             minecraftServerProcess.stop(SHUTDOWN_TIMEOUT);
         }
     }
@@ -374,7 +392,10 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
                 preloadedWorld.seed()
             );
             final String worldName = agentClient.newWorld(worldSpec);
-            log.info(() -> "LK_FRAMEWORK: Preloaded world '%s' from runtime manifest.".formatted(worldName));
+            LOG.log(
+                System.Logger.Level.INFO,
+                () -> "LK_FRAMEWORK: Preloaded world '%s' from runtime manifest.".formatted(worldName)
+            );
         }
     }
 

@@ -31,9 +31,10 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
 {
+    private static final System.Logger LOG = System.getLogger(BotPlayerNmsAdapterV1_21_R7.class.getName());
+
     private static final int TEXT_EXTRACTION_MAX_DEPTH = 4;
     private static final int TEXT_EXTRACTION_MAX_METHODS = 24;
-    private static final System.Logger LOGGER = System.getLogger(BotPlayerNmsAdapterV1_21_R7.class.getName());
 
     private final Object minecraftServer;
     private final Object playerList;
@@ -580,10 +581,9 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
         }
         catch (Exception exception)
         {
-            final Throwable rootCause = exception;
             throw new IllegalStateException(
                 "Failed to spawn synthetic player '%s' (%s). Cause: %s: %s"
-                    .formatted(name, uuid, rootCause.getClass().getName(), rootCause.getMessage()),
+                    .formatted(name, uuid, exception.getClass().getName(), exception.getMessage()),
                 exception
             );
         }
@@ -621,14 +621,13 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
         }
         catch (Exception exception)
         {
-            final Throwable rootCause = exception;
             throw new IllegalStateException(
                 "Failed to remove synthetic player '%s' (%s). Cause: %s: %s"
                     .formatted(
                         player.getName(),
                         player.getUniqueId(),
-                        rootCause.getClass().getName(),
-                        rootCause.getMessage()
+                        exception.getClass().getName(),
+                        exception.getMessage()
                     ),
                 exception
             );
@@ -739,7 +738,7 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
             }
             catch (Exception exception)
             {
-                LOGGER.log(
+                LOG.log(
                     System.Logger.Level.TRACE,
                     "Ignoring reflective accessor failure while extracting packet text.",
                     exception

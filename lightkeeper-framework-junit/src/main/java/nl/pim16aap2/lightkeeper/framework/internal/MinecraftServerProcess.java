@@ -1,7 +1,6 @@
 package nl.pim16aap2.lightkeeper.framework.internal;
 
 import com.google.errorprone.annotations.concurrent.GuardedBy;
-import lombok.extern.java.Log;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
 import org.jspecify.annotations.Nullable;
@@ -28,9 +27,10 @@ import java.util.concurrent.TimeUnit;
 /**
  * Manages the Minecraft server process lifecycle.
  */
-@Log
 final class MinecraftServerProcess
 {
+    private static final System.Logger LOG = System.getLogger(MinecraftServerProcess.class.getName());
+
     private static final int MAX_CAPTURED_OUTPUT_LINES = 10_000;
 
     private final RuntimeManifest runtimeManifest;
@@ -205,7 +205,7 @@ final class MinecraftServerProcess
         }
         catch (IOException exception)
         {
-            log.fine(() -> "Failed to write diagnostics bundle: " + exception.getMessage());
+            LOG.log(System.Logger.Level.TRACE, () -> "Failed to write diagnostics bundle: " + exception.getMessage());
         }
     }
 
@@ -262,7 +262,10 @@ final class MinecraftServerProcess
                 }
                 catch (IOException exception)
                 {
-                    log.fine(() -> "Minecraft output reader stopped: " + exception.getMessage());
+                    LOG.log(
+                        System.Logger.Level.TRACE,
+                        () -> "Minecraft output reader stopped: " + exception.getMessage()
+                    );
                 }
             });
     }

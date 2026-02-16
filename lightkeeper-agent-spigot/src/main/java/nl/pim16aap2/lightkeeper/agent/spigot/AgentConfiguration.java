@@ -21,13 +21,14 @@ record AgentConfiguration(
     Path socketPath,
     String authToken,
     String protocolVersion,
-    String expectedAgentSha256)
+    String expectedAgentSha256
+)
 {
     /**
      * Builds validated configuration from runtime system properties.
      *
-     * @return
-     *     Parsed and validated configuration.
+     * @return Parsed and validated configuration.
+     *
      * @throws IllegalStateException
      *     When a required property is missing or blank.
      */
@@ -59,8 +60,8 @@ record AgentConfiguration(
      *
      * @param key
      *     The JVM system property key.
-     * @return
-     *     Non-blank property value.
+     * @return Non-blank property value.
+     *
      * @throws IllegalStateException
      *     When the property is absent or blank.
      */

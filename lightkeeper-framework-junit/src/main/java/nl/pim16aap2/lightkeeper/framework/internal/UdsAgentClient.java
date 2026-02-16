@@ -2,7 +2,6 @@ package nl.pim16aap2.lightkeeper.framework.internal;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.extern.java.Log;
 import nl.pim16aap2.lightkeeper.framework.CommandSource;
 import nl.pim16aap2.lightkeeper.framework.MenuItemSnapshot;
 import nl.pim16aap2.lightkeeper.framework.MenuSnapshot;
@@ -36,9 +35,10 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Agent RPC client backed by a Unix Domain Socket.
  */
-@Log
 final class UdsAgentClient implements AutoCloseable
 {
+    private static final System.Logger LOG = System.getLogger(MinecraftServerProcess.class.getName());
+
     private final ObjectMapper objectMapper = new ObjectMapper()
         .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
@@ -287,7 +287,7 @@ final class UdsAgentClient implements AutoCloseable
         }
         catch (IOException ignored)
         {
-            log.fine(() -> "Failed to close agent socket channel cleanly.");
+            LOG.log(System.Logger.Level.TRACE, "Failed to close agent socket channel cleanly.");
         }
     }
 
