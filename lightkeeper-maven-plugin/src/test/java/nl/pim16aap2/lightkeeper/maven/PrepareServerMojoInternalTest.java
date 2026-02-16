@@ -152,6 +152,24 @@ class PrepareServerMojoInternalTest
     }
 
     @Test
+    void resolveWorldInputSpecs_shouldThrowExceptionWhenWorldNameIsDot(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final PrepareServerMojo.WorldInputConfig config = new PrepareServerMojo.WorldInputConfig();
+        setField(config, "name", ".");
+        setField(config, "sourceType", "folder");
+        setField(config, "sourcePath", Files.createDirectories(tempDirectory.resolve("world")));
+        final PrepareServerMojo mojo = new PrepareServerMojo();
+        setField(mojo, "worlds", List.of(config));
+
+        // execute + verify
+        assertThatThrownBy(() -> invokePrivate(mojo, "resolveWorldInputSpecs", new Class<?>[0]))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("Invalid world name");
+    }
+
+    @Test
     void resolvePluginArtifactSpecs_shouldReturnPathAndMavenSpecifications(@TempDir Path tempDirectory)
         throws Exception
     {

@@ -728,10 +728,10 @@ public class PrepareServerMojo extends AbstractMojo
         throws MojoExecutionException
     {
         final String name = requireNonBlank(worldName, "lightkeeper.worlds.name");
-        if (name.contains("/") || name.contains("\\") || name.contains(".."))
+        if (name.contains("/") || name.contains("\\") || name.equals(".") || name.contains(".."))
         {
             throw new MojoExecutionException(
-                "Invalid world name '%s'. World names may not contain path separators or '..'."
+                "Invalid world name '%s'. World names may not contain path separators, '.', or '..'."
                     .formatted(name)
             );
         }
