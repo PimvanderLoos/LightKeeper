@@ -39,7 +39,7 @@
         <version.lombok>1.18.42</version.lombok>
         <version.mockito>5.21.0</version.mockito>
         <version.nullaway>0.13.1</version.nullaway>
-        <version.paper-api>1.21.11-R0.1-SNAPSHOT</version.paper-api>
+        <version.spigot-api>1.21.11-R0.1-SNAPSHOT</version.spigot-api>
         <version.pmd>7.21.0</version.pmd>
         <version.semver4j>6.0.0</version.semver4j>
 
