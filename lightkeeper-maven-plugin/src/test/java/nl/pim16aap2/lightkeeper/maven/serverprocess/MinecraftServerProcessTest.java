@@ -6,6 +6,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.jspecify.annotations.Nullable;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -20,6 +21,90 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class MinecraftServerProcessTest
 {
+    @Test
+    void start_shouldThrowExceptionWhenProcessIsAlreadyRunning(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final TestableMinecraftServerProcess minecraftServerProcess = new TestableMinecraftServerProcess(tempDirectory);
+        final StubProcess stubProcess = StubProcess.withInput("still running");
+        minecraftServerProcess.setProcessForTests(stubProcess);
+
+        // execute + verify
+        assertThatThrownBy(() -> minecraftServerProcess.start(1))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("already running");
+    }
+
+    @Test
+    void stop_shouldThrowExceptionWhenServerIsNotRunning(@TempDir Path tempDirectory)
+    {
+        // setup
+        final TestableMinecraftServerProcess minecraftServerProcess = new TestableMinecraftServerProcess(tempDirectory);
+
+        // execute + verify
+        assertThatThrownBy(() -> minecraftServerProcess.stop(1))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("not running");
+    }
+
+    @Test
+    void stop_shouldSendStopCommandAndWaitForShutdown(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final TestableMinecraftServerProcess minecraftServerProcess = new TestableMinecraftServerProcess(tempDirectory);
+        final StubProcess stubProcess = StubProcess.withInputAndSuccessfulWait("running\n");
+        minecraftServerProcess.setProcessForTests(stubProcess);
+
+        // execute
+        minecraftServerProcess.stop(1);
+
+        // verify
+        assertThat(stubProcess.writtenOutput()).contains("stop");
+        assertThat(stubProcess.destroyForciblyInvoked()).isFalse();
+    }
+
+    @Test
+    void stop_shouldForceKillWhenServerDoesNotStopInTime(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final TestableMinecraftServerProcess minecraftServerProcess = new TestableMinecraftServerProcess(tempDirectory);
+        final StubProcess stubProcess = StubProcess.withInput("running\n");
+        minecraftServerProcess.setProcessForTests(stubProcess);
+
+        // execute + verify
+        assertThatThrownBy(() -> minecraftServerProcess.stop(1))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("Failed to stop server");
+        assertThat(stubProcess.destroyForciblyInvoked()).isTrue();
+    }
+
+    @Test
+    void buildCommand_shouldIncludeMemorySettingsExtraArgsAndJar(@TempDir Path tempDirectory)
+    {
+        // setup
+        final TestableMinecraftServerProcess minecraftServerProcess =
+            new TestableMinecraftServerProcess(tempDirectory, "-Dfoo=bar -Dalpha=beta");
+
+        // execute
+        final var command = minecraftServerProcess.buildCommandForTests();
+
+        // verify
+        assertThat(command)
+            .containsExactly(
+                "java",
+                "-Xmx512M",
+                "-Xms512M",
+                "-Dfoo=bar",
+                "-Dalpha=beta",
+                "-jar",
+                tempDirectory.resolve("paper.jar").toString(),
+                "--nogui"
+            );
+    }
+
     @Test
     void waitForStartup_shouldReturnWhenDoneLineIsObserved(@TempDir Path tempDirectory)
         throws Exception
@@ -92,6 +177,11 @@ class MinecraftServerProcessTest
             super(serverDirectory, serverDirectory.resolve("paper.jar"), "java", null, 512);
         }
 
+        private TestableMinecraftServerProcess(Path serverDirectory, String extraJvmArgs)
+        {
+            super(serverDirectory, serverDirectory.resolve("paper.jar"), "java", extraJvmArgs, 512);
+        }
+
         private void setProcessForTests(Process process)
             throws Exception
         {
@@ -103,27 +193,44 @@ class MinecraftServerProcessTest
         {
             waitForStartup(timeoutSeconds);
         }
+
+        private java.util.List<String> buildCommandForTests()
+        {
+            return buildCommand();
+        }
     }
 
     private static final class StubProcess extends Process
     {
         private final InputStream inputStream;
+        private final OutputStream outputStream;
         private final @Nullable OutputStream backingOutputStream;
+        private final boolean exitOnWait;
         private volatile boolean alive = true;
         private volatile boolean destroyForciblyInvoked;
 
         private StubProcess(
             InputStream inputStream,
-            @Nullable OutputStream backingOutputStream)
+            OutputStream outputStream,
+            @Nullable OutputStream backingOutputStream,
+            boolean exitOnWait)
         {
             this.inputStream = Objects.requireNonNull(inputStream, "inputStream may not be null.");
+            this.outputStream = Objects.requireNonNull(outputStream, "outputStream may not be null.");
             this.backingOutputStream = backingOutputStream;
+            this.exitOnWait = exitOnWait;
         }
 
         private static StubProcess withInput(String output)
         {
             final ByteArrayInputStream inputStream = new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8));
-            return new StubProcess(inputStream, null);
+            return new StubProcess(inputStream, new ByteArrayOutputStream(), null, false);
+        }
+
+        private static StubProcess withInputAndSuccessfulWait(String output)
+        {
+            final ByteArrayInputStream inputStream = new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8));
+            return new StubProcess(inputStream, new ByteArrayOutputStream(), null, true);
         }
 
         private static StubProcess withBlockingInput()
@@ -131,7 +238,7 @@ class MinecraftServerProcessTest
         {
             final java.io.PipedInputStream inputStream = new java.io.PipedInputStream();
             final java.io.PipedOutputStream outputStream = new java.io.PipedOutputStream(inputStream);
-            return new StubProcess(inputStream, outputStream);
+            return new StubProcess(inputStream, new ByteArrayOutputStream(), outputStream, false);
         }
 
         boolean destroyForciblyInvoked()
@@ -139,10 +246,17 @@ class MinecraftServerProcessTest
             return destroyForciblyInvoked;
         }
 
+        String writtenOutput()
+        {
+            if (outputStream instanceof ByteArrayOutputStream byteArrayOutputStream)
+                return byteArrayOutputStream.toString(StandardCharsets.UTF_8);
+            return "";
+        }
+
         @Override
         public OutputStream getOutputStream()
         {
-            return OutputStream.nullOutputStream();
+            return outputStream;
         }
 
         @Override
@@ -161,6 +275,11 @@ class MinecraftServerProcessTest
         public int waitFor()
             throws InterruptedException
         {
+            if (exitOnWait)
+            {
+                alive = false;
+                return 0;
+            }
             while (alive)
                 Thread.sleep(10L);
             return 0;
@@ -170,6 +289,11 @@ class MinecraftServerProcessTest
         public boolean waitFor(long timeout, TimeUnit unit)
             throws InterruptedException
         {
+            if (exitOnWait)
+            {
+                alive = false;
+                return true;
+            }
             final long deadline = System.nanoTime() + unit.toNanos(timeout);
             while (alive && System.nanoTime() < deadline)
                 Thread.sleep(10L);
