@@ -91,7 +91,7 @@
                 <executions>
                     <execution>
                         <id>prepare-it-server-agent</id>
-                        <phase>pre-integration-test</phase>
+                        <phase>initialize</phase>
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>

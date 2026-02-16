@@ -46,6 +46,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Mojo(name = "prepare-server", defaultPhase = LifecyclePhase.PRE_INTEGRATION_TEST)
 @AllArgsConstructor
@@ -55,6 +56,7 @@ public class PrepareServerMojo extends AbstractMojo
     private static final String SERVER_TYPE_PAPER = "paper";
     private static final String SERVER_TYPE_SPIGOT = "spigot";
     private static final int UNIX_SOCKET_PATH_MAX_BYTES = 100;
+    private static final Pattern UNRESOLVED_PLACEHOLDER_PATTERN = Pattern.compile("\\$\\{[^}]+}");
     private static final List<String> SUPPORTED_SERVER_TYPES = List.of(SERVER_TYPE_PAPER, SERVER_TYPE_SPIGOT);
 
     @Parameter(property = "lightkeeper.serverType", defaultValue = SERVER_TYPE_PAPER)
@@ -340,6 +342,23 @@ public class PrepareServerMojo extends AbstractMojo
         FileUtil.createDirectories(runtimeManifestParentDirectory, "runtime manifest directory");
     }
 
+    static void validateExtraJvmArgs(@Nullable String extraJvmArgsValue)
+        throws MojoExecutionException
+    {
+        final @Nullable String normalizedExtraJvmArgs = normalizeOptionalString(extraJvmArgsValue);
+        if (normalizedExtraJvmArgs == null)
+            return;
+
+        if (UNRESOLVED_PLACEHOLDER_PATTERN.matcher(normalizedExtraJvmArgs).find())
+        {
+            throw new MojoExecutionException(
+                "Configured 'lightkeeper.extraJvmArgs' contains unresolved Maven placeholder(s): '%s'. "
+                    .formatted(normalizedExtraJvmArgs)
+                    + "Ensure referenced properties are initialized before 'prepare-server' runs."
+            );
+        }
+    }
+
     private ServerSpecification createServerSpecification(
         String resolvedServerVersion,
         Path jarCacheDirectoryRootValue,
@@ -412,6 +431,8 @@ public class PrepareServerMojo extends AbstractMojo
 
         if (baseServerCacheExpiryDays < 0)
             throw new MojoExecutionException("`lightkeeper.baseServerCacheExpiryDays` must be at least 0.");
+
+        validateExtraJvmArgs(extraJvmArgs);
     }
 
     private List<WorldInputSpec> resolveWorldInputSpecs()
