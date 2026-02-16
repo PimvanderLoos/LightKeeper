@@ -68,11 +68,12 @@ public final class CleanupServerMojo extends AbstractMojo
         }
 
         final FailsafeSummary summary = readFailsafeSummary(effectiveFailsafeSummaryPath);
-        if (summary.failures() > 0 || summary.errors() > 0)
+        if (!summary.isSuccessful())
         {
             getLog().warn(
-                "LK_CLEANUP: Not deleting target server directory because tests reported failures=%d errors=%d."
-                    .formatted(summary.failures(), summary.errors())
+                "LK_CLEANUP: Not deleting target server directory because tests did not fully succeed "
+                    + "(failures=%d errors=%d result='%s' timeout=%s)."
+                        .formatted(summary.failures(), summary.errors(), summary.result(), summary.timeout())
             );
             return;
         }
@@ -107,7 +108,9 @@ public final class CleanupServerMojo extends AbstractMojo
             final Element root = document.getDocumentElement();
             final int failures = parseChildInt(root, "failures");
             final int errors = parseChildInt(root, "errors");
-            return new FailsafeSummary(failures, errors);
+            final String result = parseAttribute(root, "result");
+            final boolean timeout = parseBooleanAttribute(root, "timeout");
+            return new FailsafeSummary(failures, errors, result, timeout);
         }
         catch (Exception exception)
         {
@@ -127,7 +130,23 @@ public final class CleanupServerMojo extends AbstractMojo
         return value == null || value.isBlank() ? 0 : Integer.parseInt(value.trim());
     }
 
-    private record FailsafeSummary(int failures, int errors)
+    private static String parseAttribute(Element root, String name)
     {
+        final String value = root.getAttribute(name);
+        return value == null ? "" : value.trim();
+    }
+
+    private static boolean parseBooleanAttribute(Element root, String name)
+    {
+        final String value = parseAttribute(root, name);
+        return !value.isEmpty() && Boolean.parseBoolean(value);
+    }
+
+    private record FailsafeSummary(int failures, int errors, String result, boolean timeout)
+    {
+        private boolean isSuccessful()
+        {
+            return failures == 0 && errors == 0 && !timeout && "null".equalsIgnoreCase(result);
+        }
     }
 }
