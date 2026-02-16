@@ -15,10 +15,14 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Represents a provider for a specific type of server.
@@ -31,6 +35,9 @@ import java.nio.file.StandardOpenOption;
 public abstract class ServerProvider
 {
     public static final String EULA_FILE_NAME = "eula.txt";
+    private static final Pattern SPIGOT_SETTINGS_HEADER_PATTERN = Pattern.compile("^(\\s*)settings:\\s*$");
+    private static final Pattern SPIGOT_WATCHDOG_TIMEOUT_PATTERN = Pattern.compile("^(\\s*)timeout-time:\\s*\\d+\\s*$");
+    private static final int SPIGOT_WATCHDOG_TIMEOUT_SECONDS = 600;
 
     private final Log log;
 
@@ -234,6 +241,99 @@ public abstract class ServerProvider
     }
 
     /**
+     * Configures the watchdog timeout in the generated Spigot configuration.
+     * <p>
+     * Integration world generation can exceed the default watchdog threshold on slower systems. Raising this limit
+     * avoids premature server shutdowns during integration tests while keeping watchdog protection enabled.
+     *
+     * @throws MojoExecutionException
+     *     If the Spigot configuration file exists but cannot be read or updated.
+     */
+    protected void configureSpigotWatchdogTimeout()
+        throws MojoExecutionException
+    {
+        final Path spigotConfigurationFile = baseServerDirectory().resolve("spigot.yml");
+        if (Files.notExists(spigotConfigurationFile))
+        {
+            log().info(
+                "Skipping Spigot watchdog configuration because '%s' does not exist."
+                    .formatted(spigotConfigurationFile)
+            );
+            return;
+        }
+
+        final List<String> lines;
+        try
+        {
+            lines = Files.readAllLines(spigotConfigurationFile, StandardCharsets.UTF_8);
+        }
+        catch (IOException exception)
+        {
+            throw new MojoExecutionException(
+                "Failed to read Spigot configuration from '%s'."
+                    .formatted(spigotConfigurationFile),
+                exception
+            );
+        }
+
+        int settingsLineIndex = -1;
+        String settingsLineIndentation = "";
+        boolean timeoutUpdated = false;
+        for (int index = 0; index < lines.size(); ++index)
+        {
+            final String line = lines.get(index);
+            final Matcher timeoutMatcher = SPIGOT_WATCHDOG_TIMEOUT_PATTERN.matcher(line);
+            if (timeoutMatcher.matches())
+            {
+                lines.set(index, timeoutMatcher.group(1) + "timeout-time: " + SPIGOT_WATCHDOG_TIMEOUT_SECONDS);
+                timeoutUpdated = true;
+                break;
+            }
+
+            final Matcher settingsMatcher = SPIGOT_SETTINGS_HEADER_PATTERN.matcher(line);
+            if (settingsMatcher.matches())
+            {
+                settingsLineIndex = index;
+                settingsLineIndentation = settingsMatcher.group(1);
+            }
+        }
+
+        if (!timeoutUpdated)
+        {
+            if (settingsLineIndex >= 0)
+            {
+                lines.add(settingsLineIndex + 1, settingsLineIndentation + "  timeout-time: " +
+                    SPIGOT_WATCHDOG_TIMEOUT_SECONDS);
+            }
+            else
+            {
+                if (!lines.isEmpty() && !lines.get(lines.size() - 1).isBlank())
+                    lines.add("");
+                lines.add("settings:");
+                lines.add("  timeout-time: " + SPIGOT_WATCHDOG_TIMEOUT_SECONDS);
+            }
+        }
+
+        try
+        {
+            Files.write(spigotConfigurationFile, lines, StandardCharsets.UTF_8);
+        }
+        catch (IOException exception)
+        {
+            throw new MojoExecutionException(
+                "Failed to write Spigot configuration to '%s'."
+                    .formatted(spigotConfigurationFile),
+                exception
+            );
+        }
+
+        log().info(
+            "Configured Spigot watchdog timeout to %d second(s) in '%s'."
+                .formatted(SPIGOT_WATCHDOG_TIMEOUT_SECONDS, spigotConfigurationFile)
+        );
+    }
+
+    /**
      * Reserves an available local TCP port.
      *
      * @return A currently available local TCP port.
@@ -302,6 +402,8 @@ public abstract class ServerProvider
             copyJarFromCacheToBaseServer();
             createBaseServer();
         }
+
+        configureSpigotWatchdogTimeout();
 
         log().info("Copying base server to target server directory");
         FileUtil.cleanDirectory(targetServerDirectory(), "target server directory");
