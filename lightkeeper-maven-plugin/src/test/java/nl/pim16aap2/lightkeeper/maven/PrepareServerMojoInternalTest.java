@@ -75,10 +75,10 @@ class PrepareServerMojoInternalTest
         );
 
         // verify
-        assertThat(invokeRecordAccessor(setup, "manifestServerVersion")).isEqualTo("1.21.11");
-        assertThat(invokeRecordAccessor(setup, "manifestBuildId")).isEqualTo(116L);
-        assertThat(invokeRecordAccessor(setup, "cacheKey")).isNotBlank();
-        assertThat(invokeRecordAccessor(setup, "serverProvider")).isInstanceOf(PaperServerProvider.class);
+        assertThat(invokeRecordAccessor(setup, "manifestServerVersion", String.class)).isEqualTo("1.21.11");
+        assertThat(invokeRecordAccessor(setup, "manifestBuildId", Long.class)).isEqualTo(116L);
+        assertThat(invokeRecordAccessor(setup, "cacheKey", String.class)).isNotBlank();
+        assertThat(invokeRecordAccessor(setup, "serverProvider", Object.class)).isInstanceOf(PaperServerProvider.class);
     }
 
     @Test
@@ -118,10 +118,10 @@ class PrepareServerMojoInternalTest
         );
 
         // verify
-        assertThat(invokeRecordAccessor(setup, "manifestServerVersion")).isEqualTo("1.21.11");
-        assertThat(invokeRecordAccessor(setup, "manifestBuildId")).isEqualTo(0L);
-        assertThat(invokeRecordAccessor(setup, "cacheKey")).isNotBlank();
-        assertThat(invokeRecordAccessor(setup, "serverProvider")).isInstanceOf(SpigotServerProvider.class);
+        assertThat(invokeRecordAccessor(setup, "manifestServerVersion", String.class)).isEqualTo("1.21.11");
+        assertThat(invokeRecordAccessor(setup, "manifestBuildId", Long.class)).isEqualTo(0L);
+        assertThat(invokeRecordAccessor(setup, "cacheKey", String.class)).isNotBlank();
+        assertThat(invokeRecordAccessor(setup, "serverProvider", Object.class)).isInstanceOf(SpigotServerProvider.class);
     }
 
     @Test
@@ -136,11 +136,11 @@ class PrepareServerMojoInternalTest
         final Object context = invokePrivate(mojo, "buildExecutionContext", new Class<?>[0]);
 
         // verify
-        assertThat(invokeRecordAccessor(context, "normalizedServerType")).isEqualTo("paper");
-        assertThat(invokeRecordAccessor(context, "serverVersion")).isEqualTo("latest-supported");
-        assertThat(invokeRecordAccessor(context, "userAgent")).isEqualTo("LightKeeper/Test");
-        assertThat(invokeRecordAccessor(context, "worldInputSpecs")).isEmpty();
-        assertThat(invokeRecordAccessor(context, "pluginArtifactSpecs")).isEmpty();
+        assertThat(invokeRecordAccessor(context, "normalizedServerType", String.class)).isEqualTo("paper");
+        assertThat(invokeRecordAccessor(context, "serverVersion", String.class)).isEqualTo("latest-supported");
+        assertThat(invokeRecordAccessor(context, "userAgent", String.class)).isEqualTo("LightKeeper/Test");
+        assertThat(invokeRecordAccessor(context, "worldInputSpecs", List.class)).isEmpty();
+        assertThat(invokeRecordAccessor(context, "pluginArtifactSpecs", List.class)).isEmpty();
     }
 
     @Test
@@ -203,7 +203,7 @@ class PrepareServerMojoInternalTest
         final Path folderWorld = Files.createDirectories(tempDirectory.resolve("world-folder"));
         final Path archiveWorld = Files.writeString(tempDirectory.resolve("world.zip"), "fixture");
 
-        final PrepareServerMojo.WorldInputConfig folderConfig = new PrepareServerMojo.WorldInputConfig();
+        final PrepareServerWorldInputConfig folderConfig = new PrepareServerWorldInputConfig();
         setField(folderConfig, "name", "fixture_world");
         setField(folderConfig, "sourceType", "folder");
         setField(folderConfig, "sourcePath", folderWorld);
@@ -213,7 +213,7 @@ class PrepareServerMojoInternalTest
         setField(folderConfig, "overwrite", Boolean.FALSE);
         setField(folderConfig, "loadOnStartup", Boolean.TRUE);
 
-        final PrepareServerMojo.WorldInputConfig archiveConfig = new PrepareServerMojo.WorldInputConfig();
+        final PrepareServerWorldInputConfig archiveConfig = new PrepareServerWorldInputConfig();
         setField(archiveConfig, "name", "archive_world");
         setField(archiveConfig, "sourceType", "archive");
         setField(archiveConfig, "sourcePath", archiveWorld);
@@ -247,7 +247,7 @@ class PrepareServerMojoInternalTest
         throws Exception
     {
         // setup
-        final PrepareServerMojo.WorldInputConfig config = new PrepareServerMojo.WorldInputConfig();
+        final PrepareServerWorldInputConfig config = new PrepareServerWorldInputConfig();
         setField(config, "name", "../bad-world");
         setField(config, "sourceType", "folder");
         setField(config, "sourcePath", Files.createDirectories(tempDirectory.resolve("world")));
@@ -265,7 +265,7 @@ class PrepareServerMojoInternalTest
         throws Exception
     {
         // setup
-        final PrepareServerMojo.WorldInputConfig config = new PrepareServerMojo.WorldInputConfig();
+        final PrepareServerWorldInputConfig config = new PrepareServerWorldInputConfig();
         setField(config, "name", ".");
         setField(config, "sourceType", "folder");
         setField(config, "sourcePath", Files.createDirectories(tempDirectory.resolve("world")));
@@ -285,12 +285,12 @@ class PrepareServerMojoInternalTest
         // setup
         final Path localPluginJar = Files.writeString(tempDirectory.resolve("local-plugin.jar"), "plugin");
 
-        final PrepareServerMojo.PluginArtifactConfig pathConfig = new PrepareServerMojo.PluginArtifactConfig();
+        final PrepareServerPluginArtifactConfig pathConfig = new PrepareServerPluginArtifactConfig();
         setField(pathConfig, "sourceType", "PATH");
         setField(pathConfig, "path", localPluginJar);
         setField(pathConfig, "renameTo", "renamed-plugin.jar");
 
-        final PrepareServerMojo.PluginArtifactConfig mavenConfig = new PrepareServerMojo.PluginArtifactConfig();
+        final PrepareServerPluginArtifactConfig mavenConfig = new PrepareServerPluginArtifactConfig();
         setField(mavenConfig, "sourceType", "MAVEN");
         setField(mavenConfig, "groupId", "com.example");
         setField(mavenConfig, "artifactId", "my-plugin");
@@ -323,7 +323,7 @@ class PrepareServerMojoInternalTest
         throws Exception
     {
         // setup
-        final PrepareServerMojo.PluginArtifactConfig config = new PrepareServerMojo.PluginArtifactConfig();
+        final PrepareServerPluginArtifactConfig config = new PrepareServerPluginArtifactConfig();
         setField(config, "sourceType", "path");
         setField(config, "path", tempDirectory.resolve("missing.jar"));
 
@@ -341,7 +341,7 @@ class PrepareServerMojoInternalTest
         throws Exception
     {
         // setup
-        final PrepareServerMojo.PluginArtifactConfig config = new PrepareServerMojo.PluginArtifactConfig();
+        final PrepareServerPluginArtifactConfig config = new PrepareServerPluginArtifactConfig();
         setField(config, "sourceType", "maven");
         setField(config, "groupId", "com.example");
         setField(config, "artifactId", "test-plugin");
@@ -572,13 +572,13 @@ class PrepareServerMojoInternalTest
         );
 
         // verify
-        final String noAgentCacheIdentity = invokeRecordAccessor(noAgentMetadata, "cacheIdentity");
-        final String noAgentSha256 = invokeRecordAccessor(noAgentMetadata, "sha256");
+        final String noAgentCacheIdentity = invokeRecordAccessor(noAgentMetadata, "cacheIdentity", String.class);
+        final String noAgentSha256 = invokeRecordAccessor(noAgentMetadata, "sha256", String.class);
         assertThat(noAgentCacheIdentity).isEqualTo("no-agent");
         assertThat(noAgentSha256).isNull();
 
-        final String hashedCacheIdentity = invokeRecordAccessor(hashedAgentMetadata, "cacheIdentity");
-        final String hashedSha256 = invokeRecordAccessor(hashedAgentMetadata, "sha256");
+        final String hashedCacheIdentity = invokeRecordAccessor(hashedAgentMetadata, "cacheIdentity", String.class);
+        final String hashedSha256 = invokeRecordAccessor(hashedAgentMetadata, "sha256", String.class);
         assertThat(hashedCacheIdentity).startsWith("agent.jar:");
         assertThat(hashedSha256).matches("[a-f0-9]{64}");
     }
@@ -684,7 +684,7 @@ class PrepareServerMojoInternalTest
         when(serverProvider.targetJarFilePath()).thenReturn(targetJarPath);
 
         mojo.setResolvedServerSetupForTests(
-            new PrepareServerMojo.ResolvedServerSetup(
+            new PrepareServerResolvedServerSetup(
                 serverProvider,
                 "1.21.11",
                 116L,
@@ -692,7 +692,7 @@ class PrepareServerMojoInternalTest
                 768
             )
         );
-        mojo.setResolvedAgentMetadataForTests(new PrepareServerMojo.AgentMetadata("abc123", "agent-cache-id"));
+        mojo.setResolvedAgentMetadataForTests(new PrepareServerAgentMetadata("abc123", "agent-cache-id"));
         mojo.setResolvedSocketPathForTests(tempDirectory.resolve("sockets/lk-test.sock"));
 
         // execute
@@ -776,7 +776,7 @@ class PrepareServerMojoInternalTest
     {
         // setup
         final PrepareServerMojo mojo = new PrepareServerMojo();
-        setField(mojo, "worlds", java.util.Arrays.asList((PrepareServerMojo.WorldInputConfig) null));
+        setField(mojo, "worlds", java.util.Arrays.asList((PrepareServerWorldInputConfig) null));
 
         // execute + verify
         assertThatThrownBy(() -> invokePrivate(mojo, "resolveWorldInputSpecs", new Class<?>[0]))
@@ -789,7 +789,7 @@ class PrepareServerMojoInternalTest
         throws Exception
     {
         // setup
-        final PrepareServerMojo.WorldInputConfig config = new PrepareServerMojo.WorldInputConfig();
+        final PrepareServerWorldInputConfig config = new PrepareServerWorldInputConfig();
         setField(config, "name", "world");
         setField(config, "sourceType", "bogus");
         setField(config, "sourcePath", Files.createDirectories(tempDirectory.resolve("world")));
@@ -809,7 +809,7 @@ class PrepareServerMojoInternalTest
     {
         // setup
         final PrepareServerMojo mojo = new PrepareServerMojo();
-        setField(mojo, "plugins", java.util.Arrays.asList((PrepareServerMojo.PluginArtifactConfig) null));
+        setField(mojo, "plugins", java.util.Arrays.asList((PrepareServerPluginArtifactConfig) null));
 
         // execute + verify
         assertThatThrownBy(() -> invokePrivate(mojo, "resolvePluginArtifactSpecs", new Class<?>[0]))
@@ -823,7 +823,7 @@ class PrepareServerMojoInternalTest
     {
         // setup
         final Path localPluginJar = Files.writeString(tempDirectory.resolve("local-plugin.jar"), "plugin");
-        final PrepareServerMojo.PluginArtifactConfig config = new PrepareServerMojo.PluginArtifactConfig();
+        final PrepareServerPluginArtifactConfig config = new PrepareServerPluginArtifactConfig();
         setField(config, "sourceType", "path");
         setField(config, "path", localPluginJar);
         setField(config, "renameTo", "folder/invalid.jar");
@@ -915,12 +915,13 @@ class PrepareServerMojoInternalTest
     }
 
     @SuppressWarnings("unchecked")
-    private static <T> @Nullable T invokeRecordAccessor(Object target, String methodName)
+    private static <T> @Nullable T invokeRecordAccessor(Object target, String methodName, Class<T> type)
         throws Exception
     {
         final Method method = target.getClass().getDeclaredMethod(methodName);
         method.setAccessible(true);
-        return (T) method.invoke(target);
+        final Object result = method.invoke(target);
+        return result == null ? null : type.cast(result);
     }
 
     private static void setField(Object target, String fieldName, Object value)
@@ -965,8 +966,8 @@ class PrepareServerMojoInternalTest
     {
         private final PaperDownloadsClient paperDownloadsClient;
         private final SpigotDownloadsClient spigotDownloadsClient;
-        private @Nullable ResolvedServerSetup resolvedServerSetup;
-        private @Nullable AgentMetadata resolvedAgentMetadata;
+        private @Nullable PrepareServerResolvedServerSetup resolvedServerSetup;
+        private @Nullable PrepareServerAgentMetadata resolvedAgentMetadata;
         private @Nullable Path resolvedSocketPath;
         private boolean installServerAssetsCalled;
         private @Nullable Path installServerAssetsTargetDirectory;
@@ -995,9 +996,9 @@ class PrepareServerMojoInternalTest
         }
 
         @Override
-        ResolvedServerSetup resolveServerSetup(
-            ExecutionContext executionContext,
-            AgentMetadata agentMetadata,
+        PrepareServerResolvedServerSetup resolveServerSetup(
+            PrepareServerExecutionContext executionContext,
+            PrepareServerAgentMetadata agentMetadata,
             String agentAuthToken,
             String runtimeProtocolVersion)
             throws MojoExecutionException
@@ -1008,7 +1009,7 @@ class PrepareServerMojoInternalTest
         }
 
         @Override
-        AgentMetadata resolveAgentMetadata(@Nullable Path path)
+        PrepareServerAgentMetadata resolveAgentMetadata(@Nullable Path path)
             throws MojoExecutionException
         {
             if (resolvedAgentMetadata != null)
@@ -1028,7 +1029,7 @@ class PrepareServerMojoInternalTest
         @Override
         void installServerAssets(
             Path targetServerDirectory,
-            ExecutionContext executionContext,
+            PrepareServerExecutionContext executionContext,
             List<PluginArtifactSpec> pluginArtifactSpecs)
             throws MojoExecutionException
         {
@@ -1037,12 +1038,12 @@ class PrepareServerMojoInternalTest
             installServerAssetsPluginCount = pluginArtifactSpecs.size();
         }
 
-        private void setResolvedServerSetupForTests(ResolvedServerSetup resolvedServerSetup)
+        private void setResolvedServerSetupForTests(PrepareServerResolvedServerSetup resolvedServerSetup)
         {
             this.resolvedServerSetup = resolvedServerSetup;
         }
 
-        private void setResolvedAgentMetadataForTests(AgentMetadata resolvedAgentMetadata)
+        private void setResolvedAgentMetadataForTests(PrepareServerAgentMetadata resolvedAgentMetadata)
         {
             this.resolvedAgentMetadata = resolvedAgentMetadata;
         }

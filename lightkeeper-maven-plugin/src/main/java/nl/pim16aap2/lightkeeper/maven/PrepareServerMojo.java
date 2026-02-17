@@ -11,9 +11,7 @@ import nl.pim16aap2.lightkeeper.maven.serverprovider.ServerProvider;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.SpigotServerProvider;
 import nl.pim16aap2.lightkeeper.maven.util.CacheKeyUtil;
 import nl.pim16aap2.lightkeeper.maven.util.FileUtil;
-import nl.pim16aap2.lightkeeper.maven.util.HashUtil;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
-import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestWriter;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -23,31 +21,17 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.artifact.DefaultArtifact;
-import org.eclipse.aether.collection.CollectRequest;
-import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.repository.RemoteRepository;
-import org.eclipse.aether.resolution.ArtifactRequest;
-import org.eclipse.aether.resolution.ArtifactResolutionException;
-import org.eclipse.aether.resolution.ArtifactResult;
-import org.eclipse.aether.resolution.DependencyRequest;
-import org.eclipse.aether.resolution.DependencyResolutionException;
-import org.eclipse.aether.resolution.DependencyResult;
-import org.eclipse.aether.util.artifact.JavaScopes;
 import org.jspecify.annotations.Nullable;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.regex.Pattern;
 
+/**
+ * Resolves/caches a Minecraft test server installation and writes a runtime manifest for integration tests.
+ */
 @Mojo(name = "prepare-server", defaultPhase = LifecyclePhase.PRE_INTEGRATION_TEST)
 @AllArgsConstructor
 @NoArgsConstructor
@@ -55,8 +39,6 @@ public class PrepareServerMojo extends AbstractMojo
 {
     private static final String SERVER_TYPE_PAPER = "paper";
     private static final String SERVER_TYPE_SPIGOT = "spigot";
-    private static final int UNIX_SOCKET_PATH_MAX_BYTES = 100;
-    private static final Pattern UNRESOLVED_PLACEHOLDER_PATTERN = Pattern.compile("\\$\\{[^}]+}");
     private static final List<String> SUPPORTED_SERVER_TYPES = List.of(SERVER_TYPE_PAPER, SERVER_TYPE_SPIGOT);
 
     @Parameter(property = "lightkeeper.serverType", defaultValue = SERVER_TYPE_PAPER)
@@ -154,11 +136,11 @@ public class PrepareServerMojo extends AbstractMojo
 
     @Parameter
     @Nullable
-    private List<WorldInputConfig> worlds;
+    private List<PrepareServerWorldInputConfig> worlds;
 
     @Parameter
     @Nullable
-    private List<PluginArtifactConfig> plugins;
+    private List<PrepareServerPluginArtifactConfig> plugins;
 
     @Component
     @Nullable
@@ -172,19 +154,16 @@ public class PrepareServerMojo extends AbstractMojo
     @Nullable
     private List<RemoteRepository> remoteProjectRepositories;
 
-    /**
-     * Resolves/caches the server runtime, installs test assets, and writes the runtime manifest.
-     */
     @Override
     public void execute()
         throws MojoExecutionException
     {
         validateConfiguration();
-        final ExecutionContext executionContext = buildExecutionContext();
+        final PrepareServerExecutionContext executionContext = buildExecutionContext();
         logPreparationStart(executionContext);
         createRequiredDirectories(executionContext);
 
-        final RuntimePreparation runtimePreparation = prepareRuntimePreparation(executionContext);
+        final PrepareServerRuntimePreparation runtimePreparation = prepareRuntimePreparation(executionContext);
         final ServerProvider serverProvider = runtimePreparation.resolvedServerSetup().serverProvider();
         serverProvider.prepareServer();
 
@@ -208,20 +187,20 @@ public class PrepareServerMojo extends AbstractMojo
         writeRuntimeManifest(runtimeManifest, executionContext.runtimeManifestPath());
     }
 
-    RuntimePreparation prepareRuntimePreparation(ExecutionContext executionContext)
+    PrepareServerRuntimePreparation prepareRuntimePreparation(PrepareServerExecutionContext executionContext)
         throws MojoExecutionException
     {
-        final AgentMetadata agentMetadata = resolveAgentMetadata(agentJarPath);
+        final PrepareServerAgentMetadata agentMetadata = resolveAgentMetadata(agentJarPath);
         final String runtimeProtocolVersion = RuntimeProtocol.VERSION;
         final String agentAuthToken = UUID.randomUUID().toString();
         final Path udsSocketPath = resolveUdsSocketPath(executionContext.agentSocketDirectory(), agentAuthToken);
-        final ResolvedServerSetup resolvedServerSetup = resolveServerSetup(
+        final PrepareServerResolvedServerSetup resolvedServerSetup = resolveServerSetup(
             executionContext,
             agentMetadata,
             agentAuthToken,
             runtimeProtocolVersion
         );
-        return new RuntimePreparation(
+        return new PrepareServerRuntimePreparation(
             agentMetadata,
             runtimeProtocolVersion,
             agentAuthToken,
@@ -233,34 +212,19 @@ public class PrepareServerMojo extends AbstractMojo
     static void ensureRuntimeManifestParentDirectoryExists(Path runtimeManifestPath)
         throws MojoExecutionException
     {
-        final Path runtimeManifestParentDirectory = runtimeManifestPath.getParent();
-        if (runtimeManifestParentDirectory == null)
-            return;
-
-        FileUtil.createDirectories(runtimeManifestParentDirectory, "runtime manifest directory");
+        PrepareServerRuntimeSupport.ensureRuntimeManifestParentDirectoryExists(runtimeManifestPath);
     }
 
     static void validateExtraJvmArgs(@Nullable String extraJvmArgsValue)
         throws MojoExecutionException
     {
-        final @Nullable String normalizedExtraJvmArgs = normalizeOptionalString(extraJvmArgsValue);
-        if (normalizedExtraJvmArgs == null)
-            return;
-
-        if (UNRESOLVED_PLACEHOLDER_PATTERN.matcher(normalizedExtraJvmArgs).find())
-        {
-            throw new MojoExecutionException(
-                "Configured 'lightkeeper.extraJvmArgs' contains unresolved Maven placeholder(s): '%s'. "
-                    .formatted(normalizedExtraJvmArgs)
-                    + "Ensure referenced properties are initialized before 'prepare-server' runs."
-            );
-        }
+        PrepareServerRuntimeSupport.validateExtraJvmArgs(extraJvmArgsValue);
     }
 
-    ExecutionContext buildExecutionContext()
+    PrepareServerExecutionContext buildExecutionContext()
         throws MojoExecutionException
     {
-        return new ExecutionContext(
+        return new PrepareServerExecutionContext(
             normalizeServerType(),
             Objects.requireNonNull(serverVersion),
             Objects.requireNonNull(jarCacheDirectoryRoot),
@@ -274,7 +238,7 @@ public class PrepareServerMojo extends AbstractMojo
         );
     }
 
-    private void logPreparationStart(ExecutionContext executionContext)
+    private void logPreparationStart(PrepareServerExecutionContext executionContext)
     {
         getLog().info(
             "Preparing server for platform: '%s' with version: '%s'."
@@ -282,7 +246,7 @@ public class PrepareServerMojo extends AbstractMojo
         );
     }
 
-    private static void createRequiredDirectories(ExecutionContext executionContext)
+    private static void createRequiredDirectories(PrepareServerExecutionContext executionContext)
         throws MojoExecutionException
     {
         FileUtil.createDirectories(executionContext.jarCacheDirectoryRoot(), "jar cache directory root");
@@ -291,9 +255,9 @@ public class PrepareServerMojo extends AbstractMojo
         FileUtil.createDirectories(executionContext.agentSocketDirectory(), "agent socket directory");
     }
 
-    ResolvedServerSetup resolveServerSetup(
-        ExecutionContext executionContext,
-        AgentMetadata agentMetadata,
+    PrepareServerResolvedServerSetup resolveServerSetup(
+        PrepareServerExecutionContext executionContext,
+        PrepareServerAgentMetadata agentMetadata,
         String agentAuthToken,
         String runtimeProtocolVersion)
         throws MojoExecutionException
@@ -323,9 +287,9 @@ public class PrepareServerMojo extends AbstractMojo
         };
     }
 
-    ResolvedServerSetup resolvePaperServerSetup(
-        ExecutionContext executionContext,
-        AgentMetadata agentMetadata,
+    PrepareServerResolvedServerSetup resolvePaperServerSetup(
+        PrepareServerExecutionContext executionContext,
+        PrepareServerAgentMetadata agentMetadata,
         String agentAuthToken,
         String runtimeProtocolVersion,
         PaperDownloadsClient paperDownloadsClient)
@@ -350,7 +314,7 @@ public class PrepareServerMojo extends AbstractMojo
             agentAuthToken,
             runtimeProtocolVersion
         );
-        return new ResolvedServerSetup(
+        return new PrepareServerResolvedServerSetup(
             new PaperServerProvider(getLog(), serverSpecification, paperBuildMetadata),
             paperBuildMetadata.minecraftVersion(),
             paperBuildMetadata.buildId(),
@@ -359,9 +323,9 @@ public class PrepareServerMojo extends AbstractMojo
         );
     }
 
-    ResolvedServerSetup resolveSpigotServerSetup(
-        ExecutionContext executionContext,
-        AgentMetadata agentMetadata,
+    PrepareServerResolvedServerSetup resolveSpigotServerSetup(
+        PrepareServerExecutionContext executionContext,
+        PrepareServerAgentMetadata agentMetadata,
         String agentAuthToken,
         String runtimeProtocolVersion,
         PaperDownloadsClient paperDownloadsClient)
@@ -390,7 +354,7 @@ public class PrepareServerMojo extends AbstractMojo
             agentAuthToken,
             runtimeProtocolVersion
         );
-        return new ResolvedServerSetup(
+        return new PrepareServerResolvedServerSetup(
             new SpigotServerProvider(getLog(), serverSpecification, spigotBuildMetadata),
             spigotBuildMetadata.minecraftVersion(),
             0L,
@@ -401,7 +365,7 @@ public class PrepareServerMojo extends AbstractMojo
 
     void installServerAssets(
         Path targetServerDirectory,
-        ExecutionContext executionContext,
+        PrepareServerExecutionContext executionContext,
         List<PluginArtifactSpec> pluginArtifactSpecs)
         throws MojoExecutionException
     {
@@ -425,7 +389,7 @@ public class PrepareServerMojo extends AbstractMojo
         int resolvedMemoryMb,
         Path udsSocketPath,
         String agentAuthToken,
-        AgentMetadata agentMetadata,
+        PrepareServerAgentMetadata agentMetadata,
         String runtimeProtocolVersion,
         List<WorldInputSpec> worldInputSpecs)
     {
@@ -453,7 +417,7 @@ public class PrepareServerMojo extends AbstractMojo
             agentMetadata.sha256(),
             runtimeProtocolVersion,
             agentMetadata.cacheIdentity(),
-            normalizeOptionalString(extraJvmArgs),
+            PrepareServerInputResolver.normalizeOptionalString(extraJvmArgs),
             preloadedWorlds
         );
     }
@@ -473,18 +437,7 @@ public class PrepareServerMojo extends AbstractMojo
     static void writeRuntimeManifest(RuntimeManifest runtimeManifest, Path runtimeManifestPathValue)
         throws MojoExecutionException
     {
-        try
-        {
-            ensureRuntimeManifestParentDirectoryExists(runtimeManifestPathValue);
-            new RuntimeManifestWriter().write(runtimeManifest, runtimeManifestPathValue);
-        }
-        catch (IOException exception)
-        {
-            throw new MojoExecutionException(
-                "Failed to write runtime manifest to '%s'.".formatted(runtimeManifestPathValue),
-                exception
-            );
-        }
+        PrepareServerRuntimeSupport.writeRuntimeManifest(runtimeManifest, runtimeManifestPathValue);
     }
 
     private ServerSpecification createServerSpecification(
@@ -496,7 +449,7 @@ public class PrepareServerMojo extends AbstractMojo
         Path agentSocketDirectoryValue,
         String cacheKey,
         String effectiveUserAgent,
-        AgentMetadata agentMetadata,
+        PrepareServerAgentMetadata agentMetadata,
         String agentAuthToken,
         String runtimeProtocolVersion)
     {
@@ -531,193 +484,35 @@ public class PrepareServerMojo extends AbstractMojo
 
     private String normalizeServerType()
     {
-        return Objects.requireNonNull(serverType, "serverType may not be null.")
-            .trim()
-            .toLowerCase(Locale.ROOT);
+        return configurationValidator().normalizeServerType(serverType);
     }
 
     void validateConfiguration()
         throws MojoExecutionException
     {
-        final String normalizedType = normalizeServerType();
-        if (!SUPPORTED_SERVER_TYPES.contains(normalizedType))
-        {
-            throw new MojoExecutionException(
-                "Unsupported server type '%s'. Supported types: %s"
-                    .formatted(serverType, SUPPORTED_SERVER_TYPES)
-            );
-        }
-
-        if (userAgent == null || userAgent.isBlank())
-            throw new MojoExecutionException("A non-empty `lightkeeper.userAgent` value is required.");
-
-        if (serverStartMaxAttempts < 1)
-            throw new MojoExecutionException("`lightkeeper.serverStartMaxAttempts` must be at least 1.");
-
-        if (jarCacheExpiryDays < 0)
-            throw new MojoExecutionException("`lightkeeper.jarCacheExpiryDays` must be at least 0.");
-
-        if (baseServerCacheExpiryDays < 0)
-            throw new MojoExecutionException("`lightkeeper.baseServerCacheExpiryDays` must be at least 0.");
-
-        validateExtraJvmArgs(extraJvmArgs);
+        configurationValidator().validateConfiguration(
+            serverType,
+            userAgent,
+            serverStartMaxAttempts,
+            jarCacheExpiryDays,
+            baseServerCacheExpiryDays,
+            extraJvmArgs
+        );
     }
 
     private List<WorldInputSpec> resolveWorldInputSpecs()
         throws MojoExecutionException
     {
-        final List<WorldInputSpec> inputSpecs = new ArrayList<>();
-        final List<WorldInputConfig> configuredWorlds = worlds == null ? List.of() : worlds;
-        for (final WorldInputConfig worldInputConfig : configuredWorlds)
-        {
-            if (worldInputConfig == null)
-                throw new MojoExecutionException("Configured world entry may not be null.");
-
-            final String worldName = validateWorldName(worldInputConfig.name);
-            final WorldInputSpec.SourceType sourceType = parseWorldSourceType(worldInputConfig.sourceType);
-            if (worldInputConfig.sourcePath == null)
-            {
-                throw new MojoExecutionException(
-                    "Missing required configuration value 'lightkeeper.worlds.sourcePath'."
-                );
-            }
-            final Path sourcePath = worldInputConfig.sourcePath.toAbsolutePath().normalize();
-
-            if (sourceType == WorldInputSpec.SourceType.FOLDER && !Files.isDirectory(sourcePath))
-            {
-                throw new MojoExecutionException(
-                    "Configured world '%s' requires a directory sourcePath, but '%s' is not a directory."
-                        .formatted(worldName, sourcePath)
-                );
-            }
-            if (sourceType == WorldInputSpec.SourceType.ARCHIVE && !Files.isRegularFile(sourcePath))
-            {
-                throw new MojoExecutionException(
-                    "Configured world '%s' requires a file archive sourcePath, but '%s' is not a regular file."
-                        .formatted(worldName, sourcePath)
-                );
-            }
-
-            inputSpecs.add(new WorldInputSpec(
-                worldName,
-                sourceType,
-                sourcePath,
-                worldInputConfig.overwrite == null || worldInputConfig.overwrite,
-                worldInputConfig.loadOnStartup == null || worldInputConfig.loadOnStartup,
-                normalizeWorldEnvironment(worldInputConfig.environment),
-                normalizeWorldType(worldInputConfig.worldType),
-                worldInputConfig.seed == null ? 0L : worldInputConfig.seed
-            ));
-        }
-
-        return inputSpecs;
+        return inputResolver().resolveWorldInputSpecs(worlds);
     }
 
     private List<PluginArtifactSpec> resolvePluginArtifactSpecs()
         throws MojoExecutionException
     {
-        final List<PluginArtifactSpec> specs = new ArrayList<>();
-        final List<PluginArtifactConfig> configuredPlugins = plugins == null ? List.of() : plugins;
-        for (final PluginArtifactConfig pluginArtifactConfig : configuredPlugins)
-        {
-            if (pluginArtifactConfig == null)
-                throw new MojoExecutionException("Configured plugin entry may not be null.");
-
-            final PluginArtifactSpec.SourceType sourceType = parsePluginSourceType(pluginArtifactConfig.sourceType);
-            final String renameTo = normalizeOptionalPluginFileName(pluginArtifactConfig.renameTo);
-
-            if (sourceType == PluginArtifactSpec.SourceType.PATH)
-            {
-                if (pluginArtifactConfig.path == null)
-                    throw new MojoExecutionException(
-                        "Missing required configuration value 'lightkeeper.plugins.path'."
-                    );
-                final Path path = pluginArtifactConfig.path.toAbsolutePath().normalize();
-                if (!Files.isRegularFile(path))
-                {
-                    throw new MojoExecutionException(
-                        "Configured plugin path source '%s' does not exist as a regular file."
-                            .formatted(path)
-                    );
-                }
-
-                specs.add(new PluginArtifactSpec(
-                    sourceType,
-                    path,
-                    null,
-                    null,
-                    null,
-                    null,
-                    "jar",
-                    false,
-                    renameTo
-                ));
-                continue;
-            }
-
-            final String groupId = requireNonBlank(pluginArtifactConfig.groupId, "lightkeeper.plugins.groupId");
-            final String artifactId = requireNonBlank(
-                pluginArtifactConfig.artifactId,
-                "lightkeeper.plugins.artifactId"
-            );
-            final String version = requireNonBlank(pluginArtifactConfig.version, "lightkeeper.plugins.version");
-            final String classifier = normalizeOptionalString(pluginArtifactConfig.classifier);
-            final @Nullable String configuredType = normalizeOptionalString(pluginArtifactConfig.type);
-            final String type = configuredType == null ? "jar" : configuredType;
-            final boolean includeTransitive = pluginArtifactConfig.includeTransitive != null &&
-                pluginArtifactConfig.includeTransitive;
-
-            if (includeTransitive && renameTo != null)
-            {
-                throw new MojoExecutionException(
-                    "Configured plugin '%s:%s:%s' cannot set renameTo when includeTransitive=true."
-                        .formatted(groupId, artifactId, version)
-                );
-            }
-
-            specs.add(new PluginArtifactSpec(
-                sourceType,
-                null,
-                groupId,
-                artifactId,
-                version,
-                classifier,
-                type,
-                includeTransitive,
-                renameTo
-            ));
-        }
-
-        return specs;
+        return inputResolver().resolvePluginArtifactSpecs(plugins);
     }
 
     List<ResolvedPluginArtifact> resolvePluginArtifacts(List<PluginArtifactSpec> specs)
-        throws MojoExecutionException
-    {
-        final List<ResolvedPluginArtifact> resolvedPluginArtifacts = new ArrayList<>();
-        for (final PluginArtifactSpec spec : specs)
-        {
-            if (spec.sourceType() == PluginArtifactSpec.SourceType.PATH)
-            {
-                final Path sourceJar = Objects.requireNonNull(spec.path());
-                final String outputFileName = spec.renameTo() == null
-                    ? sourceJar.getFileName().toString()
-                    : spec.renameTo();
-                resolvedPluginArtifacts.add(new ResolvedPluginArtifact(
-                    sourceJar,
-                    outputFileName,
-                    "path:" + sourceJar
-                ));
-                continue;
-            }
-
-            resolvedPluginArtifacts.addAll(resolveMavenPluginArtifacts(spec));
-        }
-
-        return resolvedPluginArtifacts;
-    }
-
-    private List<ResolvedPluginArtifact> resolveMavenPluginArtifacts(PluginArtifactSpec spec)
         throws MojoExecutionException
     {
         final RepositorySystem resolver = Objects.requireNonNull(repositorySystem,
@@ -725,348 +520,38 @@ public class PrepareServerMojo extends AbstractMojo
         final RepositorySystemSession session = Objects.requireNonNull(repositorySystemSession,
             "Maven RepositorySystemSession was not injected by the plugin runtime.");
         final List<RemoteRepository> repositories = Objects.requireNonNullElse(remoteProjectRepositories, List.of());
-
-        final Artifact rootArtifact = new DefaultArtifact(
-            Objects.requireNonNull(spec.groupId()),
-            Objects.requireNonNull(spec.artifactId()),
-            Objects.requireNonNullElse(spec.classifier(), ""),
-            Objects.requireNonNull(spec.type()),
-            Objects.requireNonNull(spec.version())
-        );
-
-        if (!spec.includeTransitive())
-        {
-            final ArtifactRequest request = new ArtifactRequest()
-                .setArtifact(rootArtifact)
-                .setRepositories(repositories);
-            try
-            {
-                final ArtifactResult result = resolver.resolveArtifact(session, request);
-                final Path sourceJar = result.getArtifact().getFile().toPath();
-                final String outputFileName = spec.renameTo() == null
-                    ? sourceJar.getFileName().toString()
-                    : spec.renameTo();
-                return List.of(new ResolvedPluginArtifact(
-                    sourceJar,
-                    outputFileName,
-                    "maven:" + result.getArtifact()
-                ));
-            }
-            catch (ArtifactResolutionException exception)
-            {
-                throw new MojoExecutionException(
-                    "Failed to resolve plugin artifact '%s'.".formatted(rootArtifact),
-                    exception
-                );
-            }
-        }
-
-        final CollectRequest collectRequest = new CollectRequest();
-        collectRequest.setRoot(new Dependency(rootArtifact, JavaScopes.RUNTIME));
-        collectRequest.setRepositories(repositories);
-
-        final DependencyRequest dependencyRequest = new DependencyRequest(collectRequest, null);
-        try
-        {
-            final DependencyResult dependencyResult = resolver.resolveDependencies(session, dependencyRequest);
-            final List<ResolvedPluginArtifact> resolvedPluginArtifacts = new ArrayList<>();
-            for (final ArtifactResult artifactResult : dependencyResult.getArtifactResults())
-            {
-                final Artifact artifact = artifactResult.getArtifact();
-                final Path sourceJar = artifact.getFile().toPath();
-                resolvedPluginArtifacts.add(new ResolvedPluginArtifact(
-                    sourceJar,
-                    sourceJar.getFileName().toString(),
-                    "maven:" + artifact
-                ));
-            }
-            return resolvedPluginArtifacts;
-        }
-        catch (DependencyResolutionException exception)
-        {
-            throw new MojoExecutionException(
-                "Failed to resolve transitive plugin artifacts for '%s'.".formatted(rootArtifact),
-                exception
-            );
-        }
+        return pluginArtifactResolver().resolvePluginArtifacts(specs, resolver, session, repositories);
     }
 
-    AgentMetadata resolveAgentMetadata(@Nullable Path path)
+    PrepareServerAgentMetadata resolveAgentMetadata(@Nullable Path path)
         throws MojoExecutionException
     {
-        if (path == null)
-            return new AgentMetadata(null, "no-agent");
-
-        if (Files.notExists(path) || !Files.isRegularFile(path))
-            throw new MojoExecutionException("Configured agent jar path '%s' does not exist.".formatted(path));
-
-        final String sha256 = HashUtil.sha256(path);
-        final String fileName = path.getFileName() == null ? path.toString() : path.getFileName().toString();
-        return new AgentMetadata(sha256, fileName + ":" + sha256);
+        return runtimeSupport().resolveAgentMetadata(path);
     }
 
     Path resolveUdsSocketPath(Path preferredDirectory, String agentAuthToken)
         throws MojoExecutionException
     {
-        final String socketFileName = "lk-%s.sock".formatted(agentAuthToken.substring(0, 8));
-        final Path preferredPath = preferredDirectory.resolve(socketFileName).toAbsolutePath();
-        if (fitsUnixSocketPath(preferredPath))
-            return preferredPath;
-
-        final Path fallbackDirectory = Path.of(System.getProperty("java.io.tmpdir"), "lightkeeper-sockets");
-        FileUtil.createDirectories(fallbackDirectory, "fallback agent socket directory");
-
-        final Path fallbackPath = fallbackDirectory.resolve(socketFileName).toAbsolutePath();
-        if (fitsUnixSocketPath(fallbackPath))
-        {
-            getLog().warn(
-                "Configured socket path is too long for AF_UNIX. Falling back to short path '%s'."
-                    .formatted(fallbackPath)
-            );
-            return fallbackPath;
-        }
-
-        throw new MojoExecutionException(
-            "Unable to generate a valid AF_UNIX socket path. Tried '%s' and '%s'."
-                .formatted(preferredPath, fallbackPath)
-        );
+        return runtimeSupport().resolveUdsSocketPath(preferredDirectory, agentAuthToken);
     }
 
-    private static boolean fitsUnixSocketPath(Path path)
+    private PrepareServerConfigurationValidator configurationValidator()
     {
-        return path.toString().getBytes(StandardCharsets.UTF_8).length <= UNIX_SOCKET_PATH_MAX_BYTES;
+        return new PrepareServerConfigurationValidator(SUPPORTED_SERVER_TYPES);
     }
 
-    private static WorldInputSpec.SourceType parseWorldSourceType(@Nullable String sourceType)
-        throws MojoExecutionException
+    private PrepareServerInputResolver inputResolver()
     {
-        final String normalized = requireNonBlank(sourceType, "lightkeeper.worlds.sourceType");
-        try
-        {
-            return WorldInputSpec.SourceType.valueOf(normalized.toUpperCase(Locale.ROOT));
-        }
-        catch (IllegalArgumentException exception)
-        {
-            throw new MojoExecutionException(
-                "Unsupported world sourceType '%s'. Supported values: %s"
-                    .formatted(sourceType, List.of(WorldInputSpec.SourceType.values())),
-                exception
-            );
-        }
+        return new PrepareServerInputResolver();
     }
 
-    private static PluginArtifactSpec.SourceType parsePluginSourceType(@Nullable String sourceType)
-        throws MojoExecutionException
+    private PrepareServerRuntimeSupport runtimeSupport()
     {
-        final String normalized = requireNonBlank(sourceType, "lightkeeper.plugins.sourceType");
-        try
-        {
-            return PluginArtifactSpec.SourceType.valueOf(normalized.toUpperCase(Locale.ROOT));
-        }
-        catch (IllegalArgumentException exception)
-        {
-            throw new MojoExecutionException(
-                "Unsupported plugin sourceType '%s'. Supported values: %s"
-                    .formatted(sourceType, List.of(PluginArtifactSpec.SourceType.values())),
-                exception
-            );
-        }
+        return new PrepareServerRuntimeSupport(getLog());
     }
 
-    private static String validateWorldName(@Nullable String worldName)
-        throws MojoExecutionException
+    private PrepareServerPluginArtifactResolver pluginArtifactResolver()
     {
-        final String name = requireNonBlank(worldName, "lightkeeper.worlds.name");
-        if (name.contains("/") || name.contains("\\") || name.equals(".") || name.contains(".."))
-        {
-            throw new MojoExecutionException(
-                "Invalid world name '%s'. World names may not contain path separators, '.', or '..'."
-                    .formatted(name)
-            );
-        }
-        return name;
-    }
-
-    private static String normalizeWorldEnvironment(@Nullable String environment)
-        throws MojoExecutionException
-    {
-        final String normalized = normalizeOptionalString(environment);
-        if (normalized == null)
-            return "NORMAL";
-
-        final String upperCase = normalized.toUpperCase(Locale.ROOT);
-        if (!List.of("NORMAL", "NETHER", "THE_END").contains(upperCase))
-        {
-            throw new MojoExecutionException(
-                "Unsupported world environment '%s'. Supported values: NORMAL, NETHER, THE_END."
-                    .formatted(environment)
-            );
-        }
-        return upperCase;
-    }
-
-    private static String normalizeWorldType(@Nullable String worldType)
-        throws MojoExecutionException
-    {
-        final String normalized = normalizeOptionalString(worldType);
-        if (normalized == null)
-            return "NORMAL";
-
-        final String upperCase = normalized.toUpperCase(Locale.ROOT);
-        if (!List.of("NORMAL", "FLAT").contains(upperCase))
-        {
-            throw new MojoExecutionException(
-                "Unsupported worldType '%s'. Supported values: NORMAL, FLAT."
-                    .formatted(worldType)
-            );
-        }
-        return upperCase;
-    }
-
-    private static @Nullable String normalizeOptionalPluginFileName(@Nullable String fileName)
-        throws MojoExecutionException
-    {
-        final String normalized = normalizeOptionalString(fileName);
-        if (normalized == null)
-            return null;
-        if (!normalized.toLowerCase(Locale.ROOT).endsWith(".jar"))
-            throw new MojoExecutionException("Configured renameTo '%s' must end with .jar.".formatted(normalized));
-        if (normalized.contains("/") || normalized.contains("\\"))
-        {
-            throw new MojoExecutionException(
-                "Configured renameTo '%s' may not contain path separators.".formatted(normalized)
-            );
-        }
-        return normalized;
-    }
-
-    private static String requireNonBlank(@Nullable String value, String fieldName)
-        throws MojoExecutionException
-    {
-        final String trimmed = value == null ? "" : value.trim();
-        if (trimmed.isEmpty())
-            throw new MojoExecutionException("Missing required configuration value '%s'.".formatted(fieldName));
-        return trimmed;
-    }
-
-    private static @Nullable String normalizeOptionalString(@Nullable String value)
-    {
-        if (value == null)
-            return null;
-        final String trimmed = value.trim();
-        return trimmed.isEmpty() ? null : trimmed;
-    }
-
-    record AgentMetadata(@Nullable String sha256, String cacheIdentity)
-    {
-    }
-
-    record ExecutionContext(
-        String normalizedServerType,
-        String serverVersion,
-        Path jarCacheDirectoryRoot,
-        Path baseServerCacheDirectoryRoot,
-        Path serverWorkDirectoryRoot,
-        Path runtimeManifestPath,
-        Path agentSocketDirectory,
-        String userAgent,
-        List<WorldInputSpec> worldInputSpecs,
-        List<PluginArtifactSpec> pluginArtifactSpecs
-    )
-    {
-    }
-
-    record ResolvedServerSetup(
-        ServerProvider serverProvider,
-        String manifestServerVersion,
-        long manifestBuildId,
-        String cacheKey,
-        int memoryMb
-    )
-    {
-    }
-
-    record RuntimePreparation(
-        AgentMetadata agentMetadata,
-        String runtimeProtocolVersion,
-        String agentAuthToken,
-        Path udsSocketPath,
-        ResolvedServerSetup resolvedServerSetup
-    )
-    {
-    }
-
-    public static final class WorldInputConfig
-    {
-        @Parameter(required = true)
-        @Nullable
-        private String name;
-
-        @Parameter(required = true)
-        @Nullable
-        private String sourceType;
-
-        @Parameter(required = true)
-        @Nullable
-        private Path sourcePath;
-
-        @Parameter
-        @Nullable
-        private Boolean overwrite;
-
-        @Parameter
-        @Nullable
-        private Boolean loadOnStartup;
-
-        @Parameter
-        @Nullable
-        private String environment;
-
-        @Parameter
-        @Nullable
-        private String worldType;
-
-        @Parameter
-        @Nullable
-        private Long seed;
-    }
-
-    public static final class PluginArtifactConfig
-    {
-        @Parameter(required = true)
-        @Nullable
-        private String sourceType;
-
-        @Parameter
-        @Nullable
-        private Path path;
-
-        @Parameter
-        @Nullable
-        private String groupId;
-
-        @Parameter
-        @Nullable
-        private String artifactId;
-
-        @Parameter
-        @Nullable
-        private String version;
-
-        @Parameter
-        @Nullable
-        private String classifier;
-
-        @Parameter
-        @Nullable
-        private String type;
-
-        @Parameter
-        @Nullable
-        private Boolean includeTransitive;
-
-        @Parameter
-        @Nullable
-        private String renameTo;
+        return new PrepareServerPluginArtifactResolver();
     }
 }
