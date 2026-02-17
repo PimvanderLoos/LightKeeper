@@ -184,6 +184,33 @@ public class PrepareServerMojo extends AbstractMojo
         logPreparationStart(executionContext);
         createRequiredDirectories(executionContext);
 
+        final RuntimePreparation runtimePreparation = prepareRuntimePreparation(executionContext);
+        final ServerProvider serverProvider = runtimePreparation.resolvedServerSetup().serverProvider();
+        serverProvider.prepareServer();
+
+        final Path targetServerDirectory = serverProvider.targetServerDirectoryPath();
+        installServerAssets(targetServerDirectory, executionContext, executionContext.pluginArtifactSpecs());
+
+        final RuntimeManifest runtimeManifest = createRuntimeManifest(
+            executionContext.normalizedServerType(),
+            runtimePreparation.resolvedServerSetup().manifestServerVersion(),
+            runtimePreparation.resolvedServerSetup().manifestBuildId(),
+            runtimePreparation.resolvedServerSetup().cacheKey(),
+            targetServerDirectory,
+            serverProvider,
+            runtimePreparation.resolvedServerSetup().memoryMb(),
+            runtimePreparation.udsSocketPath(),
+            runtimePreparation.agentAuthToken(),
+            runtimePreparation.agentMetadata(),
+            runtimePreparation.runtimeProtocolVersion(),
+            executionContext.worldInputSpecs()
+        );
+        writeRuntimeManifest(runtimeManifest, executionContext.runtimeManifestPath());
+    }
+
+    RuntimePreparation prepareRuntimePreparation(ExecutionContext executionContext)
+        throws MojoExecutionException
+    {
         final AgentMetadata agentMetadata = resolveAgentMetadata(agentJarPath);
         final String runtimeProtocolVersion = RuntimeProtocol.VERSION;
         final String agentAuthToken = UUID.randomUUID().toString();
@@ -194,28 +221,13 @@ public class PrepareServerMojo extends AbstractMojo
             agentAuthToken,
             runtimeProtocolVersion
         );
-
-        final ServerProvider serverProvider = resolvedServerSetup.serverProvider();
-        serverProvider.prepareServer();
-
-        final Path targetServerDirectory = serverProvider.targetServerDirectoryPath();
-        installServerAssets(targetServerDirectory, executionContext, executionContext.pluginArtifactSpecs());
-
-        final RuntimeManifest runtimeManifest = createRuntimeManifest(
-            executionContext.normalizedServerType(),
-            resolvedServerSetup.manifestServerVersion(),
-            resolvedServerSetup.manifestBuildId(),
-            resolvedServerSetup.cacheKey(),
-            targetServerDirectory,
-            serverProvider,
-            resolvedServerSetup.memoryMb(),
-            udsSocketPath,
-            agentAuthToken,
+        return new RuntimePreparation(
             agentMetadata,
             runtimeProtocolVersion,
-            executionContext.worldInputSpecs()
+            agentAuthToken,
+            udsSocketPath,
+            resolvedServerSetup
         );
-        writeRuntimeManifest(runtimeManifest, executionContext.runtimeManifestPath());
     }
 
     static void ensureRuntimeManifestParentDirectoryExists(Path runtimeManifestPath)
@@ -245,7 +257,7 @@ public class PrepareServerMojo extends AbstractMojo
         }
     }
 
-    private ExecutionContext buildExecutionContext()
+    ExecutionContext buildExecutionContext()
         throws MojoExecutionException
     {
         return new ExecutionContext(
@@ -279,15 +291,14 @@ public class PrepareServerMojo extends AbstractMojo
         FileUtil.createDirectories(executionContext.agentSocketDirectory(), "agent socket directory");
     }
 
-    private ResolvedServerSetup resolveServerSetup(
+    ResolvedServerSetup resolveServerSetup(
         ExecutionContext executionContext,
         AgentMetadata agentMetadata,
         String agentAuthToken,
         String runtimeProtocolVersion)
         throws MojoExecutionException
     {
-        final PaperDownloadsClient paperDownloadsClient =
-            new PaperDownloadsClient(getLog(), executionContext.userAgent());
+        final PaperDownloadsClient paperDownloadsClient = createPaperDownloadsClient(executionContext.userAgent());
 
         return switch (executionContext.normalizedServerType())
         {
@@ -312,7 +323,7 @@ public class PrepareServerMojo extends AbstractMojo
         };
     }
 
-    private ResolvedServerSetup resolvePaperServerSetup(
+    ResolvedServerSetup resolvePaperServerSetup(
         ExecutionContext executionContext,
         AgentMetadata agentMetadata,
         String agentAuthToken,
@@ -320,7 +331,8 @@ public class PrepareServerMojo extends AbstractMojo
         PaperDownloadsClient paperDownloadsClient)
         throws MojoExecutionException
     {
-        final PaperBuildMetadata paperBuildMetadata = paperDownloadsClient.resolveBuild(executionContext.serverVersion());
+        final PaperBuildMetadata paperBuildMetadata =
+            paperDownloadsClient.resolveBuild(executionContext.serverVersion());
         final String cacheKey = CacheKeyUtil.createPaperCacheKey(
             paperBuildMetadata.minecraftVersion(),
             paperBuildMetadata.sha256()
@@ -347,7 +359,7 @@ public class PrepareServerMojo extends AbstractMojo
         );
     }
 
-    private ResolvedServerSetup resolveSpigotServerSetup(
+    ResolvedServerSetup resolveSpigotServerSetup(
         ExecutionContext executionContext,
         AgentMetadata agentMetadata,
         String agentAuthToken,
@@ -356,7 +368,7 @@ public class PrepareServerMojo extends AbstractMojo
         throws MojoExecutionException
     {
         final SpigotBuildMetadata spigotBuildMetadata =
-            new SpigotDownloadsClient(getLog(), paperDownloadsClient, executionContext.userAgent())
+            createSpigotDownloadsClient(paperDownloadsClient, executionContext.userAgent())
                 .resolveBuild(executionContext.serverVersion());
         final String cacheKey = CacheKeyUtil.createSpigotCacheKey(
             spigotBuildMetadata.minecraftVersion(),
@@ -387,7 +399,7 @@ public class PrepareServerMojo extends AbstractMojo
         );
     }
 
-    private void installServerAssets(
+    void installServerAssets(
         Path targetServerDirectory,
         ExecutionContext executionContext,
         List<PluginArtifactSpec> pluginArtifactSpecs)
@@ -403,7 +415,7 @@ public class PrepareServerMojo extends AbstractMojo
             ServerAssetInstaller.applyConfigOverlay(configOverlayPath, targetServerDirectory, getLog());
     }
 
-    private RuntimeManifest createRuntimeManifest(
+    RuntimeManifest createRuntimeManifest(
         String normalizedServerType,
         String resolvedManifestServerVersion,
         long resolvedManifestBuildId,
@@ -446,7 +458,19 @@ public class PrepareServerMojo extends AbstractMojo
         );
     }
 
-    private static void writeRuntimeManifest(RuntimeManifest runtimeManifest, Path runtimeManifestPathValue)
+    protected PaperDownloadsClient createPaperDownloadsClient(String effectiveUserAgent)
+    {
+        return new PaperDownloadsClient(getLog(), effectiveUserAgent);
+    }
+
+    protected SpigotDownloadsClient createSpigotDownloadsClient(
+        PaperDownloadsClient paperDownloadsClient,
+        String effectiveUserAgent)
+    {
+        return new SpigotDownloadsClient(getLog(), paperDownloadsClient, effectiveUserAgent);
+    }
+
+    static void writeRuntimeManifest(RuntimeManifest runtimeManifest, Path runtimeManifestPathValue)
         throws MojoExecutionException
     {
         try
@@ -512,7 +536,7 @@ public class PrepareServerMojo extends AbstractMojo
             .toLowerCase(Locale.ROOT);
     }
 
-    private void validateConfiguration()
+    void validateConfiguration()
         throws MojoExecutionException
     {
         final String normalizedType = normalizeServerType();
@@ -667,7 +691,7 @@ public class PrepareServerMojo extends AbstractMojo
         return specs;
     }
 
-    private List<ResolvedPluginArtifact> resolvePluginArtifacts(List<PluginArtifactSpec> specs)
+    List<ResolvedPluginArtifact> resolvePluginArtifacts(List<PluginArtifactSpec> specs)
         throws MojoExecutionException
     {
         final List<ResolvedPluginArtifact> resolvedPluginArtifacts = new ArrayList<>();
@@ -767,7 +791,7 @@ public class PrepareServerMojo extends AbstractMojo
         }
     }
 
-    private AgentMetadata resolveAgentMetadata(@Nullable Path path)
+    AgentMetadata resolveAgentMetadata(@Nullable Path path)
         throws MojoExecutionException
     {
         if (path == null)
@@ -781,7 +805,7 @@ public class PrepareServerMojo extends AbstractMojo
         return new AgentMetadata(sha256, fileName + ":" + sha256);
     }
 
-    private Path resolveUdsSocketPath(Path preferredDirectory, String agentAuthToken)
+    Path resolveUdsSocketPath(Path preferredDirectory, String agentAuthToken)
         throws MojoExecutionException
     {
         final String socketFileName = "lk-%s.sock".formatted(agentAuthToken.substring(0, 8));
@@ -933,11 +957,11 @@ public class PrepareServerMojo extends AbstractMojo
         return trimmed.isEmpty() ? null : trimmed;
     }
 
-    private record AgentMetadata(@Nullable String sha256, String cacheIdentity)
+    record AgentMetadata(@Nullable String sha256, String cacheIdentity)
     {
     }
 
-    private record ExecutionContext(
+    record ExecutionContext(
         String normalizedServerType,
         String serverVersion,
         Path jarCacheDirectoryRoot,
@@ -952,12 +976,22 @@ public class PrepareServerMojo extends AbstractMojo
     {
     }
 
-    private record ResolvedServerSetup(
+    record ResolvedServerSetup(
         ServerProvider serverProvider,
         String manifestServerVersion,
         long manifestBuildId,
         String cacheKey,
         int memoryMb
+    )
+    {
+    }
+
+    record RuntimePreparation(
+        AgentMetadata agentMetadata,
+        String runtimeProtocolVersion,
+        String agentAuthToken,
+        Path udsSocketPath,
+        ResolvedServerSetup resolvedServerSetup
     )
     {
     }

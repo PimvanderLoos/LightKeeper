@@ -51,14 +51,24 @@ public final class PaperDownloadsClient
      */
     public PaperDownloadsClient(Log log, String userAgent)
     {
+        this(
+            log,
+            userAgent,
+            HttpClient.newBuilder()
+                .followRedirects(HttpClient.Redirect.NORMAL)
+                .connectTimeout(Duration.ofSeconds(15))
+                .build(),
+            new ObjectMapper()
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+        );
+    }
+
+    PaperDownloadsClient(Log log, String userAgent, HttpClient httpClient, ObjectMapper objectMapper)
+    {
         this.log = Objects.requireNonNull(log, "log");
         this.userAgent = validateUserAgent(userAgent);
-        this.httpClient = HttpClient.newBuilder()
-            .followRedirects(HttpClient.Redirect.NORMAL)
-            .connectTimeout(Duration.ofSeconds(15))
-            .build();
-        this.objectMapper = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        this.httpClient = Objects.requireNonNull(httpClient, "httpClient");
+        this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper");
     }
 
     /**

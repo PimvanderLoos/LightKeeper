@@ -9,8 +9,6 @@ import nl.pim16aap2.lightkeeper.maven.util.HashUtil;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 @ToString(callSuper = true)
