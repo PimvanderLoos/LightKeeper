@@ -3,8 +3,8 @@ package nl.pim16aap2.lightkeeper.maven;
 import nl.pim16aap2.lightkeeper.maven.provisioning.PluginArtifactSpec;
 import nl.pim16aap2.lightkeeper.maven.provisioning.ResolvedPluginArtifact;
 import nl.pim16aap2.lightkeeper.maven.provisioning.WorldInputSpec;
-import nl.pim16aap2.lightkeeper.maven.serverprovider.ServerProvider;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.PaperServerProvider;
+import nl.pim16aap2.lightkeeper.maven.serverprovider.ServerProvider;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.SpigotServerProvider;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.eclipse.aether.RepositorySystem;
@@ -75,10 +75,10 @@ class PrepareServerMojoInternalTest
         );
 
         // verify
-        assertThat((String) invokeRecordAccessor(setup, "manifestServerVersion")).isEqualTo("1.21.11");
-        assertThat((Long) invokeRecordAccessor(setup, "manifestBuildId")).isEqualTo(116L);
-        assertThat((String) invokeRecordAccessor(setup, "cacheKey")).isNotBlank();
-        assertThat((Object) invokeRecordAccessor(setup, "serverProvider")).isInstanceOf(PaperServerProvider.class);
+        assertThat(invokeRecordAccessor(setup, "manifestServerVersion")).isEqualTo("1.21.11");
+        assertThat(invokeRecordAccessor(setup, "manifestBuildId")).isEqualTo(116L);
+        assertThat(invokeRecordAccessor(setup, "cacheKey")).isNotBlank();
+        assertThat(invokeRecordAccessor(setup, "serverProvider")).isInstanceOf(PaperServerProvider.class);
     }
 
     @Test
@@ -118,10 +118,10 @@ class PrepareServerMojoInternalTest
         );
 
         // verify
-        assertThat((String) invokeRecordAccessor(setup, "manifestServerVersion")).isEqualTo("1.21.11");
-        assertThat((Long) invokeRecordAccessor(setup, "manifestBuildId")).isEqualTo(0L);
-        assertThat((String) invokeRecordAccessor(setup, "cacheKey")).isNotBlank();
-        assertThat((Object) invokeRecordAccessor(setup, "serverProvider")).isInstanceOf(SpigotServerProvider.class);
+        assertThat(invokeRecordAccessor(setup, "manifestServerVersion")).isEqualTo("1.21.11");
+        assertThat(invokeRecordAccessor(setup, "manifestBuildId")).isEqualTo(0L);
+        assertThat(invokeRecordAccessor(setup, "cacheKey")).isNotBlank();
+        assertThat(invokeRecordAccessor(setup, "serverProvider")).isInstanceOf(SpigotServerProvider.class);
     }
 
     @Test
@@ -136,11 +136,11 @@ class PrepareServerMojoInternalTest
         final Object context = invokePrivate(mojo, "buildExecutionContext", new Class<?>[0]);
 
         // verify
-        assertThat((String) invokeRecordAccessor(context, "normalizedServerType")).isEqualTo("paper");
-        assertThat((String) invokeRecordAccessor(context, "serverVersion")).isEqualTo("latest-supported");
-        assertThat((String) invokeRecordAccessor(context, "userAgent")).isEqualTo("LightKeeper/Test");
-        assertThat((List<?>) invokeRecordAccessor(context, "worldInputSpecs")).isEmpty();
-        assertThat((List<?>) invokeRecordAccessor(context, "pluginArtifactSpecs")).isEmpty();
+        assertThat(invokeRecordAccessor(context, "normalizedServerType")).isEqualTo("paper");
+        assertThat(invokeRecordAccessor(context, "serverVersion")).isEqualTo("latest-supported");
+        assertThat(invokeRecordAccessor(context, "userAgent")).isEqualTo("LightKeeper/Test");
+        assertThat(invokeRecordAccessor(context, "worldInputSpecs")).isEmpty();
+        assertThat(invokeRecordAccessor(context, "pluginArtifactSpecs")).isEmpty();
     }
 
     @Test
