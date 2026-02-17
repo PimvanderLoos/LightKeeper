@@ -42,7 +42,8 @@ final class PrepareServerRuntimeSupport
     static void validateExtraJvmArgs(@Nullable String extraJvmArgsValue)
         throws MojoExecutionException
     {
-        final @Nullable String normalizedExtraJvmArgs = PrepareServerInputResolver.normalizeOptionalString(extraJvmArgsValue);
+        final @Nullable String normalizedExtraJvmArgs =
+            PrepareServerInputResolver.normalizeOptionalString(extraJvmArgsValue);
         if (normalizedExtraJvmArgs == null)
             return;
 
