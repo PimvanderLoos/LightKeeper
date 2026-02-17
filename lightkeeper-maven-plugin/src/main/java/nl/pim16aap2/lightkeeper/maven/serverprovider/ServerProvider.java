@@ -12,6 +12,7 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.URI;
@@ -21,8 +22,10 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /**
  * Represents a provider for a specific type of server.
@@ -480,6 +483,40 @@ public abstract class ServerProvider
         throws MojoExecutionException;
 
     /**
+     * Deletes transient lock/socket files created by failed startup attempts.
+     *
+     * @throws MojoExecutionException
+     *     If cleanup fails.
+     */
+    protected final void cleanTransientFilesForRetry()
+        throws MojoExecutionException
+    {
+        try (Stream<Path> fileStream = Files.walk(baseServerDirectory()))
+        {
+            fileStream
+                .filter(Files::isRegularFile)
+                .filter(this::isTransientRetryFile)
+                .forEach(this::deleteRetryFile);
+        }
+        catch (UncheckedIOException exception)
+        {
+            throw new MojoExecutionException(
+                "Failed to delete transient retry file in '%s'."
+                    .formatted(baseServerDirectory()),
+                exception
+            );
+        }
+        catch (IOException exception)
+        {
+            throw new MojoExecutionException(
+                "Failed to clean transient files in base server directory '%s' before retry."
+                    .formatted(baseServerDirectory()),
+                exception
+            );
+        }
+    }
+
+    /**
      * Downloads a file from the specified URL to the target file path.
      *
      * @param url
@@ -515,6 +552,40 @@ public abstract class ServerProvider
         throws MojoExecutionException
     {
         FileUtil.copyDirectoryRecursively(baseServerDirectory, targetServerDirectory);
+    }
+
+    private boolean isTransientRetryFile(Path path)
+    {
+        final String fileName = path.getFileName() == null
+            ? path.toString()
+            : path.getFileName().toString();
+        final String lowerCaseName = fileName.toLowerCase(Locale.ROOT);
+
+        if (lowerCaseName.equals("session.lock"))
+            return true;
+
+        if (lowerCaseName.endsWith(".lock") || lowerCaseName.endsWith(".lck"))
+            return true;
+
+        if (lowerCaseName.endsWith(".pid") || lowerCaseName.endsWith(".sock"))
+            return true;
+
+        return lowerCaseName.startsWith("hs_err_pid") && lowerCaseName.endsWith(".log");
+    }
+
+    private void deleteRetryFile(Path path)
+    {
+        try
+        {
+            Files.deleteIfExists(path);
+        }
+        catch (IOException exception)
+        {
+            throw new UncheckedIOException(
+                "Failed to delete transient retry file '%s'.".formatted(path),
+                exception
+            );
+        }
     }
 
     /**

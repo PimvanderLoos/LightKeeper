@@ -180,156 +180,42 @@ public class PrepareServerMojo extends AbstractMojo
         throws MojoExecutionException
     {
         validateConfiguration();
-        final String normalizedServerType = normalizeServerType();
-
-        final String effectiveServerVersion = Objects.requireNonNull(serverVersion);
-        final Path effectiveJarCacheDirectoryRoot = Objects.requireNonNull(jarCacheDirectoryRoot);
-        final Path effectiveBaseServerCacheDirectoryRoot = Objects.requireNonNull(baseServerCacheDirectoryRoot);
-        final Path effectiveServerWorkDirectoryRoot = Objects.requireNonNull(serverWorkDirectoryRoot);
-        final Path effectiveRuntimeManifestPath = Objects.requireNonNull(runtimeManifestPath);
-        final Path effectiveAgentSocketDirectory = Objects.requireNonNull(agentSocketDirectory);
-
-        final List<WorldInputSpec> worldInputSpecs = resolveWorldInputSpecs();
-        final List<PluginArtifactSpec> pluginArtifactSpecs = resolvePluginArtifactSpecs();
-
-        getLog().info(
-            "Preparing server for platform: '%s' with version: '%s'."
-                .formatted(normalizedServerType, effectiveServerVersion)
-        );
-
-        FileUtil.createDirectories(effectiveJarCacheDirectoryRoot, "jar cache directory root");
-        FileUtil.createDirectories(effectiveBaseServerCacheDirectoryRoot, "base server cache directory root");
-        FileUtil.createDirectories(effectiveServerWorkDirectoryRoot, "server work directory root");
-        FileUtil.createDirectories(effectiveAgentSocketDirectory, "agent socket directory");
-
-        final String effectiveUserAgent = Objects.requireNonNull(userAgent);
-        final PaperDownloadsClient paperDownloadsClient = new PaperDownloadsClient(getLog(), effectiveUserAgent);
+        final ExecutionContext executionContext = buildExecutionContext();
+        logPreparationStart(executionContext);
+        createRequiredDirectories(executionContext);
 
         final AgentMetadata agentMetadata = resolveAgentMetadata(agentJarPath);
         final String runtimeProtocolVersion = RuntimeProtocol.VERSION;
         final String agentAuthToken = UUID.randomUUID().toString();
-        final Path udsSocketPath = resolveUdsSocketPath(effectiveAgentSocketDirectory, agentAuthToken);
-        final ServerProvider serverProvider;
-        final String resolvedManifestServerVersion;
-        final long resolvedManifestBuildId;
-        final String resolvedCacheKey;
-        final int resolvedMemoryMb;
-        if (SERVER_TYPE_PAPER.equals(normalizedServerType))
-        {
-            final PaperBuildMetadata paperBuildMetadata = paperDownloadsClient.resolveBuild(effectiveServerVersion);
-            final String cacheKey = CacheKeyUtil.createPaperCacheKey(
-                paperBuildMetadata.minecraftVersion(),
-                paperBuildMetadata.sha256()
-            );
-            final ServerSpecification serverSpecification = createServerSpecification(
-                paperBuildMetadata.minecraftVersion(),
-                effectiveJarCacheDirectoryRoot,
-                effectiveBaseServerCacheDirectoryRoot,
-                effectiveServerWorkDirectoryRoot,
-                effectiveRuntimeManifestPath,
-                effectiveAgentSocketDirectory,
-                cacheKey,
-                effectiveUserAgent,
-                agentMetadata,
-                agentAuthToken,
-                runtimeProtocolVersion
-            );
-            serverProvider = new PaperServerProvider(getLog(), serverSpecification, paperBuildMetadata);
-            resolvedManifestServerVersion = paperBuildMetadata.minecraftVersion();
-            resolvedManifestBuildId = paperBuildMetadata.buildId();
-            resolvedCacheKey = cacheKey;
-            resolvedMemoryMb = serverSpecification.memoryMb();
-        }
-        else if (SERVER_TYPE_SPIGOT.equals(normalizedServerType))
-        {
-            final SpigotBuildMetadata spigotBuildMetadata =
-                new SpigotDownloadsClient(getLog(), paperDownloadsClient, effectiveUserAgent)
-                    .resolveBuild(effectiveServerVersion);
-            final String cacheKey = CacheKeyUtil.createSpigotCacheKey(
-                spigotBuildMetadata.minecraftVersion(),
-                spigotBuildMetadata.buildToolsIdentity(),
-                System.getProperty("java.specification.version"),
-                System.getProperty("os.name"),
-                System.getProperty("os.arch")
-            );
-            final ServerSpecification serverSpecification = createServerSpecification(
-                spigotBuildMetadata.minecraftVersion(),
-                effectiveJarCacheDirectoryRoot,
-                effectiveBaseServerCacheDirectoryRoot,
-                effectiveServerWorkDirectoryRoot,
-                effectiveRuntimeManifestPath,
-                effectiveAgentSocketDirectory,
-                cacheKey,
-                effectiveUserAgent,
-                agentMetadata,
-                agentAuthToken,
-                runtimeProtocolVersion
-            );
-            serverProvider = new SpigotServerProvider(getLog(), serverSpecification, spigotBuildMetadata);
-            resolvedManifestServerVersion = spigotBuildMetadata.minecraftVersion();
-            resolvedManifestBuildId = 0L;
-            resolvedCacheKey = cacheKey;
-            resolvedMemoryMb = serverSpecification.memoryMb();
-        }
-        else
-        {
-            throw new MojoExecutionException(
-                "Unsupported server type '%s'. Supported types: %s"
-                    .formatted(normalizedServerType, SUPPORTED_SERVER_TYPES)
-            );
-        }
+        final Path udsSocketPath = resolveUdsSocketPath(executionContext.agentSocketDirectory(), agentAuthToken);
+        final ResolvedServerSetup resolvedServerSetup = resolveServerSetup(
+            executionContext,
+            agentMetadata,
+            agentAuthToken,
+            runtimeProtocolVersion
+        );
 
+        final ServerProvider serverProvider = resolvedServerSetup.serverProvider();
         serverProvider.prepareServer();
 
         final Path targetServerDirectory = serverProvider.targetServerDirectoryPath();
-        ServerAssetInstaller.installWorlds(targetServerDirectory, worldInputSpecs, getLog());
-        ServerAssetInstaller.installPluginArtifacts(
+        installServerAssets(targetServerDirectory, executionContext, executionContext.pluginArtifactSpecs());
+
+        final RuntimeManifest runtimeManifest = createRuntimeManifest(
+            executionContext.normalizedServerType(),
+            resolvedServerSetup.manifestServerVersion(),
+            resolvedServerSetup.manifestBuildId(),
+            resolvedServerSetup.cacheKey(),
             targetServerDirectory,
-            resolvePluginArtifacts(pluginArtifactSpecs),
-            getLog()
-        );
-        if (configOverlayPath != null)
-            ServerAssetInstaller.applyConfigOverlay(configOverlayPath, targetServerDirectory, getLog());
-
-        final List<RuntimeManifest.PreloadedWorld> preloadedWorlds = worldInputSpecs.stream()
-            .filter(WorldInputSpec::loadOnStartup)
-            .map(worldInput -> new RuntimeManifest.PreloadedWorld(
-                worldInput.name(),
-                worldInput.environment(),
-                worldInput.worldType(),
-                worldInput.seed()
-            ))
-            .toList();
-
-        final RuntimeManifest runtimeManifest = new RuntimeManifest(
-            normalizedServerType,
-            resolvedManifestServerVersion,
-            resolvedManifestBuildId,
-            resolvedCacheKey,
-            targetServerDirectory.toAbsolutePath().toString(),
-            serverProvider.targetJarFilePath().toAbsolutePath().toString(),
-            resolvedMemoryMb,
-            udsSocketPath.toAbsolutePath().toString(),
+            serverProvider,
+            resolvedServerSetup.memoryMb(),
+            udsSocketPath,
             agentAuthToken,
-            agentJarPath != null ? agentJarPath.toAbsolutePath().toString() : null,
-            agentMetadata.sha256(),
+            agentMetadata,
             runtimeProtocolVersion,
-            agentMetadata.cacheIdentity(),
-            normalizeOptionalString(extraJvmArgs),
-            preloadedWorlds
+            executionContext.worldInputSpecs()
         );
-        try
-        {
-            ensureRuntimeManifestParentDirectoryExists(effectiveRuntimeManifestPath);
-            new RuntimeManifestWriter().write(runtimeManifest, effectiveRuntimeManifestPath);
-        }
-        catch (IOException exception)
-        {
-            throw new MojoExecutionException(
-                "Failed to write runtime manifest to '%s'.".formatted(effectiveRuntimeManifestPath),
-                exception
-            );
-        }
+        writeRuntimeManifest(runtimeManifest, executionContext.runtimeManifestPath());
     }
 
     static void ensureRuntimeManifestParentDirectoryExists(Path runtimeManifestPath)
@@ -355,6 +241,224 @@ public class PrepareServerMojo extends AbstractMojo
                 "Configured 'lightkeeper.extraJvmArgs' contains unresolved Maven placeholder(s): '%s'. "
                     .formatted(normalizedExtraJvmArgs)
                     + "Ensure referenced properties are initialized before 'prepare-server' runs."
+            );
+        }
+    }
+
+    private ExecutionContext buildExecutionContext()
+        throws MojoExecutionException
+    {
+        return new ExecutionContext(
+            normalizeServerType(),
+            Objects.requireNonNull(serverVersion),
+            Objects.requireNonNull(jarCacheDirectoryRoot),
+            Objects.requireNonNull(baseServerCacheDirectoryRoot),
+            Objects.requireNonNull(serverWorkDirectoryRoot),
+            Objects.requireNonNull(runtimeManifestPath),
+            Objects.requireNonNull(agentSocketDirectory),
+            Objects.requireNonNull(userAgent),
+            resolveWorldInputSpecs(),
+            resolvePluginArtifactSpecs()
+        );
+    }
+
+    private void logPreparationStart(ExecutionContext executionContext)
+    {
+        getLog().info(
+            "Preparing server for platform: '%s' with version: '%s'."
+                .formatted(executionContext.normalizedServerType(), executionContext.serverVersion())
+        );
+    }
+
+    private static void createRequiredDirectories(ExecutionContext executionContext)
+        throws MojoExecutionException
+    {
+        FileUtil.createDirectories(executionContext.jarCacheDirectoryRoot(), "jar cache directory root");
+        FileUtil.createDirectories(executionContext.baseServerCacheDirectoryRoot(), "base server cache directory root");
+        FileUtil.createDirectories(executionContext.serverWorkDirectoryRoot(), "server work directory root");
+        FileUtil.createDirectories(executionContext.agentSocketDirectory(), "agent socket directory");
+    }
+
+    private ResolvedServerSetup resolveServerSetup(
+        ExecutionContext executionContext,
+        AgentMetadata agentMetadata,
+        String agentAuthToken,
+        String runtimeProtocolVersion)
+        throws MojoExecutionException
+    {
+        final PaperDownloadsClient paperDownloadsClient =
+            new PaperDownloadsClient(getLog(), executionContext.userAgent());
+
+        return switch (executionContext.normalizedServerType())
+        {
+            case SERVER_TYPE_PAPER -> resolvePaperServerSetup(
+                executionContext,
+                agentMetadata,
+                agentAuthToken,
+                runtimeProtocolVersion,
+                paperDownloadsClient
+            );
+            case SERVER_TYPE_SPIGOT -> resolveSpigotServerSetup(
+                executionContext,
+                agentMetadata,
+                agentAuthToken,
+                runtimeProtocolVersion,
+                paperDownloadsClient
+            );
+            default -> throw new MojoExecutionException(
+                "Unsupported server type '%s'. Supported types: %s"
+                    .formatted(executionContext.normalizedServerType(), SUPPORTED_SERVER_TYPES)
+            );
+        };
+    }
+
+    private ResolvedServerSetup resolvePaperServerSetup(
+        ExecutionContext executionContext,
+        AgentMetadata agentMetadata,
+        String agentAuthToken,
+        String runtimeProtocolVersion,
+        PaperDownloadsClient paperDownloadsClient)
+        throws MojoExecutionException
+    {
+        final PaperBuildMetadata paperBuildMetadata = paperDownloadsClient.resolveBuild(executionContext.serverVersion());
+        final String cacheKey = CacheKeyUtil.createPaperCacheKey(
+            paperBuildMetadata.minecraftVersion(),
+            paperBuildMetadata.sha256()
+        );
+        final ServerSpecification serverSpecification = createServerSpecification(
+            paperBuildMetadata.minecraftVersion(),
+            executionContext.jarCacheDirectoryRoot(),
+            executionContext.baseServerCacheDirectoryRoot(),
+            executionContext.serverWorkDirectoryRoot(),
+            executionContext.runtimeManifestPath(),
+            executionContext.agentSocketDirectory(),
+            cacheKey,
+            executionContext.userAgent(),
+            agentMetadata,
+            agentAuthToken,
+            runtimeProtocolVersion
+        );
+        return new ResolvedServerSetup(
+            new PaperServerProvider(getLog(), serverSpecification, paperBuildMetadata),
+            paperBuildMetadata.minecraftVersion(),
+            paperBuildMetadata.buildId(),
+            cacheKey,
+            serverSpecification.memoryMb()
+        );
+    }
+
+    private ResolvedServerSetup resolveSpigotServerSetup(
+        ExecutionContext executionContext,
+        AgentMetadata agentMetadata,
+        String agentAuthToken,
+        String runtimeProtocolVersion,
+        PaperDownloadsClient paperDownloadsClient)
+        throws MojoExecutionException
+    {
+        final SpigotBuildMetadata spigotBuildMetadata =
+            new SpigotDownloadsClient(getLog(), paperDownloadsClient, executionContext.userAgent())
+                .resolveBuild(executionContext.serverVersion());
+        final String cacheKey = CacheKeyUtil.createSpigotCacheKey(
+            spigotBuildMetadata.minecraftVersion(),
+            spigotBuildMetadata.buildToolsIdentity(),
+            System.getProperty("java.specification.version"),
+            System.getProperty("os.name"),
+            System.getProperty("os.arch")
+        );
+        final ServerSpecification serverSpecification = createServerSpecification(
+            spigotBuildMetadata.minecraftVersion(),
+            executionContext.jarCacheDirectoryRoot(),
+            executionContext.baseServerCacheDirectoryRoot(),
+            executionContext.serverWorkDirectoryRoot(),
+            executionContext.runtimeManifestPath(),
+            executionContext.agentSocketDirectory(),
+            cacheKey,
+            executionContext.userAgent(),
+            agentMetadata,
+            agentAuthToken,
+            runtimeProtocolVersion
+        );
+        return new ResolvedServerSetup(
+            new SpigotServerProvider(getLog(), serverSpecification, spigotBuildMetadata),
+            spigotBuildMetadata.minecraftVersion(),
+            0L,
+            cacheKey,
+            serverSpecification.memoryMb()
+        );
+    }
+
+    private void installServerAssets(
+        Path targetServerDirectory,
+        ExecutionContext executionContext,
+        List<PluginArtifactSpec> pluginArtifactSpecs)
+        throws MojoExecutionException
+    {
+        ServerAssetInstaller.installWorlds(targetServerDirectory, executionContext.worldInputSpecs(), getLog());
+        ServerAssetInstaller.installPluginArtifacts(
+            targetServerDirectory,
+            resolvePluginArtifacts(pluginArtifactSpecs),
+            getLog()
+        );
+        if (configOverlayPath != null)
+            ServerAssetInstaller.applyConfigOverlay(configOverlayPath, targetServerDirectory, getLog());
+    }
+
+    private RuntimeManifest createRuntimeManifest(
+        String normalizedServerType,
+        String resolvedManifestServerVersion,
+        long resolvedManifestBuildId,
+        String resolvedCacheKey,
+        Path targetServerDirectory,
+        ServerProvider serverProvider,
+        int resolvedMemoryMb,
+        Path udsSocketPath,
+        String agentAuthToken,
+        AgentMetadata agentMetadata,
+        String runtimeProtocolVersion,
+        List<WorldInputSpec> worldInputSpecs)
+    {
+        final List<RuntimeManifest.PreloadedWorld> preloadedWorlds = worldInputSpecs.stream()
+            .filter(WorldInputSpec::loadOnStartup)
+            .map(worldInput -> new RuntimeManifest.PreloadedWorld(
+                worldInput.name(),
+                worldInput.environment(),
+                worldInput.worldType(),
+                worldInput.seed()
+            ))
+            .toList();
+
+        return new RuntimeManifest(
+            normalizedServerType,
+            resolvedManifestServerVersion,
+            resolvedManifestBuildId,
+            resolvedCacheKey,
+            targetServerDirectory.toAbsolutePath().toString(),
+            serverProvider.targetJarFilePath().toAbsolutePath().toString(),
+            resolvedMemoryMb,
+            udsSocketPath.toAbsolutePath().toString(),
+            agentAuthToken,
+            agentJarPath != null ? agentJarPath.toAbsolutePath().toString() : null,
+            agentMetadata.sha256(),
+            runtimeProtocolVersion,
+            agentMetadata.cacheIdentity(),
+            normalizeOptionalString(extraJvmArgs),
+            preloadedWorlds
+        );
+    }
+
+    private static void writeRuntimeManifest(RuntimeManifest runtimeManifest, Path runtimeManifestPathValue)
+        throws MojoExecutionException
+    {
+        try
+        {
+            ensureRuntimeManifestParentDirectoryExists(runtimeManifestPathValue);
+            new RuntimeManifestWriter().write(runtimeManifest, runtimeManifestPathValue);
+        }
+        catch (IOException exception)
+        {
+            throw new MojoExecutionException(
+                "Failed to write runtime manifest to '%s'.".formatted(runtimeManifestPathValue),
+                exception
             );
         }
     }
@@ -830,6 +934,31 @@ public class PrepareServerMojo extends AbstractMojo
     }
 
     private record AgentMetadata(@Nullable String sha256, String cacheIdentity)
+    {
+    }
+
+    private record ExecutionContext(
+        String normalizedServerType,
+        String serverVersion,
+        Path jarCacheDirectoryRoot,
+        Path baseServerCacheDirectoryRoot,
+        Path serverWorkDirectoryRoot,
+        Path runtimeManifestPath,
+        Path agentSocketDirectory,
+        String userAgent,
+        List<WorldInputSpec> worldInputSpecs,
+        List<PluginArtifactSpec> pluginArtifactSpecs
+    )
+    {
+    }
+
+    private record ResolvedServerSetup(
+        ServerProvider serverProvider,
+        String manifestServerVersion,
+        long manifestBuildId,
+        String cacheKey,
+        int memoryMb
+    )
     {
     }
 

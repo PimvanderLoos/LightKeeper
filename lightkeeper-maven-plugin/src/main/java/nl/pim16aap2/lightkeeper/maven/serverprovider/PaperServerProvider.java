@@ -10,11 +10,8 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Locale;
-import java.util.stream.Stream;
 
 @ToString(callSuper = true)
 public class PaperServerProvider extends ServerProvider
@@ -107,67 +104,5 @@ public class PaperServerProvider extends ServerProvider
             serverSpecification().extraJvmArgs(),
             serverSpecification().memoryMb()
         );
-    }
-
-    private void cleanTransientFilesForRetry()
-        throws MojoExecutionException
-    {
-        try (Stream<Path> fileStream = Files.walk(baseServerDirectory()))
-        {
-            fileStream
-                .filter(Files::isRegularFile)
-                .filter(this::isTransientRetryFile)
-                .forEach(this::deleteRetryFile);
-        }
-        catch (UncheckedIOException exception)
-        {
-            throw new MojoExecutionException(
-                "Failed to delete transient retry file in '%s'."
-                    .formatted(baseServerDirectory()),
-                exception
-            );
-        }
-        catch (IOException exception)
-        {
-            throw new MojoExecutionException(
-                "Failed to clean transient files in base server directory '%s' before retry."
-                    .formatted(baseServerDirectory()),
-                exception
-            );
-        }
-    }
-
-    private boolean isTransientRetryFile(Path path)
-    {
-        final String fileName = path.getFileName() == null
-            ? path.toString()
-            : path.getFileName().toString();
-        final String lowerCaseName = fileName.toLowerCase(Locale.ROOT);
-
-        if (lowerCaseName.equals("session.lock"))
-            return true;
-
-        if (lowerCaseName.endsWith(".lock") || lowerCaseName.endsWith(".lck"))
-            return true;
-
-        if (lowerCaseName.endsWith(".pid") || lowerCaseName.endsWith(".sock"))
-            return true;
-
-        return lowerCaseName.startsWith("hs_err_pid") && lowerCaseName.endsWith(".log");
-    }
-
-    private void deleteRetryFile(Path path)
-    {
-        try
-        {
-            Files.deleteIfExists(path);
-        }
-        catch (IOException exception)
-        {
-            throw new UncheckedIOException(
-                "Failed to delete transient retry file '%s'.".formatted(path),
-                exception
-            );
-        }
     }
 }
