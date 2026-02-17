@@ -10,10 +10,13 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ServerProviderTest
 {
@@ -220,6 +223,82 @@ class ServerProviderTest
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> provider.downloadFileForTests(source, target))
             .isInstanceOf(MojoExecutionException.class)
             .hasMessageContaining("Failed to download file");
+    }
+
+    @Test
+    void acceptEula_shouldThrowExceptionWhenFileAlreadyExists(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final TestServerProvider provider = createProvider(tempDirectory);
+        Files.createDirectories(provider.baseServerDirectoryForTests());
+        Files.writeString(provider.baseServerDirectoryForTests().resolve("eula.txt"), "eula=true");
+
+        // execute + verify
+        assertThatThrownBy(provider::acceptEulaForTests)
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("Failed to create EULA");
+    }
+
+    @Test
+    void writeServerProperties_shouldThrowExceptionWhenFileAlreadyExists(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final TestServerProvider provider = createProvider(tempDirectory);
+        Files.createDirectories(provider.baseServerDirectoryForTests());
+        Files.writeString(provider.baseServerDirectoryForTests().resolve("server.properties"), "a=b");
+
+        // execute + verify
+        assertThatThrownBy(() -> provider.writeServerPropertiesForTests("motd=test"))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("Failed to write server properties");
+    }
+
+    @Test
+    void shouldBeRecreated_shouldReturnFalseWhenFileIsFresh(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final TestServerProvider provider = createProvider(tempDirectory);
+        final Path file = Files.writeString(tempDirectory.resolve("fresh.txt"), "fresh");
+
+        // execute
+        final boolean shouldRecreate = provider.shouldBeRecreatedForTests(false, 7, file);
+
+        // verify
+        assertThat(shouldRecreate).isFalse();
+    }
+
+    @Test
+    void shouldBeRecreated_shouldReturnTrueWhenForceRecreateIsEnabled(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final TestServerProvider provider = createProvider(tempDirectory);
+        final Path file = Files.writeString(tempDirectory.resolve("existing.txt"), "content");
+
+        // execute
+        final boolean shouldRecreate = provider.shouldBeRecreatedForTests(true, 7, file);
+
+        // verify
+        assertThat(shouldRecreate).isTrue();
+    }
+
+    @Test
+    void shouldBeRecreated_shouldReturnTrueWhenFileIsExpired(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final TestServerProvider provider = createProvider(tempDirectory);
+        final Path file = Files.writeString(tempDirectory.resolve("old.txt"), "content");
+        Files.setLastModifiedTime(file, FileTime.from(Instant.now().minusSeconds(20L * 24L * 60L * 60L)));
+
+        // execute
+        final boolean shouldRecreate = provider.shouldBeRecreatedForTests(false, 7, file);
+
+        // verify
+        assertThat(shouldRecreate).isTrue();
     }
 
     private static TestServerProvider createProvider(Path tempDirectory)

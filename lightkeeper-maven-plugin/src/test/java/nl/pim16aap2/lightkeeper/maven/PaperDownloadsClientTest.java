@@ -294,6 +294,41 @@ class PaperDownloadsClientTest
     }
 
     @Test
+    void resolveBuild_shouldThrowExceptionWhenProjectPayloadIsMalformed()
+        throws Exception
+    {
+        // setup
+        final URI projectUri = URI.create("https://fill.papermc.io/v3/projects/paper");
+        final PaperDownloadsClient client = createClient(Map.of(
+            projectUri,
+            "{\"versions\":123}"
+        ));
+
+        // execute + verify
+        assertThatThrownBy(() -> client.resolveBuild("latest-supported"))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("Failed to parse project metadata");
+    }
+
+    @Test
+    void resolveBuild_shouldRestoreInterruptStatusWhenHttpClientIsInterrupted()
+        throws Exception
+    {
+        // setup
+        final HttpClient httpClient = mock(HttpClient.class);
+        when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+            .thenThrow(new InterruptedException("interrupted"));
+        final PaperDownloadsClient client = createClient(httpClient);
+
+        // execute + verify
+        assertThatThrownBy(() -> client.resolveBuild("1.21.11"))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("Failed to query Fill API");
+        assertThat(Thread.currentThread().isInterrupted()).isTrue();
+        Thread.interrupted();
+    }
+
+    @Test
     void constructor_shouldThrowExceptionWhenUserAgentIsBlank()
     {
         // execute + verify

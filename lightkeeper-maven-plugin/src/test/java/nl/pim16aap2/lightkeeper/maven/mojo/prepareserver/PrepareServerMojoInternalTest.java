@@ -869,6 +869,36 @@ class PrepareServerMojoInternalTest
             .hasMessageContaining("RepositorySystem");
     }
 
+    @Test
+    void createPaperDownloadsClient_shouldCreateClientInstance()
+    {
+        // setup
+        final PrepareServerMojo mojo = new PrepareServerMojo();
+
+        // execute
+        final PaperDownloadsClient client = mojo.createPaperDownloadsClient("LightKeeper/Test");
+
+        // verify
+        assertThat(client).isNotNull();
+    }
+
+    @Test
+    void createSpigotDownloadsClient_shouldCreateClientInstance()
+    {
+        // setup
+        final PrepareServerMojo mojo = new PrepareServerMojo();
+        final PaperDownloadsClient paperDownloadsClient = mock();
+
+        // execute
+        final SpigotDownloadsClient client = mojo.createSpigotDownloadsClient(
+            paperDownloadsClient,
+            "LightKeeper/Test"
+        );
+
+        // verify
+        assertThat(client).isNotNull();
+    }
+
     @SuppressWarnings("unchecked")
     private static <T> T invokePrivate(
         Object target,

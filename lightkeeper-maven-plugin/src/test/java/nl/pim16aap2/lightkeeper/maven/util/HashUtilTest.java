@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class HashUtilTest
 {
@@ -43,5 +44,17 @@ class HashUtilTest
             // verify
             assertThat(hash).isEqualTo("9b3d2892049c9ae3cba25acaeeee01826f36da04369416ea94ea026ae1a58e2b");
         }
+    }
+
+    @Test
+    void sha256_shouldThrowExceptionWhenFileDoesNotExist()
+    {
+        // setup
+        final Path missingFile = Path.of("does-not-exist.txt");
+
+        // execute + verify
+        assertThatThrownBy(() -> HashUtil.sha256(missingFile))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("Failed to compute SHA-256");
     }
 }

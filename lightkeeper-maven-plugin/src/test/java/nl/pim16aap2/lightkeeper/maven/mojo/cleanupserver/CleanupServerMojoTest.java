@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class CleanupServerMojoTest
 {
@@ -164,6 +165,44 @@ class CleanupServerMojoTest
 
         // verify
         assertThat(serverDirectory).isDirectory();
+    }
+
+    @Test
+    void execute_shouldKeepServerDirectoryWhenSummaryFileIsMissing(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path serverDirectory = tempDirectory.resolve("lightkeeper-server");
+        Files.createDirectories(serverDirectory);
+        final CleanupServerMojo cleanupServerMojo = new CleanupServerMojo();
+        setField(cleanupServerMojo, "deleteTargetServerOnSuccess", true);
+        setField(cleanupServerMojo, "serverWorkDirectoryRoot", serverDirectory);
+        setField(cleanupServerMojo, "failsafeSummaryPath", tempDirectory.resolve("missing-summary.xml"));
+
+        // execute
+        cleanupServerMojo.execute();
+
+        // verify
+        assertThat(serverDirectory).isDirectory();
+    }
+
+    @Test
+    void execute_shouldThrowExceptionWhenSummaryIsMalformed(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path serverDirectory = tempDirectory.resolve("lightkeeper-server");
+        Files.createDirectories(serverDirectory);
+        final Path summaryPath = tempDirectory.resolve("failsafe-summary.xml");
+        Files.writeString(summaryPath, "<failsafe-summary>");
+        final CleanupServerMojo cleanupServerMojo = new CleanupServerMojo();
+        setField(cleanupServerMojo, "deleteTargetServerOnSuccess", true);
+        setField(cleanupServerMojo, "serverWorkDirectoryRoot", serverDirectory);
+        setField(cleanupServerMojo, "failsafeSummaryPath", summaryPath);
+
+        // execute + verify
+        assertThatThrownBy(cleanupServerMojo::execute)
+            .hasMessageContaining("Failed to read failsafe summary");
     }
 
     private static void setField(Object instance, String fieldName, Object value)

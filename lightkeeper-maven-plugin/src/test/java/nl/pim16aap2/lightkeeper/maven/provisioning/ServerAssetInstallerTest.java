@@ -349,6 +349,81 @@ class ServerAssetInstallerTest
     }
 
     @Test
+    void installPluginArtifacts_shouldThrowExceptionWhenOutputNameHasWrongExtension(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path targetServerDirectory = tempDirectory.resolve("server");
+        final Path pluginJar = tempDirectory.resolve("plugin.jar");
+        Files.writeString(pluginJar, "plugin");
+        final ResolvedPluginArtifact resolvedPluginArtifact = new ResolvedPluginArtifact(
+            pluginJar,
+            "plugin.zip",
+            "path:plugin"
+        );
+
+        // execute + verify
+        assertThatThrownBy(() -> ServerAssetInstaller.installPluginArtifacts(
+            targetServerDirectory,
+            List.of(resolvedPluginArtifact),
+            new SystemStreamLog()
+        ))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("must end with .jar");
+    }
+
+    @Test
+    void installPluginArtifacts_shouldThrowExceptionWhenOutputNameIsBlank(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path targetServerDirectory = tempDirectory.resolve("server");
+        final Path pluginJar = tempDirectory.resolve("plugin.jar");
+        Files.writeString(pluginJar, "plugin");
+        final ResolvedPluginArtifact resolvedPluginArtifact = new ResolvedPluginArtifact(
+            pluginJar,
+            "   ",
+            "path:plugin"
+        );
+
+        // execute + verify
+        assertThatThrownBy(() -> ServerAssetInstaller.installPluginArtifacts(
+            targetServerDirectory,
+            List.of(resolvedPluginArtifact),
+            new SystemStreamLog()
+        ))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("may not be blank");
+    }
+
+    @Test
+    void installPluginArtifacts_shouldThrowExceptionWhenTargetFileAlreadyExists(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path targetServerDirectory = tempDirectory.resolve("server");
+        final Path pluginsDirectory = targetServerDirectory.resolve("plugins");
+        Files.createDirectories(pluginsDirectory);
+        Files.writeString(pluginsDirectory.resolve("already.jar"), "old");
+        final Path pluginJar = tempDirectory.resolve("plugin.jar");
+        Files.writeString(pluginJar, "new");
+        final ResolvedPluginArtifact resolvedPluginArtifact = new ResolvedPluginArtifact(
+            pluginJar,
+            "already.jar",
+            "path:plugin"
+        );
+
+        // execute + verify
+        assertThatThrownBy(() -> ServerAssetInstaller.installPluginArtifacts(
+            targetServerDirectory,
+            List.of(resolvedPluginArtifact),
+            new SystemStreamLog()
+        ))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("already exists");
+    }
+
+    @Test
     void installWorlds_shouldThrowExceptionWhenFolderSourceIsNotDirectory(@TempDir Path tempDirectory)
         throws Exception
     {

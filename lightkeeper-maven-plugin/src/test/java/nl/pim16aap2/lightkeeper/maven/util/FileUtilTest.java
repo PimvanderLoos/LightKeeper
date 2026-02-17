@@ -307,4 +307,37 @@ class FileUtilTest
         // verify
         assertThat(age).isGreaterThanOrEqualTo(0L);
     }
+
+    @Test
+    void copyDirectoryRecursively_shouldCopyOnDefaultFilesystem(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path source = tempDirectory.resolve("source");
+        final Path target = tempDirectory.resolve("target");
+        Files.createDirectories(source.resolve("nested"));
+        Files.writeString(source.resolve("nested/file.txt"), "content");
+
+        // execute
+        FileUtil.copyDirectoryRecursively(source, target);
+
+        // verify
+        assertThat(target.resolve("nested/file.txt")).isRegularFile().hasContent("content");
+    }
+
+    @Test
+    void deleteRecursively_shouldDeleteDirectoryOnDefaultFilesystem(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path directory = tempDirectory.resolve("delete-me");
+        Files.createDirectories(directory.resolve("nested"));
+        Files.writeString(directory.resolve("nested/file.txt"), "content");
+
+        // execute
+        FileUtil.deleteRecursively(directory, "delete test");
+
+        // verify
+        assertThat(directory).doesNotExist();
+    }
 }
