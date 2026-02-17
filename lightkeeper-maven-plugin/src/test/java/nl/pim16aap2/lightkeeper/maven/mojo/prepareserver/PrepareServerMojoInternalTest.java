@@ -1,8 +1,12 @@
-package nl.pim16aap2.lightkeeper.maven;
+package nl.pim16aap2.lightkeeper.maven.mojo.prepareserver;
 
 import nl.pim16aap2.lightkeeper.maven.provisioning.PluginArtifactSpec;
 import nl.pim16aap2.lightkeeper.maven.provisioning.ResolvedPluginArtifact;
 import nl.pim16aap2.lightkeeper.maven.provisioning.WorldInputSpec;
+import nl.pim16aap2.lightkeeper.maven.PaperBuildMetadata;
+import nl.pim16aap2.lightkeeper.maven.PaperDownloadsClient;
+import nl.pim16aap2.lightkeeper.maven.SpigotBuildMetadata;
+import nl.pim16aap2.lightkeeper.maven.SpigotDownloadsClient;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.PaperServerProvider;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.ServerProvider;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.SpigotServerProvider;

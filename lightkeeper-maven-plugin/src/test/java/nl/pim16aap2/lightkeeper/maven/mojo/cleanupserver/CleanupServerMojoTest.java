@@ -1,4 +1,4 @@
-package nl.pim16aap2.lightkeeper.maven;
+package nl.pim16aap2.lightkeeper.maven.mojo.cleanupserver;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;

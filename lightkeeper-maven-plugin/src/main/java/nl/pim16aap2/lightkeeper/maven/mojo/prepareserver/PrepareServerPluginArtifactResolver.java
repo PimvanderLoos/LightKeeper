@@ -1,4 +1,4 @@
-package nl.pim16aap2.lightkeeper.maven;
+package nl.pim16aap2.lightkeeper.maven.mojo.prepareserver;
 
 import nl.pim16aap2.lightkeeper.maven.provisioning.PluginArtifactSpec;
 import nl.pim16aap2.lightkeeper.maven.provisioning.ResolvedPluginArtifact;

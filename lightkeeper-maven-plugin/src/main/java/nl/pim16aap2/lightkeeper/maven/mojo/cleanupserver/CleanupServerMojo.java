@@ -1,4 +1,4 @@
-package nl.pim16aap2.lightkeeper.maven;
+package nl.pim16aap2.lightkeeper.maven.mojo.cleanupserver;
 
 import nl.pim16aap2.lightkeeper.maven.util.FileUtil;
 import org.apache.maven.plugin.AbstractMojo;
