@@ -3,6 +3,9 @@ package nl.pim16aap2.lightkeeper.maven;
 import nl.pim16aap2.lightkeeper.maven.provisioning.PluginArtifactSpec;
 import nl.pim16aap2.lightkeeper.maven.provisioning.ResolvedPluginArtifact;
 import nl.pim16aap2.lightkeeper.maven.provisioning.WorldInputSpec;
+import nl.pim16aap2.lightkeeper.maven.serverprovider.ServerProvider;
+import nl.pim16aap2.lightkeeper.maven.serverprovider.PaperServerProvider;
+import nl.pim16aap2.lightkeeper.maven.serverprovider.SpigotServerProvider;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
@@ -14,26 +17,132 @@ import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.DependencyRequest;
 import org.eclipse.aether.resolution.DependencyResolutionException;
 import org.eclipse.aether.resolution.DependencyResult;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 class PrepareServerMojoInternalTest
 {
+    @Test
+    void resolveServerSetup_shouldResolvePaperBranchUsingInjectedClient(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final PaperDownloadsClient paperDownloadsClient = mock(PaperDownloadsClient.class);
+        final PaperBuildMetadata paperBuildMetadata = new PaperBuildMetadata(
+            "1.21.11",
+            116L,
+            URI.create("https://example.com/paper.jar"),
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        );
+        when(paperDownloadsClient.resolveBuild("latest-supported")).thenReturn(paperBuildMetadata);
+
+        final TestPrepareServerMojo mojo = new TestPrepareServerMojo(
+            paperDownloadsClient,
+            mock(SpigotDownloadsClient.class)
+        );
+        configureRequiredFields(mojo, tempDirectory, "paper");
+
+        final Object context = invokePrivate(mojo, "buildExecutionContext", new Class<?>[0]);
+        final Object agentMetadata = invokePrivate(
+            mojo,
+            "resolveAgentMetadata",
+            new Class<?>[]{Path.class},
+            new Object[]{null}
+        );
+
+        // execute
+        final Object setup = invokePrivate(
+            mojo,
+            "resolveServerSetup",
+            new Class<?>[]{context.getClass(), agentMetadata.getClass(), String.class, String.class},
+            context,
+            agentMetadata,
+            "auth-token",
+            "v1.1"
+        );
+
+        // verify
+        assertThat((String) invokeRecordAccessor(setup, "manifestServerVersion")).isEqualTo("1.21.11");
+        assertThat((Long) invokeRecordAccessor(setup, "manifestBuildId")).isEqualTo(116L);
+        assertThat((String) invokeRecordAccessor(setup, "cacheKey")).isNotBlank();
+        assertThat((Object) invokeRecordAccessor(setup, "serverProvider")).isInstanceOf(PaperServerProvider.class);
+    }
+
+    @Test
+    void resolveServerSetup_shouldResolveSpigotBranchUsingInjectedClient(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final PaperDownloadsClient paperDownloadsClient = mock(PaperDownloadsClient.class);
+        final SpigotDownloadsClient spigotDownloadsClient = mock(SpigotDownloadsClient.class);
+        final SpigotBuildMetadata spigotBuildMetadata = new SpigotBuildMetadata(
+            "1.21.11",
+            URI.create("https://example.com/buildtools.jar"),
+            "buildtools-id"
+        );
+        when(spigotDownloadsClient.resolveBuild("latest-supported")).thenReturn(spigotBuildMetadata);
+
+        final TestPrepareServerMojo mojo = new TestPrepareServerMojo(paperDownloadsClient, spigotDownloadsClient);
+        configureRequiredFields(mojo, tempDirectory, "spigot");
+
+        final Object context = invokePrivate(mojo, "buildExecutionContext", new Class<?>[0]);
+        final Object agentMetadata = invokePrivate(
+            mojo,
+            "resolveAgentMetadata",
+            new Class<?>[]{Path.class},
+            new Object[]{null}
+        );
+
+        // execute
+        final Object setup = invokePrivate(
+            mojo,
+            "resolveServerSetup",
+            new Class<?>[]{context.getClass(), agentMetadata.getClass(), String.class, String.class},
+            context,
+            agentMetadata,
+            "auth-token",
+            "v1.1"
+        );
+
+        // verify
+        assertThat((String) invokeRecordAccessor(setup, "manifestServerVersion")).isEqualTo("1.21.11");
+        assertThat((Long) invokeRecordAccessor(setup, "manifestBuildId")).isEqualTo(0L);
+        assertThat((String) invokeRecordAccessor(setup, "cacheKey")).isNotBlank();
+        assertThat((Object) invokeRecordAccessor(setup, "serverProvider")).isInstanceOf(SpigotServerProvider.class);
+    }
+
+    @Test
+    void buildExecutionContext_shouldResolveConfiguredFieldsAndSpecs(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final PrepareServerMojo mojo = new PrepareServerMojo();
+        configureRequiredFields(mojo, tempDirectory, "paper");
+
+        // execute
+        final Object context = invokePrivate(mojo, "buildExecutionContext", new Class<?>[0]);
+
+        // verify
+        assertThat((String) invokeRecordAccessor(context, "normalizedServerType")).isEqualTo("paper");
+        assertThat((String) invokeRecordAccessor(context, "serverVersion")).isEqualTo("latest-supported");
+        assertThat((String) invokeRecordAccessor(context, "userAgent")).isEqualTo("LightKeeper/Test");
+        assertThat((List<?>) invokeRecordAccessor(context, "worldInputSpecs")).isEmpty();
+        assertThat((List<?>) invokeRecordAccessor(context, "pluginArtifactSpecs")).isEmpty();
+    }
+
     @Test
     void validateConfiguration_shouldAcceptValidConfiguration()
         throws Exception
@@ -476,7 +585,6 @@ class PrepareServerMojoInternalTest
 
     @Test
     void resolveAgentMetadata_shouldThrowExceptionWhenJarDoesNotExist(@TempDir Path tempDirectory)
-        throws Exception
     {
         // setup
         final PrepareServerMojo mojo = new PrepareServerMojo();
@@ -500,8 +608,7 @@ class PrepareServerMojoInternalTest
         // setup
         final PrepareServerMojo mojo = new PrepareServerMojo();
         final StringBuilder longNameBuilder = new StringBuilder();
-        for (int idx = 0; idx < 200; ++idx)
-            longNameBuilder.append("very-long-segment-");
+        longNameBuilder.repeat("very-long-segment-", 200);
         final Path veryLongDirectory = tempDirectory.resolve(longNameBuilder.toString());
 
         // execute
@@ -559,16 +666,214 @@ class PrepareServerMojoInternalTest
             .hasMessageContaining("Unsupported server type");
     }
 
+    @Test
+    void execute_shouldPrepareServerAndWriteRuntimeManifestUsingResolvedSetup(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final TestPrepareServerMojo mojo = new TestPrepareServerMojo(
+            mock(PaperDownloadsClient.class),
+            mock(SpigotDownloadsClient.class)
+        );
+        configureRequiredFields(mojo, tempDirectory, "paper");
+
+        final Path targetServerDirectory = tempDirectory.resolve("prepared-server");
+        final Path targetJarPath = targetServerDirectory.resolve("paper-1.21.11.jar");
+        final ServerProvider serverProvider = mock(ServerProvider.class);
+        when(serverProvider.targetServerDirectoryPath()).thenReturn(targetServerDirectory);
+        when(serverProvider.targetJarFilePath()).thenReturn(targetJarPath);
+
+        mojo.setResolvedServerSetupForTests(
+            new PrepareServerMojo.ResolvedServerSetup(
+                serverProvider,
+                "1.21.11",
+                116L,
+                "paper-cache-key",
+                768
+            )
+        );
+        mojo.setResolvedAgentMetadataForTests(new PrepareServerMojo.AgentMetadata("abc123", "agent-cache-id"));
+        mojo.setResolvedSocketPathForTests(tempDirectory.resolve("sockets/lk-test.sock"));
+
+        // execute
+        mojo.execute();
+
+        // verify
+        verify(serverProvider).prepareServer();
+        assertThat(mojo.installServerAssetsCalled()).isTrue();
+        assertThat(mojo.installServerAssetsTargetDirectory()).isEqualTo(targetServerDirectory);
+        assertThat(mojo.installServerAssetsPluginCount()).isZero();
+
+        final Path runtimeManifestPath = tempDirectory.resolve("runtime-manifest.json");
+        assertThat(runtimeManifestPath).isRegularFile();
+        final String runtimeManifestJson = Files.readString(runtimeManifestPath);
+        assertThat(runtimeManifestJson).contains("\"serverType\":\"paper\"");
+        assertThat(runtimeManifestJson).contains("\"serverVersion\":\"1.21.11\"");
+        assertThat(runtimeManifestJson).contains("\"paperBuildId\":116");
+        assertThat(runtimeManifestJson).contains("\"cacheKey\":\"paper-cache-key\"");
+        assertThat(runtimeManifestJson).contains("\"memoryMb\":768");
+        assertThat(runtimeManifestJson).contains("agent-cache-id");
+    }
+
+    @Test
+    void validateConfiguration_shouldThrowExceptionWhenServerStartAttemptsAreInvalid()
+        throws Exception
+    {
+        // setup
+        final PrepareServerMojo mojo = new PrepareServerMojo();
+        setField(mojo, "serverType", "paper");
+        setField(mojo, "userAgent", "LightKeeper/Test");
+        setField(mojo, "serverStartMaxAttempts", 0);
+        setField(mojo, "jarCacheExpiryDays", 0);
+        setField(mojo, "baseServerCacheExpiryDays", 0);
+
+        // execute + verify
+        assertThatThrownBy(() -> invokePrivate(mojo, "validateConfiguration", new Class<?>[0]))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("serverStartMaxAttempts");
+    }
+
+    @Test
+    void validateConfiguration_shouldThrowExceptionWhenCacheExpiryDaysAreNegative()
+        throws Exception
+    {
+        // setup
+        final PrepareServerMojo mojo = new PrepareServerMojo();
+        setField(mojo, "serverType", "paper");
+        setField(mojo, "userAgent", "LightKeeper/Test");
+        setField(mojo, "serverStartMaxAttempts", 1);
+        setField(mojo, "jarCacheExpiryDays", -1);
+        setField(mojo, "baseServerCacheExpiryDays", 0);
+
+        // execute + verify
+        assertThatThrownBy(() -> invokePrivate(mojo, "validateConfiguration", new Class<?>[0]))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("jarCacheExpiryDays");
+    }
+
+    @Test
+    void validateConfiguration_shouldThrowExceptionWhenExtraJvmArgsContainUnresolvedPlaceholder()
+        throws Exception
+    {
+        // setup
+        final PrepareServerMojo mojo = new PrepareServerMojo();
+        setField(mojo, "serverType", "paper");
+        setField(mojo, "userAgent", "LightKeeper/Test");
+        setField(mojo, "serverStartMaxAttempts", 1);
+        setField(mojo, "jarCacheExpiryDays", 0);
+        setField(mojo, "baseServerCacheExpiryDays", 0);
+        setField(mojo, "extraJvmArgs", "-Dfoo=${project.version}");
+
+        // execute + verify
+        assertThatThrownBy(() -> invokePrivate(mojo, "validateConfiguration", new Class<?>[0]))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("unresolved Maven placeholder");
+    }
+
+    @Test
+    void resolveWorldInputSpecs_shouldThrowExceptionWhenWorldEntryIsNull()
+        throws Exception
+    {
+        // setup
+        final PrepareServerMojo mojo = new PrepareServerMojo();
+        setField(mojo, "worlds", java.util.Arrays.asList((PrepareServerMojo.WorldInputConfig) null));
+
+        // execute + verify
+        assertThatThrownBy(() -> invokePrivate(mojo, "resolveWorldInputSpecs", new Class<?>[0]))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("world entry may not be null");
+    }
+
+    @Test
+    void resolveWorldInputSpecs_shouldThrowExceptionWhenSourceTypeIsUnsupported(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final PrepareServerMojo.WorldInputConfig config = new PrepareServerMojo.WorldInputConfig();
+        setField(config, "name", "world");
+        setField(config, "sourceType", "bogus");
+        setField(config, "sourcePath", Files.createDirectories(tempDirectory.resolve("world")));
+
+        final PrepareServerMojo mojo = new PrepareServerMojo();
+        setField(mojo, "worlds", List.of(config));
+
+        // execute + verify
+        assertThatThrownBy(() -> invokePrivate(mojo, "resolveWorldInputSpecs", new Class<?>[0]))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("Unsupported world sourceType");
+    }
+
+    @Test
+    void resolvePluginArtifactSpecs_shouldThrowExceptionWhenPluginEntryIsNull()
+        throws Exception
+    {
+        // setup
+        final PrepareServerMojo mojo = new PrepareServerMojo();
+        setField(mojo, "plugins", java.util.Arrays.asList((PrepareServerMojo.PluginArtifactConfig) null));
+
+        // execute + verify
+        assertThatThrownBy(() -> invokePrivate(mojo, "resolvePluginArtifactSpecs", new Class<?>[0]))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("plugin entry may not be null");
+    }
+
+    @Test
+    void resolvePluginArtifactSpecs_shouldThrowExceptionWhenRenameToIsInvalid(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path localPluginJar = Files.writeString(tempDirectory.resolve("local-plugin.jar"), "plugin");
+        final PrepareServerMojo.PluginArtifactConfig config = new PrepareServerMojo.PluginArtifactConfig();
+        setField(config, "sourceType", "path");
+        setField(config, "path", localPluginJar);
+        setField(config, "renameTo", "folder/invalid.jar");
+
+        final PrepareServerMojo mojo = new PrepareServerMojo();
+        setField(mojo, "plugins", List.of(config));
+
+        // execute + verify
+        assertThatThrownBy(() -> invokePrivate(mojo, "resolvePluginArtifactSpecs", new Class<?>[0]))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("may not contain path separators");
+    }
+
+    @Test
+    void resolvePluginArtifacts_shouldThrowExceptionWhenRepositorySystemIsMissing()
+    {
+        // setup
+        final PluginArtifactSpec spec = new PluginArtifactSpec(
+            PluginArtifactSpec.SourceType.MAVEN,
+            null,
+            "com.example",
+            "plugin",
+            "1.0.0",
+            null,
+            "jar",
+            false,
+            null
+        );
+        final PrepareServerMojo mojo = new PrepareServerMojo();
+
+        // execute + verify
+        assertThatThrownBy(() -> invokePrivate(
+            mojo,
+            "resolvePluginArtifacts",
+            new Class<?>[]{List.class},
+            List.of(spec)
+        ))
+            .isInstanceOf(NullPointerException.class)
+            .hasMessageContaining("RepositorySystem");
+    }
+
     @SuppressWarnings("unchecked")
     private static <T> T invokePrivate(
         Object target,
         String methodName,
         Class<?>[] parameterTypes,
-        Object... arguments)
+        Object @Nullable ... arguments)
         throws Exception
     {
-        final Method method = target.getClass().getDeclaredMethod(methodName, parameterTypes);
-        method.setAccessible(true);
+        Method method = getMethod(target, methodName, parameterTypes);
         try
         {
             return (T) method.invoke(target, arguments);
@@ -584,8 +889,33 @@ class PrepareServerMojoInternalTest
         }
     }
 
+    private static Method getMethod(Object target, String methodName, Class<?>[] parameterTypes)
+        throws NoSuchMethodException
+    {
+        Method method = null;
+        for (Class<?> type = target.getClass(); type != null; type = type.getSuperclass())
+        {
+            try
+            {
+                method = type.getDeclaredMethod(methodName, parameterTypes);
+                break;
+            }
+            catch (NoSuchMethodException ignored)
+            {
+                // Continue in parent type.
+            }
+        }
+        if (method == null)
+        {
+            throw new NoSuchMethodException("Method '%s' was not found.".formatted(methodName));
+        }
+
+        method.setAccessible(true);
+        return method;
+    }
+
     @SuppressWarnings("unchecked")
-    private static <T> T invokeRecordAccessor(Object target, String methodName)
+    private static <T> @Nullable T invokeRecordAccessor(Object target, String methodName)
         throws Exception
     {
         final Method method = target.getClass().getDeclaredMethod(methodName);
@@ -596,8 +926,145 @@ class PrepareServerMojoInternalTest
     private static void setField(Object target, String fieldName, Object value)
         throws Exception
     {
-        final Field field = target.getClass().getDeclaredField(fieldName);
+        Field field = null;
+        for (Class<?> type = target.getClass(); type != null; type = type.getSuperclass())
+        {
+            try
+            {
+                field = type.getDeclaredField(fieldName);
+                break;
+            }
+            catch (NoSuchFieldException ignored)
+            {
+                // Continue in parent type.
+            }
+        }
+        if (field == null)
+            throw new NoSuchFieldException("Field '%s' was not found.".formatted(fieldName));
         field.setAccessible(true);
         field.set(target, value);
+    }
+
+    private static void configureRequiredFields(PrepareServerMojo mojo, Path tempDirectory, String serverType)
+        throws Exception
+    {
+        setField(mojo, "serverType", serverType);
+        setField(mojo, "serverVersion", "latest-supported");
+        setField(mojo, "jarCacheDirectoryRoot", tempDirectory.resolve("jars"));
+        setField(mojo, "baseServerCacheDirectoryRoot", tempDirectory.resolve("base"));
+        setField(mojo, "serverWorkDirectoryRoot", tempDirectory.resolve("work"));
+        setField(mojo, "runtimeManifestPath", tempDirectory.resolve("runtime-manifest.json"));
+        setField(mojo, "agentSocketDirectory", tempDirectory.resolve("sockets"));
+        setField(mojo, "userAgent", "LightKeeper/Test");
+        setField(mojo, "serverStartMaxAttempts", 1);
+        setField(mojo, "jarCacheExpiryDays", 0);
+        setField(mojo, "baseServerCacheExpiryDays", 0);
+    }
+
+    private static final class TestPrepareServerMojo extends PrepareServerMojo
+    {
+        private final PaperDownloadsClient paperDownloadsClient;
+        private final SpigotDownloadsClient spigotDownloadsClient;
+        private @Nullable ResolvedServerSetup resolvedServerSetup;
+        private @Nullable AgentMetadata resolvedAgentMetadata;
+        private @Nullable Path resolvedSocketPath;
+        private boolean installServerAssetsCalled;
+        private @Nullable Path installServerAssetsTargetDirectory;
+        private int installServerAssetsPluginCount;
+
+        private TestPrepareServerMojo(
+            PaperDownloadsClient paperDownloadsClient,
+            SpigotDownloadsClient spigotDownloadsClient)
+        {
+            this.paperDownloadsClient = paperDownloadsClient;
+            this.spigotDownloadsClient = spigotDownloadsClient;
+        }
+
+        @Override
+        protected PaperDownloadsClient createPaperDownloadsClient(String effectiveUserAgent)
+        {
+            return paperDownloadsClient;
+        }
+
+        @Override
+        protected SpigotDownloadsClient createSpigotDownloadsClient(
+            PaperDownloadsClient injectedPaperDownloadsClient,
+            String effectiveUserAgent)
+        {
+            return spigotDownloadsClient;
+        }
+
+        @Override
+        ResolvedServerSetup resolveServerSetup(
+            ExecutionContext executionContext,
+            AgentMetadata agentMetadata,
+            String agentAuthToken,
+            String runtimeProtocolVersion)
+            throws MojoExecutionException
+        {
+            if (resolvedServerSetup != null)
+                return resolvedServerSetup;
+            return super.resolveServerSetup(executionContext, agentMetadata, agentAuthToken, runtimeProtocolVersion);
+        }
+
+        @Override
+        AgentMetadata resolveAgentMetadata(@Nullable Path path)
+            throws MojoExecutionException
+        {
+            if (resolvedAgentMetadata != null)
+                return resolvedAgentMetadata;
+            return super.resolveAgentMetadata(path);
+        }
+
+        @Override
+        Path resolveUdsSocketPath(Path preferredDirectory, String agentAuthToken)
+            throws MojoExecutionException
+        {
+            if (resolvedSocketPath != null)
+                return resolvedSocketPath;
+            return super.resolveUdsSocketPath(preferredDirectory, agentAuthToken);
+        }
+
+        @Override
+        void installServerAssets(
+            Path targetServerDirectory,
+            ExecutionContext executionContext,
+            List<PluginArtifactSpec> pluginArtifactSpecs)
+            throws MojoExecutionException
+        {
+            installServerAssetsCalled = true;
+            installServerAssetsTargetDirectory = targetServerDirectory;
+            installServerAssetsPluginCount = pluginArtifactSpecs.size();
+        }
+
+        private void setResolvedServerSetupForTests(ResolvedServerSetup resolvedServerSetup)
+        {
+            this.resolvedServerSetup = resolvedServerSetup;
+        }
+
+        private void setResolvedAgentMetadataForTests(AgentMetadata resolvedAgentMetadata)
+        {
+            this.resolvedAgentMetadata = resolvedAgentMetadata;
+        }
+
+        private void setResolvedSocketPathForTests(Path resolvedSocketPath)
+        {
+            this.resolvedSocketPath = resolvedSocketPath;
+        }
+
+        private boolean installServerAssetsCalled()
+        {
+            return installServerAssetsCalled;
+        }
+
+        private @Nullable Path installServerAssetsTargetDirectory()
+        {
+            return installServerAssetsTargetDirectory;
+        }
+
+        private int installServerAssetsPluginCount()
+        {
+            return installServerAssetsPluginCount;
+        }
     }
 }

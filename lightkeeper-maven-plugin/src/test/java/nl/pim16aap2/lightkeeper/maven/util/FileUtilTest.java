@@ -8,6 +8,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.Parameter;
 import org.junit.jupiter.params.ParameterizedClass;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -105,6 +106,69 @@ class FileUtilTest
         }
 
         @Test
+        void copyDirectoryRecursively_shouldThrowExceptionWhenSourceIsNotDirectory()
+            throws IOException
+        {
+            // setup
+            final FileSystem localFileSystem = Objects.requireNonNull(fs, "fs must be initialized.");
+            final Path sourceFile = localFileSystem.getPath("source.txt");
+            final Path target = localFileSystem.getPath("target");
+            Files.writeString(sourceFile, "content");
+
+            // execute + verify
+            assertThatThrownBy(() -> FileUtil.copyDirectoryRecursively(sourceFile, target))
+                .isInstanceOf(MojoExecutionException.class)
+                .hasMessageContaining("is not a directory");
+        }
+
+        @Test
+        void cleanDirectory_shouldThrowExceptionWhenPathCannotConvertToFile()
+            throws Exception
+        {
+            // setup
+            final FileSystem localFileSystem = Objects.requireNonNull(fs, "fs must be initialized.");
+            final Path directory = localFileSystem.getPath("cache");
+            Files.createDirectories(directory.resolve("nested"));
+            Files.writeString(directory.resolve("nested/file.txt"), "content");
+
+            // execute + verify
+            assertThatThrownBy(() -> FileUtil.cleanDirectory(directory, "cache directory"))
+                .isInstanceOf(UnsupportedOperationException.class);
+        }
+
+        @Test
+        void deleteRecursively_shouldDeleteDirectoryTree()
+            throws Exception
+        {
+            // setup
+            final FileSystem localFileSystem = Objects.requireNonNull(fs, "fs must be initialized.");
+            final Path root = localFileSystem.getPath("to-delete");
+            Files.createDirectories(root.resolve("nested"));
+            Files.writeString(root.resolve("nested/file.txt"), "content");
+
+            // execute
+            FileUtil.deleteRecursively(root, "test directory");
+
+            // verify
+            assertThat(root).doesNotExist();
+        }
+
+        @Test
+        void deleteRecursively_shouldIgnoreMissingPath()
+            throws Exception
+        {
+            // setup
+            final FileSystem localFileSystem = Objects.requireNonNull(fs, "fs must be initialized.");
+            final Path missingPath = localFileSystem.getPath("missing");
+
+            // execute
+            FileUtil.deleteRecursively(missingPath, "missing directory");
+
+            // verify
+            assertThat(missingPath).doesNotExist();
+        }
+
+        @Test
         void pruneSiblingDirectoriesOlderThan_shouldDeleteOnlyExpiredSiblings()
             throws Exception
         {
@@ -173,6 +237,22 @@ class FileUtilTest
             assertThat(result.failedDirectories()).isEmpty();
         }
 
+        @Test
+        void pruneSiblingDirectoriesOlderThan_shouldReturnEmptyWhenParentDoesNotExist()
+            throws Exception
+        {
+            // setup
+            final FileSystem localFileSystem = Objects.requireNonNull(fs, "fs must be initialized.");
+            final Path currentDirectory = localFileSystem.getPath("missing-parent", "active");
+
+            // execute
+            final FileUtil.PruneResult result = FileUtil.pruneSiblingDirectoriesOlderThan(currentDirectory, 7);
+
+            // verify
+            assertThat(result.deletedDirectories()).isEmpty();
+            assertThat(result.failedDirectories()).isEmpty();
+        }
+
         static Stream<Configuration> fileSystemConfigurationProvider()
         {
             return Stream.of(
@@ -181,5 +261,50 @@ class FileUtilTest
                 Configuration.osX()
             );
         }
+    }
+
+    @Test
+    void cleanDirectory_shouldRemoveNestedContentButKeepDirectoryOnDefaultFilesystem(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path directory = tempDirectory.resolve("cache");
+        Files.createDirectories(directory.resolve("nested"));
+        Files.writeString(directory.resolve("nested/file.txt"), "content");
+
+        // execute
+        FileUtil.cleanDirectory(directory, "cache directory");
+
+        // verify
+        assertThat(directory).isDirectory();
+        assertThat(directory.resolve("nested/file.txt")).doesNotExist();
+    }
+
+    @Test
+    void cleanDirectory_shouldCreateDirectoryWhenMissingOnDefaultFilesystem(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path directory = tempDirectory.resolve("created");
+
+        // execute
+        FileUtil.cleanDirectory(directory, "created directory");
+
+        // verify
+        assertThat(directory).isDirectory();
+    }
+
+    @Test
+    void getFileAgeInDays_shouldReturnNonNegativeAge(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path file = Files.writeString(tempDirectory.resolve("age.txt"), "data");
+
+        // execute
+        final long age = FileUtil.getFileAgeInDays(file);
+
+        // verify
+        assertThat(age).isGreaterThanOrEqualTo(0L);
     }
 }

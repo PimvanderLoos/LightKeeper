@@ -106,6 +106,27 @@ class MinecraftServerProcessTest
     }
 
     @Test
+    void buildCommand_shouldOmitExtraJvmArgsWhenNull(@TempDir Path tempDirectory)
+    {
+        // setup
+        final TestableMinecraftServerProcess minecraftServerProcess = new TestableMinecraftServerProcess(tempDirectory);
+
+        // execute
+        final var command = minecraftServerProcess.buildCommandForTests();
+
+        // verify
+        assertThat(command)
+            .containsExactly(
+                "java",
+                "-Xmx512M",
+                "-Xms512M",
+                "-jar",
+                tempDirectory.resolve("paper.jar").toString(),
+                "--nogui"
+            );
+    }
+
+    @Test
     void waitForStartup_shouldReturnWhenDoneLineIsObserved(@TempDir Path tempDirectory)
         throws Exception
     {
@@ -160,6 +181,37 @@ class MinecraftServerProcessTest
         thrown.isInstanceOf(MojoExecutionException.class)
             .hasMessageContaining("Startup timeout after 1 second(s)");
         assertThat(stubProcess.destroyForciblyInvoked()).isTrue();
+    }
+
+    @Test
+    void waitForStartup_shouldThrowWhenProcessExitsBeforeStartupCompletes(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final TestableMinecraftServerProcess minecraftServerProcess = new TestableMinecraftServerProcess(tempDirectory);
+        final StubProcess stubProcess = StubProcess.withInputAndSuccessfulWait("");
+        minecraftServerProcess.setProcessForTests(stubProcess);
+        stubProcess.destroy();
+
+        // execute + verify
+        assertThatThrownBy(() -> minecraftServerProcess.waitForStartupForTests(1))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("ended before startup completed");
+    }
+
+    @Test
+    void waitForStartup_shouldThrowWhenOutputReaderFails(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final TestableMinecraftServerProcess minecraftServerProcess = new TestableMinecraftServerProcess(tempDirectory);
+        final StubProcess stubProcess = StubProcess.withFailingInput();
+        minecraftServerProcess.setProcessForTests(stubProcess);
+
+        // execute + verify
+        assertThatThrownBy(() -> minecraftServerProcess.waitForStartupForTests(1))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("Failed to read server startup output");
     }
 
     private static void setProcess(MinecraftServerProcess minecraftServerProcess, Process process)
@@ -239,6 +291,20 @@ class MinecraftServerProcessTest
             final java.io.PipedInputStream inputStream = new java.io.PipedInputStream();
             final java.io.PipedOutputStream outputStream = new java.io.PipedOutputStream(inputStream);
             return new StubProcess(inputStream, new ByteArrayOutputStream(), outputStream, false);
+        }
+
+        private static StubProcess withFailingInput()
+        {
+            final InputStream inputStream = new InputStream()
+            {
+                @Override
+                public int read()
+                    throws IOException
+                {
+                    throw new IOException("boom");
+                }
+            };
+            return new StubProcess(inputStream, new ByteArrayOutputStream(), null, false);
         }
 
         boolean destroyForciblyInvoked()

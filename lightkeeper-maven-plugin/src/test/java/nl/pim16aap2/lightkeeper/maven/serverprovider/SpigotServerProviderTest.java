@@ -9,12 +9,20 @@ import org.apache.maven.plugin.logging.SystemStreamLog;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import javax.tools.JavaCompiler;
+import javax.tools.StandardJavaFileManager;
+import javax.tools.ToolProvider;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.jar.JarEntry;
+import java.util.jar.JarOutputStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -106,6 +114,64 @@ class SpigotServerProviderTest
             .hasMessageContaining("spigot-1.21.11.jar");
     }
 
+    @Test
+    void resolveBuiltSpigotJar_shouldThrowWhenOutputDirectoryCannotBeListed(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path notDirectory = Files.writeString(tempDirectory.resolve("not-a-directory.txt"), "content");
+
+        // execute
+        final var thrown = assertThatThrownBy(() -> resolveBuiltSpigotJarForTests(notDirectory, "1.21.11"));
+
+        // verify
+        thrown.isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("Failed to inspect BuildTools output directory");
+    }
+
+    @Test
+    void createBaseServerJar_shouldBuildAndCopySpigotJar(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path successfulBuildToolsJar = createFakeBuildToolsJar(tempDirectory, false);
+        final TestSpigotJarProvider provider = createJarProvider(tempDirectory, successfulBuildToolsJar);
+
+        // execute
+        provider.runCreateBaseServerJar();
+
+        // verify
+        assertThat(provider.jarCacheFileForTests()).isRegularFile();
+        assertThat(provider.jarCacheFileForTests().getFileName().toString()).isEqualTo("spigot-1.21.11.jar");
+    }
+
+    @Test
+    void createBaseServerJar_shouldThrowExceptionWhenBuildToolsFails(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path failingBuildToolsJar = createFakeBuildToolsJar(tempDirectory, true);
+        final TestSpigotJarProvider provider = createJarProvider(tempDirectory, failingBuildToolsJar);
+
+        // execute + verify
+        assertThatThrownBy(provider::runCreateBaseServerJar)
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("BuildTools failed with exit code");
+    }
+
+    @Test
+    void createServerProcess_shouldCreateMinecraftServerProcessInstance(@TempDir Path tempDirectory)
+    {
+        // setup
+        final TestSpigotJarProvider provider = createJarProvider(tempDirectory, tempDirectory.resolve("unused.jar"));
+
+        // execute
+        final MinecraftServerProcess process = provider.createServerProcessForTests();
+
+        // verify
+        assertThat(process).isNotNull();
+    }
+
     private static Path resolveBuiltSpigotJarForTests(Path jarCacheDirectory, String minecraftVersion)
         throws Exception
     {
@@ -168,6 +234,111 @@ class SpigotServerProviderTest
             failingAttempts,
             createTransientLockOnFailure
         );
+    }
+
+    private TestSpigotJarProvider createJarProvider(Path tempDirectory, Path buildToolsJar)
+    {
+        final Log log = new SystemStreamLog();
+        final ServerSpecification serverSpecification = new ServerSpecification(
+            "1.21.11",
+            tempDirectory.resolve("jars"),
+            tempDirectory.resolve("base"),
+            tempDirectory.resolve("work"),
+            tempDirectory.resolve("runtime-manifest.json"),
+            tempDirectory.resolve("sockets"),
+            false,
+            30,
+            true,
+            30,
+            true,
+            true,
+            5,
+            5,
+            1,
+            512,
+            System.getProperty("java.home") + "/bin/java",
+            null,
+            "cache-key",
+            "LightKeeper/Tests",
+            null,
+            null,
+            "test-token",
+            "v1.1",
+            "no-agent"
+        );
+
+        return new TestSpigotJarProvider(log, serverSpecification, SPIGOT_BUILD_METADATA, buildToolsJar);
+    }
+
+    private static Path createFakeBuildToolsJar(Path tempDirectory, boolean fail)
+        throws Exception
+    {
+        final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+        if (compiler == null)
+            throw new IllegalStateException("JDK compiler is required for this test.");
+
+        final Path sourceDirectory = Files.createDirectories(tempDirectory.resolve("fakebuildtools-src"));
+        final Path classDirectory = Files.createDirectories(tempDirectory.resolve("fakebuildtools-classes"));
+        final Path sourceFile = sourceDirectory.resolve("FakeBuildTools.java");
+        Files.writeString(sourceFile, """
+            import java.nio.file.Files;
+            import java.nio.file.Path;
+
+            public final class FakeBuildTools {
+                public static void main(String[] args) throws Exception {
+                    String rev = null;
+                    String outputDir = null;
+                    for (int i = 0; i < args.length; ++i) {
+                        if ("--rev".equals(args[i]) && i + 1 < args.length) rev = args[i + 1];
+                        if ("--output-dir".equals(args[i]) && i + 1 < args.length) outputDir = args[i + 1];
+                    }
+                    if (%s) {
+                        System.exit(2);
+                        return;
+                    }
+                    if (rev == null || outputDir == null) {
+                        throw new IllegalArgumentException("Missing --rev/--output-dir");
+                    }
+                    Path outDir = Path.of(outputDir);
+                    Files.createDirectories(outDir);
+                    Files.writeString(outDir.resolve("spigot-" + rev + ".jar"), "fake-spigot");
+                }
+            }
+            """.formatted(fail ? "true" : "false"), StandardCharsets.UTF_8);
+
+        try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, StandardCharsets.UTF_8))
+        {
+            final List<String> options = List.of("-d", classDirectory.toString());
+            final boolean success = compiler.getTask(
+                null,
+                fileManager,
+                null,
+                options,
+                null,
+                fileManager.getJavaFileObjects(sourceFile.toFile())
+            ).call();
+            if (!success)
+                throw new IllegalStateException("Failed to compile fake BuildTools test class.");
+        }
+
+        final Path jarPath = tempDirectory.resolve(fail ? "BuildTools-fail.jar" : "BuildTools-ok.jar");
+        try (OutputStream outputStream = Files.newOutputStream(jarPath);
+             JarOutputStream jarOutputStream = new JarOutputStream(outputStream))
+        {
+            final Path classFile = classDirectory.resolve("FakeBuildTools.class");
+            jarOutputStream.putNextEntry(new JarEntry("FakeBuildTools.class"));
+            jarOutputStream.write(Files.readAllBytes(classFile));
+            jarOutputStream.closeEntry();
+
+            jarOutputStream.putNextEntry(new JarEntry("META-INF/MANIFEST.MF"));
+            jarOutputStream.write((
+                "Manifest-Version: 1.0\n" +
+                    "Main-Class: FakeBuildTools\n\n"
+            ).getBytes(StandardCharsets.UTF_8));
+            jarOutputStream.closeEntry();
+        }
+
+        return jarPath;
     }
 
     private static final class TestSpigotServerProvider extends SpigotServerProvider
@@ -285,6 +456,52 @@ class SpigotServerProviderTest
             catch (IOException exception)
             {
                 throw new MojoExecutionException("Failed to create transient lock file.", exception);
+            }
+        }
+    }
+
+    private static final class TestSpigotJarProvider extends SpigotServerProvider
+    {
+        private final Path fakeBuildToolsJar;
+
+        private TestSpigotJarProvider(
+            Log log,
+            ServerSpecification serverSpecification,
+            SpigotBuildMetadata spigotBuildMetadata,
+            Path fakeBuildToolsJar)
+        {
+            super(log, serverSpecification, spigotBuildMetadata);
+            this.fakeBuildToolsJar = fakeBuildToolsJar;
+        }
+
+        private void runCreateBaseServerJar()
+            throws MojoExecutionException
+        {
+            createBaseServerJar();
+        }
+
+        private Path jarCacheFileForTests()
+        {
+            return jarCacheFile();
+        }
+
+        private MinecraftServerProcess createServerProcessForTests()
+        {
+            return createServerProcess();
+        }
+
+        @Override
+        protected void downloadFile(String url, Path targetFile)
+            throws MojoExecutionException
+        {
+            try
+            {
+                Files.createDirectories(targetFile.getParent());
+                Files.copy(fakeBuildToolsJar, targetFile);
+            }
+            catch (IOException exception)
+            {
+                throw new MojoExecutionException("Failed to copy fake BuildTools jar.", exception);
             }
         }
     }

@@ -6,6 +6,7 @@ import org.apache.maven.plugin.logging.Log;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -126,6 +127,126 @@ class SpigotDownloadsClientTest
         }
     }
 
+    @Test
+    void resolveBuild_shouldUseBuildNumberFromBuildUrlWhenNumberFieldIsMissing()
+        throws Exception
+    {
+        // setup
+        final HttpFixtureServer fixtureServer = new HttpFixtureServer(
+            200,
+            """
+            {"url":"https://hub.spigotmc.org/jenkins/job/BuildTools/345/artifact/target/BuildTools.jar"}
+            """
+        );
+        final SpigotDownloadsClient spigotDownloadsClient = new SpigotDownloadsClient(
+            mock(),
+            mock(),
+            "LightKeeper/Test",
+            URI.create("https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar"),
+            fixtureServer.metadataUri()
+        );
+
+        try
+        {
+            // execute
+            final SpigotBuildMetadata spigotBuildMetadata = spigotDownloadsClient.resolveBuild("1.21.11");
+
+            // verify
+            assertThat(spigotBuildMetadata.buildToolsIdentity()).isEqualTo("spigot-buildtools-build-345");
+        }
+        finally
+        {
+            fixtureServer.close();
+        }
+    }
+
+    @Test
+    void resolveBuild_shouldThrowExceptionWhenMetadataRequestReturnsNonSuccessStatus()
+        throws Exception
+    {
+        // setup
+        final HttpFixtureServer fixtureServer = new HttpFixtureServer(503, "{\"status\":\"down\"}");
+        final SpigotDownloadsClient spigotDownloadsClient = new SpigotDownloadsClient(
+            mock(),
+            mock(),
+            "LightKeeper/Test",
+            URI.create("https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar"),
+            fixtureServer.metadataUri()
+        );
+
+        try
+        {
+            // execute + verify
+            assertThatThrownBy(() -> spigotDownloadsClient.resolveBuild("1.21.11"))
+                .isInstanceOf(MojoExecutionException.class)
+                .hasMessageContaining("failed with status 503");
+        }
+        finally
+        {
+            fixtureServer.close();
+        }
+    }
+
+    @Test
+    void resolveBuild_shouldThrowExceptionWhenMetadataPayloadIsInvalidJson()
+        throws Exception
+    {
+        // setup
+        final HttpFixtureServer fixtureServer = new HttpFixtureServer(200, "{ not-json ");
+        final SpigotDownloadsClient spigotDownloadsClient = new SpigotDownloadsClient(
+            mock(),
+            mock(),
+            "LightKeeper/Test",
+            URI.create("https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar"),
+            fixtureServer.metadataUri()
+        );
+
+        try
+        {
+            // execute + verify
+            assertThatThrownBy(() -> spigotDownloadsClient.resolveBuild("1.21.11"))
+                .isInstanceOf(MojoExecutionException.class)
+                .hasMessageContaining("Failed to parse BuildTools metadata response");
+        }
+        finally
+        {
+            fixtureServer.close();
+        }
+    }
+
+    @Test
+    void constructor_shouldThrowExceptionWhenUserAgentIsBlank()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> new SpigotDownloadsClient(
+            mock(),
+            mock(),
+            "   ",
+            URI.create("https://example.invalid/buildtools.jar"),
+            URI.create("https://example.invalid/buildtools.json")
+        ))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("non-empty BuildTools User-Agent");
+    }
+
+    @Test
+    void resolveBuild_shouldThrowExceptionWhenRequestedVersionIsBlank()
+    {
+        // setup
+        final SpigotDownloadsClient spigotDownloadsClient = new SpigotDownloadsClient(
+            mock(),
+            mock(),
+            "LightKeeper/Test",
+            URI.create("https://example.invalid/buildtools.jar"),
+            URI.create("https://example.invalid/buildtools.json")
+        );
+
+        // execute + verify
+        assertThatThrownBy(() -> spigotDownloadsClient.resolveBuild("   "))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("requestedVersion may not be blank");
+    }
+
     private static final class HttpFixtureServer implements AutoCloseable
     {
         private final HttpServer httpServer;
@@ -133,12 +254,18 @@ class SpigotDownloadsClientTest
         private HttpFixtureServer(String metadataResponseBody)
             throws IOException
         {
-            httpServer = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+            this(200, metadataResponseBody);
+        }
+
+        private HttpFixtureServer(int statusCode, String metadataResponseBody)
+            throws IOException
+        {
+            httpServer = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
             httpServer.createContext("/metadata", exchange ->
             {
                 final byte[] responseBytes = metadataResponseBody.getBytes(StandardCharsets.UTF_8);
                 exchange.getResponseHeaders().add("Content-Type", "application/json");
-                exchange.sendResponseHeaders(200, responseBytes.length);
+                exchange.sendResponseHeaders(statusCode, responseBytes.length);
                 exchange.getResponseBody().write(responseBytes);
                 exchange.close();
             });

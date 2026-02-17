@@ -14,13 +14,18 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.util.HexFormat;
 import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.*;
 
 class PaperServerProviderTest
 {
+    private static final String PAPER_BINARY = "paper-binary";
+    private static final String PAPER_BINARY_SHA256 = sha256Hex(PAPER_BINARY);
+
     private static final PaperBuildMetadata PAPER_BUILD_METADATA = new PaperBuildMetadata(
         "1.21.11",
         113,
@@ -146,6 +151,44 @@ class PaperServerProviderTest
         assertThat(freshBaseSibling).isDirectory();
     }
 
+    @Test
+    void createBaseServerJar_shouldWriteJarWhenChecksumMatches(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final PaperBuildMetadata metadata = new PaperBuildMetadata(
+            "1.21.11",
+            113,
+            URI.create("https://example.com/paper.jar"),
+            PAPER_BINARY_SHA256
+        );
+        final TestPaperJarProvider provider = createJarProvider(tempDirectory, metadata, PAPER_BINARY);
+
+        // execute
+        provider.runCreateBaseServerJar();
+
+        // verify
+        assertThat(provider.jarCacheFileForTests()).isRegularFile().hasContent(PAPER_BINARY);
+    }
+
+    @Test
+    void createBaseServerJar_shouldThrowExceptionWhenChecksumDoesNotMatch(@TempDir Path tempDirectory)
+    {
+        // setup
+        final PaperBuildMetadata metadata = new PaperBuildMetadata(
+            "1.21.11",
+            113,
+            URI.create("https://example.com/paper.jar"),
+            "deadbeef"
+        );
+        final TestPaperJarProvider provider = createJarProvider(tempDirectory, metadata, PAPER_BINARY);
+
+        // execute + verify
+        assertThatThrownBy(provider::runCreateBaseServerJar)
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("Checksum mismatch");
+    }
+
     private TestPaperServerProvider createProvider(
         Path tempDirectory,
         int maxAttempts,
@@ -197,6 +240,46 @@ class PaperServerProviderTest
             PAPER_BUILD_METADATA,
             failingAttempts,
             createTransientLockOnFailure
+        );
+    }
+
+    private TestPaperJarProvider createJarProvider(
+        Path tempDirectory,
+        PaperBuildMetadata metadata,
+        String downloadedJarContents)
+    {
+        final ServerSpecification serverSpecification = new ServerSpecification(
+            "1.21.11",
+            tempDirectory.resolve("jars"),
+            tempDirectory.resolve("base"),
+            tempDirectory.resolve("work"),
+            tempDirectory.resolve("runtime-manifest.json"),
+            tempDirectory.resolve("sockets"),
+            false,
+            30,
+            true,
+            30,
+            true,
+            true,
+            5,
+            5,
+            1,
+            512,
+            "java",
+            null,
+            "cache-key",
+            "LightKeeper/Tests",
+            null,
+            null,
+            "test-token",
+            "v1.1",
+            "no-agent"
+        );
+        return new TestPaperJarProvider(
+            new SystemStreamLog(),
+            serverSpecification,
+            metadata,
+            downloadedJarContents
         );
     }
 
@@ -321,6 +404,69 @@ class PaperServerProviderTest
             {
                 throw new MojoExecutionException("Failed to create transient lock file.", exception);
             }
+        }
+    }
+
+    private static final class TestPaperJarProvider extends PaperServerProvider
+    {
+        private final String downloadedJarContents;
+
+        private TestPaperJarProvider(
+            Log log,
+            ServerSpecification serverSpecification,
+            PaperBuildMetadata paperBuildMetadata,
+            String downloadedJarContents)
+        {
+            super(log, serverSpecification, paperBuildMetadata);
+            this.downloadedJarContents = downloadedJarContents;
+        }
+
+        private void runCreateBaseServerJar()
+            throws MojoExecutionException
+        {
+            createBaseServerJar();
+        }
+
+        private Path jarCacheFileForTests()
+        {
+            return jarCacheFile();
+        }
+
+        @Override
+        protected void downloadFile(String url, Path targetFile)
+            throws MojoExecutionException
+        {
+            try
+            {
+                Files.createDirectories(targetFile.getParent());
+                Files.writeString(targetFile, downloadedJarContents);
+            }
+            catch (IOException exception)
+            {
+                throw new MojoExecutionException("Failed to write fake jar.", exception);
+            }
+        }
+
+        @Override
+        protected void createBaseServer()
+        {
+            // Not used in these focused tests.
+        }
+    }
+
+    private static String sha256Hex(String input)
+    {
+        try
+        {
+            return HexFormat.of().formatHex(
+                java.security.MessageDigest
+                    .getInstance("SHA-256")
+                    .digest(input.getBytes(java.nio.charset.StandardCharsets.UTF_8))
+            );
+        }
+        catch (NoSuchAlgorithmException e)
+        {
+            throw new RuntimeException(e);
         }
     }
 }
