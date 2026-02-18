@@ -16,6 +16,7 @@
         <maven.compiler.release>21</maven.compiler.release>
         <project.root-dir>${project.basedir}/..</project.root-dir>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <lightkeeper.server.jacocoArgLine></lightkeeper.server.jacocoArgLine>
         <lightkeeper.server.jacoco.class-dump-dir>${project.build.directory}/jacoco-classdump</lightkeeper.server.jacoco.class-dump-dir>
         <lightkeeper.paper.runtime-manifest.path>${project.build.directory}/lightkeeper/paper-runtime-manifest.json</lightkeeper.paper.runtime-manifest.path>
         <lightkeeper.spigot.runtime-manifest.path>${project.build.directory}/lightkeeper/spigot-runtime-manifest.json</lightkeeper.spigot.runtime-manifest.path>
