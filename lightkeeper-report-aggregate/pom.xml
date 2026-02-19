@@ -41,7 +41,7 @@
 
         <dependency>
             <groupId>nl.pim16aap2.lightkeeper</groupId>
-            <artifactId>lightkeeper-spigot-plugin</artifactId>
+            <artifactId>lightkeeper-agent-spigot</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -114,7 +114,7 @@
 
                                 <copy overwrite="true"
                                       failonerror="false"
-                                      todir="${project.root-dir}/lightkeeper-spigot-plugin/target/classes">
+                                      todir="${project.root-dir}/lightkeeper-agent-spigot/target/classes">
                                     <fileset dir="${lightkeeper.runtime.jacoco.class-dump-dir}" erroronmissingdir="false">
                                         <include name="**/nl/pim16aap2/lightkeeper/agent/spigot/**/*.class"/>
                                     </fileset>

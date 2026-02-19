@@ -10,7 +10,7 @@
         <version>1.2.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>lightkeeper-spigot-plugin</artifactId>
+    <artifactId>lightkeeper-agent-spigot</artifactId>
     <packaging>jar</packaging>
 
     <name>Lightkeeper Spigot Plugin</name>

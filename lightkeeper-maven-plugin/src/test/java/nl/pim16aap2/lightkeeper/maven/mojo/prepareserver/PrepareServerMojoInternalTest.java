@@ -1,12 +1,12 @@
 package nl.pim16aap2.lightkeeper.maven.mojo.prepareserver;
 
-import nl.pim16aap2.lightkeeper.maven.provisioning.PluginArtifactSpec;
-import nl.pim16aap2.lightkeeper.maven.provisioning.ResolvedPluginArtifact;
-import nl.pim16aap2.lightkeeper.maven.provisioning.WorldInputSpec;
 import nl.pim16aap2.lightkeeper.maven.PaperBuildMetadata;
 import nl.pim16aap2.lightkeeper.maven.PaperDownloadsClient;
 import nl.pim16aap2.lightkeeper.maven.SpigotBuildMetadata;
 import nl.pim16aap2.lightkeeper.maven.SpigotDownloadsClient;
+import nl.pim16aap2.lightkeeper.maven.provisioning.PluginArtifactSpec;
+import nl.pim16aap2.lightkeeper.maven.provisioning.ResolvedPluginArtifact;
+import nl.pim16aap2.lightkeeper.maven.provisioning.WorldInputSpec;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.PaperServerProvider;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.ServerProvider;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.SpigotServerProvider;
@@ -123,7 +123,9 @@ class PrepareServerMojoInternalTest
         assertThat(invokeRecordAccessor(setup, "manifestServerVersion", String.class)).isEqualTo("1.21.11");
         assertThat(invokeRecordAccessor(setup, "manifestBuildId", Long.class)).isEqualTo(0L);
         assertThat(invokeRecordAccessor(setup, "cacheKey", String.class)).isNotBlank();
-        assertThat(invokeRecordAccessor(setup, "serverProvider", Object.class)).isInstanceOf(SpigotServerProvider.class);
+        assertThat(invokeRecordAccessor(setup,
+            "serverProvider",
+            Object.class)).isInstanceOf(SpigotServerProvider.class);
     }
 
     @Test
@@ -588,7 +590,7 @@ class PrepareServerMojoInternalTest
         // verify
         final String cacheIdentity = invokeRecordAccessor(embeddedAgentMetadata, "cacheIdentity", String.class);
         final String sha256 = invokeRecordAccessor(embeddedAgentMetadata, "sha256", String.class);
-        assertThat(cacheIdentity).startsWith("lightkeeper-spigot-plugin.jar:");
+        assertThat(cacheIdentity).startsWith("lightkeeper-agent-spigot.jar:");
         assertThat(sha256).matches("[a-f0-9]{64}");
     }
 

@@ -12,11 +12,11 @@ public final class LightkeeperEmbeddedAgent
     /**
      * Absolute classpath resource path for the embedded agent jar.
      */
-    public static final String RESOURCE_PATH = "/embedded/lightkeeper-spigot-plugin.jar";
+    public static final String RESOURCE_PATH = "/embedded/lightkeeper-agent-spigot.jar";
     /**
      * Fixed output file name used when provisioning the embedded agent into a server.
      */
-    public static final String FILE_NAME = "lightkeeper-spigot-plugin.jar";
+    public static final String FILE_NAME = "lightkeeper-agent-spigot.jar";
 
     private LightkeeperEmbeddedAgent()
     {
@@ -25,8 +25,8 @@ public final class LightkeeperEmbeddedAgent
     /**
      * Opens the embedded agent jar stream from the plugin classpath.
      *
-     * @return
-     *     Input stream for the embedded agent jar.
+     * @return Input stream for the embedded agent jar.
+     *
      * @throws MojoExecutionException
      *     When the embedded resource is missing.
      */

@@ -6,7 +6,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Path;
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 
 class RuntimeManifestWriterTest
 {
@@ -25,7 +25,7 @@ class RuntimeManifestWriterTest
             2048,
             "/tmp/lightkeeper.sock",
             "auth-token",
-            "/tmp/plugins/lightkeeper-spigot-plugin.jar",
+            "/tmp/plugins/lightkeeper-agent-spigot.jar",
             "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
             1,
             "agent-cache-id",

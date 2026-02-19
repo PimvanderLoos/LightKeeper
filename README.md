@@ -16,7 +16,7 @@ planned and reviewed by a human.
   directories (`cleanup-server`).
 - `lightkeeper-framework-junit`
   JUnit-facing API (`ILightkeeperFramework`, `LightkeeperExtension`, handles + AssertJ assertions).
-- `lightkeeper-spigot-plugin`
+- `lightkeeper-agent-spigot`
   In-server production runtime agent plugin that exposes LightKeeper RPC operations over UDS.
 - `lightkeeper-spigot-test-plugin`
   Standalone functional test plugin that provides the `lktestgui` InventoryGUI workflow.
@@ -31,7 +31,7 @@ planned and reviewed by a human.
 
 1. During `pre-integration-test`, `lightkeeper:prepare-server` resolves/builds a server and creates a runtime manifest.
 2. Server binaries and prepared base server directories are cached in Maven local-repo cache folders.
-3. The test server is started with the embedded LightKeeper agent (`lightkeeper-spigot-plugin`) auto-provisioned by
+3. The test server is started with the embedded LightKeeper agent (`lightkeeper-agent-spigot`) auto-provisioned by
    `lightkeeper-maven-plugin`.
 4. Your tests connect through `lightkeeper-framework-junit` (using the runtime manifest path).
 5. During `post-integration-test`, `lightkeeper:cleanup-server` can delete server work directories when tests pass.

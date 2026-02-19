@@ -10,8 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 
 class PrepareServerRuntimeSupportTest
 {
@@ -26,7 +25,7 @@ class PrepareServerRuntimeSupportTest
         final PrepareServerAgentMetadata metadata = runtimeSupport.resolveAgentMetadata();
 
         // verify
-        assertThat(metadata.cacheIdentity()).startsWith("lightkeeper-spigot-plugin.jar:");
+        assertThat(metadata.cacheIdentity()).startsWith("lightkeeper-agent-spigot.jar:");
         assertThat(metadata.sha256()).matches("[a-f0-9]{64}");
     }
 

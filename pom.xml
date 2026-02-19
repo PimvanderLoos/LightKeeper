@@ -12,7 +12,7 @@
     <modules>
         <module>lightkeeper-runtime-core</module>
         <module>lightkeeper-nms-parent</module>
-        <module>lightkeeper-spigot-plugin</module>
+        <module>lightkeeper-agent-spigot</module>
         <module>lightkeeper-spigot-test-plugin</module>
         <module>lightkeeper-framework-junit</module>
         <module>lightkeeper-maven-plugin</module>

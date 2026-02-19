@@ -29,7 +29,7 @@ class LightkeeperProvisioningIT
         assertThat(serverDirectory.resolve("lightkeeper-fixture-world/fixtures/marker.txt"))
             .isRegularFile()
             .hasContent("fixture-marker\n");
-        assertThat(serverDirectory.resolve("plugins/lightkeeper-spigot-plugin.jar")).isRegularFile();
+        assertThat(serverDirectory.resolve("plugins/lightkeeper-agent-spigot.jar")).isRegularFile();
         assertThat(serverDirectory.resolve("plugins/lightkeeper-spigot-test-plugin.jar")).isRegularFile();
         assertThat(serverDirectory.resolve("plugins/lightkeeper-spigot-test-plugin/test-overlay.yml"))
             .isRegularFile()
