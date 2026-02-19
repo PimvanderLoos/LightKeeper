@@ -50,4 +50,8 @@ ignoredFiles
 
 **/delombok/*
 docs/*
+.codex/*
+.claude/*
+.scratch/*
+.plans/*
 codecov
