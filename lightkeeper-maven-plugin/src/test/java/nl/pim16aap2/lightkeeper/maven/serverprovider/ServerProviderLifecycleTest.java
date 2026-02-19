@@ -1,6 +1,7 @@
 package nl.pim16aap2.lightkeeper.maven.serverprovider;
 
 import nl.pim16aap2.lightkeeper.maven.ServerSpecification;
+import nl.pim16aap2.lightkeeper.maven.LightkeeperEmbeddedAgent;
 import nl.pim16aap2.lightkeeper.maven.util.HashUtil;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
@@ -22,9 +23,8 @@ class ServerProviderLifecycleTest
         throws Exception
     {
         // setup
-        final Path agentJar = Files.writeString(tempDirectory.resolve("lightkeeper-agent.jar"), "agent");
-        final String agentSha256 = HashUtil.sha256(agentJar);
-        final LifecycleServerProvider provider = createProvider(tempDirectory, true, true, agentJar, agentSha256);
+        final String agentSha256 = resolveEmbeddedAgentSha256();
+        final LifecycleServerProvider provider = createProvider(tempDirectory, true, true, agentSha256);
 
         // execute
         provider.prepareServer();
@@ -33,7 +33,7 @@ class ServerProviderLifecycleTest
         assertThat(provider.createBaseServerJarInvocations()).isEqualTo(1);
         assertThat(provider.createBaseServerInvocations()).isEqualTo(1);
         assertThat(provider.targetJarFilePath()).isRegularFile();
-        assertThat(provider.targetServerDirectoryPath().resolve("plugins").resolve("lightkeeper-agent.jar"))
+        assertThat(provider.targetServerDirectoryPath().resolve("plugins").resolve(LightkeeperEmbeddedAgent.FILE_NAME))
             .isRegularFile();
         assertThat(provider.targetServerDirectoryPath().resolve("server.properties")).isRegularFile();
     }
@@ -43,12 +43,10 @@ class ServerProviderLifecycleTest
         throws Exception
     {
         // setup
-        final Path agentJar = Files.writeString(tempDirectory.resolve("lightkeeper-agent.jar"), "agent");
         final LifecycleServerProvider provider = createProvider(
             tempDirectory,
             true,
             true,
-            agentJar,
             "deadbeef"
         );
 
@@ -95,16 +93,13 @@ class ServerProviderLifecycleTest
     private static LifecycleServerProvider createProviderWithoutAgent(Path tempDirectory)
         throws Exception
     {
-        final Path placeholderAgentJar = Files.writeString(tempDirectory.resolve("placeholder-agent.jar"), "agent");
-        final String placeholderAgentSha256 = HashUtil.sha256(placeholderAgentJar);
-        return createProvider(tempDirectory, false, false, placeholderAgentJar, placeholderAgentSha256);
+        return createProvider(tempDirectory, false, false, resolveEmbeddedAgentSha256());
     }
 
     private static LifecycleServerProvider createProvider(
         Path tempDirectory,
         boolean forceRebuildJar,
         boolean forceRecreateBaseServer,
-        Path agentJarPath,
         String agentJarSha256)
     {
         final Log log = new SystemStreamLog();
@@ -129,13 +124,21 @@ class ServerProviderLifecycleTest
             null,
             "cache-key",
             "LightKeeper/Tests",
-            agentJarPath,
             agentJarSha256,
             "test-token",
-            "v1.1",
-            agentJarPath == null ? "no-agent" : "agent-cache-id"
+            1,
+            "agent-cache-id"
         );
         return new LifecycleServerProvider(log, specification);
+    }
+
+    private static String resolveEmbeddedAgentSha256()
+        throws Exception
+    {
+        try (var embeddedAgentStream = LightkeeperEmbeddedAgent.openStream())
+        {
+            return HashUtil.sha256(embeddedAgentStream);
+        }
     }
 
     private static final class LifecycleServerProvider extends ServerProvider

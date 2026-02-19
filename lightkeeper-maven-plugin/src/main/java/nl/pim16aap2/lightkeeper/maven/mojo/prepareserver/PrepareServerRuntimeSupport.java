@@ -1,5 +1,6 @@
 package nl.pim16aap2.lightkeeper.maven.mojo.prepareserver;
 
+import nl.pim16aap2.lightkeeper.maven.LightkeeperEmbeddedAgent;
 import nl.pim16aap2.lightkeeper.maven.util.FileUtil;
 import nl.pim16aap2.lightkeeper.maven.util.HashUtil;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
@@ -9,8 +10,8 @@ import org.apache.maven.plugin.logging.Log;
 import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.regex.Pattern;
 
@@ -74,18 +75,22 @@ final class PrepareServerRuntimeSupport
         }
     }
 
-    PrepareServerAgentMetadata resolveAgentMetadata(@Nullable Path path)
+    PrepareServerAgentMetadata resolveAgentMetadata()
         throws MojoExecutionException
     {
-        if (path == null)
-            return new PrepareServerAgentMetadata(null, "no-agent");
-
-        if (Files.notExists(path) || !Files.isRegularFile(path))
-            throw new MojoExecutionException("Configured agent jar path '%s' does not exist.".formatted(path));
-
-        final String sha256 = HashUtil.sha256(path);
-        final String fileName = path.getFileName() == null ? path.toString() : path.getFileName().toString();
-        return new PrepareServerAgentMetadata(sha256, fileName + ":" + sha256);
+        final String sha256;
+        try (InputStream embeddedAgentStream = LightkeeperEmbeddedAgent.openStream())
+        {
+            sha256 = HashUtil.sha256(embeddedAgentStream);
+        }
+        catch (IOException exception)
+        {
+            throw new MojoExecutionException("Failed to close embedded LightKeeper agent stream.", exception);
+        }
+        return new PrepareServerAgentMetadata(
+            sha256,
+            LightkeeperEmbeddedAgent.FILE_NAME + ":" + sha256
+        );
     }
 
     Path resolveUdsSocketPath(Path preferredDirectory, String agentAuthToken)

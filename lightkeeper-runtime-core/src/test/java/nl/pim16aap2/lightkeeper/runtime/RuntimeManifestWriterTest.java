@@ -25,9 +25,9 @@ class RuntimeManifestWriterTest
             2048,
             "/tmp/lightkeeper.sock",
             "auth-token",
-            "/tmp/plugins/lightkeeper-agent.jar",
+            "/tmp/plugins/lightkeeper-spigot-plugin.jar",
             "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-            "v1.1",
+            1,
             "agent-cache-id",
             "-Dfoo=bar",
             List.of(new RuntimeManifest.PreloadedWorld("fixture-world", "NORMAL", "FLAT", 42L))

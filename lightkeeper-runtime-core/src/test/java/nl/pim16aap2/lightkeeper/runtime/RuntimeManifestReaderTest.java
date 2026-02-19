@@ -35,7 +35,6 @@ class RuntimeManifestReaderTest
         "serverJar",
         "udsSocketPath",
         "agentAuthToken",
-        "runtimeProtocolVersion",
         "agentCacheIdentity"
     })
     void read_shouldThrowExceptionWhenRequiredStringFieldIsBlank(
@@ -56,7 +55,7 @@ class RuntimeManifestReaderTest
               "memoryMb": 2048,
               "udsSocketPath": "/tmp/lightkeeper.sock",
               "agentAuthToken": "token",
-              "runtimeProtocolVersion": "v1.1",
+              "runtimeProtocolVersion": 1,
               "agentCacheIdentity": "no-agent"
             }
             """.replace("\"%s\": \"%s\"".formatted(fieldName, defaultValueFor(fieldName)),
@@ -86,7 +85,7 @@ class RuntimeManifestReaderTest
               "memoryMb": 0,
               "udsSocketPath": "/tmp/lightkeeper.sock",
               "agentAuthToken": "token",
-              "runtimeProtocolVersion": "v1.1",
+              "runtimeProtocolVersion": 1,
               "agentCacheIdentity": "no-agent"
             }
             """
@@ -96,6 +95,37 @@ class RuntimeManifestReaderTest
         assertThatThrownBy(() -> new RuntimeManifestReader().read(manifestPath))
             .isInstanceOf(IOException.class)
             .hasMessageContaining("memoryMb");
+    }
+
+    @Test
+    void read_shouldThrowExceptionWhenRuntimeProtocolVersionDoesNotMatch(@TempDir Path tempDirectory)
+        throws IOException
+    {
+        // setup
+        final Path manifestPath = tempDirectory.resolve("runtime-manifest.json");
+        Files.writeString(manifestPath, """
+            {
+              "serverType": "paper",
+              "serverVersion": "1.21.11",
+              "paperBuildId": 113,
+              "cacheKey": "cache-key",
+              "serverDirectory": "/tmp/server",
+              "serverJar": "/tmp/server/paper.jar",
+              "memoryMb": 2048,
+              "udsSocketPath": "/tmp/lightkeeper.sock",
+              "agentAuthToken": "token",
+              "runtimeProtocolVersion": 2,
+              "agentCacheIdentity": "no-agent"
+            }
+            """
+        );
+
+        // execute + verify
+        assertThatThrownBy(() -> new RuntimeManifestReader().read(manifestPath))
+            .isInstanceOf(IOException.class)
+            .hasMessageContaining("protocol version mismatch")
+            .hasMessageContaining("expected=1")
+            .hasMessageContaining("actual=2");
     }
 
     @Test
@@ -115,7 +145,7 @@ class RuntimeManifestReaderTest
               "memoryMb": 2048,
               "udsSocketPath": "/tmp/lightkeeper.sock",
               "agentAuthToken": "token",
-              "runtimeProtocolVersion": "v1.1",
+              "runtimeProtocolVersion": 1,
               "agentCacheIdentity": "no-agent",
               "preloadedWorlds": [
                 {
@@ -152,7 +182,7 @@ class RuntimeManifestReaderTest
               "memoryMb": 2048,
               "udsSocketPath": "/tmp/lightkeeper.sock",
               "agentAuthToken": "token",
-              "runtimeProtocolVersion": "v1.1",
+              "runtimeProtocolVersion": 1,
               "agentCacheIdentity": "no-agent",
               "preloadedWorlds": [
                 {
@@ -189,7 +219,7 @@ class RuntimeManifestReaderTest
               "memoryMb": 2048,
               "udsSocketPath": "/tmp/lightkeeper.sock",
               "agentAuthToken": "token",
-              "runtimeProtocolVersion": "v1.1",
+              "runtimeProtocolVersion": 1,
               "agentCacheIdentity": "no-agent",
               "preloadedWorlds": [
                 {
@@ -225,7 +255,7 @@ class RuntimeManifestReaderTest
               "serverJar": "/tmp/server/paper.jar",
               "memoryMb": 2048,
               "agentAuthToken": "token",
-              "runtimeProtocolVersion": "v1.1",
+              "runtimeProtocolVersion": 1,
               "agentCacheIdentity": "no-agent"
             }
             """
@@ -257,7 +287,7 @@ class RuntimeManifestReaderTest
               "memoryMb": 2048,
               "udsSocketPath": "/tmp/lightkeeper.sock",
               "agentAuthToken": "token",
-              "runtimeProtocolVersion": "v1.1",
+              "runtimeProtocolVersion": 1,
               "agentCacheIdentity": "no-agent"
             }
             """
@@ -290,7 +320,7 @@ class RuntimeManifestReaderTest
               "memoryMb": 2048,
               "udsSocketPath": "/tmp/lightkeeper.sock",
               "agentAuthToken": "token",
-              "runtimeProtocolVersion": "v1.1",
+              "runtimeProtocolVersion": 1,
               "agentCacheIdentity": "no-agent",
               "preloadedWorlds": [
                 {
@@ -324,7 +354,6 @@ class RuntimeManifestReaderTest
             case "serverJar" -> "/tmp/server/paper.jar";
             case "udsSocketPath" -> "/tmp/lightkeeper.sock";
             case "agentAuthToken" -> "token";
-            case "runtimeProtocolVersion" -> "v1.1";
             case "agentCacheIdentity" -> "no-agent";
             default -> "";
         };

@@ -63,19 +63,18 @@ class PrepareServerMojoInternalTest
         final Object agentMetadata = invokePrivate(
             mojo,
             "resolveAgentMetadata",
-            new Class<?>[]{Path.class},
-            new Object[]{null}
+            new Class<?>[0]
         );
 
         // execute
         final Object setup = invokePrivate(
             mojo,
             "resolveServerSetup",
-            new Class<?>[]{context.getClass(), agentMetadata.getClass(), String.class, String.class},
+            new Class<?>[]{context.getClass(), agentMetadata.getClass(), String.class, int.class},
             context,
             agentMetadata,
             "auth-token",
-            "v1.1"
+            1
         );
 
         // verify
@@ -106,19 +105,18 @@ class PrepareServerMojoInternalTest
         final Object agentMetadata = invokePrivate(
             mojo,
             "resolveAgentMetadata",
-            new Class<?>[]{Path.class},
-            new Object[]{null}
+            new Class<?>[0]
         );
 
         // execute
         final Object setup = invokePrivate(
             mojo,
             "resolveServerSetup",
-            new Class<?>[]{context.getClass(), agentMetadata.getClass(), String.class, String.class},
+            new Class<?>[]{context.getClass(), agentMetadata.getClass(), String.class, int.class},
             context,
             agentMetadata,
             "auth-token",
-            "v1.1"
+            1
         );
 
         // verify
@@ -197,6 +195,26 @@ class PrepareServerMojoInternalTest
         assertThatThrownBy(() -> invokePrivate(mojo, "validateConfiguration", new Class<?>[0]))
             .isInstanceOf(MojoExecutionException.class)
             .hasMessageContaining("lightkeeper.userAgent");
+    }
+
+    @Test
+    void validateConfiguration_shouldRejectLegacyAgentJarPath()
+        throws Exception
+    {
+        // setup
+        final PrepareServerMojo mojo = new PrepareServerMojo();
+        setField(mojo, "serverType", "paper");
+        setField(mojo, "userAgent", "LightKeeper/Test");
+        setField(mojo, "agentJarPath", Path.of("/tmp/legacy-agent.jar"));
+        setField(mojo, "serverStartMaxAttempts", 1);
+        setField(mojo, "jarCacheExpiryDays", 0);
+        setField(mojo, "baseServerCacheExpiryDays", 0);
+
+        // execute + verify
+        assertThatThrownBy(() -> invokePrivate(mojo, "validateConfiguration", new Class<?>[0]))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("lightkeeper.agentJarPath")
+            .hasMessageContaining("internal");
     }
 
     @Test
@@ -554,55 +572,24 @@ class PrepareServerMojoInternalTest
     }
 
     @Test
-    void resolveAgentMetadata_shouldResolveNoAgentAndHashedAgentValues(@TempDir Path tempDirectory)
+    void resolveAgentMetadata_shouldResolveEmbeddedAgentValues()
         throws Exception
     {
         // setup
         final PrepareServerMojo mojo = new PrepareServerMojo();
-        final Path agentJar = Files.writeString(tempDirectory.resolve("agent.jar"), "agent-binary");
 
         // execute
-        final Object noAgentMetadata = invokePrivate(
+        final Object embeddedAgentMetadata = invokePrivate(
             mojo,
             "resolveAgentMetadata",
-            new Class<?>[]{Path.class},
-            new Object[]{null}
-        );
-        final Object hashedAgentMetadata = invokePrivate(
-            mojo,
-            "resolveAgentMetadata",
-            new Class<?>[]{Path.class},
-            agentJar
+            new Class<?>[0]
         );
 
         // verify
-        final String noAgentCacheIdentity = invokeRecordAccessor(noAgentMetadata, "cacheIdentity", String.class);
-        final String noAgentSha256 = invokeRecordAccessor(noAgentMetadata, "sha256", String.class);
-        assertThat(noAgentCacheIdentity).isEqualTo("no-agent");
-        assertThat(noAgentSha256).isNull();
-
-        final String hashedCacheIdentity = invokeRecordAccessor(hashedAgentMetadata, "cacheIdentity", String.class);
-        final String hashedSha256 = invokeRecordAccessor(hashedAgentMetadata, "sha256", String.class);
-        assertThat(hashedCacheIdentity).startsWith("agent.jar:");
-        assertThat(hashedSha256).matches("[a-f0-9]{64}");
-    }
-
-    @Test
-    void resolveAgentMetadata_shouldThrowExceptionWhenJarDoesNotExist(@TempDir Path tempDirectory)
-    {
-        // setup
-        final PrepareServerMojo mojo = new PrepareServerMojo();
-        final Path missingAgentJar = tempDirectory.resolve("missing-agent.jar");
-
-        // execute + verify
-        assertThatThrownBy(() -> invokePrivate(
-            mojo,
-            "resolveAgentMetadata",
-            new Class<?>[]{Path.class},
-            missingAgentJar
-        ))
-            .isInstanceOf(MojoExecutionException.class)
-            .hasMessageContaining("does not exist");
+        final String cacheIdentity = invokeRecordAccessor(embeddedAgentMetadata, "cacheIdentity", String.class);
+        final String sha256 = invokeRecordAccessor(embeddedAgentMetadata, "sha256", String.class);
+        assertThat(cacheIdentity).startsWith("lightkeeper-spigot-plugin.jar:");
+        assertThat(sha256).matches("[a-f0-9]{64}");
     }
 
     @Test
@@ -1034,7 +1021,7 @@ class PrepareServerMojoInternalTest
             PrepareServerExecutionContext executionContext,
             PrepareServerAgentMetadata agentMetadata,
             String agentAuthToken,
-            String runtimeProtocolVersion)
+            int runtimeProtocolVersion)
             throws MojoExecutionException
         {
             if (resolvedServerSetup != null)
@@ -1043,12 +1030,12 @@ class PrepareServerMojoInternalTest
         }
 
         @Override
-        PrepareServerAgentMetadata resolveAgentMetadata(@Nullable Path path)
+        PrepareServerAgentMetadata resolveAgentMetadata()
             throws MojoExecutionException
         {
             if (resolvedAgentMetadata != null)
                 return resolvedAgentMetadata;
-            return super.resolveAgentMetadata(path);
+            return super.resolveAgentMetadata();
         }
 
         @Override

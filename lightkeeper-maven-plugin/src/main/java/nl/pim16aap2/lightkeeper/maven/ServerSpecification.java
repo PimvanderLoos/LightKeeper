@@ -67,10 +67,9 @@ public record ServerSpecification(
     @Nullable String extraJvmArgs,
     String cacheKey,
     String paperUserAgent,
-    @Nullable Path agentJarPath,
     @Nullable String agentJarSha256,
     String agentAuthToken,
-    String runtimeProtocolVersion,
+    int runtimeProtocolVersion,
     String agentCacheIdentity
 )
 {

@@ -54,8 +54,13 @@ public final class RuntimeManifestReader
             throw new IOException("Runtime manifest field 'udsSocketPath' is missing or blank.");
         if (manifest.agentAuthToken() == null || manifest.agentAuthToken().isBlank())
             throw new IOException("Runtime manifest field 'agentAuthToken' is missing or blank.");
-        if (manifest.runtimeProtocolVersion() == null || manifest.runtimeProtocolVersion().isBlank())
-            throw new IOException("Runtime manifest field 'runtimeProtocolVersion' is missing or blank.");
+        if (manifest.runtimeProtocolVersion() != RuntimeProtocol.VERSION)
+        {
+            throw new IOException(
+                "Runtime manifest protocol version mismatch. expected=%d actual=%d."
+                    .formatted(RuntimeProtocol.VERSION, manifest.runtimeProtocolVersion())
+            );
+        }
         if (manifest.agentCacheIdentity() == null || manifest.agentCacheIdentity().isBlank())
             throw new IOException("Runtime manifest field 'agentCacheIdentity' is missing or blank.");
 

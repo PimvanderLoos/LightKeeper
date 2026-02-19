@@ -7,7 +7,7 @@ import java.nio.file.Path;
  */
 record PrepareServerRuntimePreparation(
     PrepareServerAgentMetadata agentMetadata,
-    String runtimeProtocolVersion,
+    int runtimeProtocolVersion,
     String agentAuthToken,
     Path udsSocketPath,
     PrepareServerResolvedServerSetup resolvedServerSetup

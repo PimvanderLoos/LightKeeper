@@ -2,7 +2,9 @@ package nl.pim16aap2.lightkeeper.maven.serverprovider;
 
 import nl.pim16aap2.lightkeeper.maven.PaperBuildMetadata;
 import nl.pim16aap2.lightkeeper.maven.ServerSpecification;
+import nl.pim16aap2.lightkeeper.maven.LightkeeperEmbeddedAgent;
 import nl.pim16aap2.lightkeeper.maven.serverprocess.MinecraftServerProcess;
+import nl.pim16aap2.lightkeeper.maven.util.HashUtil;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugin.logging.SystemStreamLog;
@@ -25,6 +27,7 @@ class PaperServerProviderTest
 {
     private static final String PAPER_BINARY = "paper-binary";
     private static final String PAPER_BINARY_SHA256 = sha256Hex(PAPER_BINARY);
+    private static final String EMBEDDED_AGENT_SHA256 = resolveEmbeddedAgentSha256();
 
     private static final PaperBuildMetadata PAPER_BUILD_METADATA = new PaperBuildMetadata(
         "1.21.11",
@@ -227,11 +230,10 @@ class PaperServerProviderTest
             null,
             "cache-key",
             "LightKeeper/Tests",
-            null,
-            null,
+            EMBEDDED_AGENT_SHA256,
             "test-token",
-            "v1.1",
-            "no-agent"
+            1,
+            "embedded-agent"
         );
 
         return new TestPaperServerProvider(
@@ -269,11 +271,10 @@ class PaperServerProviderTest
             null,
             "cache-key",
             "LightKeeper/Tests",
-            null,
-            null,
+            EMBEDDED_AGENT_SHA256,
             "test-token",
-            "v1.1",
-            "no-agent"
+            1,
+            "embedded-agent"
         );
         return new TestPaperJarProvider(
             new SystemStreamLog(),
@@ -467,6 +468,18 @@ class PaperServerProviderTest
         catch (NoSuchAlgorithmException e)
         {
             throw new RuntimeException(e);
+        }
+    }
+
+    private static String resolveEmbeddedAgentSha256()
+    {
+        try (var embeddedAgentStream = LightkeeperEmbeddedAgent.openStream())
+        {
+            return HashUtil.sha256(embeddedAgentStream);
+        }
+        catch (Exception exception)
+        {
+            throw new IllegalStateException("Failed to resolve embedded agent SHA-256 for tests.", exception);
         }
     }
 }

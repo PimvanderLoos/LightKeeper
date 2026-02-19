@@ -6,6 +6,7 @@ import nl.pim16aap2.lightkeeper.maven.provisioning.PluginArtifactSpec;
 import nl.pim16aap2.lightkeeper.maven.provisioning.ResolvedPluginArtifact;
 import nl.pim16aap2.lightkeeper.maven.provisioning.ServerAssetInstaller;
 import nl.pim16aap2.lightkeeper.maven.provisioning.WorldInputSpec;
+import nl.pim16aap2.lightkeeper.maven.LightkeeperEmbeddedAgent;
 import nl.pim16aap2.lightkeeper.maven.PaperDownloadsClient;
 import nl.pim16aap2.lightkeeper.maven.PaperBuildMetadata;
 import nl.pim16aap2.lightkeeper.maven.ServerSpecification;
@@ -131,6 +132,11 @@ public class PrepareServerMojo extends AbstractMojo
     @Nullable
     private String userAgent;
 
+    /**
+     * Deprecated legacy parameter kept only for fail-fast validation.
+     *
+     * <p>Agent provisioning is now internal and automatic; callers must not set this value.</p>
+     */
     @Parameter(property = "lightkeeper.agentJarPath")
     @Nullable
     private Path agentJarPath;
@@ -195,8 +201,8 @@ public class PrepareServerMojo extends AbstractMojo
     PrepareServerRuntimePreparation prepareRuntimePreparation(PrepareServerExecutionContext executionContext)
         throws MojoExecutionException
     {
-        final PrepareServerAgentMetadata agentMetadata = resolveAgentMetadata(agentJarPath);
-        final String runtimeProtocolVersion = RuntimeProtocol.VERSION;
+        final PrepareServerAgentMetadata agentMetadata = resolveAgentMetadata();
+        final int runtimeProtocolVersion = RuntimeProtocol.VERSION;
         final String agentAuthToken = UUID.randomUUID().toString();
         final Path udsSocketPath = resolveUdsSocketPath(executionContext.agentSocketDirectory(), agentAuthToken);
         final PrepareServerResolvedServerSetup resolvedServerSetup = resolveServerSetup(
@@ -264,7 +270,7 @@ public class PrepareServerMojo extends AbstractMojo
         PrepareServerExecutionContext executionContext,
         PrepareServerAgentMetadata agentMetadata,
         String agentAuthToken,
-        String runtimeProtocolVersion)
+        int runtimeProtocolVersion)
         throws MojoExecutionException
     {
         final PaperDownloadsClient paperDownloadsClient = createPaperDownloadsClient(executionContext.userAgent());
@@ -296,7 +302,7 @@ public class PrepareServerMojo extends AbstractMojo
         PrepareServerExecutionContext executionContext,
         PrepareServerAgentMetadata agentMetadata,
         String agentAuthToken,
-        String runtimeProtocolVersion,
+        int runtimeProtocolVersion,
         PaperDownloadsClient paperDownloadsClient)
         throws MojoExecutionException
     {
@@ -332,7 +338,7 @@ public class PrepareServerMojo extends AbstractMojo
         PrepareServerExecutionContext executionContext,
         PrepareServerAgentMetadata agentMetadata,
         String agentAuthToken,
-        String runtimeProtocolVersion,
+        int runtimeProtocolVersion,
         PaperDownloadsClient paperDownloadsClient)
         throws MojoExecutionException
     {
@@ -395,7 +401,7 @@ public class PrepareServerMojo extends AbstractMojo
         Path udsSocketPath,
         String agentAuthToken,
         PrepareServerAgentMetadata agentMetadata,
-        String runtimeProtocolVersion,
+        int runtimeProtocolVersion,
         List<WorldInputSpec> worldInputSpecs)
     {
         final List<RuntimeManifest.PreloadedWorld> preloadedWorlds = worldInputSpecs.stream()
@@ -418,7 +424,8 @@ public class PrepareServerMojo extends AbstractMojo
             resolvedMemoryMb,
             udsSocketPath.toAbsolutePath().toString(),
             agentAuthToken,
-            agentJarPath != null ? agentJarPath.toAbsolutePath().toString() : null,
+            targetServerDirectory.resolve("plugins").resolve(LightkeeperEmbeddedAgent.FILE_NAME).toAbsolutePath()
+                .toString(),
             agentMetadata.sha256(),
             runtimeProtocolVersion,
             agentMetadata.cacheIdentity(),
@@ -456,7 +463,7 @@ public class PrepareServerMojo extends AbstractMojo
         String effectiveUserAgent,
         PrepareServerAgentMetadata agentMetadata,
         String agentAuthToken,
-        String runtimeProtocolVersion)
+        int runtimeProtocolVersion)
     {
         return new ServerSpecification(
             resolvedServerVersion,
@@ -479,7 +486,6 @@ public class PrepareServerMojo extends AbstractMojo
             extraJvmArgs,
             cacheKey,
             effectiveUserAgent,
-            agentJarPath,
             agentMetadata.sha256(),
             agentAuthToken,
             runtimeProtocolVersion,
@@ -498,6 +504,7 @@ public class PrepareServerMojo extends AbstractMojo
         configurationValidator().validateConfiguration(
             serverType,
             userAgent,
+            agentJarPath,
             serverStartMaxAttempts,
             jarCacheExpiryDays,
             baseServerCacheExpiryDays,
@@ -528,10 +535,10 @@ public class PrepareServerMojo extends AbstractMojo
         return pluginArtifactResolver().resolvePluginArtifacts(specs, resolver, session, repositories);
     }
 
-    PrepareServerAgentMetadata resolveAgentMetadata(@Nullable Path path)
+    PrepareServerAgentMetadata resolveAgentMetadata()
         throws MojoExecutionException
     {
-        return runtimeSupport().resolveAgentMetadata(path);
+        return runtimeSupport().resolveAgentMetadata();
     }
 
     Path resolveUdsSocketPath(Path preferredDirectory, String agentAuthToken)

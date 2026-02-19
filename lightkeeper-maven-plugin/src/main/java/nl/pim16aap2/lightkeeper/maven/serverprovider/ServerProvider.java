@@ -4,6 +4,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.Accessors;
+import nl.pim16aap2.lightkeeper.maven.LightkeeperEmbeddedAgent;
 import nl.pim16aap2.lightkeeper.maven.ServerSpecification;
 import nl.pim16aap2.lightkeeper.maven.util.FileUtil;
 import nl.pim16aap2.lightkeeper.maven.util.HashUtil;
@@ -12,6 +13,7 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -411,7 +413,7 @@ public abstract class ServerProvider
         log().info("Copying base server to target server directory");
         FileUtil.cleanDirectory(targetServerDirectory(), "target server directory");
         createTargetServer();
-        installAgentJarIfConfigured();
+        installEmbeddedAgentJar();
     }
 
     private void pruneUnusedCacheDirectoriesIfConfigured()
@@ -652,32 +654,35 @@ public abstract class ServerProvider
         return false;
     }
 
-    private void installAgentJarIfConfigured()
+    private void installEmbeddedAgentJar()
         throws MojoExecutionException
     {
-        final Path agentJarPath = serverSpecification().agentJarPath();
-        if (agentJarPath == null)
-            return;
-
         final Path pluginsDirectory = targetServerDirectory().resolve("plugins");
         FileUtil.createDirectories(pluginsDirectory, "plugins directory");
+        final Path targetAgentJar = pluginsDirectory.resolve(LightkeeperEmbeddedAgent.FILE_NAME);
 
-        try
+        try (InputStream embeddedAgentStream = LightkeeperEmbeddedAgent.openStream())
         {
-            final Path targetAgentJar = pluginsDirectory.resolve(agentJarPath.getFileName());
-            Files.copy(agentJarPath, targetAgentJar, StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(embeddedAgentStream, targetAgentJar, StandardCopyOption.REPLACE_EXISTING);
+            if (Files.notExists(targetAgentJar) || !Files.isReadable(targetAgentJar))
+            {
+                throw new MojoExecutionException(
+                    "Embedded LightKeeper agent was extracted to '%s' but is not readable."
+                        .formatted(targetAgentJar)
+                );
+            }
 
             final String expectedSha256 = serverSpecification().agentJarSha256();
-            if (expectedSha256 != null)
+            if (expectedSha256 == null || expectedSha256.isBlank())
+                throw new MojoExecutionException("Embedded LightKeeper agent SHA-256 metadata is missing.");
+
+            final String actualSha256 = HashUtil.sha256(targetAgentJar);
+            if (!expectedSha256.equalsIgnoreCase(actualSha256))
             {
-                final String actualSha256 = HashUtil.sha256(targetAgentJar);
-                if (!expectedSha256.equalsIgnoreCase(actualSha256))
-                {
-                    throw new MojoExecutionException(
-                        "Installed LightKeeper agent hash mismatch. Expected %s, got %s."
-                            .formatted(expectedSha256, actualSha256)
-                    );
-                }
+                throw new MojoExecutionException(
+                    "Installed LightKeeper agent hash mismatch. Expected %s, got %s."
+                        .formatted(expectedSha256, actualSha256)
+                );
             }
 
             log.info("Installed LightKeeper agent JAR at '%s'.".formatted(targetAgentJar));
@@ -685,8 +690,8 @@ public abstract class ServerProvider
         catch (IOException exception)
         {
             throw new MojoExecutionException(
-                "Failed to install LightKeeper agent jar from '%s' to target server."
-                    .formatted(agentJarPath),
+                "Failed to extract embedded LightKeeper agent jar to '%s'."
+                    .formatted(targetAgentJar),
                 exception
             );
         }

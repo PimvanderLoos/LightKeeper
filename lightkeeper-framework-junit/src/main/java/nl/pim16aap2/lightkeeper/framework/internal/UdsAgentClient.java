@@ -54,11 +54,11 @@ final class UdsAgentClient implements AutoCloseable
         connect(Objects.requireNonNull(connectTimeout, "connectTimeout may not be null."));
     }
 
-    void handshake(String token, String protocolVersion, String agentSha256)
+    void handshake(String token, int protocolVersion, String agentSha256)
     {
         send(AgentAction.HANDSHAKE, Map.of(
             "token", token,
-            "protocolVersion", protocolVersion,
+            "protocolVersion", Integer.toString(protocolVersion),
             "agentSha256", agentSha256
         ));
     }
@@ -260,9 +260,15 @@ final class UdsAgentClient implements AutoCloseable
 
             if (!response.success())
             {
+                final String expectedProtocolVersion = response.data().get("expectedProtocolVersion");
+                final String actualProtocolVersion = response.data().get("actualProtocolVersion");
+                final String protocolDetail = expectedProtocolVersion != null || actualProtocolVersion != null
+                    ? " expectedProtocolVersion=%s actualProtocolVersion=%s"
+                        .formatted(expectedProtocolVersion, actualProtocolVersion)
+                    : "";
                 throw new IllegalStateException(
-                    "Agent request failed. code=%s message=%s"
-                        .formatted(response.errorCode(), response.errorMessage())
+                    "Agent request failed. code=%s message=%s%s"
+                        .formatted(response.errorCode(), response.errorMessage(), protocolDetail)
                 );
             }
 

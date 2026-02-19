@@ -16,31 +16,18 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class PrepareServerRuntimeSupportTest
 {
     @Test
-    void resolveAgentMetadata_shouldReturnNoAgentWhenPathIsNull()
+    void resolveAgentMetadata_shouldResolveEmbeddedAgentMetadata()
         throws Exception
     {
         // setup
         final PrepareServerRuntimeSupport runtimeSupport = new PrepareServerRuntimeSupport(new SystemStreamLog());
 
         // execute
-        final PrepareServerAgentMetadata metadata = runtimeSupport.resolveAgentMetadata(null);
+        final PrepareServerAgentMetadata metadata = runtimeSupport.resolveAgentMetadata();
 
         // verify
-        assertThat(metadata.cacheIdentity()).isEqualTo("no-agent");
-        assertThat(metadata.sha256()).isNull();
-    }
-
-    @Test
-    void resolveAgentMetadata_shouldThrowExceptionWhenPathDoesNotExist(@TempDir Path tempDirectory)
-    {
-        // setup
-        final PrepareServerRuntimeSupport runtimeSupport = new PrepareServerRuntimeSupport(new SystemStreamLog());
-        final Path missingPath = tempDirectory.resolve("missing-agent.jar");
-
-        // execute + verify
-        assertThatThrownBy(() -> runtimeSupport.resolveAgentMetadata(missingPath))
-            .isInstanceOf(MojoExecutionException.class)
-            .hasMessageContaining("does not exist");
+        assertThat(metadata.cacheIdentity()).startsWith("lightkeeper-spigot-plugin.jar:");
+        assertThat(metadata.sha256()).matches("[a-f0-9]{64}");
     }
 
     @Test
@@ -76,7 +63,7 @@ class PrepareServerRuntimeSupportTest
             "auth-token",
             null,
             null,
-            "v1.1",
+            1,
             "no-agent",
             null,
             List.of()

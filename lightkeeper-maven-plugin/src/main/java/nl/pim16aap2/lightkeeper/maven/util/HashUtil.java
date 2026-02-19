@@ -26,6 +26,19 @@ public final class HashUtil
     {
         try (InputStream inputStream = Files.newInputStream(path))
         {
+            return sha256(inputStream);
+        }
+        catch (IOException exception)
+        {
+            throw new MojoExecutionException("Failed to compute SHA-256 for file '%s'.".formatted(path), exception);
+        }
+    }
+
+    public static String sha256(InputStream inputStream)
+        throws MojoExecutionException
+    {
+        try
+        {
             final MessageDigest digest = getSha256Digest();
             final byte[] buffer = new byte[BUFFER_SIZE];
 
@@ -37,8 +50,15 @@ public final class HashUtil
         }
         catch (IOException exception)
         {
-            throw new MojoExecutionException("Failed to compute SHA-256 for file '%s'.".formatted(path), exception);
+            throw new MojoExecutionException("Failed to compute SHA-256 from input stream.", exception);
         }
+    }
+
+    public static String sha256(byte[] input)
+    {
+        final MessageDigest digest = getSha256Digest();
+        digest.update(input);
+        return toHex(digest.digest());
     }
 
     public static String sha256(String input)

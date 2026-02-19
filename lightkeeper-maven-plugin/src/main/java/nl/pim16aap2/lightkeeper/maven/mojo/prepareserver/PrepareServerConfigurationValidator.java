@@ -3,6 +3,7 @@ package nl.pim16aap2.lightkeeper.maven.mojo.prepareserver;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.jspecify.annotations.Nullable;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -29,6 +30,7 @@ final class PrepareServerConfigurationValidator
     void validateConfiguration(
         @Nullable String configuredServerType,
         @Nullable String configuredUserAgent,
+        @Nullable Path configuredAgentJarPath,
         int configuredServerStartMaxAttempts,
         int configuredJarCacheExpiryDays,
         int configuredBaseServerCacheExpiryDays,
@@ -47,6 +49,14 @@ final class PrepareServerConfigurationValidator
 
         if (configuredUserAgent == null || configuredUserAgent.isBlank())
             throw new MojoExecutionException("A non-empty `lightkeeper.userAgent` value is required.");
+
+        if (configuredAgentJarPath != null)
+        {
+            throw new MojoExecutionException(
+                "Configuration parameter `lightkeeper.agentJarPath` is no longer supported. "
+                    + "The runtime agent is provisioned internally by the LightKeeper Maven plugin."
+            );
+        }
 
         if (configuredServerStartMaxAttempts < 1)
             throw new MojoExecutionException("`lightkeeper.serverStartMaxAttempts` must be at least 1.");

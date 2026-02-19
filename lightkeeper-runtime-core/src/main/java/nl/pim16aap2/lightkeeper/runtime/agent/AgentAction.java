@@ -1,7 +1,7 @@
 package nl.pim16aap2.lightkeeper.runtime.agent;
 
 /**
- * Supported LightKeeper agent actions for v1.1.
+ * Supported LightKeeper agent actions for runtime protocol version 1.
  */
 public enum AgentAction
 {

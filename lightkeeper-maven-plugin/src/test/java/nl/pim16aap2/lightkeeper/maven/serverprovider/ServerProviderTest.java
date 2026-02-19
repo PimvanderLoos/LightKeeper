@@ -326,9 +326,8 @@ class ServerProviderTest
             "cache-key",
             "LightKeeper/Tests",
             null,
-            null,
             "test-token",
-            "v1.1",
+            1,
             "no-agent"
         );
         return new TestServerProvider(log, specification);

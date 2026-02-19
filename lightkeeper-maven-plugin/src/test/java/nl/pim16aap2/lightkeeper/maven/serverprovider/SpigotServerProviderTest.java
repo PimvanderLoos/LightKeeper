@@ -1,8 +1,10 @@
 package nl.pim16aap2.lightkeeper.maven.serverprovider;
 
+import nl.pim16aap2.lightkeeper.maven.LightkeeperEmbeddedAgent;
 import nl.pim16aap2.lightkeeper.maven.ServerSpecification;
 import nl.pim16aap2.lightkeeper.maven.SpigotBuildMetadata;
 import nl.pim16aap2.lightkeeper.maven.serverprocess.MinecraftServerProcess;
+import nl.pim16aap2.lightkeeper.maven.util.HashUtil;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugin.logging.SystemStreamLog;
@@ -29,6 +31,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class SpigotServerProviderTest
 {
+    private static final String EMBEDDED_AGENT_SHA256 = resolveEmbeddedAgentSha256();
+
     private static final SpigotBuildMetadata SPIGOT_BUILD_METADATA = new SpigotBuildMetadata(
         "1.21.11",
         URI.create("https://example.com/BuildTools.jar"),
@@ -220,11 +224,10 @@ class SpigotServerProviderTest
             null,
             "cache-key",
             "LightKeeper/Tests",
-            null,
-            null,
+            EMBEDDED_AGENT_SHA256,
             "test-token",
-            "v1.1",
-            "no-agent"
+            1,
+            "embedded-agent"
         );
 
         return new TestSpigotServerProvider(
@@ -260,14 +263,25 @@ class SpigotServerProviderTest
             null,
             "cache-key",
             "LightKeeper/Tests",
-            null,
-            null,
+            EMBEDDED_AGENT_SHA256,
             "test-token",
-            "v1.1",
-            "no-agent"
+            1,
+            "embedded-agent"
         );
 
         return new TestSpigotJarProvider(log, serverSpecification, SPIGOT_BUILD_METADATA, buildToolsJar);
+    }
+
+    private static String resolveEmbeddedAgentSha256()
+    {
+        try (var embeddedAgentStream = LightkeeperEmbeddedAgent.openStream())
+        {
+            return HashUtil.sha256(embeddedAgentStream);
+        }
+        catch (Exception exception)
+        {
+            throw new IllegalStateException("Failed to resolve embedded agent SHA-256 for tests.", exception);
+        }
     }
 
     private static Path createFakeBuildToolsJar(Path tempDirectory, boolean fail)

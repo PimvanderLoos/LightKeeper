@@ -30,7 +30,7 @@ import java.util.List;
  * @param agentJarSha256
  *     Optional SHA-256 hash for the agent jar.
  * @param runtimeProtocolVersion
- *     The runtime protocol version.
+ *     The runtime protocol version. Must exactly match {@link RuntimeProtocol#VERSION}.
  * @param agentCacheIdentity
  *     The cache identity for the resolved agent artifact.
  * @param extraJvmArgs
@@ -50,7 +50,7 @@ public record RuntimeManifest(
     String agentAuthToken,
     @Nullable String agentJar,
     @Nullable String agentJarSha256,
-    String runtimeProtocolVersion,
+    int runtimeProtocolVersion,
     String agentCacheIdentity,
     @Nullable String extraJvmArgs,
     List<PreloadedWorld> preloadedWorlds

@@ -11,25 +11,28 @@ planned and reviewed by a human.
 
 ## What This Project Contains
 
-- `lightkeeper-maven-plugin`  
+- `lightkeeper-maven-plugin`
   Maven plugin that prepares and caches server runtimes (`prepare-server`) and optionally cleans server work
   directories (`cleanup-server`).
-- `lightkeeper-framework-junit`  
+- `lightkeeper-framework-junit`
   JUnit-facing API (`ILightkeeperFramework`, `LightkeeperExtension`, handles + AssertJ assertions).
-- `lightkeeper-agent-spigot`  
-  In-server plugin agent that exposes test operations over a local UDS channel.
-- `lightkeeper-runtime-core`  
+- `lightkeeper-spigot-plugin`
+  In-server production runtime agent plugin that exposes LightKeeper RPC operations over UDS.
+- `lightkeeper-spigot-test-plugin`
+  Standalone functional test plugin that provides the `lktestgui` InventoryGUI workflow.
+- `lightkeeper-runtime-core`
   Shared runtime protocol + runtime manifest model.
-- `lightkeeper-nms-parent`  
+- `lightkeeper-nms-parent`
   NMS integration modules used by the agent.
-- `lightkeeper-maven-plugin-test`  
+- `lightkeeper-integration-tests`
   Integration tests that run against both Paper and Spigot.
 
 ## How It Works
 
 1. During `pre-integration-test`, `lightkeeper:prepare-server` resolves/builds a server and creates a runtime manifest.
 2. Server binaries and prepared base server directories are cached in Maven local-repo cache folders.
-3. The test server is started with the LightKeeper agent.
+3. The test server is started with the embedded LightKeeper agent (`lightkeeper-spigot-plugin`) auto-provisioned by
+   `lightkeeper-maven-plugin`.
 4. Your tests connect through `lightkeeper-framework-junit` (using the runtime manifest path).
 5. During `post-integration-test`, `lightkeeper:cleanup-server` can delete server work directories when tests pass.
 
@@ -53,7 +56,6 @@ planned and reviewed by a human.
             <version>${lightkeeper.version}</version>
             <configuration>
                 <userAgent>LightKeeper/${project.version} ([email protected])</userAgent>
-                <agentJarPath>${project.build.directory}/lightkeeper-agent/lightkeeper-agent-spigot.jar</agentJarPath>
             </configuration>
             <executions>
                 <execution>
@@ -196,7 +198,7 @@ class MyPluginIT
 ## Running Locally
 
 - Fast module verification:
-    - `mvn -pl lightkeeper-maven-plugin-test -am verify`
+    - `mvn -pl lightkeeper-integration-tests -am verify`
 - Full quality pipeline used in this repository:
   -
   `mvn clean test verify -P=errorprone -Dmaven.javadoc.skip=true install checkstyle:checkstyle pmd:check jacoco:report`
@@ -204,8 +206,8 @@ class MyPluginIT
 ## Integration Test Logs and Reports
 
 - Failsafe reports:
-    - `lightkeeper-maven-plugin-test/target/failsafe-reports/`
+    - `lightkeeper-integration-tests/target/failsafe-reports/`
 - Runtime manifests:
-    - `lightkeeper-maven-plugin-test/target/lightkeeper/*-runtime-manifest.json`
+    - `lightkeeper-integration-tests/target/lightkeeper/*-runtime-manifest.json`
 - Prepared server directories:
-    - `lightkeeper-maven-plugin-test/target/lightkeeper-server/`
+    - `lightkeeper-integration-tests/target/lightkeeper-server/`

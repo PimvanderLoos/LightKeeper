@@ -3,6 +3,7 @@ package nl.pim16aap2.lightkeeper.maven.mojo.prepareserver;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Path;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,7 +35,7 @@ class PrepareServerConfigurationValidatorTest
         final String serverType = "paper";
 
         // execute
-        VALIDATOR.validateConfiguration(serverType, "LightKeeper/Test", 1, 0, 0, "-Dfoo=bar");
+        VALIDATOR.validateConfiguration(serverType, "LightKeeper/Test", null, 1, 0, 0, "-Dfoo=bar");
 
         // verify
     }
@@ -49,6 +50,7 @@ class PrepareServerConfigurationValidatorTest
         assertThatThrownBy(() -> VALIDATOR.validateConfiguration(
             unsupportedType,
             "LightKeeper/Test",
+            null,
             1,
             0,
             0,
@@ -65,8 +67,22 @@ class PrepareServerConfigurationValidatorTest
         final String userAgent = " ";
 
         // execute + verify
-        assertThatThrownBy(() -> VALIDATOR.validateConfiguration("paper", userAgent, 1, 0, 0, null))
+        assertThatThrownBy(() -> VALIDATOR.validateConfiguration("paper", userAgent, null, 1, 0, 0, null))
             .isInstanceOf(MojoExecutionException.class)
             .hasMessageContaining("lightkeeper.userAgent");
+    }
+
+    @Test
+    void validateConfiguration_shouldRejectConfiguredAgentJarPath()
+    {
+        // setup
+        final Path configuredAgentJarPath = Path.of("/tmp/legacy-agent.jar");
+
+        // execute + verify
+        assertThatThrownBy(
+            () -> VALIDATOR.validateConfiguration("paper", "LightKeeper/Test", configuredAgentJarPath, 1, 0, 0, null))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("lightkeeper.agentJarPath")
+            .hasMessageContaining("internal");
     }
 }

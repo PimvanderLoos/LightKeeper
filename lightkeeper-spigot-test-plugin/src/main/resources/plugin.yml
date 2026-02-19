@@ -1,0 +1,15 @@
+name: LightkeeperSpigotTestPlugin
+version: ${project.version}
+main: nl.pim16aap2.lightkeeper.spigot.testplugin.LightkeeperSpigotTestPlugin
+api-version: "1.21"
+description: Standalone LightKeeper Spigot test plugin
+authors:
+  - pim16aap2
+commands:
+  lktestgui:
+    description: Opens the standalone LightKeeper integration test GUI
+    usage: /lktestgui
+permissions:
+  lightkeeper.testplugin.lktestgui:
+    description: Allows opening the LightKeeper test GUI.
+    default: false

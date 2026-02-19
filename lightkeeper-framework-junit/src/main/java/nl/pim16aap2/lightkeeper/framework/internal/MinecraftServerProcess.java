@@ -196,7 +196,7 @@ final class MinecraftServerProcess
             Files.writeString(bundleDirectory.resolve("manifest-socket-path.txt"),
                 runtimeManifest.udsSocketPath(), StandardCharsets.UTF_8);
             Files.writeString(bundleDirectory.resolve("manifest-protocol-version.txt"),
-                runtimeManifest.runtimeProtocolVersion(), StandardCharsets.UTF_8);
+                Integer.toString(runtimeManifest.runtimeProtocolVersion()), StandardCharsets.UTF_8);
             Files.writeString(
                 bundleDirectory.resolve("server-output.log"),
                 String.join(System.lineSeparator(), snapshotOutputLines()),

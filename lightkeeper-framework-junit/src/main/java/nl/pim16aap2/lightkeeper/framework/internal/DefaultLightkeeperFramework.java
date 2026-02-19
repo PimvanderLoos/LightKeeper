@@ -13,6 +13,7 @@ import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import nl.pim16aap2.lightkeeper.framework.WorldSpec;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestReader;
+import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
 import org.jspecify.annotations.Nullable;
 
 import javax.inject.Inject;
@@ -422,6 +423,14 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
 
     private static void validateRuntimeManifest(RuntimeManifest runtimeManifest)
     {
+        if (runtimeManifest.runtimeProtocolVersion() != RuntimeProtocol.VERSION)
+        {
+            throw new IllegalStateException(
+                "Runtime protocol version mismatch. expected=%d actual=%d."
+                    .formatted(RuntimeProtocol.VERSION, runtimeManifest.runtimeProtocolVersion())
+            );
+        }
+
         final Path serverDirectory = Path.of(runtimeManifest.serverDirectory());
         final Path serverJar = Path.of(runtimeManifest.serverJar());
         if (!Files.isDirectory(serverDirectory))
