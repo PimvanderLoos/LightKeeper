@@ -88,6 +88,28 @@
                 <version>${version.maven-dependency-plugin}</version>
                 <executions>
                     <execution>
+                        <id>embed-spigot-agent-jar-for-tests</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>nl.pim16aap2.lightkeeper</groupId>
+                                    <artifactId>lightkeeper-agent-spigot</artifactId>
+                                    <version>${project.version}</version>
+                                    <type>jar</type>
+                                    <classifier>reactor-test</classifier>
+                                    <outputDirectory>${project.build.testOutputDirectory}/embedded</outputDirectory>
+                                    <destFileName>lightkeeper-agent-spigot.jar</destFileName>
+                                </artifactItem>
+                            </artifactItems>
+                            <overWriteReleases>true</overWriteReleases>
+                        </configuration>
+                    </execution>
+
+                    <execution>
                         <id>embed-spigot-agent-jar</id>
                         <phase>prepare-package</phase>
                         <goals>
