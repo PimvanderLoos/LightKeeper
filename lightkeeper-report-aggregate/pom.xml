@@ -6,7 +6,7 @@
     <parent>
         <groupId>nl.pim16aap2.lightkeeper</groupId>
         <artifactId>lightkeeper-parent</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>1.2.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>lightkeeper-report-aggregate</artifactId>
@@ -17,24 +17,117 @@
         <maven.compiler.release>21</maven.compiler.release>
         <project.root-dir>${project.basedir}/..</project.root-dir>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <lightkeeper.runtime.jacoco.class-dump-dir>${project.root-dir}/lightkeeper-maven-plugin-test/target/jacoco-classdump</lightkeeper.runtime.jacoco.class-dump-dir>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>nl.pim16aap2.lightkeeper</groupId>
+            <artifactId>lightkeeper-runtime-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>nl.pim16aap2.lightkeeper</groupId>
+            <artifactId>lightkeeper-nms-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>nl.pim16aap2.lightkeeper</groupId>
+            <artifactId>lightkeeper-nms-v1_21_R7</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>nl.pim16aap2.lightkeeper</groupId>
+            <artifactId>lightkeeper-agent-spigot</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>nl.pim16aap2.lightkeeper</groupId>
+            <artifactId>lightkeeper-framework-junit</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>nl.pim16aap2.lightkeeper</groupId>
             <artifactId>lightkeeper-maven-plugin</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>nl.pim16aap2.lightkeeper</groupId>
             <artifactId>lightkeeper-maven-plugin-test</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>sync-runtime-jacoco-class-dump</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target name="sync-runtime-jacoco-class-dump">
+                                <copy overwrite="true"
+                                      failonerror="false"
+                                      todir="${project.root-dir}/lightkeeper-runtime-core/target/classes">
+                                    <fileset dir="${lightkeeper.runtime.jacoco.class-dump-dir}" erroronmissingdir="false">
+                                        <include name="**/nl/pim16aap2/lightkeeper/runtime/**/*.class"/>
+                                    </fileset>
+                                    <mapper type="regexp"
+                                            from="^.*(nl/pim16aap2/lightkeeper/runtime/.*?)(\.[0-9a-f]+)?\.class$"
+                                            to="\1.class"/>
+                                </copy>
+
+                                <copy overwrite="true"
+                                      failonerror="false"
+                                      todir="${project.root-dir}/lightkeeper-nms-parent/lightkeeper-nms-api/target/classes">
+                                    <fileset dir="${lightkeeper.runtime.jacoco.class-dump-dir}" erroronmissingdir="false">
+                                        <include name="**/nl/pim16aap2/lightkeeper/nms/api/**/*.class"/>
+                                    </fileset>
+                                    <mapper type="regexp"
+                                            from="^.*(nl/pim16aap2/lightkeeper/nms/api/.*?)(\.[0-9a-f]+)?\.class$"
+                                            to="\1.class"/>
+                                </copy>
+
+                                <copy overwrite="true"
+                                      failonerror="false"
+                                      todir="${project.root-dir}/lightkeeper-nms-parent/lightkeeper-nms-v1_21_R7/target/classes">
+                                    <fileset dir="${lightkeeper.runtime.jacoco.class-dump-dir}" erroronmissingdir="false">
+                                        <include name="**/nl/pim16aap2/lightkeeper/nms/v121r7/**/*.class"/>
+                                    </fileset>
+                                    <mapper type="regexp"
+                                            from="^.*(nl/pim16aap2/lightkeeper/nms/v121r7/.*?)(\.[0-9a-f]+)?\.class$"
+                                            to="\1.class"/>
+                                </copy>
+
+                                <copy overwrite="true"
+                                      failonerror="false"
+                                      todir="${project.root-dir}/lightkeeper-agent-spigot/target/classes">
+                                    <fileset dir="${lightkeeper.runtime.jacoco.class-dump-dir}" erroronmissingdir="false">
+                                        <include name="**/nl/pim16aap2/lightkeeper/agent/spigot/**/*.class"/>
+                                    </fileset>
+                                    <mapper type="regexp"
+                                            from="^.*(nl/pim16aap2/lightkeeper/agent/spigot/.*?)(\.[0-9a-f]+)?\.class$"
+                                            to="\1.class"/>
+                                </copy>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -46,6 +139,12 @@
                         <goals>
                             <goal>report-aggregate</goal>
                         </goals>
+                        <configuration>
+                            <excludes>
+                                <!-- Generated by maven-plugin-plugin. -->
+                                <exclude>nl/pim16aap2/lightkeeper/lightkeeper_maven_plugin/*</exclude>
+                            </excludes>
+                        </configuration>
                     </execution>
 
                     <execution>
