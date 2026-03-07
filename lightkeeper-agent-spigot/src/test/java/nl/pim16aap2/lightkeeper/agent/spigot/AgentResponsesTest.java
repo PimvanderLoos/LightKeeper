@@ -1,5 +1,6 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
+import nl.pim16aap2.lightkeeper.runtime.agent.AgentErrorCode;
 import nl.pim16aap2.lightkeeper.runtime.agent.AgentResponse;
 import org.junit.jupiter.api.Test;
 
@@ -32,7 +33,7 @@ class AgentResponsesTest
     {
         // setup
         final String requestId = "request-2";
-        final String errorCode = "INVALID_ARGUMENT";
+        final AgentErrorCode errorCode = AgentErrorCode.INVALID_ARGUMENT;
         final String message = "Argument 'x' must not be blank.";
 
         // execute
@@ -41,7 +42,7 @@ class AgentResponsesTest
         // verify
         assertThat(response.requestId()).isEqualTo(requestId);
         assertThat(response.success()).isFalse();
-        assertThat(response.errorCode()).isEqualTo(errorCode);
+        assertThat(response.errorCode()).isEqualTo(errorCode.wireCode());
         assertThat(response.errorMessage()).isEqualTo(message);
         assertThat(response.data()).isEmpty();
     }

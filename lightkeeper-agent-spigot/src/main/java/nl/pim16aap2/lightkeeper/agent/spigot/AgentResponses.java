@@ -1,5 +1,6 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
+import nl.pim16aap2.lightkeeper.runtime.agent.AgentErrorCode;
 import nl.pim16aap2.lightkeeper.runtime.agent.AgentResponse;
 
 import java.util.Map;
@@ -43,9 +44,9 @@ final class AgentResponses
      * @return
      *     Failed {@link AgentResponse}.
      */
-    static AgentResponse errorResponse(String requestId, String errorCode, String message)
+    static AgentResponse errorResponse(String requestId, AgentErrorCode errorCode, String message)
     {
-        return new AgentResponse(requestId, false, errorCode, message, Map.of());
+        return new AgentResponse(requestId, false, errorCode.wireCode(), message, Map.of());
     }
 
     /**
@@ -62,8 +63,12 @@ final class AgentResponses
      * @return
      *     Failed {@link AgentResponse}.
      */
-    static AgentResponse errorResponse(String requestId, String errorCode, String message, Map<String, String> data)
+    static AgentResponse errorResponse(
+        String requestId,
+        AgentErrorCode errorCode,
+        String message,
+        Map<String, String> data)
     {
-        return new AgentResponse(requestId, false, errorCode, message, data);
+        return new AgentResponse(requestId, false, errorCode.wireCode(), message, data);
     }
 }

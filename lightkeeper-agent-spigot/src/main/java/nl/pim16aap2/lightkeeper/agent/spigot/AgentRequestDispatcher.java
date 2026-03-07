@@ -2,6 +2,7 @@ package nl.pim16aap2.lightkeeper.agent.spigot;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import nl.pim16aap2.lightkeeper.runtime.agent.AgentAction;
+import nl.pim16aap2.lightkeeper.runtime.agent.AgentErrorCode;
 import nl.pim16aap2.lightkeeper.runtime.agent.AgentRequest;
 import nl.pim16aap2.lightkeeper.runtime.agent.AgentResponse;
 import org.bukkit.Bukkit;
@@ -120,7 +121,7 @@ final class AgentRequestDispatcher
             return new RequestDispatchResult(
                 AgentResponses.errorResponse(
                     "unknown",
-                    "INVALID_REQUEST",
+                    AgentErrorCode.INVALID_REQUEST,
                     "Failed to parse request: " + exception.getMessage()
                 ),
                 handshakeCompleted
@@ -156,7 +157,7 @@ final class AgentRequestDispatcher
                 return new RequestDispatchResult(
                     AgentResponses.errorResponse(
                         requestId,
-                        "HANDSHAKE_REQUIRED",
+                        AgentErrorCode.HANDSHAKE_REQUIRED,
                         "A successful HANDSHAKE action is required before '%s'."
                             .formatted(String.valueOf(request.action()))
                     ),
@@ -200,7 +201,7 @@ final class AgentRequestDispatcher
             return new RequestDispatchResult(
                 AgentResponses.errorResponse(
                     requestId,
-                    "REQUEST_FAILED",
+                    AgentErrorCode.REQUEST_FAILED,
                     Objects.requireNonNullElse(exception.getMessage(), exception.getClass().getName())
                 ),
                 handshakeCompleted
@@ -225,7 +226,7 @@ final class AgentRequestDispatcher
         final String clientAgentSha = arguments.getOrDefault("agentSha256", "");
 
         if (!authToken.equals(token))
-            return AgentResponses.errorResponse(requestId, "AUTH_FAILED", "Auth token mismatch.");
+            return AgentResponses.errorResponse(requestId, AgentErrorCode.AUTH_FAILED, "Auth token mismatch.");
 
         final int clientProtocolVersion;
         try
@@ -236,7 +237,7 @@ final class AgentRequestDispatcher
         {
             return AgentResponses.errorResponse(
                 requestId,
-                "PROTOCOL_MISMATCH",
+                AgentErrorCode.PROTOCOL_MISMATCH,
                 "Runtime protocol version mismatch. expected=%d actual=%s."
                     .formatted(protocolVersion, rawClientProtocolVersion),
                 Map.of(
@@ -250,7 +251,7 @@ final class AgentRequestDispatcher
         {
             return AgentResponses.errorResponse(
                 requestId,
-                "PROTOCOL_MISMATCH",
+                AgentErrorCode.PROTOCOL_MISMATCH,
                 "Runtime protocol version mismatch. expected=%d actual=%d."
                     .formatted(protocolVersion, clientProtocolVersion),
                 Map.of(
@@ -261,7 +262,11 @@ final class AgentRequestDispatcher
         }
 
         if (!expectedAgentSha256.isBlank() && !expectedAgentSha256.equalsIgnoreCase(clientAgentSha))
-            return AgentResponses.errorResponse(requestId, "AGENT_SHA_MISMATCH", "Agent SHA-256 mismatch.");
+            return AgentResponses.errorResponse(
+                requestId,
+                AgentErrorCode.AGENT_SHA_MISMATCH,
+                "Agent SHA-256 mismatch."
+            );
 
         return AgentResponses.successResponse(requestId, Map.of(
             "protocolVersion", Integer.toString(protocolVersion),

@@ -1,5 +1,6 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
+import nl.pim16aap2.lightkeeper.runtime.agent.AgentErrorCode;
 import nl.pim16aap2.lightkeeper.runtime.agent.AgentResponse;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -99,7 +100,7 @@ final class AgentWorldActions
         {
             return AgentResponses.errorResponse(
                 requestId,
-                "INVALID_ARGUMENT",
+                AgentErrorCode.INVALID_ARGUMENT,
                 "Argument 'worldName' must not be blank."
             );
         }
@@ -145,7 +146,7 @@ final class AgentWorldActions
         {
             return AgentResponses.errorResponse(
                 requestId,
-                "INVALID_ARGUMENT",
+                AgentErrorCode.INVALID_ARGUMENT,
                 "Argument 'command' must not be blank."
             );
         }
@@ -154,7 +155,7 @@ final class AgentWorldActions
         {
             return AgentResponses.errorResponse(
                 requestId,
-                "UNSUPPORTED_SOURCE",
+                AgentErrorCode.UNSUPPORTED_SOURCE,
                 "Only CONSOLE command source is supported in v1."
             );
         }
@@ -223,7 +224,7 @@ final class AgentWorldActions
         {
             return AgentResponses.errorResponse(
                 requestId,
-                "INVALID_ARGUMENT",
+                AgentErrorCode.INVALID_ARGUMENT,
                 "Argument 'material' must not be blank."
             );
         }
@@ -233,7 +234,7 @@ final class AgentWorldActions
         {
             return AgentResponses.errorResponse(
                 requestId,
-                "INVALID_ARGUMENT",
+                AgentErrorCode.INVALID_ARGUMENT,
                 "Unknown material '%s'.".formatted(materialName)
             );
         }
@@ -267,7 +268,7 @@ final class AgentWorldActions
         {
             return AgentResponses.errorResponse(
                 requestId,
-                "INVALID_ARGUMENT",
+                AgentErrorCode.INVALID_ARGUMENT,
                 "Argument 'ticks' must be >= 0."
             );
         }
@@ -281,7 +282,7 @@ final class AgentWorldActions
             {
                 return AgentResponses.errorResponse(
                     requestId,
-                    "TIMEOUT",
+                    AgentErrorCode.TIMEOUT,
                     "Timed out waiting for %d ticks. start=%d current=%d target=%d"
                         .formatted(ticks, startTick, tickCounter.get(), targetTick)
                 );
@@ -297,7 +298,7 @@ final class AgentWorldActions
                 Thread.currentThread().interrupt();
                 return AgentResponses.errorResponse(
                     requestId,
-                    "INTERRUPTED",
+                    AgentErrorCode.INTERRUPTED,
                     "Interrupted while waiting for ticks."
                 );
             }

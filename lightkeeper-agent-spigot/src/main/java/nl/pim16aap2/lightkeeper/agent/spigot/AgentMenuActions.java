@@ -1,6 +1,7 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import nl.pim16aap2.lightkeeper.runtime.agent.AgentErrorCode;
 import nl.pim16aap2.lightkeeper.runtime.agent.AgentResponse;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -135,7 +136,11 @@ final class AgentMenuActions
         final int slot = AgentRequestParsers.parseInt(arguments.getOrDefault("slot", "-1"));
         if (slot < 0)
         {
-            return AgentResponses.errorResponse(requestId, "INVALID_ARGUMENT", "Argument 'slot' must be >= 0.");
+            return AgentResponses.errorResponse(
+                requestId,
+                AgentErrorCode.INVALID_ARGUMENT,
+                "Argument 'slot' must be >= 0."
+            );
         }
 
         mainThreadExecutor.callOnMainThread(() ->
@@ -181,7 +186,7 @@ final class AgentMenuActions
         {
             return AgentResponses.errorResponse(
                 requestId,
-                "INVALID_ARGUMENT",
+                AgentErrorCode.INVALID_ARGUMENT,
                 "Unknown material '%s'.".formatted(materialName)
             );
         }
@@ -191,7 +196,7 @@ final class AgentMenuActions
         {
             return AgentResponses.errorResponse(
                 requestId,
-                "INVALID_ARGUMENT",
+                AgentErrorCode.INVALID_ARGUMENT,
                 "Argument 'slots' must not be blank."
             );
         }

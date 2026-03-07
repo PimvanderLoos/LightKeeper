@@ -2,6 +2,7 @@ package nl.pim16aap2.lightkeeper.agent.spigot;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import nl.pim16aap2.lightkeeper.nms.api.IBotPlayerNmsAdapter;
+import nl.pim16aap2.lightkeeper.runtime.agent.AgentErrorCode;
 import nl.pim16aap2.lightkeeper.runtime.agent.AgentResponse;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -87,12 +88,18 @@ final class AgentPlayerActions
         final String name = arguments.getOrDefault("name", "").trim();
         final String worldName = arguments.getOrDefault("worldName", "").trim();
         if (name.isBlank())
-            return AgentResponses.errorResponse(requestId, "INVALID_ARGUMENT", "Argument 'name' must not be blank.");
+        {
+            return AgentResponses.errorResponse(
+                requestId,
+                AgentErrorCode.INVALID_ARGUMENT,
+                "Argument 'name' must not be blank."
+            );
+        }
         if (worldName.isBlank())
         {
             return AgentResponses.errorResponse(
                 requestId,
-                "INVALID_ARGUMENT",
+                AgentErrorCode.INVALID_ARGUMENT,
                 "Argument 'worldName' must not be blank."
             );
         }
@@ -188,7 +195,7 @@ final class AgentPlayerActions
         {
             return AgentResponses.errorResponse(
                 requestId,
-                "INVALID_ARGUMENT",
+                AgentErrorCode.INVALID_ARGUMENT,
                 "Argument 'command' must not be blank."
             );
         }
@@ -231,7 +238,7 @@ final class AgentPlayerActions
         {
             return AgentResponses.errorResponse(
                 requestId,
-                "INVALID_ARGUMENT",
+                AgentErrorCode.INVALID_ARGUMENT,
                 "Unknown material '%s'.".formatted(materialName)
             );
         }

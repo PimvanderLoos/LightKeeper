@@ -8,6 +8,7 @@ import nl.pim16aap2.lightkeeper.framework.MenuSnapshot;
 import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.framework.WorldSpec;
 import nl.pim16aap2.lightkeeper.runtime.agent.AgentAction;
+import nl.pim16aap2.lightkeeper.runtime.agent.AgentErrorCode;
 import nl.pim16aap2.lightkeeper.runtime.agent.AgentRequest;
 import nl.pim16aap2.lightkeeper.runtime.agent.AgentResponse;
 import org.jspecify.annotations.Nullable;
@@ -260,6 +261,8 @@ final class UdsAgentClient implements AutoCloseable
 
             if (!response.success())
             {
+                final AgentErrorCode errorCode = AgentErrorCode.fromWireCode(response.errorCode())
+                    .orElse(AgentErrorCode.UNKNOWN);
                 final String expectedProtocolVersion = response.data().get("expectedProtocolVersion");
                 final String actualProtocolVersion = response.data().get("actualProtocolVersion");
                 final String protocolDetail = expectedProtocolVersion != null || actualProtocolVersion != null
@@ -268,7 +271,7 @@ final class UdsAgentClient implements AutoCloseable
                     : "";
                 throw new IllegalStateException(
                     "Agent request failed. code=%s message=%s%s"
-                        .formatted(response.errorCode(), response.errorMessage(), protocolDetail)
+                        .formatted(errorCode.wireCode(), response.errorMessage(), protocolDetail)
                 );
             }
 
