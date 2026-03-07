@@ -41,6 +41,23 @@ public final class CleanupServerMojo extends AbstractMojo
     private @Nullable Path failsafeSummaryPath;
 
     /**
+     * Creates a cleanup mojo instance for Maven execution.
+     */
+    public CleanupServerMojo()
+    {
+    }
+
+    CleanupServerMojo(boolean deleteTargetServerOnSuccess, Path serverWorkDirectoryRoot, Path failsafeSummaryPath)
+    {
+        this.deleteTargetServerOnSuccess = deleteTargetServerOnSuccess;
+        this.serverWorkDirectoryRoot = Objects.requireNonNull(
+            serverWorkDirectoryRoot,
+            "serverWorkDirectoryRoot may not be null."
+        );
+        this.failsafeSummaryPath = Objects.requireNonNull(failsafeSummaryPath, "failsafeSummaryPath may not be null.");
+    }
+
+    /**
      * Deletes the prepared target server directory when integration tests succeeded and cleanup is enabled.
      */
     @Override

@@ -3,7 +3,6 @@ package nl.pim16aap2.lightkeeper.maven.mojo.cleanupserver;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -31,10 +30,7 @@ class CleanupServerMojoTest
             </failsafe-summary>
             """);
 
-        final CleanupServerMojo cleanupServerMojo = new CleanupServerMojo();
-        setField(cleanupServerMojo, "deleteTargetServerOnSuccess", true);
-        setField(cleanupServerMojo, "serverWorkDirectoryRoot", serverDirectory);
-        setField(cleanupServerMojo, "failsafeSummaryPath", summaryPath);
+        final CleanupServerMojo cleanupServerMojo = new CleanupServerMojo(true, serverDirectory, summaryPath);
 
         // execute
         cleanupServerMojo.execute();
@@ -62,10 +58,7 @@ class CleanupServerMojoTest
             </failsafe-summary>
             """);
 
-        final CleanupServerMojo cleanupServerMojo = new CleanupServerMojo();
-        setField(cleanupServerMojo, "deleteTargetServerOnSuccess", true);
-        setField(cleanupServerMojo, "serverWorkDirectoryRoot", serverDirectory);
-        setField(cleanupServerMojo, "failsafeSummaryPath", summaryPath);
+        final CleanupServerMojo cleanupServerMojo = new CleanupServerMojo(true, serverDirectory, summaryPath);
 
         // execute
         cleanupServerMojo.execute();
@@ -93,10 +86,7 @@ class CleanupServerMojoTest
             </failsafe-summary>
             """);
 
-        final CleanupServerMojo cleanupServerMojo = new CleanupServerMojo();
-        setField(cleanupServerMojo, "deleteTargetServerOnSuccess", false);
-        setField(cleanupServerMojo, "serverWorkDirectoryRoot", serverDirectory);
-        setField(cleanupServerMojo, "failsafeSummaryPath", summaryPath);
+        final CleanupServerMojo cleanupServerMojo = new CleanupServerMojo(false, serverDirectory, summaryPath);
 
         // execute
         cleanupServerMojo.execute();
@@ -124,10 +114,7 @@ class CleanupServerMojoTest
             </failsafe-summary>
             """);
 
-        final CleanupServerMojo cleanupServerMojo = new CleanupServerMojo();
-        setField(cleanupServerMojo, "deleteTargetServerOnSuccess", true);
-        setField(cleanupServerMojo, "serverWorkDirectoryRoot", serverDirectory);
-        setField(cleanupServerMojo, "failsafeSummaryPath", summaryPath);
+        final CleanupServerMojo cleanupServerMojo = new CleanupServerMojo(true, serverDirectory, summaryPath);
 
         // execute
         cleanupServerMojo.execute();
@@ -155,10 +142,7 @@ class CleanupServerMojoTest
             </failsafe-summary>
             """);
 
-        final CleanupServerMojo cleanupServerMojo = new CleanupServerMojo();
-        setField(cleanupServerMojo, "deleteTargetServerOnSuccess", true);
-        setField(cleanupServerMojo, "serverWorkDirectoryRoot", serverDirectory);
-        setField(cleanupServerMojo, "failsafeSummaryPath", summaryPath);
+        final CleanupServerMojo cleanupServerMojo = new CleanupServerMojo(true, serverDirectory, summaryPath);
 
         // execute
         cleanupServerMojo.execute();
@@ -174,10 +158,8 @@ class CleanupServerMojoTest
         // setup
         final Path serverDirectory = tempDirectory.resolve("lightkeeper-server");
         Files.createDirectories(serverDirectory);
-        final CleanupServerMojo cleanupServerMojo = new CleanupServerMojo();
-        setField(cleanupServerMojo, "deleteTargetServerOnSuccess", true);
-        setField(cleanupServerMojo, "serverWorkDirectoryRoot", serverDirectory);
-        setField(cleanupServerMojo, "failsafeSummaryPath", tempDirectory.resolve("missing-summary.xml"));
+        final CleanupServerMojo cleanupServerMojo =
+            new CleanupServerMojo(true, serverDirectory, tempDirectory.resolve("missing-summary.xml"));
 
         // execute
         cleanupServerMojo.execute();
@@ -195,10 +177,7 @@ class CleanupServerMojoTest
         Files.createDirectories(serverDirectory);
         final Path summaryPath = tempDirectory.resolve("failsafe-summary.xml");
         Files.writeString(summaryPath, "<failsafe-summary>");
-        final CleanupServerMojo cleanupServerMojo = new CleanupServerMojo();
-        setField(cleanupServerMojo, "deleteTargetServerOnSuccess", true);
-        setField(cleanupServerMojo, "serverWorkDirectoryRoot", serverDirectory);
-        setField(cleanupServerMojo, "failsafeSummaryPath", summaryPath);
+        final CleanupServerMojo cleanupServerMojo = new CleanupServerMojo(true, serverDirectory, summaryPath);
 
         // execute + verify
         assertThatThrownBy(cleanupServerMojo::execute)
@@ -227,10 +206,7 @@ class CleanupServerMojoTest
             </failsafe-summary>
             """);
 
-        final CleanupServerMojo cleanupServerMojo = new CleanupServerMojo();
-        setField(cleanupServerMojo, "deleteTargetServerOnSuccess", true);
-        setField(cleanupServerMojo, "serverWorkDirectoryRoot", configuredDirectory);
-        setField(cleanupServerMojo, "failsafeSummaryPath", summaryPath);
+        final CleanupServerMojo cleanupServerMojo = new CleanupServerMojo(true, configuredDirectory, summaryPath);
 
         // execute
         cleanupServerMojo.execute();
@@ -240,11 +216,4 @@ class CleanupServerMojoTest
         assertThat(unrelatedDirectory).isDirectory();
     }
 
-    private static void setField(Object instance, String fieldName, Object value)
-        throws Exception
-    {
-        final Field field = instance.getClass().getDeclaredField(fieldName);
-        field.setAccessible(true);
-        field.set(instance, value);
-    }
 }
