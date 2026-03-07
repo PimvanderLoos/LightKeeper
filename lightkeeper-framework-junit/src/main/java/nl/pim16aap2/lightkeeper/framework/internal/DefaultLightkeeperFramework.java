@@ -14,12 +14,12 @@ import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import nl.pim16aap2.lightkeeper.framework.WorldSpec;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestReader;
+import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestValidator;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
 import org.jspecify.annotations.Nullable;
 
 import javax.inject.Inject;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
@@ -72,7 +72,7 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     public static DefaultLightkeeperFramework start(Path runtimeManifestPath)
     {
         final RuntimeManifest runtimeManifest = readRuntimeManifest(runtimeManifestPath);
-        validateRuntimeManifest(runtimeManifest);
+        RuntimeManifestValidator.validateForRuntimeStartup(runtimeManifest, RuntimeProtocol.VERSION);
 
         final Path serverDirectory = Path.of(runtimeManifest.serverDirectory());
         final Path diagnosticsDirectory = serverDirectory.resolveSibling("lightkeeper-diagnostics");
@@ -420,24 +420,6 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
                 exception
             );
         }
-    }
-
-    private static void validateRuntimeManifest(RuntimeManifest runtimeManifest)
-    {
-        if (runtimeManifest.runtimeProtocolVersion() != RuntimeProtocol.VERSION)
-        {
-            throw new IllegalStateException(
-                "Runtime protocol version mismatch. expected=%d actual=%d."
-                    .formatted(RuntimeProtocol.VERSION, runtimeManifest.runtimeProtocolVersion())
-            );
-        }
-
-        final Path serverDirectory = Path.of(runtimeManifest.serverDirectory());
-        final Path serverJar = Path.of(runtimeManifest.serverJar());
-        if (!Files.isDirectory(serverDirectory))
-            throw new IllegalStateException("Server directory '%s' does not exist.".formatted(serverDirectory));
-        if (!Files.isRegularFile(serverJar))
-            throw new IllegalStateException("Server jar '%s' does not exist.".formatted(serverJar));
     }
 
     private static WorldSpec validateWorldSpec(WorldSpec worldSpec)
