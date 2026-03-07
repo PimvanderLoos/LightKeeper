@@ -22,14 +22,14 @@ class MenuHandleTest
 {
     private static final UUID PLAYER_UUID = UUID.fromString("8867478f-efcb-444f-bc95-d179f50131e7");
 
-    private FrameworkGateway frameworkGateway;
+    private IFrameworkGatewayView frameworkGateway;
     private PlayerHandle playerHandle;
     private MenuHandle menuHandle;
 
     @BeforeEach
     void setUp()
     {
-        frameworkGateway = mock(FrameworkGateway.class);
+        frameworkGateway = mock(IFrameworkGatewayView.class);
         playerHandle = new PlayerHandle(frameworkGateway, PLAYER_UUID, "lkplayer001");
         menuHandle = new MenuHandle(frameworkGateway, playerHandle);
     }

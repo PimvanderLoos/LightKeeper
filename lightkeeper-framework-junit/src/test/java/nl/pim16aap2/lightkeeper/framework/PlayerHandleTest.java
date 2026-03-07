@@ -20,13 +20,13 @@ class PlayerHandleTest
 {
     private static final UUID PLAYER_UUID = UUID.fromString("f678ad13-7dce-4b11-80d2-614dd0ff3f66");
 
-    private FrameworkGateway frameworkGateway;
+    private IFrameworkGatewayView frameworkGateway;
     private PlayerHandle playerHandle;
 
     @BeforeEach
     void setUp()
     {
-        frameworkGateway = mock(FrameworkGateway.class);
+        frameworkGateway = mock(IFrameworkGatewayView.class);
         playerHandle = new PlayerHandle(frameworkGateway, PLAYER_UUID, "lkplayer001");
     }
 

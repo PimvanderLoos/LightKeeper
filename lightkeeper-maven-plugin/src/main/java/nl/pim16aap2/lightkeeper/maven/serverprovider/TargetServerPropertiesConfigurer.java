@@ -51,7 +51,7 @@ final class TargetServerPropertiesConfigurer
         final List<String> updatedLines = new ArrayList<>(lines.size() + 2);
         boolean serverPortUpdated = false;
         boolean queryPortUpdated = false;
-        for (String line : lines)
+        for (final String line : lines)
         {
             if (line.startsWith("server-port="))
             {

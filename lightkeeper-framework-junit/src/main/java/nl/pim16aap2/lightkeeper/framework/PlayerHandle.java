@@ -17,7 +17,7 @@ public final class PlayerHandle
 {
     private static final Duration DEFAULT_MENU_WAIT_TIMEOUT = Duration.ofSeconds(10);
 
-    private final FrameworkGateway frameworkGateway;
+    private final IFrameworkGatewayView frameworkGateway;
     private final UUID uniqueId;
     private final String name;
 
@@ -31,7 +31,7 @@ public final class PlayerHandle
      * @param name
      *     Player name.
      */
-    PlayerHandle(FrameworkGateway frameworkGateway, UUID uniqueId, String name)
+    PlayerHandle(IFrameworkGatewayView frameworkGateway, UUID uniqueId, String name)
     {
         this.frameworkGateway = Objects.requireNonNull(frameworkGateway, "frameworkGateway may not be null.");
         this.uniqueId = Objects.requireNonNull(uniqueId, "uniqueId may not be null.");

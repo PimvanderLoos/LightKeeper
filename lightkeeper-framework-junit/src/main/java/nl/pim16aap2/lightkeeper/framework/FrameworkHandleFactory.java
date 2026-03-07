@@ -16,7 +16,7 @@ public final class FrameworkHandleFactory
     /**
      * Creates a world handle.
      */
-    public static WorldHandle worldHandle(FrameworkGateway frameworkGateway, String worldName)
+    public static WorldHandle worldHandle(IFrameworkGatewayView frameworkGateway, String worldName)
     {
         return new WorldHandle(frameworkGateway, worldName);
     }
@@ -24,7 +24,7 @@ public final class FrameworkHandleFactory
     /**
      * Creates a player handle.
      */
-    public static PlayerHandle playerHandle(FrameworkGateway frameworkGateway, UUID uniqueId, String name)
+    public static PlayerHandle playerHandle(IFrameworkGatewayView frameworkGateway, UUID uniqueId, String name)
     {
         return new PlayerHandle(frameworkGateway, uniqueId, name);
     }
@@ -32,7 +32,7 @@ public final class FrameworkHandleFactory
     /**
      * Creates a menu handle.
      */
-    public static MenuHandle menuHandle(FrameworkGateway frameworkGateway, PlayerHandle playerHandle)
+    public static MenuHandle menuHandle(IFrameworkGatewayView frameworkGateway, PlayerHandle playerHandle)
     {
         return new MenuHandle(frameworkGateway, playerHandle);
     }

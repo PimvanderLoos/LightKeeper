@@ -16,7 +16,7 @@ public final class MenuHandle
 {
     private static final Duration DEFAULT_MENU_WAIT_TIMEOUT = Duration.ofSeconds(10);
 
-    private final FrameworkGateway frameworkGateway;
+    private final IFrameworkGatewayView frameworkGateway;
     private final PlayerHandle player;
 
     /**
@@ -27,7 +27,7 @@ public final class MenuHandle
      * @param player
      *     Owning player.
      */
-    MenuHandle(FrameworkGateway frameworkGateway, PlayerHandle player)
+    MenuHandle(IFrameworkGatewayView frameworkGateway, PlayerHandle player)
     {
         this.frameworkGateway = Objects.requireNonNull(frameworkGateway, "frameworkGateway may not be null.");
         this.player = Objects.requireNonNull(player, "player may not be null.");

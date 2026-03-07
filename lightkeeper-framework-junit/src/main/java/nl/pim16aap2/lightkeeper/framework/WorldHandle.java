@@ -10,10 +10,10 @@ import java.util.Objects;
 @EqualsAndHashCode(of = "name")
 public final class WorldHandle
 {
-    private final FrameworkGateway frameworkGateway;
+    private final IFrameworkGatewayView frameworkGateway;
     private final String name;
 
-    WorldHandle(FrameworkGateway frameworkGateway, String name)
+    WorldHandle(IFrameworkGatewayView frameworkGateway, String name)
     {
         this.frameworkGateway = Objects.requireNonNull(frameworkGateway, "frameworkGateway may not be null.");
         this.name = Objects.requireNonNull(name, "name may not be null.");

@@ -10,7 +10,7 @@ import java.util.UUID;
  * This type is not part of the supported public API surface and exists to decouple public handle types from
  * implementation classes in {@code framework.internal}.
  */
-public interface FrameworkGateway
+public interface IFrameworkGatewayView
 {
     /**
      * Gets block material at a position.

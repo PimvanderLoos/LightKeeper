@@ -15,11 +15,11 @@ class FrameworkApiVisibilityTest
     {
         // setup
         final Constructor<PlayerHandle> playerConstructor =
-            PlayerHandle.class.getDeclaredConstructor(FrameworkGateway.class, UUID.class, String.class);
+            PlayerHandle.class.getDeclaredConstructor(IFrameworkGatewayView.class, UUID.class, String.class);
         final Constructor<MenuHandle> menuConstructor =
-            MenuHandle.class.getDeclaredConstructor(FrameworkGateway.class, PlayerHandle.class);
+            MenuHandle.class.getDeclaredConstructor(IFrameworkGatewayView.class, PlayerHandle.class);
         final Constructor<WorldHandle> worldConstructor =
-            WorldHandle.class.getDeclaredConstructor(FrameworkGateway.class, String.class);
+            WorldHandle.class.getDeclaredConstructor(IFrameworkGatewayView.class, String.class);
 
         // execute
         final boolean isPlayerConstructorPublic = Modifier.isPublic(playerConstructor.getModifiers());

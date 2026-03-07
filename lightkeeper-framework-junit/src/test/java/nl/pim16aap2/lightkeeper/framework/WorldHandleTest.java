@@ -10,13 +10,13 @@ import static org.mockito.Mockito.when;
 
 class WorldHandleTest
 {
-    private FrameworkGateway frameworkGateway;
+    private IFrameworkGatewayView frameworkGateway;
     private WorldHandle worldHandle;
 
     @BeforeEach
     void setUp()
     {
-        frameworkGateway = mock(FrameworkGateway.class);
+        frameworkGateway = mock(IFrameworkGatewayView.class);
         worldHandle = new WorldHandle(frameworkGateway, "world");
     }
 
