@@ -148,6 +148,10 @@
                         <goals>
                             <goal>cleanup-server</goal>
                         </goals>
+                        <configuration>
+                            <failsafeSummaryPath>${project.build.directory}/failsafe-reports/paper/failsafe-summary.xml</failsafeSummaryPath>
+                            <serverWorkDirectoryRoot>${lightkeeper.paper.server-work-directory}</serverWorkDirectoryRoot>
+                        </configuration>
                     </execution>
                     <execution>
                         <id>cleanup-server-spigot</id>
@@ -155,6 +159,10 @@
                         <goals>
                             <goal>cleanup-server</goal>
                         </goals>
+                        <configuration>
+                            <failsafeSummaryPath>${project.build.directory}/failsafe-reports/spigot/failsafe-summary.xml</failsafeSummaryPath>
+                            <serverWorkDirectoryRoot>${lightkeeper.spigot.server-work-directory}</serverWorkDirectoryRoot>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

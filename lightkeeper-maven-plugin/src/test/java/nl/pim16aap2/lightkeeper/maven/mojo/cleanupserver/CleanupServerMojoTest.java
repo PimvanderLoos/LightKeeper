@@ -205,6 +205,41 @@ class CleanupServerMojoTest
             .hasMessageContaining("Failed to read failsafe summary");
     }
 
+    @Test
+    void execute_shouldDeleteOnlyConfiguredServerDirectoryWhenSummaryIsSuccessful(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path configuredDirectory = tempDirectory.resolve("lightkeeper-server-paper");
+        final Path unrelatedDirectory = tempDirectory.resolve("lightkeeper-server-spigot");
+        Files.createDirectories(configuredDirectory);
+        Files.createDirectories(unrelatedDirectory);
+        Files.writeString(configuredDirectory.resolve("marker.txt"), "configured");
+        Files.writeString(unrelatedDirectory.resolve("marker.txt"), "unrelated");
+
+        final Path summaryPath = tempDirectory.resolve("failsafe-summary.xml");
+        Files.writeString(summaryPath, """
+            <failsafe-summary result="null" timeout="false">
+                <completed>1</completed>
+                <errors>0</errors>
+                <failures>0</failures>
+                <skipped>0</skipped>
+            </failsafe-summary>
+            """);
+
+        final CleanupServerMojo cleanupServerMojo = new CleanupServerMojo();
+        setField(cleanupServerMojo, "deleteTargetServerOnSuccess", true);
+        setField(cleanupServerMojo, "serverWorkDirectoryRoot", configuredDirectory);
+        setField(cleanupServerMojo, "failsafeSummaryPath", summaryPath);
+
+        // execute
+        cleanupServerMojo.execute();
+
+        // verify
+        assertThat(configuredDirectory).doesNotExist();
+        assertThat(unrelatedDirectory).isDirectory();
+    }
+
     private static void setField(Object instance, String fieldName, Object value)
         throws Exception
     {
