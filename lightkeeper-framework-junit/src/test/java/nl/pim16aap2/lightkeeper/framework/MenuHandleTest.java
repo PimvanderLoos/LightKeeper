@@ -1,6 +1,5 @@
 package nl.pim16aap2.lightkeeper.framework;
 
-import nl.pim16aap2.lightkeeper.framework.internal.IFrameworkGateway;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,14 +22,14 @@ class MenuHandleTest
 {
     private static final UUID PLAYER_UUID = UUID.fromString("8867478f-efcb-444f-bc95-d179f50131e7");
 
-    private IFrameworkGateway frameworkGateway;
+    private FrameworkGateway frameworkGateway;
     private PlayerHandle playerHandle;
     private MenuHandle menuHandle;
 
     @BeforeEach
     void setUp()
     {
-        frameworkGateway = mock(IFrameworkGateway.class);
+        frameworkGateway = mock(FrameworkGateway.class);
         playerHandle = new PlayerHandle(frameworkGateway, PLAYER_UUID, "lkplayer001");
         menuHandle = new MenuHandle(frameworkGateway, playerHandle);
     }

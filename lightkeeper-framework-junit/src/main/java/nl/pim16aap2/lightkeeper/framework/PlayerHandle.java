@@ -1,6 +1,5 @@
 package nl.pim16aap2.lightkeeper.framework;
 
-import nl.pim16aap2.lightkeeper.framework.internal.IFrameworkGateway;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Duration;
@@ -18,7 +17,7 @@ public final class PlayerHandle
 {
     private static final Duration DEFAULT_MENU_WAIT_TIMEOUT = Duration.ofSeconds(10);
 
-    private final IFrameworkGateway frameworkGateway;
+    private final FrameworkGateway frameworkGateway;
     private final UUID uniqueId;
     private final String name;
 
@@ -32,7 +31,7 @@ public final class PlayerHandle
      * @param name
      *     Player name.
      */
-    public PlayerHandle(IFrameworkGateway frameworkGateway, UUID uniqueId, String name)
+    PlayerHandle(FrameworkGateway frameworkGateway, UUID uniqueId, String name)
     {
         this.frameworkGateway = Objects.requireNonNull(frameworkGateway, "frameworkGateway may not be null.");
         this.uniqueId = Objects.requireNonNull(uniqueId, "uniqueId may not be null.");
@@ -113,7 +112,7 @@ public final class PlayerHandle
      */
     public MenuHandle andWaitForMenuOpen(int timeoutSeconds)
     {
-        final MenuHandle menuHandle = new MenuHandle(frameworkGateway, this);
+        final MenuHandle menuHandle = FrameworkHandleFactory.menuHandle(frameworkGateway, this);
         frameworkGateway.waitUntil(
             () -> menuHandle.snapshot().open(),
             Duration.ofSeconds(timeoutSeconds)
@@ -128,7 +127,7 @@ public final class PlayerHandle
      */
     public MenuHandle andWaitForMenuOpen()
     {
-        final MenuHandle menuHandle = new MenuHandle(frameworkGateway, this);
+        final MenuHandle menuHandle = FrameworkHandleFactory.menuHandle(frameworkGateway, this);
         frameworkGateway.waitUntil(
             () -> menuHandle.snapshot().open(),
             DEFAULT_MENU_WAIT_TIMEOUT
@@ -143,7 +142,7 @@ public final class PlayerHandle
      */
     public @Nullable MenuHandle getMenu()
     {
-        final MenuHandle menuHandle = new MenuHandle(frameworkGateway, this);
+        final MenuHandle menuHandle = FrameworkHandleFactory.menuHandle(frameworkGateway, this);
         return menuHandle.snapshot().open() ? menuHandle : null;
     }
 

@@ -3,6 +3,7 @@ package nl.pim16aap2.lightkeeper.framework.internal;
 import nl.pim16aap2.lightkeeper.framework.CommandResult;
 import nl.pim16aap2.lightkeeper.framework.CommandSource;
 import nl.pim16aap2.lightkeeper.framework.Condition;
+import nl.pim16aap2.lightkeeper.framework.FrameworkHandleFactory;
 import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.IPlayerBuilder;
 import nl.pim16aap2.lightkeeper.framework.IWorldBuilder;
@@ -119,7 +120,7 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     public WorldHandle mainWorld()
     {
         ensureOpen();
-        return new WorldHandle(this, agentClient.mainWorld());
+        return FrameworkHandleFactory.worldHandle(this, agentClient.mainWorld());
     }
 
     @Override
@@ -138,7 +139,7 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
             System.Logger.Level.INFO,
             () -> "LK_FRAMEWORK: Created world '" + worldName + "'."
         );
-        return new WorldHandle(this, worldName);
+        return FrameworkHandleFactory.worldHandle(this, worldName);
     }
 
     @Override
@@ -172,7 +173,7 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
             () -> "LK_FRAMEWORK: Created player '%s' (%s) in world '%s'."
                 .formatted(createdPlayer.name(), createdPlayer.uniqueId(), worldName)
         );
-        return new PlayerHandle(this, createdPlayer.uniqueId(), createdPlayer.name());
+        return FrameworkHandleFactory.playerHandle(this, createdPlayer.uniqueId(), createdPlayer.name());
     }
 
     @Override
@@ -504,6 +505,6 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
             permissions
         );
         playerScopeRegistry.register(createdPlayer.uniqueId());
-        return new PlayerHandle(this, createdPlayer.uniqueId(), createdPlayer.name());
+        return FrameworkHandleFactory.playerHandle(this, createdPlayer.uniqueId(), createdPlayer.name());
     }
 }

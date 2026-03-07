@@ -1,20 +1,23 @@
 package nl.pim16aap2.lightkeeper.framework;
 
 import lombok.EqualsAndHashCode;
-import lombok.RequiredArgsConstructor;
-import nl.pim16aap2.lightkeeper.framework.internal.IFrameworkGateway;
 
 import java.util.Objects;
 
 /**
  * Handle to a world in the running test server.
  */
-@RequiredArgsConstructor
 @EqualsAndHashCode(of = "name")
 public final class WorldHandle
 {
-    private final IFrameworkGateway frameworkGateway;
+    private final FrameworkGateway frameworkGateway;
     private final String name;
+
+    WorldHandle(FrameworkGateway frameworkGateway, String name)
+    {
+        this.frameworkGateway = Objects.requireNonNull(frameworkGateway, "frameworkGateway may not be null.");
+        this.name = Objects.requireNonNull(name, "name may not be null.");
+    }
 
     /**
      * Gets the world name.

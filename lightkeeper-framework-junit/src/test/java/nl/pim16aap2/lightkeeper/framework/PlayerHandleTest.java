@@ -1,6 +1,5 @@
 package nl.pim16aap2.lightkeeper.framework;
 
-import nl.pim16aap2.lightkeeper.framework.internal.IFrameworkGateway;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -21,13 +20,13 @@ class PlayerHandleTest
 {
     private static final UUID PLAYER_UUID = UUID.fromString("f678ad13-7dce-4b11-80d2-614dd0ff3f66");
 
-    private IFrameworkGateway frameworkGateway;
+    private FrameworkGateway frameworkGateway;
     private PlayerHandle playerHandle;
 
     @BeforeEach
     void setUp()
     {
-        frameworkGateway = mock(IFrameworkGateway.class);
+        frameworkGateway = mock(FrameworkGateway.class);
         playerHandle = new PlayerHandle(frameworkGateway, PLAYER_UUID, "lkplayer001");
     }
 

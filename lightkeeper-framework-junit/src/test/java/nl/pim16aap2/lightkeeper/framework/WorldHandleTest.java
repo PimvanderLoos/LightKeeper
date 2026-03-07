@@ -1,6 +1,5 @@
 package nl.pim16aap2.lightkeeper.framework;
 
-import nl.pim16aap2.lightkeeper.framework.internal.IFrameworkGateway;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -11,13 +10,13 @@ import static org.mockito.Mockito.when;
 
 class WorldHandleTest
 {
-    private IFrameworkGateway frameworkGateway;
+    private FrameworkGateway frameworkGateway;
     private WorldHandle worldHandle;
 
     @BeforeEach
     void setUp()
     {
-        frameworkGateway = mock(IFrameworkGateway.class);
+        frameworkGateway = mock(FrameworkGateway.class);
         worldHandle = new WorldHandle(frameworkGateway, "world");
     }
 

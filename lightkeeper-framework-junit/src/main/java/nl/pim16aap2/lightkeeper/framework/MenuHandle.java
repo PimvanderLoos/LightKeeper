@@ -1,6 +1,5 @@
 package nl.pim16aap2.lightkeeper.framework;
 
-import nl.pim16aap2.lightkeeper.framework.internal.IFrameworkGateway;
 import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
 
@@ -17,7 +16,7 @@ public final class MenuHandle
 {
     private static final Duration DEFAULT_MENU_WAIT_TIMEOUT = Duration.ofSeconds(10);
 
-    private final IFrameworkGateway frameworkGateway;
+    private final FrameworkGateway frameworkGateway;
     private final PlayerHandle player;
 
     /**
@@ -28,7 +27,7 @@ public final class MenuHandle
      * @param player
      *     Owning player.
      */
-    public MenuHandle(IFrameworkGateway frameworkGateway, PlayerHandle player)
+    MenuHandle(FrameworkGateway frameworkGateway, PlayerHandle player)
     {
         this.frameworkGateway = Objects.requireNonNull(frameworkGateway, "frameworkGateway may not be null.");
         this.player = Objects.requireNonNull(player, "player may not be null.");
