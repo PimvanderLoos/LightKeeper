@@ -7,13 +7,11 @@ import org.apache.maven.plugin.logging.SystemStreamLog;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
 import java.util.List;
-import java.util.Properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -21,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class ServerProviderTest
 {
     @Test
-    void createDefaultServerProperties_shouldReuseReservedPort(@TempDir Path tempDirectory)
+    void createDefaultServerProperties_shouldUsePortAgnosticDefaults(@TempDir Path tempDirectory)
         throws Exception
     {
         // setup
@@ -29,15 +27,13 @@ class ServerProviderTest
 
         // execute
         final String content = provider.createDefaultServerPropertiesForTests();
-        final Properties properties = new Properties();
-        properties.load(new StringReader(content));
 
         // verify
-        assertThat(properties.getProperty("online-mode")).isEqualTo("false");
-        assertThat(properties.getProperty("enable-query")).isEqualTo("true");
-        assertThat(properties.getProperty("enable-rcon")).isEqualTo("false");
-        assertThat(properties.getProperty("query.port")).matches("\\d+");
-        assertThat(properties.getProperty("server-port")).isEqualTo(properties.getProperty("query.port"));
+        assertThat(content).contains("online-mode=false");
+        assertThat(content).contains("enable-query=true");
+        assertThat(content).contains("enable-rcon=false");
+        assertThat(content).contains("query.port=25565");
+        assertThat(content).contains("server-port=25565");
     }
 
     @Test
@@ -301,7 +297,38 @@ class ServerProviderTest
         assertThat(shouldRecreate).isTrue();
     }
 
+    @Test
+    void rewriteTargetServerPropertiesWithReservedPort_shouldReplaceExistingPorts(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final TestServerProvider provider = createProvider(tempDirectory, 26601);
+        Files.createDirectories(provider.targetServerDirectoryForTests());
+        final Path propertiesFile = provider.targetServerDirectoryForTests().resolve("server.properties");
+        Files.writeString(
+            propertiesFile,
+            """
+                online-mode=false
+                query.port=25565
+                server-port=25565
+                """
+        );
+
+        // execute
+        provider.rewriteTargetServerPropertiesWithReservedPortForTests();
+
+        // verify
+        final String content = Files.readString(propertiesFile);
+        assertThat(content).contains("query.port=26601");
+        assertThat(content).contains("server-port=26601");
+    }
+
     private static TestServerProvider createProvider(Path tempDirectory)
+    {
+        return createProvider(tempDirectory, 25565);
+    }
+
+    private static TestServerProvider createProvider(Path tempDirectory, int reservedPort)
     {
         final Log log = new SystemStreamLog();
         final ServerSpecification specification = new ServerSpecification(
@@ -330,14 +357,17 @@ class ServerProviderTest
             1,
             "no-agent"
         );
-        return new TestServerProvider(log, specification);
+        return new TestServerProvider(log, specification, reservedPort);
     }
 
     private static final class TestServerProvider extends ServerProvider
     {
-        private TestServerProvider(Log log, ServerSpecification serverSpecification)
+        private final int reservedPort;
+
+        private TestServerProvider(Log log, ServerSpecification serverSpecification, int reservedPort)
         {
             super(log, "test", serverSpecification);
+            this.reservedPort = reservedPort;
         }
 
         @Override
@@ -428,6 +458,23 @@ class ServerProviderTest
             throws MojoExecutionException
         {
             downloadFile(url, targetFile);
+        }
+
+        @Override
+        protected int reserveTargetServerPort()
+        {
+            return reservedPort;
+        }
+
+        private Path targetServerDirectoryForTests()
+        {
+            return targetServerDirectoryPath();
+        }
+
+        private void rewriteTargetServerPropertiesWithReservedPortForTests()
+            throws MojoExecutionException
+        {
+            rewriteTargetServerPropertiesWithReservedPort();
         }
     }
 }

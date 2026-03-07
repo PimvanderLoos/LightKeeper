@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
@@ -231,18 +232,14 @@ public abstract class ServerProvider
      *     If no free local TCP port can be reserved.
      */
     protected String createDefaultServerProperties()
-        throws MojoExecutionException
     {
-        final int port = reserveAvailableTcpPort();
-        log().info("Using dynamically reserved server port: " + port);
         return """
             online-mode=false
             enable-query=true
-            query.port=%d
-            server-port=%d
+            query.port=25565
+            server-port=25565
             enable-rcon=false
-            """
-            .formatted(port, port);
+            """;
     }
 
     /**
@@ -554,6 +551,93 @@ public abstract class ServerProvider
         throws MojoExecutionException
     {
         FileUtil.copyDirectoryRecursively(baseServerDirectory, targetServerDirectory);
+        rewriteTargetServerPropertiesWithReservedPort();
+    }
+
+    /**
+     * Rewrites target-server {@code server.properties} with a port reserved for this target server materialization.
+     *
+     * @throws MojoExecutionException
+     *     If reading or updating the target {@code server.properties} fails.
+     */
+    protected void rewriteTargetServerPropertiesWithReservedPort()
+        throws MojoExecutionException
+    {
+        final Path targetServerPropertiesFile = targetServerDirectory.resolve("server.properties");
+        if (Files.notExists(targetServerPropertiesFile))
+        {
+            throw new MojoExecutionException(
+                "Target server properties file '%s' does not exist."
+                    .formatted(targetServerPropertiesFile)
+            );
+        }
+
+        final int reservedPort = reserveTargetServerPort();
+        final List<String> lines;
+        try
+        {
+            lines = Files.readAllLines(targetServerPropertiesFile, StandardCharsets.UTF_8);
+        }
+        catch (IOException exception)
+        {
+            throw new MojoExecutionException(
+                "Failed to read target server properties '%s'."
+                    .formatted(targetServerPropertiesFile),
+                exception
+            );
+        }
+
+        final List<String> updatedLines = new ArrayList<>(lines.size() + 2);
+        boolean serverPortUpdated = false;
+        boolean queryPortUpdated = false;
+        for (String line : lines)
+        {
+            if (line.startsWith("server-port="))
+            {
+                updatedLines.add("server-port=" + reservedPort);
+                serverPortUpdated = true;
+                continue;
+            }
+            if (line.startsWith("query.port="))
+            {
+                updatedLines.add("query.port=" + reservedPort);
+                queryPortUpdated = true;
+                continue;
+            }
+            updatedLines.add(line);
+        }
+
+        if (!serverPortUpdated)
+            updatedLines.add("server-port=" + reservedPort);
+        if (!queryPortUpdated)
+            updatedLines.add("query.port=" + reservedPort);
+
+        try
+        {
+            Files.write(targetServerPropertiesFile, updatedLines, StandardCharsets.UTF_8);
+        }
+        catch (IOException exception)
+        {
+            throw new MojoExecutionException(
+                "Failed to write updated target server properties '%s'."
+                    .formatted(targetServerPropertiesFile),
+                exception
+            );
+        }
+        log().info("Assigned target server port %d in '%s'.".formatted(reservedPort, targetServerPropertiesFile));
+    }
+
+    /**
+     * Reserves a target-server TCP port.
+     *
+     * @return A currently available local TCP port.
+     * @throws MojoExecutionException
+     *     If no local TCP port could be reserved.
+     */
+    protected int reserveTargetServerPort()
+        throws MojoExecutionException
+    {
+        return reserveAvailableTcpPort();
     }
 
     private boolean isTransientRetryFile(Path path)

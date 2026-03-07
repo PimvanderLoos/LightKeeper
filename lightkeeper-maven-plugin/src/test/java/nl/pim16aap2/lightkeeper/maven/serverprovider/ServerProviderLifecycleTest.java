@@ -12,6 +12,10 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -90,10 +94,57 @@ class ServerProviderLifecycleTest
         assertThat(shouldRecreate).isFalse();
     }
 
+    @Test
+    void prepareServer_shouldAssignNewTargetPortPerRunWhenReusingBaseCache(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final String agentSha256 = resolveEmbeddedAgentSha256();
+        final LifecycleServerProvider firstProvider =
+            createProvider(tempDirectory, true, true, agentSha256, "cache-key", 26701);
+
+        // execute
+        firstProvider.prepareServer();
+        final int firstPort = readServerPort(firstProvider.targetServerDirectoryPath());
+
+        final LifecycleServerProvider secondProvider =
+            createProvider(tempDirectory, false, false, agentSha256, "cache-key", 26702);
+        secondProvider.prepareServer();
+        final int secondPort = readServerPort(secondProvider.targetServerDirectoryPath());
+
+        // verify
+        assertThat(firstPort).isEqualTo(26701);
+        assertThat(secondPort).isEqualTo(26702);
+        assertThat(readServerPort(secondProvider.baseServerDirectoryForTests())).isEqualTo(25565);
+    }
+
+    @Test
+    void prepareServer_shouldAssignDistinctTargetPortsForParallelProvisioning(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final String agentSha256 = resolveEmbeddedAgentSha256();
+        final AtomicInteger reservedPortCounter = new AtomicInteger(26800);
+        final LifecycleServerProvider firstProvider =
+            createProvider(tempDirectory, true, true, agentSha256, "cache-key-a", reservedPortCounter::incrementAndGet);
+        final LifecycleServerProvider secondProvider =
+            createProvider(tempDirectory, true, true, agentSha256, "cache-key-b", reservedPortCounter::incrementAndGet);
+
+        // execute
+        final CompletableFuture<Void> firstRun = CompletableFuture.runAsync(() -> runPrepareServer(firstProvider));
+        final CompletableFuture<Void> secondRun = CompletableFuture.runAsync(() -> runPrepareServer(secondProvider));
+        waitAll(firstRun, secondRun);
+
+        // verify
+        final int firstPort = readServerPort(firstProvider.targetServerDirectoryPath());
+        final int secondPort = readServerPort(secondProvider.targetServerDirectoryPath());
+        assertThat(firstPort).isNotEqualTo(secondPort);
+    }
+
     private static LifecycleServerProvider createProviderWithoutAgent(Path tempDirectory)
         throws Exception
     {
-        return createProvider(tempDirectory, false, false, resolveEmbeddedAgentSha256());
+        return createProvider(tempDirectory, false, false, resolveEmbeddedAgentSha256(), "cache-key", 25565);
     }
 
     private static LifecycleServerProvider createProvider(
@@ -101,6 +152,35 @@ class ServerProviderLifecycleTest
         boolean forceRebuildJar,
         boolean forceRecreateBaseServer,
         String agentJarSha256)
+    {
+        return createProvider(tempDirectory, forceRebuildJar, forceRecreateBaseServer, agentJarSha256, "cache-key", 25565);
+    }
+
+    private static LifecycleServerProvider createProvider(
+        Path tempDirectory,
+        boolean forceRebuildJar,
+        boolean forceRecreateBaseServer,
+        String agentJarSha256,
+        String cacheKey,
+        int reservedPort)
+    {
+        return createProvider(
+            tempDirectory,
+            forceRebuildJar,
+            forceRecreateBaseServer,
+            agentJarSha256,
+            cacheKey,
+            () -> reservedPort
+        );
+    }
+
+    private static LifecycleServerProvider createProvider(
+        Path tempDirectory,
+        boolean forceRebuildJar,
+        boolean forceRecreateBaseServer,
+        String agentJarSha256,
+        String cacheKey,
+        PortSupplier portSupplier)
     {
         final Log log = new SystemStreamLog();
         final ServerSpecification specification = new ServerSpecification(
@@ -122,14 +202,45 @@ class ServerProviderLifecycleTest
             512,
             "java",
             null,
-            "cache-key",
+            cacheKey,
             "LightKeeper/Tests",
             agentJarSha256,
             "test-token",
             1,
             "agent-cache-id"
         );
-        return new LifecycleServerProvider(log, specification);
+        return new LifecycleServerProvider(log, specification, portSupplier);
+    }
+
+    private static int readServerPort(Path serverDirectory)
+        throws IOException
+    {
+        final List<String> lines = Files.readAllLines(serverDirectory.resolve("server.properties"));
+        return lines.stream()
+            .filter(line -> line.startsWith("server-port="))
+            .map(line -> line.substring("server-port=".length()))
+            .map(String::trim)
+            .mapToInt(Integer::parseInt)
+            .findFirst()
+            .orElseThrow();
+    }
+
+    private static void runPrepareServer(LifecycleServerProvider provider)
+    {
+        try
+        {
+            provider.prepareServer();
+        }
+        catch (MojoExecutionException exception)
+        {
+            throw new IllegalStateException("Failed to prepare server in parallel test.", exception);
+        }
+    }
+
+    private static void waitAll(CompletableFuture<Void> first, CompletableFuture<Void> second)
+        throws ExecutionException, InterruptedException
+    {
+        CompletableFuture.allOf(first, second).get();
     }
 
     private static String resolveEmbeddedAgentSha256()
@@ -145,10 +256,12 @@ class ServerProviderLifecycleTest
     {
         private int createBaseServerJarInvocations;
         private int createBaseServerInvocations;
+        private final PortSupplier portSupplier;
 
-        private LifecycleServerProvider(Log log, ServerSpecification serverSpecification)
+        private LifecycleServerProvider(Log log, ServerSpecification serverSpecification, PortSupplier portSupplier)
         {
             super(log, "test", serverSpecification);
+            this.portSupplier = portSupplier;
         }
 
         @Override
@@ -201,5 +314,19 @@ class ServerProviderLifecycleTest
         {
             return shouldBeRecreated(forceRecreate, expiryDays, file);
         }
+
+        @Override
+        protected int reserveTargetServerPort()
+            throws MojoExecutionException
+        {
+            return portSupplier.getAsInt();
+        }
+    }
+
+    @FunctionalInterface
+    private interface PortSupplier
+    {
+        int getAsInt()
+            throws MojoExecutionException;
     }
 }
