@@ -23,7 +23,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
@@ -573,58 +572,7 @@ public abstract class ServerProvider
         }
 
         final int reservedPort = reserveTargetServerPort();
-        final List<String> lines;
-        try
-        {
-            lines = Files.readAllLines(targetServerPropertiesFile, StandardCharsets.UTF_8);
-        }
-        catch (IOException exception)
-        {
-            throw new MojoExecutionException(
-                "Failed to read target server properties '%s'."
-                    .formatted(targetServerPropertiesFile),
-                exception
-            );
-        }
-
-        final List<String> updatedLines = new ArrayList<>(lines.size() + 2);
-        boolean serverPortUpdated = false;
-        boolean queryPortUpdated = false;
-        for (String line : lines)
-        {
-            if (line.startsWith("server-port="))
-            {
-                updatedLines.add("server-port=" + reservedPort);
-                serverPortUpdated = true;
-                continue;
-            }
-            if (line.startsWith("query.port="))
-            {
-                updatedLines.add("query.port=" + reservedPort);
-                queryPortUpdated = true;
-                continue;
-            }
-            updatedLines.add(line);
-        }
-
-        if (!serverPortUpdated)
-            updatedLines.add("server-port=" + reservedPort);
-        if (!queryPortUpdated)
-            updatedLines.add("query.port=" + reservedPort);
-
-        try
-        {
-            Files.write(targetServerPropertiesFile, updatedLines, StandardCharsets.UTF_8);
-        }
-        catch (IOException exception)
-        {
-            throw new MojoExecutionException(
-                "Failed to write updated target server properties '%s'."
-                    .formatted(targetServerPropertiesFile),
-                exception
-            );
-        }
-        log().info("Assigned target server port %d in '%s'.".formatted(reservedPort, targetServerPropertiesFile));
+        TargetServerPropertiesConfigurer.rewriteWithRuntimePort(log(), targetServerPropertiesFile, reservedPort);
     }
 
     /**
