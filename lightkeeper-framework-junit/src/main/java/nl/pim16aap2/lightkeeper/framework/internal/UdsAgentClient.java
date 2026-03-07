@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 final class UdsAgentClient implements AutoCloseable
 {
-    private static final System.Logger LOG = System.getLogger(MinecraftServerProcess.class.getName());
+    private static final System.Logger LOG = System.getLogger(UdsAgentClient.class.getName());
 
     private final ObjectMapper objectMapper = new ObjectMapper()
         .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -264,7 +264,7 @@ final class UdsAgentClient implements AutoCloseable
                 final String actualProtocolVersion = response.data().get("actualProtocolVersion");
                 final String protocolDetail = expectedProtocolVersion != null || actualProtocolVersion != null
                     ? " expectedProtocolVersion=%s actualProtocolVersion=%s"
-                        .formatted(expectedProtocolVersion, actualProtocolVersion)
+                      .formatted(expectedProtocolVersion, actualProtocolVersion)
                     : "";
                 throw new IllegalStateException(
                     "Agent request failed. code=%s message=%s%s"
