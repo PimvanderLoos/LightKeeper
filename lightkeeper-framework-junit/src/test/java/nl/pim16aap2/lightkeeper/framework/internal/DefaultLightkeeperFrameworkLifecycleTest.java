@@ -10,7 +10,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 class DefaultLightkeeperFrameworkLifecycleTest
 {
@@ -18,8 +17,7 @@ class DefaultLightkeeperFrameworkLifecycleTest
     void close_shouldCleanupRegisteredPlayersAndStopServerProcess()
     {
         // setup
-        final RuntimeManifest runtimeManifest = mock(RuntimeManifest.class);
-        when(runtimeManifest.preloadedWorlds()).thenReturn(List.of());
+        final RuntimeManifest runtimeManifest = runtimeManifest();
         final MinecraftServerProcess minecraftServerProcess = mock(MinecraftServerProcess.class);
         final UdsAgentClient agentClient = mock(UdsAgentClient.class);
         final PlayerScopeRegistry playerScopeRegistry = new PlayerScopeRegistry();
@@ -46,8 +44,7 @@ class DefaultLightkeeperFrameworkLifecycleTest
     void ensureOpen_shouldThrowExceptionAfterFrameworkIsClosed()
     {
         // setup
-        final RuntimeManifest runtimeManifest = mock(RuntimeManifest.class);
-        when(runtimeManifest.preloadedWorlds()).thenReturn(List.of());
+        final RuntimeManifest runtimeManifest = runtimeManifest();
         final DefaultLightkeeperFramework framework = new DefaultLightkeeperFramework(
             runtimeManifest,
             mock(MinecraftServerProcess.class),
@@ -60,5 +57,26 @@ class DefaultLightkeeperFrameworkLifecycleTest
         assertThatThrownBy(framework::ensureOpen)
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("already closed");
+    }
+
+    private static RuntimeManifest runtimeManifest()
+    {
+        return new RuntimeManifest(
+            "paper",
+            "1.21.11",
+            1L,
+            "cache-key",
+            "/tmp/lightkeeper/server",
+            "/tmp/lightkeeper/server/server.jar",
+            1024,
+            "/tmp/lightkeeper/agent.sock",
+            "auth-token",
+            "/tmp/lightkeeper/agent.jar",
+            "agent-sha256",
+            1,
+            "agent-cache-identity",
+            null,
+            List.of()
+        );
     }
 }
