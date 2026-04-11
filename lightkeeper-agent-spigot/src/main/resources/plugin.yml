@@ -1,0 +1,7 @@
+name: LightkeeperAgentSpigot
+version: ${project.version}
+main: nl.pim16aap2.lightkeeper.agent.spigot.SpigotLightkeeperAgentPlugin
+api-version: "1.21"
+description: LightKeeper Spigot runtime agent
+authors:
+  - pim16aap2

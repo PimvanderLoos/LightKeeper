@@ -1,0 +1,412 @@
+package nl.pim16aap2.lightkeeper.maven.serverprocess;
+
+import org.apache.maven.plugin.MojoExecutionException;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.jspecify.annotations.Nullable;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+class MinecraftServerProcessTest
+{
+    @Test
+    void start_shouldThrowExceptionWhenProcessIsAlreadyRunning(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final TestableMinecraftServerProcess minecraftServerProcess = new TestableMinecraftServerProcess(tempDirectory);
+        final StubProcess stubProcess = StubProcess.withInput("still running");
+        minecraftServerProcess.setProcessForTests(stubProcess);
+
+        // execute + verify
+        assertThatThrownBy(() -> minecraftServerProcess.start(1))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("already running");
+    }
+
+    @Test
+    void stop_shouldThrowExceptionWhenServerIsNotRunning(@TempDir Path tempDirectory)
+    {
+        // setup
+        final TestableMinecraftServerProcess minecraftServerProcess = new TestableMinecraftServerProcess(tempDirectory);
+
+        // execute + verify
+        assertThatThrownBy(() -> minecraftServerProcess.stop(1))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("not running");
+    }
+
+    @Test
+    void stop_shouldSendStopCommandAndWaitForShutdown(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final TestableMinecraftServerProcess minecraftServerProcess = new TestableMinecraftServerProcess(tempDirectory);
+        final StubProcess stubProcess = StubProcess.withInputAndSuccessfulWait("running\n");
+        minecraftServerProcess.setProcessForTests(stubProcess);
+
+        // execute
+        minecraftServerProcess.stop(1);
+
+        // verify
+        assertThat(stubProcess.writtenOutput()).contains("stop");
+        assertThat(stubProcess.destroyForciblyInvoked()).isFalse();
+    }
+
+    @Test
+    void stop_shouldForceKillWhenServerDoesNotStopInTime(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final TestableMinecraftServerProcess minecraftServerProcess = new TestableMinecraftServerProcess(tempDirectory);
+        final StubProcess stubProcess = StubProcess.withInput("running\n");
+        minecraftServerProcess.setProcessForTests(stubProcess);
+
+        // execute + verify
+        assertThatThrownBy(() -> minecraftServerProcess.stop(1))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("Failed to stop server");
+        assertThat(stubProcess.destroyForciblyInvoked()).isTrue();
+    }
+
+    @Test
+    void buildCommand_shouldIncludeMemorySettingsExtraArgsAndJar(@TempDir Path tempDirectory)
+    {
+        // setup
+        final TestableMinecraftServerProcess minecraftServerProcess =
+            new TestableMinecraftServerProcess(tempDirectory, "-Dfoo=bar -Dalpha=beta");
+
+        // execute
+        final var command = minecraftServerProcess.buildCommandForTests();
+
+        // verify
+        assertThat(command)
+            .containsExactly(
+                "java",
+                "-Xmx512M",
+                "-Xms512M",
+                "-Dfoo=bar",
+                "-Dalpha=beta",
+                "-jar",
+                tempDirectory.resolve("paper.jar").toString(),
+                "--nogui"
+            );
+    }
+
+    @Test
+    void buildCommand_shouldOmitExtraJvmArgsWhenNull(@TempDir Path tempDirectory)
+    {
+        // setup
+        final TestableMinecraftServerProcess minecraftServerProcess = new TestableMinecraftServerProcess(tempDirectory);
+
+        // execute
+        final var command = minecraftServerProcess.buildCommandForTests();
+
+        // verify
+        assertThat(command)
+            .containsExactly(
+                "java",
+                "-Xmx512M",
+                "-Xms512M",
+                "-jar",
+                tempDirectory.resolve("paper.jar").toString(),
+                "--nogui"
+            );
+    }
+
+    @Test
+    void waitForStartup_shouldReturnWhenDoneLineIsObserved(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final TestableMinecraftServerProcess minecraftServerProcess = new TestableMinecraftServerProcess(tempDirectory);
+        final StubProcess stubProcess = StubProcess.withInput("""
+            [Server thread/INFO]: Starting minecraft server version 1.21.11
+            [Server thread/INFO]: Done (1.234s)! For help, type "help"
+            """);
+        minecraftServerProcess.setProcessForTests(stubProcess);
+
+        // execute
+        minecraftServerProcess.waitForStartupForTests(1);
+
+        // verify
+        assertThat(stubProcess.destroyForciblyInvoked()).isFalse();
+    }
+
+    @Test
+    void waitForStartup_shouldThrowWhenStartupFailureIsLogged(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final TestableMinecraftServerProcess minecraftServerProcess = new TestableMinecraftServerProcess(tempDirectory);
+        final StubProcess stubProcess = StubProcess.withInput(
+            "[Server thread/ERROR]: Failed to initialize server\n"
+        );
+        minecraftServerProcess.setProcessForTests(stubProcess);
+
+        // execute
+        final var thrown = assertThatThrownBy(() -> minecraftServerProcess.waitForStartupForTests(1));
+
+        // verify
+        thrown.isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("Server startup failed:");
+        assertThat(stubProcess.destroyForciblyInvoked()).isTrue();
+    }
+
+    @Test
+    void waitForStartup_shouldTimeoutWhenOutputBlocksWithoutNewline(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final TestableMinecraftServerProcess minecraftServerProcess = new TestableMinecraftServerProcess(tempDirectory);
+        final StubProcess stubProcess = StubProcess.withBlockingInput();
+        minecraftServerProcess.setProcessForTests(stubProcess);
+
+        // execute
+        final var thrown = assertThatThrownBy(() -> minecraftServerProcess.waitForStartupForTests(1));
+
+        // verify
+        thrown.isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("Startup timeout after 1 second(s)");
+        assertThat(stubProcess.destroyForciblyInvoked()).isTrue();
+    }
+
+    @Test
+    void waitForStartup_shouldThrowWhenProcessExitsBeforeStartupCompletes(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final TestableMinecraftServerProcess minecraftServerProcess = new TestableMinecraftServerProcess(tempDirectory);
+        final StubProcess stubProcess = StubProcess.withInputAndSuccessfulWait("");
+        minecraftServerProcess.setProcessForTests(stubProcess);
+        stubProcess.destroy();
+
+        // execute + verify
+        assertThatThrownBy(() -> minecraftServerProcess.waitForStartupForTests(1))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("ended before startup completed");
+    }
+
+    @Test
+    void waitForStartup_shouldThrowWhenOutputReaderFails(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final TestableMinecraftServerProcess minecraftServerProcess = new TestableMinecraftServerProcess(tempDirectory);
+        final StubProcess stubProcess = StubProcess.withFailingInput();
+        minecraftServerProcess.setProcessForTests(stubProcess);
+
+        // execute + verify
+        assertThatThrownBy(() -> minecraftServerProcess.waitForStartupForTests(1))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("Failed to read server startup output");
+    }
+
+    private static void setProcess(MinecraftServerProcess minecraftServerProcess, Process process)
+        throws Exception
+    {
+        final Field processField = MinecraftServerProcess.class.getDeclaredField("process");
+        processField.setAccessible(true);
+        processField.set(minecraftServerProcess, process);
+    }
+
+    private static final class TestableMinecraftServerProcess extends MinecraftServerProcess
+    {
+        private TestableMinecraftServerProcess(Path serverDirectory)
+        {
+            super(serverDirectory, serverDirectory.resolve("paper.jar"), "java", null, 512);
+        }
+
+        private TestableMinecraftServerProcess(Path serverDirectory, String extraJvmArgs)
+        {
+            super(serverDirectory, serverDirectory.resolve("paper.jar"), "java", extraJvmArgs, 512);
+        }
+
+        private void setProcessForTests(Process process)
+            throws Exception
+        {
+            setProcess(this, process);
+        }
+
+        private void waitForStartupForTests(int timeoutSeconds)
+            throws MojoExecutionException
+        {
+            waitForStartup(timeoutSeconds);
+        }
+
+        private java.util.List<String> buildCommandForTests()
+        {
+            return buildCommand();
+        }
+    }
+
+    private static final class StubProcess extends Process
+    {
+        private final InputStream inputStream;
+        private final OutputStream outputStream;
+        private final @Nullable OutputStream backingOutputStream;
+        private final boolean exitOnWait;
+        private volatile boolean alive = true;
+        private volatile boolean destroyForciblyInvoked;
+
+        private StubProcess(
+            InputStream inputStream,
+            OutputStream outputStream,
+            @Nullable OutputStream backingOutputStream,
+            boolean exitOnWait)
+        {
+            this.inputStream = Objects.requireNonNull(inputStream, "inputStream may not be null.");
+            this.outputStream = Objects.requireNonNull(outputStream, "outputStream may not be null.");
+            this.backingOutputStream = backingOutputStream;
+            this.exitOnWait = exitOnWait;
+        }
+
+        private static StubProcess withInput(String output)
+        {
+            final ByteArrayInputStream inputStream = new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8));
+            return new StubProcess(inputStream, new ByteArrayOutputStream(), null, false);
+        }
+
+        private static StubProcess withInputAndSuccessfulWait(String output)
+        {
+            final ByteArrayInputStream inputStream = new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8));
+            return new StubProcess(inputStream, new ByteArrayOutputStream(), null, true);
+        }
+
+        private static StubProcess withBlockingInput()
+            throws IOException
+        {
+            final java.io.PipedInputStream inputStream = new java.io.PipedInputStream();
+            final java.io.PipedOutputStream outputStream = new java.io.PipedOutputStream(inputStream);
+            return new StubProcess(inputStream, new ByteArrayOutputStream(), outputStream, false);
+        }
+
+        private static StubProcess withFailingInput()
+        {
+            final InputStream inputStream = new InputStream()
+            {
+                @Override
+                public int read()
+                    throws IOException
+                {
+                    throw new IOException("boom");
+                }
+            };
+            return new StubProcess(inputStream, new ByteArrayOutputStream(), null, false);
+        }
+
+        boolean destroyForciblyInvoked()
+        {
+            return destroyForciblyInvoked;
+        }
+
+        String writtenOutput()
+        {
+            if (outputStream instanceof ByteArrayOutputStream byteArrayOutputStream)
+                return byteArrayOutputStream.toString(StandardCharsets.UTF_8);
+            return "";
+        }
+
+        @Override
+        public OutputStream getOutputStream()
+        {
+            return outputStream;
+        }
+
+        @Override
+        public InputStream getInputStream()
+        {
+            return inputStream;
+        }
+
+        @Override
+        public InputStream getErrorStream()
+        {
+            return InputStream.nullInputStream();
+        }
+
+        @Override
+        public int waitFor()
+            throws InterruptedException
+        {
+            if (exitOnWait)
+            {
+                alive = false;
+                return 0;
+            }
+            while (alive)
+                Thread.sleep(10L);
+            return 0;
+        }
+
+        @Override
+        public boolean waitFor(long timeout, TimeUnit unit)
+            throws InterruptedException
+        {
+            if (exitOnWait)
+            {
+                alive = false;
+                return true;
+            }
+            final long deadline = System.nanoTime() + unit.toNanos(timeout);
+            while (alive && System.nanoTime() < deadline)
+                Thread.sleep(10L);
+            return !alive;
+        }
+
+        @Override
+        public int exitValue()
+        {
+            if (alive)
+                throw new IllegalThreadStateException("Process has not exited.");
+            return 0;
+        }
+
+        @Override
+        public void destroy()
+        {
+            alive = false;
+            closeOutputStream();
+        }
+
+        @Override
+        public Process destroyForcibly()
+        {
+            destroyForciblyInvoked = true;
+            destroy();
+            return this;
+        }
+
+        @Override
+        public boolean isAlive()
+        {
+            return alive;
+        }
+
+        private void closeOutputStream()
+        {
+            if (backingOutputStream == null)
+                return;
+            try
+            {
+                backingOutputStream.close();
+            }
+            catch (IOException ignored)
+            {
+                // ignored in tests
+            }
+        }
+    }
+}

@@ -44,8 +44,15 @@ dependency-reduced-pom.xml
 ignoredFiles
 *.args
 *.txt
+!/lightkeeper-integration-tests/src/test/resources/provisioning/worlds/world-template/fixtures/marker.txt
 *.png
 *.db
 *.sh
 
 **/delombok/*
+docs/*
+.codex/*
+.claude/*
+.scratch/*
+.plans/*
+codecov
