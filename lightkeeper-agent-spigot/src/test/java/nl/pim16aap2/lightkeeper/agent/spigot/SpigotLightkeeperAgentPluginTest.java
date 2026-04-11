@@ -144,7 +144,7 @@ class SpigotLightkeeperAgentPluginTest
         final SpigotLightkeeperAgentPlugin plugin = allocatePlugin();
         try (MockedStatic<org.bukkit.Bukkit> bukkit = mockStatic(org.bukkit.Bukkit.class))
         {
-            bukkit.when(org.bukkit.Bukkit::getBukkitVersion).thenReturn("1.21.11-R0.1-SNAPSHOT");
+            bukkit.when(org.bukkit.Bukkit::getBukkitVersion).thenReturn("1.21.11-R0.2-SNAPSHOT");
             bukkit.when(org.bukkit.Bukkit::getServer).thenReturn(mock(org.bukkit.Server.class));
 
             // execute + verify
