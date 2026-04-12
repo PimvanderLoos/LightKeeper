@@ -25,7 +25,7 @@
         <project.root-dir>${project.basedir}</project.root-dir>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <version.maven>3.9.10</version.maven>
+        <version.maven>3.9.14</version.maven>
 
         <version.apache-commons-io>2.21.0</version.apache-commons-io>
         <version.assertj>4.0.0-M1</version.assertj>
