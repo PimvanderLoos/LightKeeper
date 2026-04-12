@@ -1,6 +1,7 @@
 package nl.pim16aap2.lightkeeper.framework;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -89,6 +90,13 @@ public interface ILightkeeperFramework extends AutoCloseable
      *     Timeout duration.
      */
     void waitUntil(Condition condition, Duration timeout);
+
+    /**
+     * Gets a snapshot of captured Minecraft server output lines.
+     *
+     * @return Captured server output lines ordered oldest-to-newest.
+     */
+    List<String> serverOutput();
 
     @Override
     void close();

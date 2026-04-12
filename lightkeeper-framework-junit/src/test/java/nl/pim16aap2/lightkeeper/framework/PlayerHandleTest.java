@@ -1,5 +1,6 @@
 package nl.pim16aap2.lightkeeper.framework;
 
+import org.bukkit.block.BlockFace;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -70,6 +71,34 @@ class PlayerHandleTest
         // verify
         assertThat(result).isSameAs(playerHandle);
         verify(frameworkGateway).placePlayerBlock(PLAYER_UUID, "minecraft:stone", 1, 64, 2);
+    }
+
+    @Test
+    void leftClickBlock_shouldDelegateToGatewayAndReturnSelf()
+    {
+        // setup
+        final Vector3Di position = new Vector3Di(1, 64, 2);
+
+        // execute
+        final PlayerHandle result = playerHandle.leftClickBlock(position, BlockFace.NORTH);
+
+        // verify
+        assertThat(result).isSameAs(playerHandle);
+        verify(frameworkGateway).leftClickBlock(PLAYER_UUID, position, "NORTH");
+    }
+
+    @Test
+    void rightClickBlock_shouldDelegateToGatewayAndReturnSelf()
+    {
+        // setup
+        final Vector3Di position = new Vector3Di(1, 64, 2);
+
+        // execute
+        final PlayerHandle result = playerHandle.rightClickBlock(position, BlockFace.SOUTH);
+
+        // verify
+        assertThat(result).isSameAs(playerHandle);
+        verify(frameworkGateway).rightClickBlock(PLAYER_UUID, position, "SOUTH");
     }
 
     @Test

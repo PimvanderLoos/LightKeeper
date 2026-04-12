@@ -1,5 +1,6 @@
 package nl.pim16aap2.lightkeeper.framework;
 
+import org.bukkit.block.BlockFace;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Duration;
@@ -87,6 +88,100 @@ public final class PlayerHandle
     public PlayerHandle placeBlock(String materialKey, int x, int y, int z)
     {
         frameworkGateway.placePlayerBlock(uniqueId, materialKey, x, y, z);
+        return this;
+    }
+
+    /**
+     * Fires a left-click block interaction at a position in this player's current world.
+     *
+     * @param x
+     *     X coordinate.
+     * @param y
+     *     Y coordinate.
+     * @param z
+     *     Z coordinate.
+     * @return This handle for fluent chaining.
+     */
+    public PlayerHandle leftClickBlock(int x, int y, int z)
+    {
+        return leftClickBlock(new Vector3Di(x, y, z));
+    }
+
+    /**
+     * Fires a left-click block interaction at a position in this player's current world.
+     *
+     * @param position
+     *     Block coordinates.
+     * @return This handle for fluent chaining.
+     */
+    public PlayerHandle leftClickBlock(Vector3Di position)
+    {
+        return leftClickBlock(position, BlockFace.UP);
+    }
+
+    /**
+     * Fires a left-click block interaction at a position in this player's current world.
+     *
+     * @param position
+     *     Block coordinates.
+     * @param blockFace
+     *     Clicked block face.
+     * @return This handle for fluent chaining.
+     */
+    public PlayerHandle leftClickBlock(Vector3Di position, BlockFace blockFace)
+    {
+        frameworkGateway.leftClickBlock(
+            uniqueId,
+            Objects.requireNonNull(position, "position may not be null."),
+            Objects.requireNonNull(blockFace, "blockFace may not be null.").name()
+        );
+        return this;
+    }
+
+    /**
+     * Fires a right-click block interaction at a position in this player's current world.
+     *
+     * @param x
+     *     X coordinate.
+     * @param y
+     *     Y coordinate.
+     * @param z
+     *     Z coordinate.
+     * @return This handle for fluent chaining.
+     */
+    public PlayerHandle rightClickBlock(int x, int y, int z)
+    {
+        return rightClickBlock(new Vector3Di(x, y, z));
+    }
+
+    /**
+     * Fires a right-click block interaction at a position in this player's current world.
+     *
+     * @param position
+     *     Block coordinates.
+     * @return This handle for fluent chaining.
+     */
+    public PlayerHandle rightClickBlock(Vector3Di position)
+    {
+        return rightClickBlock(position, BlockFace.UP);
+    }
+
+    /**
+     * Fires a right-click block interaction at a position in this player's current world.
+     *
+     * @param position
+     *     Block coordinates.
+     * @param blockFace
+     *     Clicked block face.
+     * @return This handle for fluent chaining.
+     */
+    public PlayerHandle rightClickBlock(Vector3Di position, BlockFace blockFace)
+    {
+        frameworkGateway.rightClickBlock(
+            uniqueId,
+            Objects.requireNonNull(position, "position may not be null."),
+            Objects.requireNonNull(blockFace, "blockFace may not be null.").name()
+        );
         return this;
     }
 

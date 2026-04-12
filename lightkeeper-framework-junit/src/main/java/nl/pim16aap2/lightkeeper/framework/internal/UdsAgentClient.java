@@ -169,6 +169,16 @@ final class UdsAgentClient implements AutoCloseable
         ));
     }
 
+    void leftClickBlock(UUID uuid, Vector3Di position, String blockFace)
+    {
+        clickBlock(AgentAction.LEFT_CLICK_BLOCK, uuid, position, blockFace);
+    }
+
+    void rightClickBlock(UUID uuid, Vector3Di position, String blockFace)
+    {
+        clickBlock(AgentAction.RIGHT_CLICK_BLOCK, uuid, position, blockFace);
+    }
+
     MenuSnapshot menuSnapshot(UUID uuid)
     {
         final AgentResponse response = send(AgentAction.GET_OPEN_MENU, Map.of(
@@ -234,6 +244,17 @@ final class UdsAgentClient implements AutoCloseable
         {
             throw new IllegalStateException("Failed to parse player messages JSON.", exception);
         }
+    }
+
+    private void clickBlock(AgentAction action, UUID uuid, Vector3Di position, String blockFace)
+    {
+        send(action, Map.of(
+            "uuid", uuid.toString(),
+            "x", Integer.toString(position.x()),
+            "y", Integer.toString(position.y()),
+            "z", Integer.toString(position.z()),
+            "blockFace", blockFace
+        ));
     }
 
     synchronized AgentResponse send(AgentAction action, Map<String, String> arguments)
