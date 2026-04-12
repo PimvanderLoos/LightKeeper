@@ -6,6 +6,7 @@ import nl.pim16aap2.lightkeeper.framework.MenuHandle;
 import nl.pim16aap2.lightkeeper.framework.CommandSource;
 import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import org.bukkit.Material;
+import org.bukkit.block.BlockFace;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -71,11 +72,22 @@ class LightkeeperBotIT
 
         player.placeBlock("minecraft:stone", 1, 100, 0)
             .andWaitTicks(1);
+        world.setBlockAt(new Vector3Di(3, 100, 0), "minecraft:gold_block");
+        player.leftClickBlock(new Vector3Di(3, 100, 0), BlockFace.NORTH)
+            .rightClickBlock(new Vector3Di(3, 100, 0), BlockFace.SOUTH)
+            .andWaitTicks(1);
 
         // verify
         assertThat(world)
             .hasBlockAt(1, 100, 0)
             .ofType(Material.STONE);
+        assertThat(world)
+            .hasBlockAt(3, 100, 0)
+            .ofType(Material.GOLD_BLOCK);
+        assertThat(player)
+            .receivedMessage("LK_BLOCK_CLICK action=LEFT_CLICK_BLOCK block=minecraft:gold_block x=3 y=100 z=0");
+        assertThat(player)
+            .receivedMessage("LK_BLOCK_CLICK action=RIGHT_CLICK_BLOCK block=minecraft:gold_block x=3 y=100 z=0");
         assertThat(secondPlayer)
             .receivedMessage("You clicked Button 1");
         assertThat(secondPlayer)
@@ -134,6 +146,9 @@ class LightkeeperBotIT
         assertThat(menuOpenBeforeClose).isTrue();
         assertThat(hasSword).isTrue();
         assertThat(noLongerOpenMenu).isNull();
+        assertThat(framework)
+            .serverOutput()
+            .isNotEmpty();
 
         explicitPlayer.remove();
         builtPlayer.remove();
