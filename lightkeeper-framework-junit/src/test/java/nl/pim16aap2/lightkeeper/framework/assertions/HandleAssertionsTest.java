@@ -1,5 +1,6 @@
 package nl.pim16aap2.lightkeeper.framework.assertions;
 
+import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.MenuHandle;
 import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
 import nl.pim16aap2.lightkeeper.framework.Vector3Di;
@@ -7,6 +8,8 @@ import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
@@ -41,6 +44,33 @@ class HandleAssertionsTest
         assertThatThrownBy(() -> LightkeeperAssertions.assertThat(handle).hasName("other"))
             .isInstanceOf(AssertionError.class)
             .hasMessageContaining("Expected player name");
+    }
+
+    @Test
+    void lightkeeperFrameworkAssert_shouldExposeServerOutputAndValidateNoErrors()
+    {
+        // setup
+        final ILightkeeperFramework framework = mock(ILightkeeperFramework.class);
+        when(framework.serverOutput()).thenReturn(List.of("Server started", "Done"));
+
+        // execute + verify
+        LightkeeperAssertions.assertThat(framework)
+            .hasNoServerErrors()
+            .serverOutput()
+            .contains("Done");
+    }
+
+    @Test
+    void lightkeeperFrameworkAssert_shouldFailWhenServerOutputContainsErrors()
+    {
+        // setup
+        final ILightkeeperFramework framework = mock(ILightkeeperFramework.class);
+        when(framework.serverOutput()).thenReturn(List.of("SEVERE: boom"));
+
+        // execute + verify
+        assertThatThrownBy(() -> LightkeeperAssertions.assertThat(framework).hasNoServerErrors())
+            .isInstanceOf(AssertionError.class)
+            .hasMessageContaining("SEVERE: boom");
     }
 
     @Test

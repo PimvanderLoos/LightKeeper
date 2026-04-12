@@ -6,10 +6,12 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class DefaultLightkeeperFrameworkLifecycleTest
 {
@@ -57,6 +59,27 @@ class DefaultLightkeeperFrameworkLifecycleTest
         assertThatThrownBy(framework::ensureOpen)
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("already closed");
+    }
+
+    @Test
+    void serverOutput_shouldReturnServerProcessOutputSnapshot()
+    {
+        // setup
+        final RuntimeManifest runtimeManifest = runtimeManifest();
+        final MinecraftServerProcess minecraftServerProcess = mock(MinecraftServerProcess.class);
+        when(minecraftServerProcess.snapshotOutputLines()).thenReturn(List.of("line one", "line two"));
+        final DefaultLightkeeperFramework framework = new DefaultLightkeeperFramework(
+            runtimeManifest,
+            minecraftServerProcess,
+            mock(UdsAgentClient.class),
+            new PlayerScopeRegistry()
+        );
+
+        // execute
+        final List<String> serverOutput = framework.serverOutput();
+
+        // verify
+        assertThat(serverOutput).containsExactly("line one", "line two");
     }
 
     private static RuntimeManifest runtimeManifest()

@@ -358,6 +358,13 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
         return agentClient.playerMessages(playerId);
     }
 
+    @Override
+    public List<String> serverOutput()
+    {
+        ensureOpen();
+        return minecraftServerProcess.snapshotOutputLines();
+    }
+
     private void clickBlock(UUID playerId, Vector3Di position, String blockFace, BlockClickOperation operation)
     {
         ensureOpen();

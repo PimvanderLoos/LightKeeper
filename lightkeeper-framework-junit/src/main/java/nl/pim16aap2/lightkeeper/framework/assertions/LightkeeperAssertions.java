@@ -1,5 +1,6 @@
 package nl.pim16aap2.lightkeeper.framework.assertions;
 
+import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.MenuHandle;
 import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
@@ -49,5 +50,17 @@ public final class LightkeeperAssertions extends Assertions
     public static PlayerHandleAssert assertThat(@Nullable PlayerHandle actual)
     {
         return new PlayerHandleAssert(actual);
+    }
+
+    /**
+     * Creates an assertion chain for framework-level runtime state.
+     *
+     * @param actual
+     *     Framework under test.
+     * @return Framework assertion entrypoint.
+     */
+    public static LightkeeperFrameworkAssert assertThat(@Nullable ILightkeeperFramework actual)
+    {
+        return new LightkeeperFrameworkAssert(actual);
     }
 }

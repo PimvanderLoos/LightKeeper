@@ -209,7 +209,7 @@ final class MinecraftServerProcess
         }
     }
 
-    private List<String> snapshotOutputLines()
+    List<String> snapshotOutputLines()
     {
         synchronized (outputLinesLock)
         {
