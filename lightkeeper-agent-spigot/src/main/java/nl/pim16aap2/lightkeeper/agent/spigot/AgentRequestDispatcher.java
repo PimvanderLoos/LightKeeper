@@ -176,6 +176,8 @@ final class AgentRequestDispatcher
                 case REMOVE_PLAYER -> playerActions.handleRemovePlayer(requestId, arguments);
                 case EXECUTE_PLAYER_COMMAND -> playerActions.handleExecutePlayerCommand(requestId, arguments);
                 case PLACE_PLAYER_BLOCK -> playerActions.handlePlacePlayerBlock(requestId, arguments);
+                case LEFT_CLICK_BLOCK -> playerActions.handleLeftClickBlock(requestId, arguments);
+                case RIGHT_CLICK_BLOCK -> playerActions.handleRightClickBlock(requestId, arguments);
                 case GET_OPEN_MENU -> menuActions.handleGetOpenMenu(requestId, arguments);
                 case CLICK_MENU_SLOT -> menuActions.handleClickMenuSlot(requestId, arguments);
                 case DRAG_MENU_SLOTS -> menuActions.handleDragMenuSlots(requestId, arguments);

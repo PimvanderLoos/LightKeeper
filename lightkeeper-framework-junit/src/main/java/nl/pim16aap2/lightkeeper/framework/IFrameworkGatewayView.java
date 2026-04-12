@@ -33,6 +33,16 @@ public interface IFrameworkGatewayView
     void placePlayerBlock(UUID playerId, String material, int x, int y, int z);
 
     /**
+     * Fires a left-click block interaction as a synthetic player.
+     */
+    void leftClickBlock(UUID playerId, Vector3Di position, String blockFace);
+
+    /**
+     * Fires a right-click block interaction as a synthetic player.
+     */
+    void rightClickBlock(UUID playerId, Vector3Di position, String blockFace);
+
+    /**
      * Retrieves menu snapshot for a synthetic player.
      */
     MenuSnapshot menuSnapshot(UUID playerId);

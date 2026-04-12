@@ -107,18 +107,22 @@ class AgentRequestDispatcherTest
             .thenReturn(AgentResponses.successResponse("request-7", Map.of()));
         when(fixture.playerActions().handlePlacePlayerBlock(eq("request-8"), anyMap()))
             .thenReturn(AgentResponses.successResponse("request-8", Map.of()));
-        when(fixture.menuActions().handleGetOpenMenu(eq("request-9"), anyMap()))
+        when(fixture.playerActions().handleLeftClickBlock(eq("request-9"), anyMap()))
             .thenReturn(AgentResponses.successResponse("request-9", Map.of()));
-        when(fixture.menuActions().handleClickMenuSlot(eq("request-10"), anyMap()))
+        when(fixture.playerActions().handleRightClickBlock(eq("request-10"), anyMap()))
             .thenReturn(AgentResponses.successResponse("request-10", Map.of()));
-        when(fixture.menuActions().handleDragMenuSlots(eq("request-11"), anyMap()))
+        when(fixture.menuActions().handleGetOpenMenu(eq("request-11"), anyMap()))
             .thenReturn(AgentResponses.successResponse("request-11", Map.of()));
-        when(fixture.playerActions().handleGetPlayerMessages(eq("request-12"), anyMap()))
+        when(fixture.menuActions().handleClickMenuSlot(eq("request-12"), anyMap()))
             .thenReturn(AgentResponses.successResponse("request-12", Map.of()));
-        when(fixture.worldActions().handleWaitTicks(eq("request-13"), anyMap()))
+        when(fixture.menuActions().handleDragMenuSlots(eq("request-13"), anyMap()))
             .thenReturn(AgentResponses.successResponse("request-13", Map.of()));
-        when(fixture.worldActions().handleGetServerTick("request-14"))
+        when(fixture.playerActions().handleGetPlayerMessages(eq("request-14"), anyMap()))
             .thenReturn(AgentResponses.successResponse("request-14", Map.of()));
+        when(fixture.worldActions().handleWaitTicks(eq("request-15"), anyMap()))
+            .thenReturn(AgentResponses.successResponse("request-15", Map.of()));
+        when(fixture.worldActions().handleGetServerTick("request-16"))
+            .thenReturn(AgentResponses.successResponse("request-16", Map.of()));
 
         // execute
         fixture.dispatcher().handleRequestLine(createRequestLine("request-1", AgentAction.NEW_WORLD, Map.of()), true);
@@ -138,20 +142,28 @@ class AgentRequestDispatcherTest
             createRequestLine("request-8", AgentAction.PLACE_PLAYER_BLOCK, Map.of()),
             true
         );
-        fixture.dispatcher()
-            .handleRequestLine(createRequestLine("request-9", AgentAction.GET_OPEN_MENU, Map.of()), true);
-        fixture.dispatcher()
-            .handleRequestLine(createRequestLine("request-10", AgentAction.CLICK_MENU_SLOT, Map.of()), true);
-        fixture.dispatcher()
-            .handleRequestLine(createRequestLine("request-11", AgentAction.DRAG_MENU_SLOTS, Map.of()), true);
         fixture.dispatcher().handleRequestLine(
-            createRequestLine("request-12", AgentAction.GET_PLAYER_MESSAGES, Map.of()),
+            createRequestLine("request-9", AgentAction.LEFT_CLICK_BLOCK, Map.of()),
+            true
+        );
+        fixture.dispatcher().handleRequestLine(
+            createRequestLine("request-10", AgentAction.RIGHT_CLICK_BLOCK, Map.of()),
             true
         );
         fixture.dispatcher()
-            .handleRequestLine(createRequestLine("request-13", AgentAction.WAIT_TICKS, Map.of()), true);
+            .handleRequestLine(createRequestLine("request-11", AgentAction.GET_OPEN_MENU, Map.of()), true);
         fixture.dispatcher()
-            .handleRequestLine(createRequestLine("request-14", AgentAction.GET_SERVER_TICK, Map.of()), true);
+            .handleRequestLine(createRequestLine("request-12", AgentAction.CLICK_MENU_SLOT, Map.of()), true);
+        fixture.dispatcher()
+            .handleRequestLine(createRequestLine("request-13", AgentAction.DRAG_MENU_SLOTS, Map.of()), true);
+        fixture.dispatcher().handleRequestLine(
+            createRequestLine("request-14", AgentAction.GET_PLAYER_MESSAGES, Map.of()),
+            true
+        );
+        fixture.dispatcher()
+            .handleRequestLine(createRequestLine("request-15", AgentAction.WAIT_TICKS, Map.of()), true);
+        fixture.dispatcher()
+            .handleRequestLine(createRequestLine("request-16", AgentAction.GET_SERVER_TICK, Map.of()), true);
 
         // verify
         verify(fixture.worldActions()).handleNewWorld(eq("request-1"), anyMap());
@@ -162,12 +174,14 @@ class AgentRequestDispatcherTest
         verify(fixture.playerActions()).handleRemovePlayer(eq("request-6"), anyMap());
         verify(fixture.playerActions()).handleExecutePlayerCommand(eq("request-7"), anyMap());
         verify(fixture.playerActions()).handlePlacePlayerBlock(eq("request-8"), anyMap());
-        verify(fixture.menuActions()).handleGetOpenMenu(eq("request-9"), anyMap());
-        verify(fixture.menuActions()).handleClickMenuSlot(eq("request-10"), anyMap());
-        verify(fixture.menuActions()).handleDragMenuSlots(eq("request-11"), anyMap());
-        verify(fixture.playerActions()).handleGetPlayerMessages(eq("request-12"), anyMap());
-        verify(fixture.worldActions()).handleWaitTicks(eq("request-13"), anyMap());
-        verify(fixture.worldActions()).handleGetServerTick("request-14");
+        verify(fixture.playerActions()).handleLeftClickBlock(eq("request-9"), anyMap());
+        verify(fixture.playerActions()).handleRightClickBlock(eq("request-10"), anyMap());
+        verify(fixture.menuActions()).handleGetOpenMenu(eq("request-11"), anyMap());
+        verify(fixture.menuActions()).handleClickMenuSlot(eq("request-12"), anyMap());
+        verify(fixture.menuActions()).handleDragMenuSlots(eq("request-13"), anyMap());
+        verify(fixture.playerActions()).handleGetPlayerMessages(eq("request-14"), anyMap());
+        verify(fixture.worldActions()).handleWaitTicks(eq("request-15"), anyMap());
+        verify(fixture.worldActions()).handleGetServerTick("request-16");
     }
 
     @Test

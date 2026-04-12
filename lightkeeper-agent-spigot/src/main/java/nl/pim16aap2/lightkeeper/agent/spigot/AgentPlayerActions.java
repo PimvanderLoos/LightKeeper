@@ -8,7 +8,13 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Map;
@@ -255,6 +261,44 @@ final class AgentPlayerActions
     }
 
     /**
+     * Handles {@code LEFT_CLICK_BLOCK} by firing a synthetic left-click block interaction event.
+     *
+     * @param requestId
+     *     Runtime request identifier.
+     * @param arguments
+     *     Request arguments; requires {@code uuid} and block coordinates. Optional {@code blockFace} defaults to
+     *     {@code UP}.
+     * @return
+     *     Success response containing whether the fired interaction event was cancelled.
+     * @throws Exception
+     *     Propagates parsing, validation, and main-thread execution failures.
+     */
+    AgentResponse handleLeftClickBlock(String requestId, Map<String, String> arguments)
+        throws Exception
+    {
+        return handleClickBlock(requestId, arguments, Action.LEFT_CLICK_BLOCK);
+    }
+
+    /**
+     * Handles {@code RIGHT_CLICK_BLOCK} by firing a synthetic right-click block interaction event.
+     *
+     * @param requestId
+     *     Runtime request identifier.
+     * @param arguments
+     *     Request arguments; requires {@code uuid} and block coordinates. Optional {@code blockFace} defaults to
+     *     {@code UP}.
+     * @return
+     *     Success response containing whether the fired interaction event was cancelled.
+     * @throws Exception
+     *     Propagates parsing, validation, and main-thread execution failures.
+     */
+    AgentResponse handleRightClickBlock(String requestId, Map<String, String> arguments)
+        throws Exception
+    {
+        return handleClickBlock(requestId, arguments, Action.RIGHT_CLICK_BLOCK);
+    }
+
+    /**
      * Handles {@code GET_PLAYER_MESSAGES} by draining adapter messages and returning full tracked history.
      *
      * @param requestId
@@ -278,6 +322,43 @@ final class AgentPlayerActions
         });
 
         return AgentResponses.successResponse(requestId, Map.of("messagesJson", messagesJson));
+    }
+
+    private AgentResponse handleClickBlock(String requestId, Map<String, String> arguments, Action action)
+        throws Exception
+    {
+        final UUID uuid = UUID.fromString(arguments.getOrDefault("uuid", ""));
+        final int x = AgentRequestParsers.parseInt(arguments.getOrDefault("x", "0"));
+        final int y = AgentRequestParsers.parseInt(arguments.getOrDefault("y", "0"));
+        final int z = AgentRequestParsers.parseInt(arguments.getOrDefault("z", "0"));
+        final BlockFace blockFace = AgentRequestParsers.parseBlockFace(arguments.getOrDefault("blockFace", "UP"));
+        if (blockFace == null)
+        {
+            return AgentResponses.errorResponse(
+                requestId,
+                AgentErrorCode.INVALID_ARGUMENT,
+                "Unknown block face '%s'.".formatted(arguments.getOrDefault("blockFace", ""))
+            );
+        }
+
+        final Boolean cancelled = mainThreadExecutor.callOnMainThread(() ->
+        {
+            final Player player = playerStore.getRequiredPlayer(uuid);
+            final Block block = player.getWorld().getBlockAt(x, y, z);
+            final ItemStack item = player.getInventory().getItemInMainHand();
+            final PlayerInteractEvent event = new PlayerInteractEvent(
+                player,
+                action,
+                item,
+                block,
+                blockFace,
+                EquipmentSlot.HAND
+            );
+            Bukkit.getPluginManager().callEvent(event);
+            return event.isCancelled();
+        });
+
+        return AgentResponses.successResponse(requestId, Map.of("cancelled", cancelled.toString()));
     }
 
     /**

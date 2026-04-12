@@ -278,6 +278,18 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     }
 
     @Override
+    public void leftClickBlock(UUID playerId, Vector3Di position, String blockFace)
+    {
+        clickBlock(playerId, position, blockFace, agentClient::leftClickBlock);
+    }
+
+    @Override
+    public void rightClickBlock(UUID playerId, Vector3Di position, String blockFace)
+    {
+        clickBlock(playerId, position, blockFace, agentClient::rightClickBlock);
+    }
+
+    @Override
     public MenuSnapshot menuSnapshot(UUID playerId)
     {
         ensureOpen();
@@ -344,6 +356,23 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
         ensureOpen();
         Objects.requireNonNull(playerId, "playerId may not be null.");
         return agentClient.playerMessages(playerId);
+    }
+
+    private void clickBlock(UUID playerId, Vector3Di position, String blockFace, BlockClickOperation operation)
+    {
+        ensureOpen();
+        Objects.requireNonNull(playerId, "playerId may not be null.");
+        Objects.requireNonNull(position, "position may not be null.");
+        final String trimmedBlockFace = Objects.requireNonNull(blockFace, "blockFace may not be null.").trim();
+        if (trimmedBlockFace.isEmpty())
+            throw new IllegalArgumentException("blockFace may not be blank.");
+        operation.clickBlock(playerId, position, trimmedBlockFace);
+    }
+
+    @FunctionalInterface
+    private interface BlockClickOperation
+    {
+        void clickBlock(UUID playerId, Vector3Di position, String blockFace);
     }
 
     @Override
