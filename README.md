@@ -1,5 +1,7 @@
 # LightKeeper
 
+[![](https://jitpack.io/v/PimvanderLoos/LightKeeper.svg)](https://jitpack.io/#PimvanderLoos/LightKeeper)
+
 LightKeeper is an end-to-end testing stack for Minecraft plugins.
 
 It provisions a real server runtime (Paper or Spigot), installs your test assets, boots the server with a LightKeeper
@@ -41,6 +43,66 @@ planned and reviewed by a human.
 - Java 21
 - Maven 3.9+
 - Linux/macOS recommended (UDS-based transport)
+
+## Developers
+
+This project can be included as a dependency using [JitPack](https://jitpack.io/#PimvanderLoos/LightKeeper).
+
+The usual test setup needs both the Maven plugin and the JUnit framework module. The Maven plugin provisions the server
+runtime, and the framework module provides the API used by your tests.
+
+### Maven
+
+```xml
+
+<repositories>
+    <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </repository>
+</repositories>
+
+<pluginRepositories>
+    <pluginRepository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </pluginRepository>
+</pluginRepositories>
+```
+
+```xml
+
+<build>
+    <plugins>
+        <plugin>
+            <groupId>com.github.PimvanderLoos.LightKeeper</groupId>
+            <artifactId>lightkeeper-maven-plugin</artifactId>
+            <version>1.2.0</version>
+        </plugin>
+    </plugins>
+</build>
+
+<dependencies>
+    <dependency>
+        <groupId>com.github.PimvanderLoos.LightKeeper</groupId>
+        <artifactId>lightkeeper-framework-junit</artifactId>
+        <version>1.2.0</version>
+        <scope>test</scope>
+    </dependency>
+</dependencies>
+```
+
+### Gradle
+
+```gradle
+repositories {
+    maven { url "https://jitpack.io/" }
+}
+
+dependencies {
+    testImplementation("com.github.PimvanderLoos.LightKeeper:lightkeeper-framework-junit:1.2.0")
+}
+```
 
 ## Quick Start
 
