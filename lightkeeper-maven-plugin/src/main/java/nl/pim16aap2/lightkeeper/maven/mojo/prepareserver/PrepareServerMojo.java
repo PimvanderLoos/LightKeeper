@@ -288,8 +288,7 @@ public class PrepareServerMojo extends AbstractMojo
                 executionContext,
                 agentMetadata,
                 agentAuthToken,
-                runtimeProtocolVersion,
-                paperDownloadsClient
+                runtimeProtocolVersion
             );
             default -> throw new MojoExecutionException(
                 "Unsupported server type '%s'. Supported types: %s"
@@ -338,12 +337,11 @@ public class PrepareServerMojo extends AbstractMojo
         PrepareServerExecutionContext executionContext,
         PrepareServerAgentMetadata agentMetadata,
         String agentAuthToken,
-        int runtimeProtocolVersion,
-        PaperDownloadsClient paperDownloadsClient)
+        int runtimeProtocolVersion)
         throws MojoExecutionException
     {
         final SpigotBuildMetadata spigotBuildMetadata =
-            createSpigotDownloadsClient(paperDownloadsClient, executionContext.userAgent())
+            createSpigotDownloadsClient(executionContext.userAgent())
                 .resolveBuild(executionContext.serverVersion());
         final String cacheKey = CacheKeyUtil.createSpigotCacheKey(
             spigotBuildMetadata.minecraftVersion(),
@@ -439,11 +437,9 @@ public class PrepareServerMojo extends AbstractMojo
         return new PaperDownloadsClient(getLog(), effectiveUserAgent);
     }
 
-    protected SpigotDownloadsClient createSpigotDownloadsClient(
-        PaperDownloadsClient paperDownloadsClient,
-        String effectiveUserAgent)
+    protected SpigotDownloadsClient createSpigotDownloadsClient(String effectiveUserAgent)
     {
-        return new SpigotDownloadsClient(getLog(), paperDownloadsClient, effectiveUserAgent);
+        return new SpigotDownloadsClient(getLog(), effectiveUserAgent);
     }
 
     static void writeRuntimeManifest(RuntimeManifest runtimeManifest, Path runtimeManifestPathValue)

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import nl.pim16aap2.lightkeeper.nms.api.IBotPlayerNmsAdapter;
 import nl.pim16aap2.lightkeeper.nms.v121r7.BotPlayerNmsAdapterV1_21_R7;
+import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
 import nl.pim16aap2.lightkeeper.runtime.agent.AgentResponse;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -43,7 +44,7 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin
     /**
      * Bukkit version prefix this plugin is compiled and validated against.
      */
-    static final String SUPPORTED_MINECRAFT_VERSION = "1.21.11";
+    static final String SUPPORTED_MINECRAFT_VERSION = RuntimeProtocol.SUPPORTED_MINECRAFT_VERSION;
     /**
      * Prefix used to extract CraftBukkit package revision identifiers.
      */
