@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 
@@ -13,7 +14,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -35,7 +35,6 @@ public final class SpigotDownloadsClient
         Pattern.compile(".*/job/BuildTools/(?<buildNumber>\\d+)/.*");
 
     private final Log log;
-    private final PaperDownloadsClient paperDownloadsClient;
     private final String userAgent;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
@@ -47,16 +46,13 @@ public final class SpigotDownloadsClient
      *
      * @param log
      *     Maven log for diagnostics.
-     * @param paperDownloadsClient
-     *     Paper metadata resolver used only for {@code latest-supported} version resolution.
      * @param userAgent
      *     HTTP user-agent used for BuildTools metadata requests.
      */
-    public SpigotDownloadsClient(Log log, PaperDownloadsClient paperDownloadsClient, String userAgent)
+    public SpigotDownloadsClient(Log log, String userAgent)
     {
         this(
             log,
-            paperDownloadsClient,
             userAgent,
             DEFAULT_BUILDTOOLS_URI,
             DEFAULT_BUILDTOOLS_METADATA_URI
@@ -68,8 +64,6 @@ public final class SpigotDownloadsClient
      *
      * @param log
      *     Maven log for diagnostics.
-     * @param paperDownloadsClient
-     *     Paper metadata resolver used only for {@code latest-supported} version resolution.
      * @param userAgent
      *     HTTP user-agent used for BuildTools metadata requests.
      * @param buildToolsUri
@@ -79,14 +73,11 @@ public final class SpigotDownloadsClient
      */
     SpigotDownloadsClient(
         Log log,
-        PaperDownloadsClient paperDownloadsClient,
         String userAgent,
         URI buildToolsUri,
         URI buildToolsMetadataUri)
     {
         this.log = Objects.requireNonNull(log, "log may not be null.");
-        this.paperDownloadsClient =
-            Objects.requireNonNull(paperDownloadsClient, "paperDownloadsClient may not be null.");
         this.userAgent = validateUserAgent(userAgent);
         this.buildToolsUri = Objects.requireNonNull(buildToolsUri, "buildToolsUri may not be null.");
         this.buildToolsMetadataUri =
@@ -111,21 +102,7 @@ public final class SpigotDownloadsClient
     public SpigotBuildMetadata resolveBuild(String requestedVersion)
         throws MojoExecutionException
     {
-        final String normalizedRequestedVersion = normalizeRequestedVersion(requestedVersion);
-        final String resolvedVersion;
-        if (LATEST_SUPPORTED.equalsIgnoreCase(normalizedRequestedVersion))
-        {
-            final PaperBuildMetadata paperBuildMetadata = paperDownloadsClient.resolveBuild(LATEST_SUPPORTED);
-            resolvedVersion = paperBuildMetadata.minecraftVersion();
-            log.info(
-                "Resolved Spigot latest-supported version to Minecraft %s via Paper metadata."
-                    .formatted(resolvedVersion)
-            );
-        }
-        else
-        {
-            resolvedVersion = normalizedRequestedVersion;
-        }
+        final String resolvedVersion = resolveSupportedMinecraftVersion(requestedVersion);
 
         final String buildToolsIdentity = resolveBuildToolsIdentity();
         return new SpigotBuildMetadata(
@@ -214,7 +191,8 @@ public final class SpigotDownloadsClient
         return Optional.of(Long.parseLong(matcher.group("buildNumber")));
     }
 
-    private static String normalizeRequestedVersion(String requestedVersion)
+    private String resolveSupportedMinecraftVersion(String requestedVersion)
+        throws MojoExecutionException
     {
         final String normalizedRequestedVersion = Objects.requireNonNull(
             requestedVersion,
@@ -223,7 +201,23 @@ public final class SpigotDownloadsClient
             .trim();
         if (normalizedRequestedVersion.isEmpty())
             throw new IllegalArgumentException("requestedVersion may not be blank.");
-        return normalizedRequestedVersion.toLowerCase(Locale.ROOT);
+
+        if (LATEST_SUPPORTED.equalsIgnoreCase(normalizedRequestedVersion))
+        {
+            log.info(
+                "Resolved Spigot latest-supported version to Minecraft %s."
+                    .formatted(RuntimeProtocol.SUPPORTED_MINECRAFT_VERSION)
+            );
+            return RuntimeProtocol.SUPPORTED_MINECRAFT_VERSION;
+        }
+
+        if (normalizedRequestedVersion.equals(RuntimeProtocol.SUPPORTED_MINECRAFT_VERSION))
+            return normalizedRequestedVersion;
+
+        throw new MojoExecutionException(
+            "Unsupported Spigot version '%s'. This LightKeeper build supports Minecraft version '%s'."
+                .formatted(normalizedRequestedVersion, RuntimeProtocol.SUPPORTED_MINECRAFT_VERSION)
+        );
     }
 
     private static String validateUserAgent(String userAgent)

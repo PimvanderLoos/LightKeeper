@@ -24,7 +24,7 @@
         <lightkeeper.spigot.server-work-directory>${project.build.directory}/lightkeeper-server/spigot</lightkeeper.spigot.server-work-directory>
         <lightkeeper.paper.socket-directory>${project.build.directory}/lightkeeper/sockets/paper</lightkeeper.paper.socket-directory>
         <lightkeeper.spigot.socket-directory>${project.build.directory}/lightkeeper/sockets/spigot</lightkeeper.spigot.socket-directory>
-        <lightkeeper.spigot.server-version>latest-supported</lightkeeper.spigot.server-version>
+        <lightkeeper.integration.server-version>${lightkeeper.minecraft-version}</lightkeeper.integration.server-version>
     </properties>
 
     <repositories>
@@ -124,6 +124,7 @@
                         </goals>
                         <configuration>
                             <serverType>paper</serverType>
+                            <serverVersion>${lightkeeper.integration.server-version}</serverVersion>
                             <runtimeManifestPath>${lightkeeper.paper.runtime-manifest.path}</runtimeManifestPath>
                             <serverWorkDirectoryRoot>${lightkeeper.paper.server-work-directory}</serverWorkDirectoryRoot>
                             <agentSocketDirectory>${lightkeeper.paper.socket-directory}</agentSocketDirectory>
@@ -136,7 +137,7 @@
                         </goals>
                         <configuration>
                             <serverType>spigot</serverType>
-                            <serverVersion>${lightkeeper.spigot.server-version}</serverVersion>
+                            <serverVersion>${lightkeeper.integration.server-version}</serverVersion>
                             <runtimeManifestPath>${lightkeeper.spigot.runtime-manifest.path}</runtimeManifestPath>
                             <serverWorkDirectoryRoot>${lightkeeper.spigot.server-work-directory}</serverWorkDirectoryRoot>
                             <agentSocketDirectory>${lightkeeper.spigot.socket-directory}</agentSocketDirectory>

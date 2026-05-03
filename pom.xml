@@ -22,6 +22,7 @@
 
     <properties>
         <maven.compiler.release>21</maven.compiler.release>
+        <lightkeeper.minecraft-version>1.21.11</lightkeeper.minecraft-version>
         <project.root-dir>${project.basedir}</project.root-dir>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
@@ -41,7 +42,7 @@
         <version.mockito>5.23.0</version.mockito>
         <version.nullaway>0.13.1</version.nullaway>
         <version.inventorygui>1.6.5-SNAPSHOT</version.inventorygui>
-        <version.spigot-api>1.21.11-R0.2-SNAPSHOT</version.spigot-api>
+        <version.spigot-api>${lightkeeper.minecraft-version}-R0.2-SNAPSHOT</version.spigot-api>
         <version.pmd>7.23.0</version.pmd>
         <version.semver4j>6.0.0</version.semver4j>
 

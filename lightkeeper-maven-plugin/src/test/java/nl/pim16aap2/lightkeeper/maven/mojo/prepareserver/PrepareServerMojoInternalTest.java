@@ -876,13 +876,9 @@ class PrepareServerMojoInternalTest
     {
         // setup
         final PrepareServerMojo mojo = new PrepareServerMojo();
-        final PaperDownloadsClient paperDownloadsClient = mock();
 
         // execute
-        final SpigotDownloadsClient client = mojo.createSpigotDownloadsClient(
-            paperDownloadsClient,
-            "LightKeeper/Test"
-        );
+        final SpigotDownloadsClient client = mojo.createSpigotDownloadsClient("LightKeeper/Test");
 
         // verify
         assertThat(client).isNotNull();
@@ -1011,9 +1007,7 @@ class PrepareServerMojoInternalTest
         }
 
         @Override
-        protected SpigotDownloadsClient createSpigotDownloadsClient(
-            PaperDownloadsClient injectedPaperDownloadsClient,
-            String effectiveUserAgent)
+        protected SpigotDownloadsClient createSpigotDownloadsClient(String effectiveUserAgent)
         {
             return spigotDownloadsClient;
         }

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 
@@ -14,13 +15,11 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -32,7 +31,6 @@ public final class PaperDownloadsClient
     private static final String STABLE_CHANNEL = "STABLE";
     private static final String SERVER_DOWNLOAD_KEY = "server:default";
     private static final String LATEST_SUPPORTED = "latest-supported";
-    private static final Pattern NUMERIC_VERSION_PATTERN = Pattern.compile("\\d+(?:\\.\\d+)*");
     private static final Pattern URL_HASH_PATTERN =
         Pattern.compile(".*/v1/objects/(?<hash>[a-fA-F0-9]{64})/.*");
 
@@ -83,30 +81,32 @@ public final class PaperDownloadsClient
     public PaperBuildMetadata resolveBuild(String requestedVersion)
         throws MojoExecutionException
     {
-        if (requestedVersion.equalsIgnoreCase(LATEST_SUPPORTED))
-            return resolveLatestSupportedBuild();
+        final String resolvedVersion = resolveSupportedMinecraftVersion(requestedVersion);
 
-        return resolveStableBuildForVersion(requestedVersion)
+        return resolveStableBuildForVersion(resolvedVersion)
             .orElseThrow(() -> new MojoExecutionException(
-                "Could not find a stable Paper build for version '%s'.".formatted(requestedVersion))
+                "Could not find a stable Paper build for version '%s'.".formatted(resolvedVersion))
             );
     }
 
-    private PaperBuildMetadata resolveLatestSupportedBuild()
+    private static String resolveSupportedMinecraftVersion(String requestedVersion)
         throws MojoExecutionException
     {
-        final ProjectResponse projectResponse = fetchProject();
-        final List<String> versionsDescending =
-            sortStableVersionsDescending(flattenVersions(projectResponse.versions()));
+        final String normalizedRequestedVersion = Objects.requireNonNull(requestedVersion, "requestedVersion")
+            .trim();
+        if (normalizedRequestedVersion.isEmpty())
+            throw new IllegalArgumentException("requestedVersion may not be blank.");
 
-        for (final String version : versionsDescending)
-        {
-            final Optional<PaperBuildMetadata> buildMetadata = resolveStableBuildForVersion(version);
-            if (buildMetadata.isPresent())
-                return buildMetadata.get();
-        }
+        if (normalizedRequestedVersion.equalsIgnoreCase(LATEST_SUPPORTED))
+            return RuntimeProtocol.SUPPORTED_MINECRAFT_VERSION;
 
-        throw new MojoExecutionException("Unable to resolve latest-supported Paper build.");
+        if (normalizedRequestedVersion.equals(RuntimeProtocol.SUPPORTED_MINECRAFT_VERSION))
+            return normalizedRequestedVersion;
+
+        throw new MojoExecutionException(
+            "Unsupported Paper version '%s'. This LightKeeper build supports Minecraft version '%s'."
+                .formatted(normalizedRequestedVersion, RuntimeProtocol.SUPPORTED_MINECRAFT_VERSION)
+        );
     }
 
     private Optional<PaperBuildMetadata> resolveStableBuildForVersion(String minecraftVersion)
@@ -165,21 +165,6 @@ public final class PaperDownloadsClient
             return Optional.of(matcher.group("hash"));
 
         return Optional.empty();
-    }
-
-    private ProjectResponse fetchProject()
-        throws MojoExecutionException
-    {
-        final JsonNode root = fetchJson(PROJECT_URI);
-
-        try
-        {
-            return objectMapper.treeToValue(root, ProjectResponse.class);
-        }
-        catch (JsonProcessingException exception)
-        {
-            throw new MojoExecutionException("Failed to parse project metadata from Fill response.", exception);
-        }
     }
 
     private List<BuildResponse> parseBuildResponses(JsonNode root)
@@ -243,68 +228,11 @@ public final class PaperDownloadsClient
         }
     }
 
-    private Set<String> flattenVersions(Map<String, List<String>> versionsByGroup)
-    {
-        final Set<String> versions = new LinkedHashSet<>();
-        for (final List<String> versionsInGroup : versionsByGroup.values())
-            versions.addAll(versionsInGroup);
-        return versions;
-    }
-
-    static List<String> sortStableVersionsDescending(Set<String> versions)
-    {
-        return versions.stream()
-            .map(String::trim)
-            .filter(version -> NUMERIC_VERSION_PATTERN.matcher(version).matches())
-            .sorted((leftVersion, rightVersion) -> compareVersions(rightVersion, leftVersion))
-            .toList();
-    }
-
-    private static int compareVersions(String leftVersion, String rightVersion)
-    {
-        int leftTokenStart = 0;
-        int rightTokenStart = 0;
-
-        while (leftTokenStart < leftVersion.length() || rightTokenStart < rightVersion.length())
-        {
-            final int leftTokenEnd = findTokenEnd(leftVersion, leftTokenStart);
-            final int rightTokenEnd = findTokenEnd(rightVersion, rightTokenStart);
-
-            final int leftPart = leftTokenStart < leftVersion.length()
-                ? Integer.parseInt(leftVersion.substring(leftTokenStart, leftTokenEnd))
-                : 0;
-            final int rightPart = rightTokenStart < rightVersion.length()
-                ? Integer.parseInt(rightVersion.substring(rightTokenStart, rightTokenEnd))
-                : 0;
-
-            final int partComparison = Integer.compare(leftPart, rightPart);
-            if (partComparison != 0)
-                return partComparison;
-
-            leftTokenStart = leftTokenEnd + 1;
-            rightTokenStart = rightTokenEnd + 1;
-        }
-
-        return 0;
-    }
-
-    private static int findTokenEnd(String version, int startIndex)
-    {
-        final int nextDotIndex = version.indexOf('.', startIndex);
-        return nextDotIndex < 0 ? version.length() : nextDotIndex;
-    }
-
     private static String validateUserAgent(String userAgent)
     {
         if (userAgent == null || userAgent.isBlank())
             throw new IllegalArgumentException("A non-empty Fill API User-Agent is required.");
         return userAgent;
-    }
-
-    private record ProjectResponse(
-        Map<String, List<String>> versions
-    )
-    {
     }
 
     private record BuildResponse(

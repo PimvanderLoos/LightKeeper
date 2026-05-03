@@ -14,8 +14,6 @@ import java.nio.charset.StandardCharsets;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 class SpigotDownloadsClientTest
 {
@@ -28,11 +26,9 @@ class SpigotDownloadsClientTest
             {"number":197,"url":"https://hub.spigotmc.org/jenkins/job/BuildTools/197/"}
             """);
         final Log log = mock();
-        final PaperDownloadsClient paperDownloadsClient = mock();
         final URI buildToolsUri = URI.create("https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar");
         final SpigotDownloadsClient spigotDownloadsClient = new SpigotDownloadsClient(
             log,
-            paperDownloadsClient,
             "LightKeeper/Test",
             buildToolsUri,
             fixtureServer.metadataUri()
@@ -55,7 +51,7 @@ class SpigotDownloadsClientTest
     }
 
     @Test
-    void resolveBuild_shouldUsePaperVersionForLatestSupported()
+    void resolveBuild_shouldUseSupportedVersionForLatestSupported()
         throws Exception
     {
         // setup
@@ -63,17 +59,8 @@ class SpigotDownloadsClientTest
             {"number":201}
             """);
         final Log log = mock();
-        final PaperDownloadsClient paperDownloadsClient = mock();
-        when(paperDownloadsClient.resolveBuild("latest-supported"))
-            .thenReturn(new PaperBuildMetadata(
-                "1.21.11",
-                116L,
-                URI.create("https://example.invalid/paper.jar"),
-                "abc"
-            ));
         final SpigotDownloadsClient spigotDownloadsClient = new SpigotDownloadsClient(
             log,
-            paperDownloadsClient,
             "LightKeeper/Test",
             URI.create("https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar"),
             fixtureServer.metadataUri()
@@ -87,7 +74,6 @@ class SpigotDownloadsClientTest
             // verify
             assertThat(spigotBuildMetadata.minecraftVersion()).isEqualTo("1.21.11");
             assertThat(spigotBuildMetadata.buildToolsIdentity()).isEqualTo("spigot-buildtools-build-201");
-            verify(paperDownloadsClient).resolveBuild("latest-supported");
         }
         finally
         {
@@ -104,10 +90,8 @@ class SpigotDownloadsClientTest
             {"status":"ok"}
             """);
         final Log log = mock();
-        final PaperDownloadsClient paperDownloadsClient = mock();
         final SpigotDownloadsClient spigotDownloadsClient = new SpigotDownloadsClient(
             log,
-            paperDownloadsClient,
             "LightKeeper/Test",
             URI.create("https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar"),
             fixtureServer.metadataUri()
@@ -140,7 +124,6 @@ class SpigotDownloadsClientTest
         );
         final SpigotDownloadsClient spigotDownloadsClient = new SpigotDownloadsClient(
             mock(),
-            mock(),
             "LightKeeper/Test",
             URI.create("https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar"),
             fixtureServer.metadataUri()
@@ -168,7 +151,6 @@ class SpigotDownloadsClientTest
         final HttpFixtureServer fixtureServer = new HttpFixtureServer(503, "{\"status\":\"down\"}");
         final SpigotDownloadsClient spigotDownloadsClient = new SpigotDownloadsClient(
             mock(),
-            mock(),
             "LightKeeper/Test",
             URI.create("https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar"),
             fixtureServer.metadataUri()
@@ -195,7 +177,6 @@ class SpigotDownloadsClientTest
         final HttpFixtureServer fixtureServer = new HttpFixtureServer(200, "{ not-json ");
         final SpigotDownloadsClient spigotDownloadsClient = new SpigotDownloadsClient(
             mock(),
-            mock(),
             "LightKeeper/Test",
             URI.create("https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar"),
             fixtureServer.metadataUri()
@@ -220,7 +201,6 @@ class SpigotDownloadsClientTest
         // execute + verify
         assertThatThrownBy(() -> new SpigotDownloadsClient(
             mock(),
-            mock(),
             "   ",
             URI.create("https://example.invalid/buildtools.jar"),
             URI.create("https://example.invalid/buildtools.json")
@@ -235,7 +215,6 @@ class SpigotDownloadsClientTest
         // setup
         final SpigotDownloadsClient spigotDownloadsClient = new SpigotDownloadsClient(
             mock(),
-            mock(),
             "LightKeeper/Test",
             URI.create("https://example.invalid/buildtools.jar"),
             URI.create("https://example.invalid/buildtools.json")
@@ -245,6 +224,24 @@ class SpigotDownloadsClientTest
         assertThatThrownBy(() -> spigotDownloadsClient.resolveBuild("   "))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("requestedVersion may not be blank");
+    }
+
+    @Test
+    void resolveBuild_shouldThrowExceptionWhenVersionIsUnsupported()
+    {
+        // setup
+        final SpigotDownloadsClient spigotDownloadsClient = new SpigotDownloadsClient(
+            mock(),
+            "LightKeeper/Test",
+            URI.create("https://example.invalid/buildtools.jar"),
+            URI.create("https://example.invalid/buildtools.json")
+        );
+
+        // execute + verify
+        assertThatThrownBy(() -> spigotDownloadsClient.resolveBuild("26.1.2"))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("Unsupported Spigot version")
+            .hasMessageContaining("1.21.11");
     }
 
     private static final class HttpFixtureServer implements AutoCloseable

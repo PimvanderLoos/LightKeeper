@@ -11,10 +11,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -25,47 +22,6 @@ import static org.mockito.Mockito.when;
 
 class PaperDownloadsClientTest
 {
-    @Test
-    void sortStableVersionsDescending_shouldSortStableSemanticVersions()
-    {
-        // setup
-        final Set<String> versions = new LinkedHashSet<>(List.of(
-            "1.21.9",
-            "1.21.11",
-            "1.20.6",
-            "1.21.10",
-            "1.21.11-rc1",
-            "latest"
-        ));
-
-        // execute
-        final List<String> sortedVersions = PaperDownloadsClient.sortStableVersionsDescending(versions);
-
-        // verify
-        assertThat(sortedVersions)
-            .containsExactly("1.21.11", "1.21.10", "1.21.9", "1.20.6");
-    }
-
-    @Test
-    void sortStableVersionsDescending_shouldIgnoreNonNumericEntriesAndTrimWhitespace()
-    {
-        // setup
-        final Set<String> versions = new LinkedHashSet<>(List.of(
-            " 1.21.2 ",
-            "1.21.1",
-            "dev-build",
-            "1.19",
-            " 1.21.0-pre1"
-        ));
-
-        // execute
-        final List<String> sortedVersions = PaperDownloadsClient.sortStableVersionsDescending(versions);
-
-        // verify
-        assertThat(sortedVersions)
-            .containsExactly("1.21.2", "1.21.1", "1.19");
-    }
-
     @Test
     void resolveBuild_shouldResolveExplicitStableVersion()
         throws Exception
@@ -107,17 +63,8 @@ class PaperDownloadsClientTest
         throws Exception
     {
         // setup
-        final URI projectUri = URI.create("https://fill.papermc.io/v3/projects/paper");
         final URI buildsLatestUri = URI.create("https://fill.papermc.io/v3/projects/paper/versions/1.21.11/builds");
         final PaperDownloadsClient client = createClient(Map.of(
-            projectUri,
-            """
-                {
-                  "versions": {
-                    "stable": ["1.21.11", "1.21.10", "1.21.11-rc1"]
-                  }
-                }
-                """,
             buildsLatestUri,
             """
                 [
@@ -147,11 +94,25 @@ class PaperDownloadsClientTest
     }
 
     @Test
+    void resolveBuild_shouldThrowExceptionWhenVersionIsUnsupported()
+        throws Exception
+    {
+        // setup
+        final PaperDownloadsClient client = createClient(Map.of());
+
+        // execute + verify
+        assertThatThrownBy(() -> client.resolveBuild("26.1.2"))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("Unsupported Paper version")
+            .hasMessageContaining("1.21.11");
+    }
+
+    @Test
     void resolveBuild_shouldDeriveChecksumFromDownloadUrlWhenChecksumsAreMissing()
         throws Exception
     {
         // setup
-        final URI buildsUri = URI.create("https://fill.papermc.io/v3/projects/paper/versions/1.21.10/builds");
+        final URI buildsUri = URI.create("https://fill.papermc.io/v3/projects/paper/versions/1.21.11/builds");
         final PaperDownloadsClient client = createClient(Map.of(
             buildsUri,
             """
@@ -171,7 +132,7 @@ class PaperDownloadsClientTest
         ));
 
         // execute
-        final PaperBuildMetadata result = client.resolveBuild("1.21.10");
+        final PaperBuildMetadata result = client.resolveBuild("1.21.11");
 
         // verify
         assertThat(result.sha256()).isEqualTo("cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc");
@@ -207,17 +168,8 @@ class PaperDownloadsClientTest
         throws Exception
     {
         // setup
-        final URI projectUri = URI.create("https://fill.papermc.io/v3/projects/paper");
         final URI buildsUri = URI.create("https://fill.papermc.io/v3/projects/paper/versions/1.21.11/builds");
         final PaperDownloadsClient client = createClient(Map.of(
-            projectUri,
-            """
-                {
-                  "versions": {
-                    "stable": ["1.21.11"]
-                  }
-                }
-                """,
             buildsUri,
             """
                 [
@@ -291,23 +243,6 @@ class PaperDownloadsClientTest
         assertThatThrownBy(() -> client.resolveBuild("1.21.11"))
             .isInstanceOf(MojoExecutionException.class)
             .hasMessageContaining("Failed to parse Fill API response");
-    }
-
-    @Test
-    void resolveBuild_shouldThrowExceptionWhenProjectPayloadIsMalformed()
-        throws Exception
-    {
-        // setup
-        final URI projectUri = URI.create("https://fill.papermc.io/v3/projects/paper");
-        final PaperDownloadsClient client = createClient(Map.of(
-            projectUri,
-            "{\"versions\":123}"
-        ));
-
-        // execute + verify
-        assertThatThrownBy(() -> client.resolveBuild("latest-supported"))
-            .isInstanceOf(MojoExecutionException.class)
-            .hasMessageContaining("Failed to parse project metadata");
     }
 
     @Test
