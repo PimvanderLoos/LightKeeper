@@ -58,6 +58,7 @@
         <version.maven-release-plugin>3.3.1</version.maven-release-plugin>
         <version.maven-shade-plugin>3.6.2</version.maven-shade-plugin>
         <version.maven-site-plugin>3.21.0</version.maven-site-plugin>
+        <version.maven-gpg-plugin>3.2.8</version.maven-gpg-plugin>
         <version.maven-source-plugin>3.4.0</version.maven-source-plugin>
         <version.maven-surefire-plugin>3.5.5</version.maven-surefire-plugin>
         <mockito.test.javaagent.argLine>-javaagent:${settings.localRepository}/org/mockito/mockito-core/${version.mockito}/mockito-core-${version.mockito}.jar</mockito.test.javaagent.argLine>
@@ -446,5 +447,71 @@
                 </pluginManagement>
             </build>
         </profile>
+        <profile>
+            <id>sign</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>${version.maven-javadoc-plugin}</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <doclint>none</doclint>
+                        </configuration>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>${version.maven-source-plugin}</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>${version.maven-gpg-plugin}</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                                <configuration>
+                                    <bestPractices>true</bestPractices>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
+
+    <distributionManagement>
+        <repository>
+            <id>eldonexus-releases</id>
+            <url>https://eldonexus.de/repository/maven-releases/</url>
+        </repository>
+        <snapshotRepository>
+            <id>eldonexus-snapshots</id>
+            <url>https://eldonexus.de/repository/maven-snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
 </project>
