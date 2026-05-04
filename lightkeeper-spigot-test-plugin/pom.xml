@@ -19,6 +19,10 @@
         <maven.compiler.release>21</maven.compiler.release>
         <project.root-dir>${project.basedir}/..</project.root-dir>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.deploy.skip>true</maven.deploy.skip>
+        <maven.javadoc.skip>true</maven.javadoc.skip>
+        <maven.source.skip>true</maven.source.skip>
+        <gpg.skip>true</gpg.skip>
     </properties>
 
     <repositories>

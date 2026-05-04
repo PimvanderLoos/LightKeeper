@@ -18,6 +18,10 @@
         <project.root-dir>${project.basedir}/..</project.root-dir>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <lightkeeper.runtime.jacoco.class-dump-dir>${project.root-dir}/lightkeeper-integration-tests/target/jacoco-classdump</lightkeeper.runtime.jacoco.class-dump-dir>
+        <maven.deploy.skip>true</maven.deploy.skip>
+        <maven.javadoc.skip>true</maven.javadoc.skip>
+        <maven.source.skip>true</maven.source.skip>
+        <gpg.skip>true</gpg.skip>
     </properties>
 
     <dependencies>
