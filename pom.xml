@@ -40,7 +40,7 @@
         <version.junit>6.0.3</version.junit>
         <version.lombok>1.18.44</version.lombok>
         <version.mockito>5.23.0</version.mockito>
-        <version.nullaway>0.13.1</version.nullaway>
+        <version.nullaway>0.13.4</version.nullaway>
         <version.inventorygui>1.6.5-SNAPSHOT</version.inventorygui>
         <version.spigot-api>${lightkeeper.minecraft-version}-R0.2-SNAPSHOT</version.spigot-api>
         <version.pmd>7.23.0</version.pmd>
