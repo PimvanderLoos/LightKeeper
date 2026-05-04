@@ -35,7 +35,10 @@ jobs:
       - name: Deploy snapshot
         run: |
           mvn --batch-mode --show-version --no-transfer-progress \
+            -pl .,lightkeeper-runtime-core,lightkeeper-nms-parent,lightkeeper-agent-spigot,lightkeeper-framework-junit,lightkeeper-maven-plugin \
+            -am \
             -Psign \
             -Dgpg.keyname=${MAVEN_GPG_KEY_FINGERPRINT} \
             -DskipTests \
+            -DdeployAtEnd=true \
             deploy

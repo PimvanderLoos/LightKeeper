@@ -25,6 +25,10 @@
         <lightkeeper.paper.socket-directory>${project.build.directory}/lightkeeper/sockets/paper</lightkeeper.paper.socket-directory>
         <lightkeeper.spigot.socket-directory>${project.build.directory}/lightkeeper/sockets/spigot</lightkeeper.spigot.socket-directory>
         <lightkeeper.integration.server-version>${lightkeeper.minecraft-version}</lightkeeper.integration.server-version>
+        <maven.deploy.skip>true</maven.deploy.skip>
+        <maven.javadoc.skip>true</maven.javadoc.skip>
+        <maven.source.skip>true</maven.source.skip>
+        <gpg.skip>true</gpg.skip>
     </properties>
 
     <repositories>
