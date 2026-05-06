@@ -229,7 +229,7 @@ class MyPluginIT
     </worlds>
     <plugins>
         <plugin>
-            <sourceType>path</sourceType> <!-- path | maven -->
+            <sourceType>path</sourceType> <!-- path | maven | modrinth | url -->
             <path>${project.basedir}/src/test/resources/plugins/MyDependency.jar</path>
             <renameTo>MyDependency.jar</renameTo>
         </plugin>
@@ -240,6 +240,18 @@ class MyPluginIT
             <version>1.2.3</version>
             <includeTransitive>false</includeTransitive>
         </plugin>
+        <plugin>
+            <sourceType>modrinth</sourceType>
+            <modrinthProject>luckperms</modrinthProject>
+            <modrinthVersion>v5.5.0-bukkit</modrinthVersion>
+            <modrinthLoader>bukkit</modrinthLoader>
+            <renameTo>LuckPerms.jar</renameTo>
+        </plugin>
+        <plugin>
+            <sourceType>url</sourceType>
+            <url>https://example.com/plugins/MyVerifiedDependency.jar</url>
+            <sha256>0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef</sha256>
+        </plugin>
     </plugins>
     <configOverlayPath>${project.basedir}/src/test/resources/overlay</configOverlayPath>
 </configuration>
@@ -248,6 +260,11 @@ class MyPluginIT
 ## Caching and Retry Behavior
 
 - JAR cache and base-server cache are separate.
+- Maven plugin dependencies use Maven's local repository. URL and Modrinth plugin dependencies are cached under
+  `lightkeeper.pluginArtifactCacheDirectoryRoot`, which defaults to
+  `${settings.localRepository}/nl/pim16aap2/lightkeeper/cache/plugins`.
+- URL plugin dependencies require SHA-256. Modrinth plugin files are verified against Modrinth's file checksum before
+  entering the LightKeeper plugin cache.
 - Cache keys include stable server artifact identity (Paper jar SHA-256 or Spigot BuildTools identity), with
   Java/OS included for build-sensitive Spigot outputs.
 - `prepare-server` prunes expired unused cache-key directories by default (`cleanupUnusedCacheDirectories=true`).
@@ -256,6 +273,15 @@ class MyPluginIT
   `<cleanupUnusedCacheDirectories>false</cleanupUnusedCacheDirectories>`
 - Start retries reuse the prepared artifacts; failed starts do not force a full re-download/rebuild unless explicitly
   configured via force flags.
+
+GitHub Actions can cache URL and Modrinth plugin downloads separately from the normal Maven cache:
+
+```yaml
+- uses: actions/cache@v4
+  with:
+    path: ~/.m2/repository/nl/pim16aap2/lightkeeper/cache/plugins
+    key: lightkeeper-plugin-cache-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
+```
 
 ## Running Locally
 

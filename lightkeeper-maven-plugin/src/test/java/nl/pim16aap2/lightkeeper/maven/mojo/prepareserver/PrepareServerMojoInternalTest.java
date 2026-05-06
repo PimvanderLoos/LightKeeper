@@ -10,6 +10,7 @@ import nl.pim16aap2.lightkeeper.maven.provisioning.WorldInputSpec;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.PaperServerProvider;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.ServerProvider;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.SpigotServerProvider;
+import nl.pim16aap2.lightkeeper.maven.util.FileUtil;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
@@ -620,25 +621,31 @@ class PrepareServerMojoInternalTest
     }
 
     @Test
-    void resolveUdsSocketPath_shouldUsePreferredPathWhenItFits(@TempDir Path tempDirectory)
+    void resolveUdsSocketPath_shouldUsePreferredPathWhenItFits()
         throws Exception
     {
         // setup
         final PrepareServerMojo mojo = new PrepareServerMojo();
-        final Path preferredDirectory = Files.createDirectories(tempDirectory.resolve("socket-dir"));
+        final Path preferredDirectory = Files.createTempDirectory(Path.of("/tmp"), "lk-uds-fit-");
+        try
+        {
+            // execute
+            final Path socketPath = invokePrivate(
+                mojo,
+                "resolveUdsSocketPath",
+                new Class<?>[]{Path.class, String.class},
+                preferredDirectory,
+                "abcdef0123456789abcdef0123456789"
+            );
 
-        // execute
-        final Path socketPath = invokePrivate(
-            mojo,
-            "resolveUdsSocketPath",
-            new Class<?>[]{Path.class, String.class},
-            preferredDirectory,
-            "abcdef0123456789abcdef0123456789"
-        );
-
-        // verify
-        assertThat(socketPath.toString()).startsWith(preferredDirectory.toAbsolutePath().toString());
-        assertThat(socketPath.getFileName().toString()).startsWith("lk-abcdef01");
+            // verify
+            assertThat(socketPath.toString()).startsWith(preferredDirectory.toAbsolutePath().toString());
+            assertThat(socketPath.getFileName().toString()).startsWith("lk-abcdef01");
+        }
+        finally
+        {
+            FileUtil.deleteRecursively(preferredDirectory, "temporary socket directory");
+        }
     }
 
     @Test

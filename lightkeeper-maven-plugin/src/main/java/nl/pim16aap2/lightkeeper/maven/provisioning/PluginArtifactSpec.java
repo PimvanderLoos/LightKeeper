@@ -2,6 +2,7 @@ package nl.pim16aap2.lightkeeper.maven.provisioning;
 
 import org.jspecify.annotations.Nullable;
 
+import java.net.URI;
 import java.nio.file.Path;
 
 /**
@@ -25,6 +26,20 @@ import java.nio.file.Path;
  *     Whether transitive dependencies should be copied.
  * @param renameTo
  *     Optional output filename override.
+ * @param uri
+ *     Direct artifact URI for {@code URL} sources.
+ * @param sha256
+ *     Required SHA-256 checksum for {@code URL} sources.
+ * @param modrinthProject
+ *     Modrinth project slug or ID for {@code MODRINTH} sources.
+ * @param modrinthVersion
+ *     Modrinth version number for {@code MODRINTH} sources.
+ * @param modrinthVersionId
+ *     Modrinth version ID for {@code MODRINTH} sources.
+ * @param modrinthLoader
+ *     Modrinth loader to select. Defaults to Bukkit during config resolution.
+ * @param modrinthGameVersion
+ *     Optional Minecraft version filter for Modrinth version selection.
  */
 public record PluginArtifactSpec(
     SourceType sourceType,
@@ -35,15 +50,55 @@ public record PluginArtifactSpec(
     @Nullable String classifier,
     String type,
     boolean includeTransitive,
-    @Nullable String renameTo
+    @Nullable String renameTo,
+    @Nullable URI uri,
+    @Nullable String sha256,
+    @Nullable String modrinthProject,
+    @Nullable String modrinthVersion,
+    @Nullable String modrinthVersionId,
+    @Nullable String modrinthLoader,
+    @Nullable String modrinthGameVersion
 )
 {
+    public PluginArtifactSpec(
+        SourceType sourceType,
+        @Nullable Path path,
+        @Nullable String groupId,
+        @Nullable String artifactId,
+        @Nullable String version,
+        @Nullable String classifier,
+        String type,
+        boolean includeTransitive,
+        @Nullable String renameTo)
+    {
+        this(
+            sourceType,
+            path,
+            groupId,
+            artifactId,
+            version,
+            classifier,
+            type,
+            includeTransitive,
+            renameTo,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+        );
+    }
+
     /**
      * Plugin artifact source type.
      */
     public enum SourceType
     {
         PATH,
-        MAVEN
+        MAVEN,
+        MODRINTH,
+        URL
     }
 }
