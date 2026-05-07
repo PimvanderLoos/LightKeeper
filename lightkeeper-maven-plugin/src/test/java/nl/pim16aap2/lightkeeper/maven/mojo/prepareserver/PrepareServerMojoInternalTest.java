@@ -10,7 +10,6 @@ import nl.pim16aap2.lightkeeper.maven.provisioning.WorldInputSpec;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.PaperServerProvider;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.ServerProvider;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.SpigotServerProvider;
-import nl.pim16aap2.lightkeeper.maven.util.FileUtil;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
@@ -30,11 +29,13 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -621,34 +622,30 @@ class PrepareServerMojoInternalTest
     }
 
     @Test
-    void resolveUdsSocketPath_shouldUsePreferredPathWhenItFits()
+    void resolveUdsSocketPath_shouldUsePreferredPathWhenItFits(@TempDir Path tempDirectory)
         throws Exception
     {
         // setup
         final PrepareServerMojo mojo = new PrepareServerMojo();
-        final Path preferredDirectory = Files.createTempDirectory(
-            Path.of(System.getProperty("java.io.tmpdir")),
-            "lk-uds-fit-"
+        final Path preferredDirectory = tempDirectory;
+        assumeTrue(
+            preferredDirectory.resolve("lk-abcdef01.sock").toAbsolutePath().toString()
+                .getBytes(StandardCharsets.UTF_8).length <= 108,
+            "Temporary directory path is too long for this AF_UNIX preferred-path test."
         );
-        try
-        {
-            // execute
-            final Path socketPath = invokePrivate(
-                mojo,
-                "resolveUdsSocketPath",
-                new Class<?>[]{Path.class, String.class},
-                preferredDirectory,
-                "abcdef0123456789abcdef0123456789"
-            );
 
-            // verify
-            assertThat(socketPath.toString()).startsWith(preferredDirectory.toAbsolutePath().toString());
-            assertThat(socketPath.getFileName().toString()).startsWith("lk-abcdef01");
-        }
-        finally
-        {
-            FileUtil.deleteRecursively(preferredDirectory, "temporary socket directory");
-        }
+        // execute
+        final Path socketPath = invokePrivate(
+            mojo,
+            "resolveUdsSocketPath",
+            new Class<?>[]{Path.class, String.class},
+            preferredDirectory,
+            "abcdef0123456789abcdef0123456789"
+        );
+
+        // verify
+        assertThat(socketPath.toString()).startsWith(preferredDirectory.toAbsolutePath().toString());
+        assertThat(socketPath.getFileName().toString()).startsWith("lk-abcdef01");
     }
 
     @Test
