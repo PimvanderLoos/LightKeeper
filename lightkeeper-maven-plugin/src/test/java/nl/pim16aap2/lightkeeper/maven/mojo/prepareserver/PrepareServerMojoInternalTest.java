@@ -626,7 +626,10 @@ class PrepareServerMojoInternalTest
     {
         // setup
         final PrepareServerMojo mojo = new PrepareServerMojo();
-        final Path preferredDirectory = Files.createTempDirectory(Path.of("/tmp"), "lk-uds-fit-");
+        final Path preferredDirectory = Files.createTempDirectory(
+            Path.of(System.getProperty("java.io.tmpdir")),
+            "lk-uds-fit-"
+        );
         try
         {
             // execute

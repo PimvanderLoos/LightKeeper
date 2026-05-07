@@ -60,6 +60,18 @@ public final class ModrinthDownloadsClient
         );
     }
 
+    public ModrinthDownloadsClient(Log log, String userAgent, HttpClient httpClient)
+    {
+        this(
+            log,
+            userAgent,
+            httpClient,
+            new ObjectMapper()
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
+        );
+    }
+
     ModrinthDownloadsClient(Log log, String userAgent, HttpClient httpClient, ObjectMapper objectMapper)
     {
         this.log = Objects.requireNonNull(log, "log");

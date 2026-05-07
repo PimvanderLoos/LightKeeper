@@ -58,6 +58,7 @@ final class PrepareServerPluginArtifactResolver
             .followRedirects(HttpClient.Redirect.NORMAL)
             .connectTimeout(Duration.ofSeconds(15))
             .build();
+        final ModrinthDownloadsClient modrinthDownloadsClient = new ModrinthDownloadsClient(log, userAgent, httpClient);
         for (final PluginArtifactSpec spec : specs)
         {
             switch (spec.sourceType())
@@ -92,7 +93,7 @@ final class PrepareServerPluginArtifactResolver
                     pluginArtifactCacheDirectoryRoot,
                     userAgent,
                     httpClient,
-                    new ModrinthDownloadsClient(log, userAgent),
+                    modrinthDownloadsClient,
                     log
                 ));
             }
@@ -338,8 +339,18 @@ final class PrepareServerPluginArtifactResolver
         {
             throw new MojoExecutionException(
                 "%s '%s' failed %s verification. Expected %s but got %s."
-                    .formatted(description, path, hashAlgorithm.toUpperCase(Locale.ROOT), expectedHash, actualHash)
+                    .formatted(description, path, displayHashAlgorithm(hashAlgorithm), expectedHash, actualHash)
             );
         }
+    }
+
+    private static String displayHashAlgorithm(String hashAlgorithm)
+    {
+        return switch (hashAlgorithm)
+        {
+            case "sha256" -> "SHA-256";
+            case "sha512" -> "SHA-512";
+            default -> hashAlgorithm.toUpperCase(Locale.ROOT);
+        };
     }
 }

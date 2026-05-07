@@ -113,7 +113,7 @@ class PrepareServerPluginArtifactResolverTest
                 new SystemStreamLog()
             ))
                 .isInstanceOf(MojoExecutionException.class)
-                .hasMessageContaining("failed SHA256 verification");
+                .hasMessageContaining("failed SHA-256 verification");
             try (Stream<Path> cachedFiles = Files.walk(tempDirectory.resolve("cache")))
             {
                 assertThat(cachedFiles
