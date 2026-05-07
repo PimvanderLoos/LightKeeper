@@ -1,6 +1,8 @@
 package nl.pim16aap2.lightkeeper.maven.mojo.prepareserver;
 
 import com.sun.net.httpserver.HttpServer;
+import nl.pim16aap2.lightkeeper.maven.ModrinthDownloadsClient;
+import nl.pim16aap2.lightkeeper.maven.ModrinthPluginMetadata;
 import nl.pim16aap2.lightkeeper.maven.provisioning.PluginArtifactSpec;
 import nl.pim16aap2.lightkeeper.maven.provisioning.ResolvedPluginArtifact;
 import nl.pim16aap2.lightkeeper.maven.util.HashUtil;
@@ -14,6 +16,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.net.InetSocketAddress;
 import java.net.InetAddress;
 import java.net.URI;
+import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,6 +27,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class PrepareServerPluginArtifactResolverTest
 {
@@ -127,6 +131,79 @@ class PrepareServerPluginArtifactResolverTest
         }
     }
 
+    @Test
+    void resolvePluginArtifacts_shouldDownloadModrinthSourceToCacheAndReuseCache(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final byte[] pluginBytes = "modrinth-plugin".getBytes(StandardCharsets.UTF_8);
+        final AtomicInteger requestCount = new AtomicInteger();
+        final HttpServer server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
+        server.createContext("/plugin.jar", exchange -> {
+            requestCount.incrementAndGet();
+            exchange.sendResponseHeaders(200, pluginBytes.length);
+            exchange.getResponseBody().write(pluginBytes);
+            exchange.close();
+        });
+        server.start();
+        final URI downloadUri = URI.create("http://127.0.0.1:%d/plugin.jar".formatted(server.getAddress().getPort()));
+        final Path hashSource = Files.write(tempDirectory.resolve("modrinth.jar"), pluginBytes);
+        final ModrinthPluginMetadata metadata = new ModrinthPluginMetadata(
+            "version01",
+            "v5.5.0-bukkit",
+            "LuckPerms-Bukkit.jar",
+            downloadUri,
+            HashUtil.sha512(hashSource)
+        );
+        final ModrinthDownloadsClient modrinthDownloadsClient = mock(ModrinthDownloadsClient.class);
+        final PluginArtifactSpec spec = modrinthSpec();
+        when(modrinthDownloadsClient.resolvePluginFile(spec)).thenReturn(metadata);
+        final PrepareServerPluginArtifactResolver resolver = new PrepareServerPluginArtifactResolver();
+        final HttpClient httpClient = HttpClient.newBuilder()
+            .followRedirects(HttpClient.Redirect.NORMAL)
+            .build();
+
+        try
+        {
+            // execute
+            final List<ResolvedPluginArtifact> firstResolved = resolver.resolvePluginArtifacts(
+                List.of(spec),
+                mock(RepositorySystem.class),
+                mock(RepositorySystemSession.class),
+                List.of(),
+                tempDirectory.resolve("cache"),
+                "LightKeeper/Test",
+                httpClient,
+                modrinthDownloadsClient,
+                new SystemStreamLog()
+            );
+            final List<ResolvedPluginArtifact> secondResolved = resolver.resolvePluginArtifacts(
+                List.of(spec),
+                mock(RepositorySystem.class),
+                mock(RepositorySystemSession.class),
+                List.of(),
+                tempDirectory.resolve("cache"),
+                "LightKeeper/Test",
+                httpClient,
+                modrinthDownloadsClient,
+                new SystemStreamLog()
+            );
+
+            // verify
+            assertThat(firstResolved).singleElement().satisfies(artifact -> {
+                assertThat(artifact.outputFileName()).isEqualTo("LuckPerms-Bukkit.jar");
+                assertThat(artifact.sourceJar()).isRegularFile();
+                assertThat(artifact.sourceJar()).hasContent("modrinth-plugin");
+            });
+            assertThat(secondResolved.getFirst().sourceJar()).isEqualTo(firstResolved.getFirst().sourceJar());
+            assertThat(requestCount).hasValue(1);
+        }
+        finally
+        {
+            server.stop(0);
+        }
+    }
+
     private static PluginArtifactSpec urlSpec(URI uri, String sha256)
     {
         return new PluginArtifactSpec(
@@ -145,6 +222,28 @@ class PrepareServerPluginArtifactResolverTest
             null,
             null,
             null,
+            null
+        );
+    }
+
+    private static PluginArtifactSpec modrinthSpec()
+    {
+        return new PluginArtifactSpec(
+            PluginArtifactSpec.SourceType.MODRINTH,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "jar",
+            false,
+            null,
+            null,
+            null,
+            "luckperms",
+            "v5.5.0-bukkit",
+            "version01",
+            "bukkit",
             null
         );
     }

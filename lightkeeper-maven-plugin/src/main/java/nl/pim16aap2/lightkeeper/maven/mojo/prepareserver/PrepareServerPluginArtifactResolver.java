@@ -31,6 +31,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.nio.file.Files;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -39,7 +40,7 @@ import java.util.Locale;
 import java.util.Objects;
 
 /**
- * Resolves plugin artifacts from local paths or Maven coordinates.
+ * Resolves plugin artifacts from local paths, Maven coordinates, URL downloads, and Modrinth downloads.
  */
 final class PrepareServerPluginArtifactResolver
 {
@@ -53,12 +54,37 @@ final class PrepareServerPluginArtifactResolver
         Log log)
         throws MojoExecutionException
     {
-        final List<ResolvedPluginArtifact> resolvedPluginArtifacts = new ArrayList<>();
         final HttpClient httpClient = HttpClient.newBuilder()
             .followRedirects(HttpClient.Redirect.NORMAL)
             .connectTimeout(Duration.ofSeconds(15))
             .build();
         final ModrinthDownloadsClient modrinthDownloadsClient = new ModrinthDownloadsClient(log, userAgent, httpClient);
+        return resolvePluginArtifacts(
+            specs,
+            repositorySystem,
+            repositorySystemSession,
+            remoteProjectRepositories,
+            pluginArtifactCacheDirectoryRoot,
+            userAgent,
+            httpClient,
+            modrinthDownloadsClient,
+            log
+        );
+    }
+
+    List<ResolvedPluginArtifact> resolvePluginArtifacts(
+        List<PluginArtifactSpec> specs,
+        RepositorySystem repositorySystem,
+        RepositorySystemSession repositorySystemSession,
+        List<RemoteRepository> remoteProjectRepositories,
+        Path pluginArtifactCacheDirectoryRoot,
+        String userAgent,
+        HttpClient httpClient,
+        ModrinthDownloadsClient modrinthDownloadsClient,
+        Log log)
+        throws MojoExecutionException
+    {
+        final List<ResolvedPluginArtifact> resolvedPluginArtifacts = new ArrayList<>();
         for (final PluginArtifactSpec spec : specs)
         {
             switch (spec.sourceType())
@@ -209,7 +235,9 @@ final class PrepareServerPluginArtifactResolver
         throws MojoExecutionException
     {
         final ModrinthPluginMetadata metadata = modrinthDownloadsClient.resolvePluginFile(spec);
-        final String outputFileName = spec.renameTo() == null ? metadata.fileName() : spec.renameTo();
+        final String outputFileName = spec.renameTo() == null
+            ? PrepareServerInputResolver.validatePluginFileName(metadata.fileName(), "Modrinth filename")
+            : spec.renameTo();
         return downloadToCache(
             metadata.downloadUri(),
             outputFileName,
@@ -269,12 +297,23 @@ final class PrepareServerPluginArtifactResolver
         {
             download(uri, temporaryDownload, userAgent, httpClient);
             verifyHash(temporaryDownload, hashAlgorithm, normalizedHash, "downloaded plugin artifact");
-            Files.move(
-                temporaryDownload,
-                cachedJar,
-                StandardCopyOption.ATOMIC_MOVE,
-                StandardCopyOption.REPLACE_EXISTING
-            );
+            try
+            {
+                Files.move(
+                    temporaryDownload,
+                    cachedJar,
+                    StandardCopyOption.ATOMIC_MOVE,
+                    StandardCopyOption.REPLACE_EXISTING
+                );
+            }
+            catch (AtomicMoveNotSupportedException exception)
+            {
+                Files.move(
+                    temporaryDownload,
+                    cachedJar,
+                    StandardCopyOption.REPLACE_EXISTING
+                );
+            }
             log.info("LK_PLUGIN: Cached plugin artifact '%s' from '%s'.".formatted(cachedJar, uri));
             return new ResolvedPluginArtifact(cachedJar, outputFileName, identity);
         }

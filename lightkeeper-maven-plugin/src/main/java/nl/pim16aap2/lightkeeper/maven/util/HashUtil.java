@@ -11,7 +11,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 /**
- * Utility methods for SHA-256 hashing.
+ * Utility methods for SHA-256 and SHA-512 hashing.
  */
 public final class HashUtil
 {

@@ -339,7 +339,7 @@ final class PrepareServerInputResolver
         return normalized;
     }
 
-    private static String validatePluginFileName(String fileName, String description)
+    static String validatePluginFileName(String fileName, String description)
         throws MojoExecutionException
     {
         final String normalized = requireNonBlank(fileName, description);
