@@ -10,6 +10,7 @@ import java.lang.reflect.Field;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -18,6 +19,23 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class PrepareServerInputResolverTest
 {
     private static final PrepareServerInputResolver RESOLVER = new PrepareServerInputResolver();
+
+    @Test
+    void resolvePluginArtifactSpecs_shouldReturnEmptyListForNullConfiguration()
+        throws Exception
+    {
+        // execute + verify
+        assertThat(RESOLVER.resolvePluginArtifactSpecs(null)).isEmpty();
+    }
+
+    @Test
+    void resolvePluginArtifactSpecs_shouldRejectNullPluginEntry()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> RESOLVER.resolvePluginArtifactSpecs(Collections.singletonList(null)))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("may not be null");
+    }
 
     @Test
     void resolveWorldInputSpecs_shouldThrowExceptionWhenFolderSourceIsNotDirectory(@TempDir Path tempDirectory)
@@ -121,6 +139,27 @@ class PrepareServerInputResolverTest
     }
 
     @Test
+    void resolvePluginArtifactSpecs_shouldResolvePathSource(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path pluginJar = Files.writeString(tempDirectory.resolve("fixture.jar"), "x");
+        final PrepareServerPluginArtifactConfig config = new PrepareServerPluginArtifactConfig();
+        setField(config, "sourceType", "path");
+        setField(config, "path", pluginJar);
+
+        // execute
+        final List<PluginArtifactSpec> specs = RESOLVER.resolvePluginArtifactSpecs(List.of(config));
+
+        // verify
+        assertThat(specs).singleElement().satisfies(spec -> {
+            assertThat(spec.sourceType()).isEqualTo(PluginArtifactSpec.SourceType.PATH);
+            assertThat(spec.path()).isEqualTo(pluginJar.toAbsolutePath().normalize());
+            assertThat(spec.renameTo()).isNull();
+        });
+    }
+
+    @Test
     void resolvePluginArtifactSpecs_shouldRequireSha256ForUrlSource()
         throws Exception
     {
@@ -133,6 +172,22 @@ class PrepareServerInputResolverTest
         assertThatThrownBy(() -> RESOLVER.resolvePluginArtifactSpecs(List.of(config)))
             .isInstanceOf(MojoExecutionException.class)
             .hasMessageContaining("lightkeeper.plugins.sha256");
+    }
+
+    @Test
+    void resolvePluginArtifactSpecs_shouldRejectUrlSourceWithoutFilename()
+        throws Exception
+    {
+        // setup
+        final PrepareServerPluginArtifactConfig config = new PrepareServerPluginArtifactConfig();
+        setField(config, "sourceType", "url");
+        setField(config, "url", URI.create("https://example.com/downloads/"));
+        setField(config, "sha256", "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef");
+
+        // execute + verify
+        assertThatThrownBy(() -> RESOLVER.resolvePluginArtifactSpecs(List.of(config)))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("does not include an output filename");
     }
 
     @Test
@@ -158,6 +213,41 @@ class PrepareServerInputResolverTest
     }
 
     @Test
+    void resolvePluginArtifactSpecs_shouldNormalizeUrlChecksum()
+        throws Exception
+    {
+        // setup
+        final PrepareServerPluginArtifactConfig config = new PrepareServerPluginArtifactConfig();
+        setField(config, "sourceType", "url");
+        setField(config, "url", URI.create("https://example.com/downloads/plugin.jar"));
+        setField(config, "sha256", "ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789");
+
+        // execute
+        final List<PluginArtifactSpec> specs = RESOLVER.resolvePluginArtifactSpecs(List.of(config));
+
+        // verify
+        assertThat(specs.getFirst().sha256())
+            .isEqualTo("abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789");
+    }
+
+    @Test
+    void resolvePluginArtifactSpecs_shouldRejectInvalidRenameToForUrlSource()
+        throws Exception
+    {
+        // setup
+        final PrepareServerPluginArtifactConfig config = new PrepareServerPluginArtifactConfig();
+        setField(config, "sourceType", "url");
+        setField(config, "url", URI.create("https://example.com/downloads/plugin.jar"));
+        setField(config, "sha256", "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef");
+        setField(config, "renameTo", "folder/invalid.jar");
+
+        // execute + verify
+        assertThatThrownBy(() -> RESOLVER.resolvePluginArtifactSpecs(List.of(config)))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("may not contain path separators");
+    }
+
+    @Test
     void resolvePluginArtifactSpecs_shouldResolveModrinthSource()
         throws Exception
     {
@@ -180,6 +270,21 @@ class PrepareServerInputResolverTest
     }
 
     @Test
+    void resolvePluginArtifactSpecs_shouldRejectModrinthSourceWithoutVersionIdOrVersion()
+        throws Exception
+    {
+        // setup
+        final PrepareServerPluginArtifactConfig config = new PrepareServerPluginArtifactConfig();
+        setField(config, "sourceType", "modrinth");
+        setField(config, "modrinthProject", "luckperms");
+
+        // execute + verify
+        assertThatThrownBy(() -> RESOLVER.resolvePluginArtifactSpecs(List.of(config)))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("requires either");
+    }
+
+    @Test
     void resolvePluginArtifactSpecs_shouldRejectAmbiguousModrinthConfig()
         throws Exception
     {
@@ -193,6 +298,25 @@ class PrepareServerInputResolverTest
         assertThatThrownBy(() -> RESOLVER.resolvePluginArtifactSpecs(List.of(config)))
             .isInstanceOf(MojoExecutionException.class)
             .hasMessageContaining("may not combine");
+    }
+
+    @Test
+    void resolvePluginArtifactSpecs_shouldRejectMavenRenameWhenIncludingTransitiveArtifacts()
+        throws Exception
+    {
+        // setup
+        final PrepareServerPluginArtifactConfig config = new PrepareServerPluginArtifactConfig();
+        setField(config, "sourceType", "maven");
+        setField(config, "groupId", "com.example");
+        setField(config, "artifactId", "fixture");
+        setField(config, "version", "1.0.0");
+        setField(config, "includeTransitive", Boolean.TRUE);
+        setField(config, "renameTo", "fixture.jar");
+
+        // execute + verify
+        assertThatThrownBy(() -> RESOLVER.resolvePluginArtifactSpecs(List.of(config)))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("cannot set renameTo");
     }
 
     private static void setField(Object target, String fieldName, Object value)
