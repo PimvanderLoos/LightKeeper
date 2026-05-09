@@ -482,7 +482,50 @@ class ModrinthDownloadsClientTest
         // execute + verify
         assertThatThrownBy(() -> client.resolvePluginFile(modrinthVersionIdSpec()))
             .isInstanceOf(MojoExecutionException.class)
-            .hasMessageContaining("choose a version with one primary Bukkit jar");
+            .hasMessageContaining("ambiguous jar files for loader 'bukkit'")
+            .hasMessageContaining("choose a version with one primary jar");
+    }
+
+    @Test
+    void resolvePluginFile_shouldReportConfiguredLoaderWhenJarSelectionIsAmbiguous()
+        throws Exception
+    {
+        // setup
+        final URI versionUri = URI.create("https://api.modrinth.com/v2/version/version01");
+        final ModrinthDownloadsClient client = createClient(Map.of(
+            versionUri,
+            jsonResponse(
+                200,
+                """
+                    {
+                      "id": "version01",
+                      "project_id": "project01",
+                      "version_number": "v5.5.0-paper",
+                      "game_versions": ["1.21.11"],
+                      "loaders": ["paper"],
+                      "files": [
+                        {
+                          "hashes": {"sha512": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+                          "url": "https://cdn.modrinth.com/a.jar",
+                          "filename": "a.jar",
+                          "primary": false
+                        },
+                        {
+                          "hashes": {"sha512": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"},
+                          "url": "https://cdn.modrinth.com/b.jar",
+                          "filename": "b.jar",
+                          "primary": false
+                        }
+                      ]
+                    }
+                    """
+            )
+        ));
+
+        // execute + verify
+        assertThatThrownBy(() -> client.resolvePluginFile(modrinthVersionIdSpec("paper", null)))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("ambiguous jar files for loader 'paper'");
     }
 
     private static PluginArtifactSpec modrinthProjectSpec()
@@ -514,6 +557,11 @@ class ModrinthDownloadsClientTest
 
     private static PluginArtifactSpec modrinthVersionIdSpec(@Nullable String gameVersion)
     {
+        return modrinthVersionIdSpec("bukkit", gameVersion);
+    }
+
+    private static PluginArtifactSpec modrinthVersionIdSpec(String loader, @Nullable String gameVersion)
+    {
         return new PluginArtifactSpec(
             PluginArtifactSpec.SourceType.MODRINTH,
             null,
@@ -529,7 +577,7 @@ class ModrinthDownloadsClientTest
             null,
             null,
             "version01",
-            "bukkit",
+            loader,
             gameVersion
         );
     }

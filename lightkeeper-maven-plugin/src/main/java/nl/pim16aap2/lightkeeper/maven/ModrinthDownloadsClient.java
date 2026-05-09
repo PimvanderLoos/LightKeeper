@@ -81,7 +81,7 @@ public final class ModrinthDownloadsClient
     }
 
     /**
-     * Resolves an exact Modrinth version and selects one Bukkit-compatible jar file.
+     * Resolves an exact Modrinth version and selects one jar file compatible with the configured loader.
      *
      * @param spec
      *     Validated Modrinth plugin spec.
@@ -100,7 +100,7 @@ public final class ModrinthDownloadsClient
             Objects.requireNonNull(spec.modrinthLoader()),
             spec.modrinthGameVersion()
         );
-        final FileResponse file = selectFile(version);
+        final FileResponse file = selectFile(version, Objects.requireNonNull(spec.modrinthLoader()));
 
         log.info("LK_PLUGIN: Resolved Modrinth plugin '%s' version '%s' file '%s'."
             .formatted(version.projectId(), version.versionNumber(), file.filename()));
@@ -208,7 +208,7 @@ public final class ModrinthDownloadsClient
         }
     }
 
-    private FileResponse selectFile(VersionResponse version)
+    private FileResponse selectFile(VersionResponse version, String loader)
         throws MojoExecutionException
     {
         final List<FileResponse> jarFiles = nonNullList(version.files()).stream()
@@ -242,8 +242,8 @@ public final class ModrinthDownloadsClient
             return requiredFiles.getFirst();
 
         throw new MojoExecutionException(
-            "Modrinth version '%s' has ambiguous jar files; choose a version with one primary Bukkit jar."
-                .formatted(version.id())
+            "Modrinth version '%s' has ambiguous jar files for loader '%s'; choose a version with one primary jar."
+                .formatted(version.id(), loader)
         );
     }
 

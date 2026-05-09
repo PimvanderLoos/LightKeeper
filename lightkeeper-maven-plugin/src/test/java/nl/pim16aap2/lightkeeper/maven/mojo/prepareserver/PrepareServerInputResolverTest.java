@@ -270,6 +270,25 @@ class PrepareServerInputResolverTest
     }
 
     @Test
+    void resolvePluginArtifactSpecs_shouldUseConfiguredModrinthLoader()
+        throws Exception
+    {
+        // setup
+        final PrepareServerPluginArtifactConfig config = new PrepareServerPluginArtifactConfig();
+        setField(config, "sourceType", "modrinth");
+        setField(config, "modrinthVersionId", "ABCDEFGH");
+        setField(config, "modrinthLoader", "paper");
+
+        // execute
+        final List<PluginArtifactSpec> specs = RESOLVER.resolvePluginArtifactSpecs(List.of(config));
+
+        // verify
+        assertThat(specs).singleElement().satisfies(spec ->
+            assertThat(spec.modrinthLoader()).isEqualTo("paper")
+        );
+    }
+
+    @Test
     void resolvePluginArtifactSpecs_shouldRejectModrinthSourceWithoutVersionIdOrVersion()
         throws Exception
     {

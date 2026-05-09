@@ -169,6 +169,8 @@ final class PrepareServerInputResolver
                             "modrinthVersion."
                     );
                 }
+                final @Nullable String configuredModrinthLoader =
+                    normalizeOptionalString(pluginArtifactConfig.modrinthLoader());
 
                 specs.add(new PluginArtifactSpec(
                     sourceType,
@@ -185,9 +187,7 @@ final class PrepareServerInputResolver
                     project,
                     version,
                     versionId,
-                    normalizeOptionalString(pluginArtifactConfig.modrinthLoader()) == null
-                        ? "bukkit"
-                        : normalizeOptionalString(pluginArtifactConfig.modrinthLoader()),
+                    configuredModrinthLoader == null ? "bukkit" : configuredModrinthLoader,
                     normalizeOptionalString(pluginArtifactConfig.modrinthGameVersion())
                 ));
                 continue;
