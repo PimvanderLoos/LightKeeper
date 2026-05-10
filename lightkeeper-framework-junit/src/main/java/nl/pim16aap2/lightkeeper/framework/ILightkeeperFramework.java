@@ -108,6 +108,15 @@ public interface ILightkeeperFramework extends AutoCloseable
      */
     void restartServer();
 
+    /**
+     * Starts capturing Bukkit events of the specified type.
+     *
+     * @param eventClassName
+     *     The full class name of the event to capture (e.g. "org.bukkit.event.player.PlayerMoveEvent").
+     * @return A handle to manage the capture session.
+     */
+    EventCaptureHandle captureEvents(String eventClassName);
+
     @Override
     void close();
 }

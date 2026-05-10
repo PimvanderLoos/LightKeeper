@@ -206,6 +206,26 @@ public final class PlayerHandle
     }
 
     /**
+     * Gets a snapshot of this player's inventory.
+     *
+     * @return Inventory snapshot.
+     */
+    public InventorySnapshot inventory()
+    {
+        return frameworkGateway.playerInventory(uniqueId);
+    }
+
+    /**
+     * Simulates the player dropping their main hand item.
+     *
+     * @return True if the drop event was cancelled.
+     */
+    public boolean dropMainHandItem()
+    {
+        return frameworkGateway.dropItem(uniqueId);
+    }
+
+    /**
      * Waits for at least the requested number of server ticks.
      *
      * @param ticks
