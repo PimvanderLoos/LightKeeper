@@ -267,6 +267,15 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     }
 
     @Override
+    public void teleportPlayer(UUID uuid, String worldName, double x, double y, double z)
+    {
+        ensureOpen();
+        Objects.requireNonNull(uuid, "uuid may not be null.");
+        Objects.requireNonNull(worldName, "worldName may not be null.");
+        agentClient.teleportPlayer(uuid, worldName, x, y, z);
+    }
+
+    @Override
     public void placePlayerBlock(UUID playerId, String material, int x, int y, int z)
     {
         ensureOpen();
@@ -275,6 +284,30 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
         if (trimmedMaterial.isEmpty())
             throw new IllegalArgumentException("material may not be blank.");
         agentClient.placePlayerBlock(playerId, trimmedMaterial, x, y, z);
+    }
+
+    @Override
+    public void loadChunk(String worldName, int x, int z)
+    {
+        ensureOpen();
+        Objects.requireNonNull(worldName, "worldName may not be null.");
+        agentClient.loadChunk(worldName, x, z);
+    }
+
+    @Override
+    public boolean unloadChunk(String worldName, int x, int z)
+    {
+        ensureOpen();
+        Objects.requireNonNull(worldName, "worldName may not be null.");
+        return agentClient.unloadChunk(worldName, x, z);
+    }
+
+    @Override
+    public boolean isChunkLoaded(String worldName, int x, int z)
+    {
+        ensureOpen();
+        Objects.requireNonNull(worldName, "worldName may not be null.");
+        return agentClient.isChunkLoaded(worldName, x, z);
     }
 
     @Override
