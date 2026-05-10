@@ -12,6 +12,7 @@ import nl.pim16aap2.lightkeeper.framework.IPlayerBuilder;
 import nl.pim16aap2.lightkeeper.framework.IWorldBuilder;
 import nl.pim16aap2.lightkeeper.framework.InventorySnapshot;
 import nl.pim16aap2.lightkeeper.framework.MenuSnapshot;
+import nl.pim16aap2.lightkeeper.framework.Platform;
 import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
 import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
@@ -461,6 +462,13 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     {
         ensureOpen();
         return minecraftServerProcess.snapshotOutputLines();
+    }
+
+    @Override
+    public Platform platform()
+    {
+        ensureOpen();
+        return agentClient.serverPlatform();
     }
 
     @Override

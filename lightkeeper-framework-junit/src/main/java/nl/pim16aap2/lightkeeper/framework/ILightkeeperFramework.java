@@ -99,6 +99,13 @@ public interface ILightkeeperFramework extends AutoCloseable
     List<String> serverOutput();
 
     /**
+     * Gets the server platform (e.g. PAPER, SPIGOT).
+     *
+     * @return Server platform.
+     */
+    Platform platform();
+
+    /**
      * Crashes the Minecraft server immediately.
      */
     void crashServer();
