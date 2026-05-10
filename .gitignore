@@ -55,4 +55,5 @@ docs/*
 .claude/*
 .scratch/*
 .plans/*
+.jules/*
 codecov
