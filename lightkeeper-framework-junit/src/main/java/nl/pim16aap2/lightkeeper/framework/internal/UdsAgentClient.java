@@ -6,6 +6,7 @@ import nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot;
 import nl.pim16aap2.lightkeeper.framework.CommandSource;
 import nl.pim16aap2.lightkeeper.framework.MenuItemSnapshot;
 import nl.pim16aap2.lightkeeper.framework.MenuSnapshot;
+import nl.pim16aap2.lightkeeper.framework.Platform;
 import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.framework.WorldSpec;
 import nl.pim16aap2.lightkeeper.protocol.IAgentCommand;
@@ -93,6 +94,17 @@ final class UdsAgentClient implements AutoCloseable
     {
         final AgentResponse response = send(new MainWorldCommand(nextRequestId()));
         return getRequiredData(response, "worldName");
+    }
+
+    Platform serverPlatform()
+    {
+        final AgentResponse response = send(AgentAction.GET_SERVER_PLATFORM, Map.of());
+        final String platformName = getRequiredData(response, "platform").toLowerCase(java.util.Locale.ROOT);
+        if (platformName.contains("paper"))
+            return Platform.PAPER;
+        if (platformName.contains("spigot"))
+            return Platform.SPIGOT;
+        return Platform.UNKNOWN;
     }
 
     String newWorld(WorldSpec worldSpec)

@@ -398,4 +398,18 @@ final class AgentWorldActions
             "serverVersion", Bukkit.getVersion()
         ));
     }
+
+    /**
+     * Handles {@code GET_SERVER_PLATFORM} by returning the server platform name.
+     *
+     * @param requestId
+     *     Runtime request identifier.
+     * @return
+     *     Success response with {@code platform} (e.g. "Paper", "Spigot").
+     */
+    AgentResponse handleGetServerPlatform(String requestId)
+    {
+        final String platform = Bukkit.getName();
+        return AgentResponses.successResponse(requestId, Map.of("platform", platform));
+    }
 }
