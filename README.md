@@ -257,6 +257,66 @@ class MyPluginIT
 </configuration>
 ```
 
+### Example: Testing with Vault on Paper
+
+Vault publishes runtime plugin jars through GitHub releases rather than Modrinth. Pin the release URL and SHA-256 so CI
+uses a reproducible artifact; update both values when Vault publishes a newer release.
+
+```xml
+
+<properties>
+    <vault.version>1.7.3</vault.version>
+    <vault.url>https://github.com/MilkBowl/Vault/releases/download/${vault.version}/Vault.jar</vault.url>
+    <vault.sha256>a6b5ed97f43a5cf5bbaf00a7c8cd23c5afc9bd003f849875af8b36e6cf77d01d</vault.sha256>
+</properties>
+
+<configuration>
+    <serverType>paper</serverType>
+    <serverVersion>latest-supported</serverVersion>
+    <runtimeManifestPath>${project.build.directory}/lightkeeper/runtime-manifest.json</runtimeManifestPath>
+    <plugins>
+        <plugin>
+            <sourceType>path</sourceType>
+            <path>${project.build.directory}/${project.build.finalName}.jar</path>
+            <renameTo>${project.artifactId}.jar</renameTo>
+        </plugin>
+        <plugin>
+            <sourceType>url</sourceType>
+            <url>${vault.url}</url>
+            <sha256>${vault.sha256}</sha256>
+            <renameTo>Vault.jar</renameTo>
+        </plugin>
+    </plugins>
+</configuration>
+```
+
+```java
+
+@ExtendWith(LightkeeperExtension.class)
+class VaultIT
+{
+    @Test
+    void vaultInfo_shouldReportVaultVersion(ILightkeeperFramework framework)
+    {
+        // setup
+        final PlayerHandle player = framework.buildPlayer()
+            .withName("vault_tester")
+            .atSpawn(framework.mainWorld())
+            .withPermissions("vault.admin")
+            .build();
+
+        // execute
+        player.executeCommand("vault-info");
+
+        // verify
+        assertPlayer(player).receivedMessage("Vault v1.7.3 Information");
+    }
+}
+```
+
+Plugin dependencies intentionally do not support floating latest versions. Use an exact Maven version, exact Modrinth
+version/version ID, or exact URL plus checksum. `latest-supported` is available for the Paper/Spigot server version only.
+
 ## Caching and Retry Behavior
 
 - JAR cache and base-server cache are separate.
