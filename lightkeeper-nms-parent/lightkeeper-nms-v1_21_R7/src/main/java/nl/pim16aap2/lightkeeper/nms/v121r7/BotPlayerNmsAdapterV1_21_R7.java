@@ -749,6 +749,7 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
             }
             catch (Exception ignored)
             {
+                // Ignored: best-effort extraction
             }
         }
 
@@ -766,6 +767,7 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
                 }
                 catch (Exception ignored)
                 {
+                    // Ignored: best-effort extraction
                 }
             }
         }

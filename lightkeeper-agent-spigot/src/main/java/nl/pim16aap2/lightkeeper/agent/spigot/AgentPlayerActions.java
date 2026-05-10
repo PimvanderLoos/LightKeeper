@@ -18,7 +18,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -383,7 +382,8 @@ final class AgentPlayerActions
                     final Map<String, Object> itemData = new HashMap<>();
                     itemData.put("slot", i);
                     itemData.put("materialKey", item.getType().getKey().toString());
-                    itemData.put("displayName", item.getItemMeta() == null ? null : item.getItemMeta().getDisplayName());
+                    final String displayName = item.getItemMeta() == null ? null : item.getItemMeta().getDisplayName();
+                    itemData.put("displayName", displayName);
                     itemData.put(
                         "lore",
                         item.getItemMeta() == null

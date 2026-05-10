@@ -49,9 +49,9 @@ final class UdsAgentClient implements AutoCloseable
 
     private final Path socketPath;
     private final AtomicLong requestCounter = new AtomicLong(0L);
-    private SocketChannel socketChannel;
-    private BufferedReader reader;
-    private BufferedWriter writer;
+    private @Nullable SocketChannel socketChannel;
+    private @Nullable BufferedReader reader;
+    private @Nullable BufferedWriter writer;
 
     UdsAgentClient(Path socketPath, Duration connectTimeout)
     {
@@ -399,15 +399,17 @@ final class UdsAgentClient implements AutoCloseable
 
     synchronized AgentResponse send(AgentAction action, Map<String, String> arguments)
     {
+        final BufferedWriter out = Objects.requireNonNull(writer, "Client is not connected.");
+        final BufferedReader in = Objects.requireNonNull(reader, "Client is not connected.");
         final String requestId = Long.toString(requestCounter.incrementAndGet());
         final AgentRequest request = new AgentRequest(requestId, action, arguments);
         try
         {
-            writer.write(objectMapper.writeValueAsString(request));
-            writer.newLine();
-            writer.flush();
+            out.write(objectMapper.writeValueAsString(request));
+            out.newLine();
+            out.flush();
 
-            final String responseLine = reader.readLine();
+            final String responseLine = in.readLine();
             if (responseLine == null)
                 throw new IllegalStateException("Agent connection closed unexpectedly.");
 

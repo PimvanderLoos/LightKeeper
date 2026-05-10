@@ -87,7 +87,7 @@ final class MinecraftServerProcess
         final long startupDeadlineNanos = System.nanoTime() + timeout.toNanos();
         while (System.nanoTime() < startupDeadlineNanos)
         {
-            if (startedLatch.get().await(200L, TimeUnit.MILLISECONDS))
+            if (Objects.requireNonNull(startedLatch.get()).await(200L, TimeUnit.MILLISECONDS))
                 return;
 
             final Process runningProcess = Objects.requireNonNull(process, "process may not be null.");
@@ -280,7 +280,7 @@ final class MinecraftServerProcess
                         appendOutputLine(line);
 
                         if (line.contains("Done (") && line.endsWith(")! For help, type \"help\""))
-                            startedLatch.get().countDown();
+                            Objects.requireNonNull(startedLatch.get()).countDown();
                     }
                 }
                 catch (IOException exception)

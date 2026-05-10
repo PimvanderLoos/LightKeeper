@@ -1,5 +1,7 @@
 package nl.pim16aap2.lightkeeper.framework;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.List;
 
 /**
@@ -19,7 +21,7 @@ public record InventorySnapshot(
      *     The material key to look for (e.g. "minecraft:stone").
      * @return The item snapshot, or null if not found.
      */
-    public MenuItemSnapshot findItem(String materialKey)
+    public @Nullable MenuItemSnapshot findItem(String materialKey)
     {
         return items.stream()
             .filter(item -> item.materialKey().equalsIgnoreCase(materialKey))

@@ -75,7 +75,6 @@ final class AgentEventCapture
 
     private void captureEvent(Event event)
     {
-        final String className = event.getClass().getName();
         // Check for the class name and its superclasses (e.g. if we listen for PlayerEvent but get PlayerMoveEvent)
         // Actually, Bukkit's registerEvent handles the class hierarchy for us.
         // But capturedEvents is keyed by the registered class name.
@@ -90,7 +89,10 @@ final class AgentEventCapture
                     captureEventForList(event, entry.getValue());
                 }
             }
-            catch (ClassNotFoundException ignored) {}
+            catch (ClassNotFoundException ignored)
+            {
+                // Ignored
+            }
         }
     }
 
@@ -111,7 +113,10 @@ final class AgentEventCapture
                     if (isPrintable(value))
                         data.put(method.getName(), String.valueOf(value));
                 }
-                catch (Exception ignored) {}
+                catch (Exception ignored)
+                {
+                    // Ignored
+                }
             }
         }
         targetList.add(data);

@@ -357,11 +357,14 @@ class AgentRequestDispatcherTest
             nmsAdapter
         );
 
+        final AgentEventCapture eventCapture = mock();
+
         return new AgentRequestDispatcher(
             objectMapper,
             worldActions,
             playerActions,
             menuActions,
+            eventCapture,
             Logger.getLogger(AgentRequestDispatcherTest.class.getName()),
             authToken,
             protocolVersion,
@@ -376,11 +379,13 @@ class AgentRequestDispatcherTest
         final AgentWorldActions worldActions = mock();
         final AgentPlayerActions playerActions = mock();
         final AgentMenuActions menuActions = mock();
+        final AgentEventCapture eventCapture = mock();
         final AgentRequestDispatcher dispatcher = new AgentRequestDispatcher(
             objectMapper,
             worldActions,
             playerActions,
             menuActions,
+            eventCapture,
             Logger.getLogger(AgentRequestDispatcherTest.class.getName()),
             "token",
             1,
