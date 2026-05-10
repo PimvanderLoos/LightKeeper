@@ -2,7 +2,9 @@ package nl.pim16aap2.lightkeeper.framework.internal;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import nl.pim16aap2.lightkeeper.framework.CapturedEventSnapshot;
 import nl.pim16aap2.lightkeeper.framework.CommandSource;
+import nl.pim16aap2.lightkeeper.framework.InventorySnapshot;
 import nl.pim16aap2.lightkeeper.framework.MenuItemSnapshot;
 import nl.pim16aap2.lightkeeper.framework.MenuSnapshot;
 import nl.pim16aap2.lightkeeper.framework.Vector3Di;
@@ -284,6 +286,72 @@ final class UdsAgentClient implements AutoCloseable
         {
             throw new IllegalStateException("Failed to parse player messages JSON.", exception);
         }
+    }
+
+    InventorySnapshot playerInventory(UUID uuid)
+    {
+        final AgentResponse response = send(AgentAction.GET_PLAYER_INVENTORY, Map.of(
+            "uuid", uuid.toString()
+        ));
+        final String inventoryJson = response.data().getOrDefault("inventoryJson", "[]");
+        try
+        {
+            final MenuItemSnapshot[] items = objectMapper.readValue(inventoryJson, MenuItemSnapshot[].class);
+            return new InventorySnapshot(List.of(items));
+        }
+        catch (IOException exception)
+        {
+            throw new IllegalStateException("Failed to parse player inventory JSON.", exception);
+        }
+    }
+
+    boolean dropItem(UUID uuid)
+    {
+        final AgentResponse response = send(AgentAction.DROP_ITEM, Map.of(
+            "uuid", uuid.toString()
+        ));
+        return Boolean.parseBoolean(getRequiredData(response, "cancelled"));
+    }
+
+    void registerEventListener(String eventClassName)
+    {
+        send(AgentAction.REGISTER_EVENT_LISTENER, Map.of(
+            "eventClassName", eventClassName
+        ));
+    }
+
+    List<CapturedEventSnapshot> getCapturedEvents(String eventClassName)
+    {
+        final AgentResponse response = send(AgentAction.GET_CAPTURED_EVENTS, Map.of(
+            "eventClassName", eventClassName
+        ));
+        final String eventsJson = response.data().getOrDefault("eventsJson", "[]");
+        try
+        {
+            @SuppressWarnings("unchecked")
+            final List<Map<String, String>> events = objectMapper.readValue(eventsJson, List.class);
+            return events.stream()
+                .map(data -> new CapturedEventSnapshot(eventClassName, data))
+                .toList();
+        }
+        catch (IOException exception)
+        {
+            throw new IllegalStateException("Failed to parse captured events JSON.", exception);
+        }
+    }
+
+    void clearCapturedEvents(String eventClassName)
+    {
+        send(AgentAction.CLEAR_CAPTURED_EVENTS, Map.of(
+            "eventClassName", eventClassName
+        ));
+    }
+
+    void unregisterEventListener(String eventClassName)
+    {
+        send(AgentAction.UNREGISTER_EVENT_LISTENER, Map.of(
+            "eventClassName", eventClassName
+        ));
     }
 
     private void clickBlock(AgentAction action, UUID uuid, Vector3Di position, String blockFace)

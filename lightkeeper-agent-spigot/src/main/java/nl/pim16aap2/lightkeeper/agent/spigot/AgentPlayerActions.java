@@ -17,6 +17,10 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -324,20 +328,106 @@ final class AgentPlayerActions
         return AgentResponses.successResponse(requestId, Map.of("messagesJson", messagesJson));
     }
 
-     /**
-      * Handles {@code TELEPORT_PLAYER} by teleporting a synthetic player to target coordinates.
-      *
-      * @param requestId
-      *     Runtime request identifier.
-      * @param arguments
-      *     Request arguments; requires {@code uuid}, {@code worldName}, {@code x}, {@code y}, and {@code z}.
-      * @return
-      *     Success response when teleportation completes.
-      * @throws Exception
-      *     Propagates parsing and main-thread execution failures.
-      */
-     AgentResponse handleTeleportPlayer(String requestId, Map<String, String> arguments)
-         throws Exception
+    /**
+     * Handles {@code GET_PLAYER_INVENTORY} by returning a snapshot of the player's inventory.
+     *
+     * @param requestId
+     *     Runtime request identifier.
+     * @param arguments
+     *     Request arguments; requires {@code uuid}.
+     * @return
+     *     Success response with {@code inventoryJson}.
+     * @throws Exception
+     *     Propagates parsing and main-thread execution failures.
+     */
+    AgentResponse handleGetPlayerInventory(String requestId, Map<String, String> arguments)
+        throws Exception
+    {
+        final UUID uuid = UUID.fromString(arguments.getOrDefault("uuid", ""));
+        final String inventoryJson = mainThreadExecutor.callOnMainThread(() ->
+        {
+            final Player player = playerStore.getRequiredPlayer(uuid);
+            final List<Map<String, Object>> items = new ArrayList<>();
+            final ItemStack[] contents = player.getInventory().getContents();
+            for (int i = 0; i < contents.length; i++)
+            {
+                final ItemStack item = contents[i];
+                if (item != null && item.getType() != Material.AIR)
+                {
+                    final Map<String, Object> itemData = new HashMap<>();
+                    itemData.put("slot", i);
+                    itemData.put("materialKey", item.getType().getKey().toString());
+                    itemData.put("displayName", item.getItemMeta() == null ? null : item.getItemMeta().getDisplayName());
+                    itemData.put(
+                        "lore",
+                        item.getItemMeta() == null
+                            ? List.of()
+                            : Objects.requireNonNullElse(item.getItemMeta().getLore(), List.of())
+                    );
+                    items.add(itemData);
+                }
+            }
+            return objectMapper.writeValueAsString(items);
+        });
+
+        return AgentResponses.successResponse(requestId, Map.of("inventoryJson", inventoryJson));
+    }
+
+    /**
+     * Handles {@code DROP_ITEM} by simulating the player dropping their main hand item.
+     *
+     * @param requestId
+     *     Runtime request identifier.
+     * @param arguments
+     *     Request arguments; requires {@code uuid}.
+     * @return
+     *     Success response containing whether the drop event was cancelled.
+     * @throws Exception
+     *     Propagates parsing and main-thread execution failures.
+     */
+    AgentResponse handleDropItem(String requestId, Map<String, String> arguments)
+        throws Exception
+    {
+        final UUID uuid = UUID.fromString(arguments.getOrDefault("uuid", ""));
+        final Boolean cancelled = mainThreadExecutor.callOnMainThread(() ->
+        {
+            final Player player = playerStore.getRequiredPlayer(uuid);
+            final ItemStack item = player.getInventory().getItemInMainHand();
+            if (item == null || item.getType() == Material.AIR)
+                return Boolean.FALSE;
+
+            final org.bukkit.entity.Item droppedItem =
+                player.getWorld().dropItemNaturally(player.getLocation(), item.clone());
+            final org.bukkit.event.player.PlayerDropItemEvent event =
+                new org.bukkit.event.player.PlayerDropItemEvent(
+                    player,
+                    droppedItem
+                );
+
+            Bukkit.getPluginManager().callEvent(event);
+            // Clean up the dropped item entity immediately as we only want to test the event
+            droppedItem.remove();
+
+            return event.isCancelled();
+        });
+
+        return AgentResponses.successResponse(requestId, Map.of("cancelled", cancelled.toString()));
+    }
+
+    /**
+     * Handles {@code TELEPORT_PLAYER} by teleporting a synthetic player to target coordinates.
+     *
+     * @param requestId
+     *     Runtime request identifier.
+     * @param arguments
+     *     Request arguments; requires {@code uuid}, {@code worldName}, {@code x}, {@code y}, and {@code z}.
+     * @return
+     *     Success response when teleportation completes.
+     * @throws Exception
+     *     Propagates parsing and main-thread execution failures.
+     */
+    AgentResponse handleTeleportPlayer(String requestId, Map<String, String> arguments)
+        throws Exception
      {
          final UUID uuid = UUID.fromString(arguments.getOrDefault("uuid", ""));
          final String worldName = arguments.getOrDefault("worldName", "").trim();
