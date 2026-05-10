@@ -29,11 +29,13 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -625,7 +627,12 @@ class PrepareServerMojoInternalTest
     {
         // setup
         final PrepareServerMojo mojo = new PrepareServerMojo();
-        final Path preferredDirectory = Files.createDirectories(tempDirectory.resolve("socket-dir"));
+        final Path preferredDirectory = tempDirectory;
+        assumeTrue(
+            preferredDirectory.resolve("lk-abcdef01.sock").toAbsolutePath().toString()
+                .getBytes(StandardCharsets.UTF_8).length <= 108,
+            "Temporary directory path is too long for this AF_UNIX preferred-path test."
+        );
 
         // execute
         final Path socketPath = invokePrivate(

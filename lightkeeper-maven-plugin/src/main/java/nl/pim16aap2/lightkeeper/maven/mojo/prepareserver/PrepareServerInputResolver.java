@@ -5,17 +5,21 @@ import nl.pim16aap2.lightkeeper.maven.provisioning.WorldInputSpec;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.jspecify.annotations.Nullable;
 
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 /**
  * Resolves and validates world/plugin input sections for {@code prepare-server}.
  */
 final class PrepareServerInputResolver
 {
+    private static final Pattern SHA_256_PATTERN = Pattern.compile("[a-fA-F0-9]{64}");
+
     List<WorldInputSpec> resolveWorldInputSpecs(@Nullable List<PrepareServerWorldInputConfig> configuredWorlds)
         throws MojoExecutionException
     {
@@ -106,7 +110,85 @@ final class PrepareServerInputResolver
                     null,
                     "jar",
                     false,
-                    renameTo
+                    renameTo,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ));
+                continue;
+            }
+
+            if (sourceType == PluginArtifactSpec.SourceType.URL)
+            {
+                final URI url = requireHttpUri(pluginArtifactConfig.url(), "lightkeeper.plugins.url");
+                final String sha256 = requireSha256(pluginArtifactConfig.sha256(), "lightkeeper.plugins.sha256");
+                final String outputFileName = renameTo == null
+                    ? validatePluginFileName(extractFileName(url), "URL filename")
+                    : renameTo;
+                specs.add(new PluginArtifactSpec(
+                    sourceType,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    "jar",
+                    false,
+                    outputFileName,
+                    url,
+                    sha256,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ));
+                continue;
+            }
+
+            if (sourceType == PluginArtifactSpec.SourceType.MODRINTH)
+            {
+                final @Nullable String versionId = normalizeOptionalString(pluginArtifactConfig.modrinthVersionId());
+                final @Nullable String project = normalizeOptionalString(pluginArtifactConfig.modrinthProject());
+                final @Nullable String version = normalizeOptionalString(pluginArtifactConfig.modrinthVersion());
+                if (versionId == null && (project == null || version == null))
+                {
+                    throw new MojoExecutionException(
+                        "Configured Modrinth plugin requires either 'lightkeeper.plugins.modrinthVersionId' or both " +
+                            "'lightkeeper.plugins.modrinthProject' and 'lightkeeper.plugins.modrinthVersion'."
+                    );
+                }
+                if (versionId != null && (project != null || version != null))
+                {
+                    throw new MojoExecutionException(
+                        "Configured Modrinth plugin may not combine modrinthVersionId with modrinthProject or " +
+                            "modrinthVersion."
+                    );
+                }
+                final @Nullable String configuredModrinthLoader =
+                    normalizeOptionalString(pluginArtifactConfig.modrinthLoader());
+
+                specs.add(new PluginArtifactSpec(
+                    sourceType,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    "jar",
+                    false,
+                    renameTo,
+                    null,
+                    null,
+                    project,
+                    version,
+                    versionId,
+                    configuredModrinthLoader == null ? "bukkit" : configuredModrinthLoader,
+                    normalizeOptionalString(pluginArtifactConfig.modrinthGameVersion())
                 ));
                 continue;
             }
@@ -140,7 +222,14 @@ final class PrepareServerInputResolver
                 classifier,
                 type,
                 includeTransitive,
-                renameTo
+                renameTo,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
             ));
         }
 
@@ -248,6 +337,57 @@ final class PrepareServerInputResolver
             );
         }
         return normalized;
+    }
+
+    static String validatePluginFileName(String fileName, String description)
+        throws MojoExecutionException
+    {
+        final String normalized = requireNonBlank(fileName, description);
+        if (!normalized.toLowerCase(Locale.ROOT).endsWith(".jar"))
+        {
+            throw new MojoExecutionException(
+                "Configured plugin filename '%s' must end with .jar.".formatted(normalized)
+            );
+        }
+        if (normalized.contains("/") || normalized.contains("\\") ||
+            normalized.equals(".") || normalized.contains(".."))
+        {
+            throw new MojoExecutionException(
+                "Configured plugin filename '%s' may not contain path separators, '.', or '..'."
+                    .formatted(normalized)
+            );
+        }
+        return normalized;
+    }
+
+    private static URI requireHttpUri(@Nullable URI value, String fieldName)
+        throws MojoExecutionException
+    {
+        if (value == null)
+            throw new MojoExecutionException("Missing required configuration value '%s'.".formatted(fieldName));
+        final String scheme = value.getScheme();
+        if (!"https".equalsIgnoreCase(scheme) && !"http".equalsIgnoreCase(scheme))
+            throw new MojoExecutionException("Configured URL '%s' must use http or https.".formatted(value));
+        return value;
+    }
+
+    private static String requireSha256(@Nullable String value, String fieldName)
+        throws MojoExecutionException
+    {
+        final String normalized = requireNonBlank(value, fieldName).toLowerCase(Locale.ROOT);
+        if (!SHA_256_PATTERN.matcher(normalized).matches())
+            throw new MojoExecutionException("Configured SHA-256 value '%s' must be 64 hexadecimal characters."
+                .formatted(value));
+        return normalized;
+    }
+
+    private static String extractFileName(URI uri)
+        throws MojoExecutionException
+    {
+        final String path = uri.getPath();
+        if (path == null || path.isBlank() || path.endsWith("/"))
+            throw new MojoExecutionException("Configured URL '%s' does not include an output filename.".formatted(uri));
+        return path.substring(path.lastIndexOf('/') + 1);
     }
 
     static String requireNonBlank(@Nullable String value, String fieldName)

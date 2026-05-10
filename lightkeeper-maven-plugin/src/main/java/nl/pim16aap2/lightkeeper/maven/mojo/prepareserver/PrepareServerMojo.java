@@ -70,6 +70,13 @@ public class PrepareServerMojo extends AbstractMojo
     private Path baseServerCacheDirectoryRoot;
 
     @Parameter(
+        property = "lightkeeper.pluginArtifactCacheDirectoryRoot",
+        defaultValue = "${settings.localRepository}/nl/pim16aap2/lightkeeper/cache/plugins"
+    )
+    @Nullable
+    private Path pluginArtifactCacheDirectoryRoot;
+
+    @Parameter(
         property = "lightkeeper.serverWorkDirectoryRoot",
         defaultValue = "${project.build.directory}/lightkeeper-server", required = true
     )
@@ -240,6 +247,9 @@ public class PrepareServerMojo extends AbstractMojo
             Objects.requireNonNull(serverVersion),
             Objects.requireNonNull(jarCacheDirectoryRoot),
             Objects.requireNonNull(baseServerCacheDirectoryRoot),
+            pluginArtifactCacheDirectoryRoot == null
+                ? Path.of(System.getProperty("java.io.tmpdir"), "lightkeeper-plugin-cache")
+                : pluginArtifactCacheDirectoryRoot,
             Objects.requireNonNull(serverWorkDirectoryRoot),
             Objects.requireNonNull(runtimeManifestPath),
             Objects.requireNonNull(agentSocketDirectory),
@@ -262,6 +272,10 @@ public class PrepareServerMojo extends AbstractMojo
     {
         FileUtil.createDirectories(executionContext.jarCacheDirectoryRoot(), "jar cache directory root");
         FileUtil.createDirectories(executionContext.baseServerCacheDirectoryRoot(), "base server cache directory root");
+        FileUtil.createDirectories(
+            executionContext.pluginArtifactCacheDirectoryRoot(),
+            "plugin artifact cache directory root"
+        );
         FileUtil.createDirectories(executionContext.serverWorkDirectoryRoot(), "server work directory root");
         FileUtil.createDirectories(executionContext.agentSocketDirectory(), "agent socket directory");
     }
@@ -528,7 +542,17 @@ public class PrepareServerMojo extends AbstractMojo
         final RepositorySystemSession session = Objects.requireNonNull(repositorySystemSession,
             "Maven RepositorySystemSession was not injected by the plugin runtime.");
         final List<RemoteRepository> repositories = Objects.requireNonNullElse(remoteProjectRepositories, List.of());
-        return pluginArtifactResolver().resolvePluginArtifacts(specs, resolver, session, repositories);
+        return pluginArtifactResolver().resolvePluginArtifacts(
+            specs,
+            resolver,
+            session,
+            repositories,
+            pluginArtifactCacheDirectoryRoot == null
+                ? Path.of(System.getProperty("java.io.tmpdir"), "lightkeeper-plugin-cache")
+                : pluginArtifactCacheDirectoryRoot,
+            Objects.requireNonNullElse(userAgent, "LightKeeper/Test"),
+            getLog()
+        );
     }
 
     PrepareServerAgentMetadata resolveAgentMetadata()

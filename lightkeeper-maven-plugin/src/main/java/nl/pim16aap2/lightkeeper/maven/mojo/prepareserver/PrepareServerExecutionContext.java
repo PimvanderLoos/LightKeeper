@@ -14,6 +14,7 @@ record PrepareServerExecutionContext(
     String serverVersion,
     Path jarCacheDirectoryRoot,
     Path baseServerCacheDirectoryRoot,
+    Path pluginArtifactCacheDirectoryRoot,
     Path serverWorkDirectoryRoot,
     Path runtimeManifestPath,
     Path agentSocketDirectory,

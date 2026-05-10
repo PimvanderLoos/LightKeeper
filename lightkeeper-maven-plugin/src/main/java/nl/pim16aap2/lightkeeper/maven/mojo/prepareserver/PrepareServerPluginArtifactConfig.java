@@ -3,6 +3,7 @@ package nl.pim16aap2.lightkeeper.maven.mojo.prepareserver;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.jspecify.annotations.Nullable;
 
+import java.net.URI;
 import java.nio.file.Path;
 
 /**
@@ -45,6 +46,34 @@ public final class PrepareServerPluginArtifactConfig
     @Parameter
     @Nullable
     private String renameTo;
+
+    @Parameter
+    @Nullable
+    private URI url;
+
+    @Parameter
+    @Nullable
+    private String sha256;
+
+    @Parameter
+    @Nullable
+    private String modrinthProject;
+
+    @Parameter
+    @Nullable
+    private String modrinthVersion;
+
+    @Parameter
+    @Nullable
+    private String modrinthVersionId;
+
+    @Parameter
+    @Nullable
+    private String modrinthLoader;
+
+    @Parameter
+    @Nullable
+    private String modrinthGameVersion;
 
     @Nullable String sourceType()
     {
@@ -89,5 +118,40 @@ public final class PrepareServerPluginArtifactConfig
     @Nullable String renameTo()
     {
         return renameTo;
+    }
+
+    @Nullable URI url()
+    {
+        return url;
+    }
+
+    @Nullable String sha256()
+    {
+        return sha256;
+    }
+
+    @Nullable String modrinthProject()
+    {
+        return modrinthProject;
+    }
+
+    @Nullable String modrinthVersion()
+    {
+        return modrinthVersion;
+    }
+
+    @Nullable String modrinthVersionId()
+    {
+        return modrinthVersionId;
+    }
+
+    @Nullable String modrinthLoader()
+    {
+        return modrinthLoader;
+    }
+
+    @Nullable String modrinthGameVersion()
+    {
+        return modrinthGameVersion;
     }
 }

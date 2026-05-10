@@ -11,7 +11,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 /**
- * Utility methods for SHA-256 hashing.
+ * Utility methods for SHA-256 and SHA-512 hashing.
  */
 public final class HashUtil
 {
@@ -24,22 +24,49 @@ public final class HashUtil
     public static String sha256(Path path)
         throws MojoExecutionException
     {
-        try (InputStream inputStream = Files.newInputStream(path))
-        {
-            return sha256(inputStream);
-        }
-        catch (IOException exception)
-        {
-            throw new MojoExecutionException("Failed to compute SHA-256 for file '%s'.".formatted(path), exception);
-        }
+        return hash(path, "SHA-256");
     }
 
     public static String sha256(InputStream inputStream)
         throws MojoExecutionException
     {
+        return hash(inputStream, "SHA-256");
+    }
+
+    public static String sha512(Path path)
+        throws MojoExecutionException
+    {
+        return hash(path, "SHA-512");
+    }
+
+    public static String sha512(InputStream inputStream)
+        throws MojoExecutionException
+    {
+        return hash(inputStream, "SHA-512");
+    }
+
+    private static String hash(Path path, String algorithm)
+        throws MojoExecutionException
+    {
+        try (InputStream inputStream = Files.newInputStream(path))
+        {
+            return hash(inputStream, algorithm);
+        }
+        catch (IOException exception)
+        {
+            throw new MojoExecutionException(
+                "Failed to compute %s for file '%s'.".formatted(algorithm, path),
+                exception
+            );
+        }
+    }
+
+    private static String hash(InputStream inputStream, String algorithm)
+        throws MojoExecutionException
+    {
         try
         {
-            final MessageDigest digest = getSha256Digest();
+            final MessageDigest digest = getDigest(algorithm);
             final byte[] buffer = new byte[BUFFER_SIZE];
 
             int readBytes;
@@ -50,7 +77,7 @@ public final class HashUtil
         }
         catch (IOException exception)
         {
-            throw new MojoExecutionException("Failed to compute SHA-256 from input stream.", exception);
+            throw new MojoExecutionException("Failed to compute %s from input stream.".formatted(algorithm), exception);
         }
     }
 
@@ -70,13 +97,18 @@ public final class HashUtil
 
     private static MessageDigest getSha256Digest()
     {
+        return getDigest("SHA-256");
+    }
+
+    private static MessageDigest getDigest(String algorithm)
+    {
         try
         {
-            return MessageDigest.getInstance("SHA-256");
+            return MessageDigest.getInstance(algorithm);
         }
         catch (NoSuchAlgorithmException exception)
         {
-            throw new IllegalStateException("SHA-256 is unavailable in the current JVM.", exception);
+            throw new IllegalStateException("%s is unavailable in the current JVM.".formatted(algorithm), exception);
         }
     }
 
