@@ -98,6 +98,11 @@ public interface IFrameworkGatewayView
     List<String> playerMessages(UUID playerId);
 
     /**
+     * Gets captured chat components for a player.
+     */
+    List<ChatComponentSnapshot> playerChatComponents(UUID playerId);
+
+    /**
      * Gets player inventory snapshot.
      */
     InventorySnapshot playerInventory(UUID playerId);

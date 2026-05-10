@@ -203,6 +203,7 @@ final class AgentRequestDispatcher
                 case GET_CAPTURED_EVENTS -> handleGetCapturedEvents(requestId, arguments);
                 case CLEAR_CAPTURED_EVENTS -> handleClearCapturedEvents(requestId, arguments);
                 case UNREGISTER_EVENT_LISTENER -> handleUnregisterEventListener(requestId, arguments);
+                case GET_PLAYER_CHAT_COMPONENTS -> playerActions.handleGetPlayerChatComponents(requestId, arguments);
                 case HANDSHAKE -> throw new IllegalStateException("Unreachable HANDSHAKE dispatch branch.");
             }, true);
         }

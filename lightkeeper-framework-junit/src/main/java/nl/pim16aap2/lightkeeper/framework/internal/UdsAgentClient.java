@@ -3,6 +3,7 @@ package nl.pim16aap2.lightkeeper.framework.internal;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import nl.pim16aap2.lightkeeper.framework.CapturedEventSnapshot;
+import nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot;
 import nl.pim16aap2.lightkeeper.framework.CommandSource;
 import nl.pim16aap2.lightkeeper.framework.InventorySnapshot;
 import nl.pim16aap2.lightkeeper.framework.MenuItemSnapshot;
@@ -285,6 +286,25 @@ final class UdsAgentClient implements AutoCloseable
         catch (IOException exception)
         {
             throw new IllegalStateException("Failed to parse player messages JSON.", exception);
+        }
+    }
+
+    List<ChatComponentSnapshot> playerChatComponents(UUID uuid)
+    {
+        final AgentResponse response = send(AgentAction.GET_PLAYER_CHAT_COMPONENTS, Map.of(
+            "uuid", uuid.toString()
+        ));
+        final String componentsJson = response.data().getOrDefault("componentsJson", "[]");
+        try
+        {
+            final String[] components = objectMapper.readValue(componentsJson, String[].class);
+            return Arrays.stream(components)
+                .map(ChatComponentSnapshot::new)
+                .toList();
+        }
+        catch (IOException exception)
+        {
+            throw new IllegalStateException("Failed to parse player chat components JSON.", exception);
         }
     }
 

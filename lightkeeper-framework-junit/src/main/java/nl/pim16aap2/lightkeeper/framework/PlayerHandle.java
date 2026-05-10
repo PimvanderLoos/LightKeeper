@@ -292,6 +292,16 @@ public final class PlayerHandle
     }
 
     /**
+     * Gets a list of captured chat components for this player.
+     *
+     * @return Captured chat components.
+     */
+    public List<ChatComponentSnapshot> chatComponents()
+    {
+        return frameworkGateway.playerChatComponents(uniqueId);
+    }
+
+    /**
      * Gets all recorded messages flattened into a single multi-line string.
      *
      * @return Received messages joined with line separators.
