@@ -114,9 +114,6 @@ public final class HashUtil
 
     private static String toHex(byte[] bytes)
     {
-        final StringBuilder ret = new StringBuilder(bytes.length * 2);
-        for (final byte value : bytes)
-            ret.append(Character.forDigit((value >>> 4) & 0xF, 16)).append(Character.forDigit(value & 0xF, 16));
-        return ret.toString();
+        return java.util.HexFormat.of().formatHex(bytes);
     }
 }
