@@ -322,6 +322,32 @@ final class AgentPlayerActions
     }
 
     /**
+     * Handles {@code GET_PLAYER_CHAT_COMPONENTS} by draining adapter components and returning history.
+     *
+     * @param requestId
+     *     Runtime request identifier.
+     * @param arguments
+     *     Request arguments; requires {@code uuid}.
+     * @return
+     *     Success response with {@code componentsJson}.
+     * @throws Exception
+     *     Propagates parsing and main-thread execution failures.
+     */
+    AgentResponse handleGetPlayerChatComponents(String requestId, Map<String, String> arguments)
+        throws Exception
+    {
+        final UUID uuid = UUID.fromString(arguments.getOrDefault("uuid", ""));
+        final String componentsJson = mainThreadExecutor.callOnMainThread(() ->
+        {
+            playerStore.getRequiredPlayer(uuid);
+            playerStore.capturePlayerChatComponents(botPlayerNmsAdapter, uuid);
+            return objectMapper.writeValueAsString(playerStore.getPlayerChatComponents(uuid));
+        });
+
+        return AgentResponses.successResponse(requestId, Map.of("componentsJson", componentsJson));
+    }
+
+    /**
      * Handles {@code GET_PLAYER_INVENTORY} by returning a snapshot of the player's inventory.
      *
      * @param command

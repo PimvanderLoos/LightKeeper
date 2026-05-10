@@ -36,6 +36,10 @@ final class AgentSyntheticPlayerStore
      * Aggregated player message history by synthetic player UUID.
      */
     private final ConcurrentHashMap<UUID, List<String>> playerMessageHistory = new ConcurrentHashMap<>();
+    /**
+     * Aggregated player chat component history by synthetic player UUID.
+     */
+    private final ConcurrentHashMap<UUID, List<String>> playerChatComponentHistory = new ConcurrentHashMap<>();
 
     /**
      * Resolves a registered synthetic player.
@@ -67,6 +71,7 @@ final class AgentSyntheticPlayerStore
     {
         syntheticPlayers.put(uuid, player);
         playerMessageHistory.put(uuid, new CopyOnWriteArrayList<>());
+        playerChatComponentHistory.put(uuid, new CopyOnWriteArrayList<>());
     }
 
     /**
@@ -115,6 +120,7 @@ final class AgentSyntheticPlayerStore
     void removeSyntheticPlayer(UUID uuid)
     {
         playerMessageHistory.remove(uuid);
+        playerChatComponentHistory.remove(uuid);
         syntheticPlayers.remove(uuid);
     }
 
@@ -165,6 +171,25 @@ final class AgentSyntheticPlayerStore
     }
 
     /**
+     * Drains newly received adapter chat components and appends them to tracked history.
+     *
+     * @param nmsAdapter
+     *     Adapter used to drain NMS-level captured messages.
+     * @param uuid
+     *     Synthetic player UUID.
+     */
+    void capturePlayerChatComponents(IBotPlayerNmsAdapter nmsAdapter, UUID uuid)
+    {
+        final List<String> drainedComponents = nmsAdapter.drainChatComponents(uuid);
+        if (drainedComponents.isEmpty())
+            return;
+
+        playerChatComponentHistory
+            .computeIfAbsent(uuid, ignored -> new CopyOnWriteArrayList<>())
+            .addAll(drainedComponents);
+    }
+
+    /**
      * Returns tracked message history for the given synthetic player.
      *
      * @param uuid
@@ -175,5 +200,18 @@ final class AgentSyntheticPlayerStore
     List<String> getPlayerMessages(UUID uuid)
     {
         return playerMessageHistory.getOrDefault(uuid, List.of());
+    }
+
+    /**
+     * Returns tracked chat component history for the given synthetic player.
+     *
+     * @param uuid
+     *     Synthetic player UUID.
+     * @return
+     *     Immutable empty list when unknown; otherwise tracked history list.
+     */
+    List<String> getPlayerChatComponents(UUID uuid)
+    {
+        return playerChatComponentHistory.getOrDefault(uuid, List.of());
     }
 }

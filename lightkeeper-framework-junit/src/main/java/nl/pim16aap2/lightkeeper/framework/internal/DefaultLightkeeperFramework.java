@@ -1,6 +1,7 @@
 package nl.pim16aap2.lightkeeper.framework.internal;
 
 import nl.pim16aap2.lightkeeper.framework.CapturedEventSnapshot;
+import nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot;
 import nl.pim16aap2.lightkeeper.framework.CommandResult;
 import nl.pim16aap2.lightkeeper.framework.CommandSource;
 import nl.pim16aap2.lightkeeper.framework.Condition;
@@ -392,6 +393,14 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
         ensureOpen();
         Objects.requireNonNull(playerId, "playerId may not be null.");
         return agentClient.playerMessages(playerId);
+    }
+
+    @Override
+    public List<ChatComponentSnapshot> playerChatComponents(UUID playerId)
+    {
+        ensureOpen();
+        Objects.requireNonNull(playerId, "playerId may not be null.");
+        return agentClient.playerChatComponents(playerId);
     }
 
     @Override

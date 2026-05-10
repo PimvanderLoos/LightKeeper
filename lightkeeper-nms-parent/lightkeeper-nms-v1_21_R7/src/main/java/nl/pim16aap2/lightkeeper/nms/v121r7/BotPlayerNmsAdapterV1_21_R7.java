@@ -55,6 +55,8 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
     private final Field connectionChannelField;
     private final Field connectionAddressField;
     private final Method embeddedChannelReadOutboundMethod;
+    private final Method componentSerializerToJsonMethod;
+    private final Object registryAccess;
     private final Object serverboundPacketFlow;
 
     /**
@@ -71,6 +73,27 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
             final Method craftServerGetServerMethod = craftServerClass.getMethod("getServer");
             minecraftServer = craftServerGetServerMethod.invoke(craftServer);
             playerList = resolvePlayerList(minecraftServer, serverClassLoader);
+
+            final Method registryAccessMethod = minecraftServer.getClass().getMethod("registryAccess");
+            registryAccess = registryAccessMethod.invoke(minecraftServer);
+
+            final Class<?> componentClass = resolveClass(
+                "net.minecraft.network.chat.Component",
+                serverClassLoader
+            );
+            final Class<?> registryAccessClass = resolveClass(
+                "net.minecraft.core.HolderLookup$Provider",
+                serverClassLoader
+            );
+            final Class<?> componentSerializerClass = resolveClass(
+                "net.minecraft.network.chat.Component$Serializer",
+                serverClassLoader
+            );
+            componentSerializerToJsonMethod = componentSerializerClass.getMethod(
+                "toJson",
+                componentClass,
+                registryAccessClass
+            );
 
             final Class<?> gameProfileClass = resolveClass(
                 "com.mojang.authlib.GameProfile",
@@ -669,6 +692,84 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
             );
         }
         return List.copyOf(messages);
+    }
+
+    /**
+     * Drains newly received chat components (JSON format) for a synthetic player.
+     *
+     * @param playerId
+     *     Synthetic player UUID.
+     * @return Newly captured chat components since the previous drain.
+     */
+    @Override
+    public List<String> drainChatComponents(UUID playerId)
+    {
+        Objects.requireNonNull(playerId, "playerId may not be null.");
+        final Object embeddedChannel = playerChannels.get(playerId);
+        if (embeddedChannel == null)
+            return List.of();
+
+        final List<String> components = new ArrayList<>();
+        try
+        {
+            Object outboundPacket;
+            while ((outboundPacket = embeddedChannelReadOutboundMethod.invoke(embeddedChannel)) != null)
+            {
+                final String json =
+                    extractComponentJson(outboundPacket, TEXT_EXTRACTION_MAX_DEPTH, new IdentityHashMap<>());
+                if (json != null)
+                    components.add(json);
+            }
+        }
+        catch (Exception exception)
+        {
+            throw new IllegalStateException(
+                "Failed to drain chat components for synthetic player '%s'."
+                    .formatted(playerId),
+                exception
+            );
+        }
+        return List.copyOf(components);
+    }
+
+    private @Nullable String extractComponentJson(
+        @Nullable Object value,
+        int depth,
+        IdentityHashMap<Object, Boolean> seen)
+    {
+        if (value == null || depth < 0 || seen.put(value, Boolean.TRUE) != null)
+            return null;
+
+        if (value.getClass().getSimpleName().endsWith("Component") ||
+            value.getClass().getName().startsWith("net.minecraft.network.chat."))
+        {
+            try
+            {
+                return (String) componentSerializerToJsonMethod.invoke(null, value, registryAccess);
+            }
+            catch (Exception ignored)
+            {
+            }
+        }
+
+        // Recursively search for components in packets/objects
+        for (final Method method : value.getClass().getMethods())
+        {
+            if (method.getParameterCount() == 0 && !method.getDeclaringClass().equals(Object.class))
+            {
+                try
+                {
+                    final Object nestedValue = method.invoke(value);
+                    final String json = extractComponentJson(nestedValue, depth - 1, seen);
+                    if (json != null)
+                        return json;
+                }
+                catch (Exception ignored)
+                {
+                }
+            }
+        }
+        return null;
     }
 
     private static @Nullable String extractText(
