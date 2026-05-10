@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Manages the Minecraft server process lifecycle.
@@ -40,7 +41,7 @@ final class MinecraftServerProcess
     private final ArrayDeque<String> outputLines = new ArrayDeque<>(MAX_CAPTURED_OUTPUT_LINES);
     @GuardedBy("outputLinesLock")
     private long discardedOutputLineCount = 0L;
-    private final CountDownLatch startedLatch = new CountDownLatch(1);
+    private final AtomicReference<CountDownLatch> startedLatch = new AtomicReference<>(new CountDownLatch(1));
     private @Nullable Process process;
     private @Nullable Thread outputThread;
 
@@ -53,6 +54,10 @@ final class MinecraftServerProcess
 
     void start(Duration timeout)
     {
+        if (isRunning())
+            throw new IllegalStateException("Minecraft server is already running.");
+
+        startedLatch.set(new CountDownLatch(1));
         final Path javaExecutable = Path.of(System.getProperty("java.home"), "bin", "java");
         final ProcessBuilder processBuilder = getProcessBuilder(javaExecutable);
 
@@ -71,13 +76,18 @@ final class MinecraftServerProcess
         }
     }
 
+    boolean isRunning()
+    {
+        return process != null && process.isAlive();
+    }
+
     private void awaitStartupOrFail(Duration timeout)
         throws InterruptedException
     {
         final long startupDeadlineNanos = System.nanoTime() + timeout.toNanos();
         while (System.nanoTime() < startupDeadlineNanos)
         {
-            if (startedLatch.await(200L, TimeUnit.MILLISECONDS))
+            if (startedLatch.get().await(200L, TimeUnit.MILLISECONDS))
                 return;
 
             final Process runningProcess = Objects.requireNonNull(process, "process may not be null.");
@@ -127,6 +137,14 @@ final class MinecraftServerProcess
         command.addAll(Arrays.asList(extraJvmArgs.split("\\s+")));
     }
 
+    void kill()
+    {
+        if (process != null && process.isAlive())
+            process.destroyForcibly();
+
+        joinOutputThread(Duration.ofSeconds(5));
+    }
+
     void stop(Duration timeout)
     {
         if (process == null)
@@ -157,11 +175,16 @@ final class MinecraftServerProcess
             writeDiagnostics("shutdown-failure");
         }
 
+        joinOutputThread(Duration.ofSeconds(5));
+    }
+
+    private void joinOutputThread(Duration timeout)
+    {
         if (outputThread != null)
         {
             try
             {
-                outputThread.join(TimeUnit.SECONDS.toMillis(5));
+                outputThread.join(timeout.toMillis());
             }
             catch (InterruptedException exception)
             {
@@ -257,7 +280,7 @@ final class MinecraftServerProcess
                         appendOutputLine(line);
 
                         if (line.contains("Done (") && line.endsWith(")! For help, type \"help\""))
-                            startedLatch.countDown();
+                            startedLatch.get().countDown();
                     }
                 }
                 catch (IOException exception)
