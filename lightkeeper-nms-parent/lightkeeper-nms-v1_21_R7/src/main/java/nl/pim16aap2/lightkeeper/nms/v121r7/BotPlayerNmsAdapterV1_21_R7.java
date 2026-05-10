@@ -12,6 +12,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -55,8 +56,10 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
     private final Field connectionChannelField;
     private final Field connectionAddressField;
     private final Method embeddedChannelReadOutboundMethod;
-    private final Method componentSerializerToJsonMethod;
-    private final Object registryAccess;
+    private final Object componentJsonCodec;
+    private final Object componentJsonOps;
+    private final Method componentCodecEncodeStartMethod;
+    private final Method dataResultResultMethod;
     private final Object serverboundPacketFlow;
 
     /**
@@ -74,26 +77,18 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
             minecraftServer = craftServerGetServerMethod.invoke(craftServer);
             playerList = resolvePlayerList(minecraftServer, serverClassLoader);
 
-            final Method registryAccessMethod = minecraftServer.getClass().getMethod("registryAccess");
-            registryAccess = registryAccessMethod.invoke(minecraftServer);
-
-            final Class<?> componentClass = resolveClass(
-                "net.minecraft.network.chat.Component",
+            final Class<?> componentSerializationClass = resolveClass(
+                "net.minecraft.network.chat.ComponentSerialization",
                 serverClassLoader
             );
-            final Class<?> registryAccessClass = resolveClass(
-                "net.minecraft.core.HolderLookup$Provider",
-                serverClassLoader
-            );
-            final Class<?> componentSerializerClass = resolveClass(
-                "net.minecraft.network.chat.Component$Serializer",
-                serverClassLoader
-            );
-            componentSerializerToJsonMethod = componentSerializerClass.getMethod(
-                "toJson",
-                componentClass,
-                registryAccessClass
-            );
+            final Class<?> codecClass = resolveClass("com.mojang.serialization.Codec", serverClassLoader);
+            final Class<?> dataResultClass = resolveClass("com.mojang.serialization.DataResult", serverClassLoader);
+            final Class<?> dynamicOpsClass = resolveClass("com.mojang.serialization.DynamicOps", serverClassLoader);
+            final Class<?> jsonOpsClass = resolveClass("com.mojang.serialization.JsonOps", serverClassLoader);
+            componentJsonCodec = resolveComponentJsonCodec(componentSerializationClass, codecClass);
+            componentJsonOps = jsonOpsClass.getField("INSTANCE").get(null);
+            componentCodecEncodeStartMethod = codecClass.getMethod("encodeStart", dynamicOpsClass, Object.class);
+            dataResultResultMethod = dataResultClass.getMethod("result");
 
             final Class<?> gameProfileClass = resolveClass(
                 "com.mojang.authlib.GameProfile",
@@ -184,7 +179,34 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
         }
         catch (Exception exception)
         {
-            throw new IllegalStateException("Failed to initialize v1_21_R7 NMS adapter.", exception);
+            throw new IllegalStateException(
+                "Failed to initialize v1_21_R7 NMS adapter. Cause: %s: %s"
+                    .formatted(exception.getClass().getName(), exception.getMessage()),
+                exception
+            );
+        }
+    }
+
+    private static Object resolveComponentJsonCodec(Class<?> componentSerializationClass, Class<?> codecClass)
+        throws ReflectiveOperationException
+    {
+        try
+        {
+            return componentSerializationClass.getField("CODEC").get(null);
+        }
+        catch (NoSuchFieldException ignored)
+        {
+            for (final Field field : componentSerializationClass.getFields())
+            {
+                if (!Modifier.isStatic(field.getModifiers()) || !codecClass.isAssignableFrom(field.getType()))
+                    continue;
+
+                field.setAccessible(true);
+                return field.get(null);
+            }
+            throw new NoSuchFieldException(
+                "Failed to resolve component JSON codec field on " + componentSerializationClass.getName()
+            );
         }
     }
 
@@ -743,14 +765,9 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
         if (value.getClass().getSimpleName().endsWith("Component") ||
             value.getClass().getName().startsWith("net.minecraft.network.chat."))
         {
-            try
-            {
-                return (String) componentSerializerToJsonMethod.invoke(null, value, registryAccess);
-            }
-            catch (Exception ignored)
-            {
-                // Ignored: best-effort extraction
-            }
+            final String serializedComponent = serializeComponentToJson(value);
+            if (serializedComponent != null)
+                return serializedComponent;
         }
 
         // Recursively search for components in packets/objects
@@ -772,6 +789,25 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
             }
         }
         return null;
+    }
+
+    private @Nullable String serializeComponentToJson(Object component)
+    {
+        try
+        {
+            final Object dataResult = componentCodecEncodeStartMethod.invoke(
+                componentJsonCodec,
+                componentJsonOps,
+                component
+            );
+            final Optional<?> serializedJson = (Optional<?>) dataResultResultMethod.invoke(dataResult);
+            return serializedJson.map(Object::toString).orElse(null);
+        }
+        catch (Exception ignored)
+        {
+            // Ignored: best-effort extraction
+            return null;
+        }
     }
 
     private static @Nullable String extractText(
