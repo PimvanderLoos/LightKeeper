@@ -400,6 +400,93 @@ class ModrinthDownloadsClientTest
     }
 
     @Test
+    void resolvePluginFile_shouldRejectMissingDownloadUrl()
+        throws Exception
+    {
+        // setup
+        final ModrinthDownloadsClient client = createVersionIdClientWithFile(
+            """
+                {
+                  "hashes": {"sha512": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+                  "filename": "LuckPerms-Bukkit.jar",
+                  "primary": true
+                }
+                """
+        );
+
+        // execute + verify
+        assertThatThrownBy(() -> client.resolvePluginFile(modrinthVersionIdSpec()))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("has no download URL");
+    }
+
+    @Test
+    void resolvePluginFile_shouldRejectBlankDownloadUrl()
+        throws Exception
+    {
+        // setup
+        final ModrinthDownloadsClient client = createVersionIdClientWithFile(
+            """
+                {
+                  "hashes": {"sha512": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+                  "url": "   ",
+                  "filename": "LuckPerms-Bukkit.jar",
+                  "primary": true
+                }
+                """
+        );
+
+        // execute + verify
+        assertThatThrownBy(() -> client.resolvePluginFile(modrinthVersionIdSpec()))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("has no download URL");
+    }
+
+    @Test
+    void resolvePluginFile_shouldRejectMalformedDownloadUrl()
+        throws Exception
+    {
+        // setup
+        final ModrinthDownloadsClient client = createVersionIdClientWithFile(
+            """
+                {
+                  "hashes": {"sha512": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+                  "url": "https://cdn.modrinth.com/invalid url.jar",
+                  "filename": "LuckPerms-Bukkit.jar",
+                  "primary": true
+                }
+                """
+        );
+
+        // execute + verify
+        assertThatThrownBy(() -> client.resolvePluginFile(modrinthVersionIdSpec()))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("has invalid download URL");
+    }
+
+    @Test
+    void resolvePluginFile_shouldRejectUnsupportedDownloadUrlScheme()
+        throws Exception
+    {
+        // setup
+        final ModrinthDownloadsClient client = createVersionIdClientWithFile(
+            """
+                {
+                  "hashes": {"sha512": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+                  "url": "file:///tmp/LuckPerms-Bukkit.jar",
+                  "filename": "LuckPerms-Bukkit.jar",
+                  "primary": true
+                }
+                """
+        );
+
+        // execute + verify
+        assertThatThrownBy(() -> client.resolvePluginFile(modrinthVersionIdSpec()))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("must use http or https");
+    }
+
+    @Test
     void resolvePluginFile_shouldSelectRequiredJarWhenMultipleCandidatesExist()
         throws Exception
     {
@@ -618,6 +705,30 @@ class ModrinthDownloadsClientTest
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                 .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
         );
+    }
+
+    private static ModrinthDownloadsClient createVersionIdClientWithFile(String fileJson)
+        throws Exception
+    {
+        final URI versionUri = URI.create("https://api.modrinth.com/v2/version/version01");
+        return createClient(Map.of(
+            versionUri,
+            jsonResponse(
+                200,
+                """
+                    {
+                      "id": "version01",
+                      "project_id": "project01",
+                      "version_number": "v5.5.0-bukkit",
+                      "game_versions": ["1.21.11"],
+                      "loaders": ["bukkit"],
+                      "files": [
+                    %s
+                      ]
+                    }
+                    """.formatted(fileJson.indent(4))
+            )
+        ));
     }
 
     private static ResponseSpec jsonResponse(int statusCode, String body)

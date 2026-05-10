@@ -109,7 +109,7 @@ public final class ModrinthDownloadsClient
             version.id(),
             version.versionNumber(),
             file.filename(),
-            URI.create(file.url()),
+            requireDownloadUri(file, version),
             requireSha512(file)
         );
     }
@@ -254,6 +254,42 @@ public final class ModrinthDownloadsClient
         if (sha512 == null || sha512.isBlank())
             throw new MojoExecutionException("Modrinth file '%s' has no SHA-512 checksum.".formatted(file.filename()));
         return sha512.toLowerCase(Locale.ROOT);
+    }
+
+    private static URI requireDownloadUri(FileResponse file, VersionResponse version)
+        throws MojoExecutionException
+    {
+        final String url = file.url();
+        if (url == null || url.isBlank())
+        {
+            throw new MojoExecutionException(
+                "Modrinth file '%s' in version '%s' has no download URL.".formatted(file.filename(), version.id())
+            );
+        }
+
+        final URI uri;
+        try
+        {
+            uri = URI.create(url);
+        }
+        catch (IllegalArgumentException exception)
+        {
+            throw new MojoExecutionException(
+                "Modrinth file '%s' in version '%s' has invalid download URL '%s'."
+                    .formatted(file.filename(), version.id(), url),
+                exception
+            );
+        }
+
+        final String scheme = uri.getScheme();
+        if (!"https".equalsIgnoreCase(scheme) && !"http".equalsIgnoreCase(scheme))
+        {
+            throw new MojoExecutionException(
+                "Modrinth file '%s' in version '%s' download URL '%s' must use http or https."
+                    .formatted(file.filename(), version.id(), url)
+            );
+        }
+        return uri;
     }
 
     private JsonNode fetchJson(URI uri)
