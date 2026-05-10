@@ -365,6 +365,34 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
         return minecraftServerProcess.snapshotOutputLines();
     }
 
+    @Override
+    public void crashServer()
+    {
+        ensureOpen();
+        LOG.log(System.Logger.Level.INFO, "LK_FRAMEWORK: Crashing Minecraft server.");
+        playerScopeRegistry.invalidateAll();
+        agentClient.close();
+        minecraftServerProcess.kill();
+    }
+
+    @Override
+    public void restartServer()
+    {
+        ensureOpen();
+        if (minecraftServerProcess.isRunning())
+            throw new IllegalStateException("Cannot restart server while it is still running.");
+
+        LOG.log(System.Logger.Level.INFO, "LK_FRAMEWORK: Restarting Minecraft server.");
+        minecraftServerProcess.start(STARTUP_TIMEOUT);
+        agentClient.rehandshake(
+            AGENT_CONNECT_TIMEOUT,
+            runtimeManifest.agentAuthToken(),
+            runtimeManifest.runtimeProtocolVersion(),
+            Objects.requireNonNullElse(runtimeManifest.agentJarSha256(), "")
+        );
+        preloadConfiguredWorlds();
+    }
+
     private void clickBlock(UUID playerId, Vector3Di position, String blockFace, BlockClickOperation operation)
     {
         ensureOpen();

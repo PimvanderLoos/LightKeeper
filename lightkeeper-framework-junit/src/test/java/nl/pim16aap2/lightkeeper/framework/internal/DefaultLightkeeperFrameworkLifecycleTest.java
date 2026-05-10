@@ -82,6 +82,59 @@ class DefaultLightkeeperFrameworkLifecycleTest
         assertThat(serverOutput).containsExactly("line one", "line two");
     }
 
+    @Test
+    void crashServer_shouldInvalidatePlayersAndKillProcess()
+    {
+        // setup
+        final MinecraftServerProcess minecraftServerProcess = mock(MinecraftServerProcess.class);
+        final UdsAgentClient agentClient = mock(UdsAgentClient.class);
+        final PlayerScopeRegistry playerScopeRegistry = mock(PlayerScopeRegistry.class);
+
+        final DefaultLightkeeperFramework framework = new DefaultLightkeeperFramework(
+            runtimeManifest(),
+            minecraftServerProcess,
+            agentClient,
+            playerScopeRegistry
+        );
+
+        // execute
+        framework.crashServer();
+
+        // verify
+        verify(playerScopeRegistry, times(1)).invalidateAll();
+        verify(agentClient, times(1)).close();
+        verify(minecraftServerProcess, times(1)).kill();
+    }
+
+    @Test
+    void restartServer_shouldStartProcessAndRehandshake()
+    {
+        // setup
+        final RuntimeManifest runtimeManifest = runtimeManifest();
+        final MinecraftServerProcess minecraftServerProcess = mock(MinecraftServerProcess.class);
+        when(minecraftServerProcess.isRunning()).thenReturn(false);
+        final UdsAgentClient agentClient = mock(UdsAgentClient.class);
+
+        final DefaultLightkeeperFramework framework = new DefaultLightkeeperFramework(
+            runtimeManifest,
+            minecraftServerProcess,
+            agentClient,
+            new PlayerScopeRegistry()
+        );
+
+        // execute
+        framework.restartServer();
+
+        // verify
+        verify(minecraftServerProcess, times(1)).start(java.time.Duration.ofMinutes(2));
+        verify(agentClient, times(1)).rehandshake(
+            java.time.Duration.ofSeconds(45),
+            runtimeManifest.agentAuthToken(),
+            runtimeManifest.runtimeProtocolVersion(),
+            runtimeManifest.agentJarSha256()
+        );
+    }
+
     private static RuntimeManifest runtimeManifest()
     {
         return new RuntimeManifest(

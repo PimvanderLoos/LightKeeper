@@ -100,6 +100,16 @@ public interface ILightkeeperFramework extends AutoCloseable
      */
     List<String> serverOutput();
 
+    /**
+     * Crashes the Minecraft server immediately.
+     */
+    void crashServer();
+
+    /**
+     * Restarts the Minecraft server after a crash.
+     */
+    void restartServer();
+
     @Override
     void close();
 }

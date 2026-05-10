@@ -409,17 +409,32 @@ final class UdsAgentClient implements AutoCloseable
         }
     }
 
+    void rehandshake(Duration timeout, String token, int protocolVersion, String agentSha256)
+    {
+        close();
+        connect(timeout);
+        handshake(token, protocolVersion, agentSha256);
+    }
+
     @Override
     public synchronized void close()
     {
         try
         {
             if (socketChannel != null)
+            {
                 socketChannel.close();
+                socketChannel = null;
+            }
         }
         catch (IOException ignored)
         {
             LOG.log(System.Logger.Level.TRACE, "Failed to close agent socket channel cleanly.");
+        }
+        finally
+        {
+            reader = null;
+            writer = null;
         }
     }
 
