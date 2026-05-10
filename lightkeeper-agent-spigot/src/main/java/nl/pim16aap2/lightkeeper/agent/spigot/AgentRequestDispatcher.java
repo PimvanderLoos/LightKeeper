@@ -184,6 +184,10 @@ final class AgentRequestDispatcher
                 case GET_PLAYER_MESSAGES -> playerActions.handleGetPlayerMessages(requestId, arguments);
                 case WAIT_TICKS -> worldActions.handleWaitTicks(requestId, arguments);
                 case GET_SERVER_TICK -> worldActions.handleGetServerTick(requestId);
+                case TELEPORT_PLAYER -> playerActions.handleTeleportPlayer(requestId, arguments);
+                case LOAD_CHUNK -> worldActions.handleLoadChunk(requestId, arguments);
+                case UNLOAD_CHUNK -> worldActions.handleUnloadChunk(requestId, arguments);
+                case IS_CHUNK_LOADED -> worldActions.handleIsChunkLoaded(requestId, arguments);
                 case HANDSHAKE -> throw new IllegalStateException("Unreachable HANDSHAKE dispatch branch.");
             }, true);
         }

@@ -200,6 +200,97 @@ final class AgentWorldActions
     }
 
     /**
+     * Handles {@code LOAD_CHUNK} by loading a chunk.
+     *
+     * @param requestId
+     *     Runtime request identifier.
+     * @param arguments
+     *     Request arguments; requires {@code worldName}, {@code x}, and {@code z}.
+     * @return
+     *     Success response.
+     * @throws Exception
+     *     Propagates parsing and main-thread execution failures.
+     */
+    AgentResponse handleLoadChunk(String requestId, Map<String, String> arguments)
+        throws Exception
+    {
+        final String worldName = arguments.getOrDefault("worldName", "");
+        final int chunkX = AgentRequestParsers.parseInt(arguments.getOrDefault("x", "0"));
+        final int chunkZ = AgentRequestParsers.parseInt(arguments.getOrDefault("z", "0"));
+
+        mainThreadExecutor.callOnMainThread(() ->
+        {
+            final World world = Bukkit.getWorld(worldName);
+            if (world == null)
+                throw new IllegalArgumentException("World '%s' does not exist.".formatted(worldName));
+            world.getChunkAt(chunkX, chunkZ).load();
+            return Boolean.TRUE;
+        });
+
+        return AgentResponses.successResponse(requestId, Map.of("loaded", "true"));
+    }
+
+    /**
+     * Handles {@code UNLOAD_CHUNK} by unloading a chunk.
+     *
+     * @param requestId
+     *     Runtime request identifier.
+     * @param arguments
+     *     Request arguments; requires {@code worldName}, {@code x}, and {@code z}.
+     * @return
+     *     Success response with {@code success} status.
+     * @throws Exception
+     *     Propagates parsing and main-thread execution failures.
+     */
+    AgentResponse handleUnloadChunk(String requestId, Map<String, String> arguments)
+        throws Exception
+    {
+        final String worldName = arguments.getOrDefault("worldName", "");
+        final int chunkX = AgentRequestParsers.parseInt(arguments.getOrDefault("x", "0"));
+        final int chunkZ = AgentRequestParsers.parseInt(arguments.getOrDefault("z", "0"));
+
+        final Boolean success = mainThreadExecutor.callOnMainThread(() ->
+        {
+            final World world = Bukkit.getWorld(worldName);
+            if (world == null)
+                throw new IllegalArgumentException("World '%s' does not exist.".formatted(worldName));
+            return world.unloadChunk(chunkX, chunkZ);
+        });
+
+        return AgentResponses.successResponse(requestId, Map.of("success", success.toString()));
+    }
+
+    /**
+     * Handles {@code IS_CHUNK_LOADED} by checking if a chunk is loaded.
+     *
+     * @param requestId
+     *     Runtime request identifier.
+     * @param arguments
+     *     Request arguments; requires {@code worldName}, {@code x}, and {@code z}.
+     * @return
+     *     Success response with {@code loaded} status.
+     * @throws Exception
+     *     Propagates parsing and main-thread execution failures.
+     */
+    AgentResponse handleIsChunkLoaded(String requestId, Map<String, String> arguments)
+        throws Exception
+    {
+        final String worldName = arguments.getOrDefault("worldName", "");
+        final int chunkX = AgentRequestParsers.parseInt(arguments.getOrDefault("x", "0"));
+        final int chunkZ = AgentRequestParsers.parseInt(arguments.getOrDefault("z", "0"));
+
+        final Boolean loaded = mainThreadExecutor.callOnMainThread(() ->
+        {
+            final World world = Bukkit.getWorld(worldName);
+            if (world == null)
+                throw new IllegalArgumentException("World '%s' does not exist.".formatted(worldName));
+            return world.isChunkLoaded(chunkX, chunkZ);
+        });
+
+        return AgentResponses.successResponse(requestId, Map.of("loaded", loaded.toString()));
+    }
+
+    /**
      * Handles {@code SET_BLOCK} by setting a block to the requested material.
      *
      * @param requestId

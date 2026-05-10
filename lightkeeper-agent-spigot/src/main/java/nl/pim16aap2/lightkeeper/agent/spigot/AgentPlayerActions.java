@@ -324,7 +324,52 @@ final class AgentPlayerActions
         return AgentResponses.successResponse(requestId, Map.of("messagesJson", messagesJson));
     }
 
-    private AgentResponse handleClickBlock(String requestId, Map<String, String> arguments, Action action)
+     /**
+      * Handles {@code TELEPORT_PLAYER} by teleporting a synthetic player to target coordinates.
+      *
+      * @param requestId
+      *     Runtime request identifier.
+      * @param arguments
+      *     Request arguments; requires {@code uuid}, {@code worldName}, {@code x}, {@code y}, and {@code z}.
+      * @return
+      *     Success response when teleportation completes.
+      * @throws Exception
+      *     Propagates parsing and main-thread execution failures.
+      */
+     AgentResponse handleTeleportPlayer(String requestId, Map<String, String> arguments)
+         throws Exception
+     {
+         final UUID uuid = UUID.fromString(arguments.getOrDefault("uuid", ""));
+         final String worldName = arguments.getOrDefault("worldName", "").trim();
+         final double x = AgentRequestParsers.parseDouble(arguments.getOrDefault("x", "0"));
+         final double y = AgentRequestParsers.parseDouble(arguments.getOrDefault("y", "0"));
+         final double z = AgentRequestParsers.parseDouble(arguments.getOrDefault("z", "0"));
+
+         if (worldName.isBlank())
+         {
+             return AgentResponses.errorResponse(
+                 requestId,
+                 AgentErrorCode.INVALID_ARGUMENT,
+                 "Argument 'worldName' must not be blank."
+             );
+         }
+
+         mainThreadExecutor.callOnMainThread(() ->
+         {
+             final Player player = playerStore.getRequiredPlayer(uuid);
+             final World world = Bukkit.getWorld(worldName);
+             if (world == null)
+                 throw new IllegalArgumentException("World '%s' does not exist.".formatted(worldName));
+
+             final Location location = new Location(world, x, y, z);
+             player.teleport(location);
+             return Boolean.TRUE;
+         });
+
+         return AgentResponses.successResponse(requestId, Map.of("teleported", "true"));
+     }
+
+     private AgentResponse handleClickBlock(String requestId, Map<String, String> arguments, Action action)
         throws Exception
     {
         final UUID uuid = UUID.fromString(arguments.getOrDefault("uuid", ""));

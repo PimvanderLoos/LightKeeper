@@ -81,6 +81,35 @@ final class UdsAgentClient implements AutoCloseable
         return getRequiredData(response, "worldName");
     }
 
+    void loadChunk(String worldName, int chunkX, int chunkZ)
+    {
+        send(AgentAction.LOAD_CHUNK, Map.of(
+            "worldName", worldName,
+            "x", Integer.toString(chunkX),
+            "z", Integer.toString(chunkZ)
+        ));
+    }
+
+    boolean unloadChunk(String worldName, int chunkX, int chunkZ)
+    {
+        final AgentResponse response = send(AgentAction.UNLOAD_CHUNK, Map.of(
+            "worldName", worldName,
+            "x", Integer.toString(chunkX),
+            "z", Integer.toString(chunkZ)
+        ));
+        return Boolean.parseBoolean(getRequiredData(response, "success"));
+    }
+
+    boolean isChunkLoaded(String worldName, int chunkX, int chunkZ)
+    {
+        final AgentResponse response = send(AgentAction.IS_CHUNK_LOADED, Map.of(
+            "worldName", worldName,
+            "x", Integer.toString(chunkX),
+            "z", Integer.toString(chunkZ)
+        ));
+        return Boolean.parseBoolean(getRequiredData(response, "loaded"));
+    }
+
     boolean executeCommand(CommandSource source, String command)
     {
         final AgentResponse response = send(AgentAction.EXECUTE_COMMAND, Map.of(
@@ -155,6 +184,17 @@ final class UdsAgentClient implements AutoCloseable
         send(AgentAction.EXECUTE_PLAYER_COMMAND, Map.of(
             "uuid", uuid.toString(),
             "command", command
+        ));
+    }
+
+    void teleportPlayer(UUID uuid, String worldName, double x, double y, double z)
+    {
+        send(AgentAction.TELEPORT_PLAYER, Map.of(
+            "uuid", uuid.toString(),
+            "worldName", worldName,
+            "x", Double.toString(x),
+            "y", Double.toString(y),
+            "z", Double.toString(z)
         ));
     }
 
