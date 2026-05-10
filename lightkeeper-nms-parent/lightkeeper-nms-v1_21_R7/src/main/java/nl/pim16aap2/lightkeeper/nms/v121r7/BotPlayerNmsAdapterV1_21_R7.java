@@ -24,8 +24,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Paper 1.21.11 (v1_21_R7) synthetic-player adapter.
@@ -40,6 +42,8 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
     private final Object minecraftServer;
     private final Object playerList;
     private final Map<UUID, Object> playerChannels = new ConcurrentHashMap<>();
+    private final Map<UUID, Queue<String>> playerMessageQueues = new ConcurrentHashMap<>();
+    private final Map<UUID, Queue<String>> playerChatComponentQueues = new ConcurrentHashMap<>();
 
     private final Constructor<?> gameProfileConstructor;
     private final Constructor<?> connectionConstructor;
@@ -613,6 +617,8 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
             final Player bukkitPlayer = (Player) serverPlayerGetBukkitEntityMethod.invoke(serverPlayer);
             bukkitPlayer.teleport(spawnLocation);
             playerChannels.put(uuid, embeddedChannel);
+            playerMessageQueues.put(uuid, new ConcurrentLinkedQueue<>());
+            playerChatComponentQueues.put(uuid, new ConcurrentLinkedQueue<>());
             return bukkitPlayer;
         }
         catch (InvocationTargetException exception)
@@ -648,7 +654,10 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
         {
             final Object serverPlayer = craftPlayerGetHandleMethod.invoke(player);
             playerListRemoveMethod.invoke(playerList, serverPlayer);
-            playerChannels.remove(player.getUniqueId());
+            final UUID playerId = player.getUniqueId();
+            playerChannels.remove(playerId);
+            playerMessageQueues.remove(playerId);
+            playerChatComponentQueues.remove(playerId);
         }
         catch (InvocationTargetException exception)
         {
@@ -694,26 +703,8 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
         if (embeddedChannel == null)
             return List.of();
 
-        final List<String> messages = new ArrayList<>();
-        try
-        {
-            Object outboundPacket;
-            while ((outboundPacket = embeddedChannelReadOutboundMethod.invoke(embeddedChannel)) != null)
-            {
-                final String message = extractText(outboundPacket, TEXT_EXTRACTION_MAX_DEPTH, new IdentityHashMap<>());
-                if (message != null && !message.isBlank())
-                    messages.add(message);
-            }
-        }
-        catch (Exception exception)
-        {
-            throw new IllegalStateException(
-                "Failed to drain received messages for synthetic player '%s'."
-                    .formatted(playerId),
-                exception
-            );
-        }
-        return List.copyOf(messages);
+        drainOutboundPackets(playerId, embeddedChannel);
+        return drainQueue(playerMessageQueues.computeIfAbsent(playerId, ignored -> new ConcurrentLinkedQueue<>()));
     }
 
     /**
@@ -731,27 +722,50 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
         if (embeddedChannel == null)
             return List.of();
 
-        final List<String> components = new ArrayList<>();
+        drainOutboundPackets(playerId, embeddedChannel);
+        final Queue<String> componentQueue =
+            playerChatComponentQueues.computeIfAbsent(playerId, ignored -> new ConcurrentLinkedQueue<>());
+        return drainQueue(componentQueue);
+    }
+
+    private void drainOutboundPackets(UUID playerId, Object embeddedChannel)
+    {
+        final Queue<String> messageQueue =
+            playerMessageQueues.computeIfAbsent(playerId, ignored -> new ConcurrentLinkedQueue<>());
+        final Queue<String> componentQueue =
+            playerChatComponentQueues.computeIfAbsent(playerId, ignored -> new ConcurrentLinkedQueue<>());
         try
         {
             Object outboundPacket;
             while ((outboundPacket = embeddedChannelReadOutboundMethod.invoke(embeddedChannel)) != null)
             {
+                final String message = extractText(outboundPacket, TEXT_EXTRACTION_MAX_DEPTH, new IdentityHashMap<>());
+                if (message != null && !message.isBlank())
+                    messageQueue.add(message);
+
                 final String json =
                     extractComponentJson(outboundPacket, TEXT_EXTRACTION_MAX_DEPTH, new IdentityHashMap<>());
                 if (json != null)
-                    components.add(json);
+                    componentQueue.add(json);
             }
         }
         catch (Exception exception)
         {
             throw new IllegalStateException(
-                "Failed to drain chat components for synthetic player '%s'."
+                "Failed to drain outbound packets for synthetic player '%s'."
                     .formatted(playerId),
                 exception
             );
         }
-        return List.copyOf(components);
+    }
+
+    private static List<String> drainQueue(Queue<String> queue)
+    {
+        final List<String> drainedValues = new ArrayList<>();
+        String drainedValue;
+        while ((drainedValue = queue.poll()) != null)
+            drainedValues.add(drainedValue);
+        return List.copyOf(drainedValues);
     }
 
     private @Nullable String extractComponentJson(
@@ -770,22 +784,53 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
                 return serializedComponent;
         }
 
-        // Recursively search for components in packets/objects
+        if (value instanceof Optional<?> optional)
+            return optional.map(inner -> extractComponentJson(inner, depth - 1, seen)).orElse(null);
+        if (value instanceof Collection<?> collection)
+        {
+            for (final Object element : collection)
+            {
+                final String json = extractComponentJson(element, depth - 1, seen);
+                if (json != null)
+                    return json;
+            }
+            return null;
+        }
+        if (value.getClass().isArray())
+        {
+            final int arrayLength = Array.getLength(value);
+            for (int index = 0; index < arrayLength; ++index)
+            {
+                final String json = extractComponentJson(Array.get(value, index), depth - 1, seen);
+                if (json != null)
+                    return json;
+            }
+            return null;
+        }
+
+        int inspectedMethodCount = 0;
         for (final Method method : value.getClass().getMethods())
         {
-            if (method.getParameterCount() == 0 && !method.getDeclaringClass().equals(Object.class))
+            if (!isSafeComponentAccessor(method))
+                continue;
+            if (inspectedMethodCount >= TEXT_EXTRACTION_MAX_METHODS)
+                break;
+            ++inspectedMethodCount;
+
+            try
             {
-                try
-                {
-                    final Object nestedValue = method.invoke(value);
-                    final String json = extractComponentJson(nestedValue, depth - 1, seen);
-                    if (json != null)
-                        return json;
-                }
-                catch (Exception ignored)
-                {
-                    // Ignored: best-effort extraction
-                }
+                final Object nestedValue = method.invoke(value);
+                final String json = extractComponentJson(nestedValue, depth - 1, seen);
+                if (json != null)
+                    return json;
+            }
+            catch (Exception exception)
+            {
+                LOG.log(
+                    System.Logger.Level.TRACE,
+                    "Ignoring reflective accessor failure while extracting packet component.",
+                    exception
+                );
             }
         }
         return null;
@@ -803,11 +848,52 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
             final Optional<?> serializedJson = (Optional<?>) dataResultResultMethod.invoke(dataResult);
             return serializedJson.map(Object::toString).orElse(null);
         }
-        catch (Exception ignored)
+        catch (Exception exception)
         {
-            // Ignored: best-effort extraction
+            LOG.log(
+                System.Logger.Level.TRACE,
+                "Ignoring component serialization failure while extracting packet component.",
+                exception
+            );
             return null;
         }
+    }
+
+    private static boolean isSafeComponentAccessor(Method method)
+    {
+        if (method.getParameterCount() != 0)
+            return false;
+        if (method.getDeclaringClass() == Object.class)
+            return false;
+
+        final String methodName = method.getName();
+        if (methodName.equals("getClass") || methodName.equals("hashCode") || methodName.equals("toString"))
+            return false;
+
+        final Class<?> returnType = method.getReturnType();
+        if (returnType == Void.TYPE || returnType.isPrimitive())
+            return false;
+
+        final String lowerMethodName = methodName.toLowerCase(Locale.ROOT);
+        final boolean safeName = methodName.startsWith("get") ||
+            methodName.startsWith("is") ||
+            lowerMethodName.contains("component") ||
+            lowerMethodName.contains("message") ||
+            lowerMethodName.contains("content") ||
+            lowerMethodName.contains("title");
+        if (!safeName)
+            return false;
+
+        if (Optional.class.isAssignableFrom(returnType))
+            return true;
+        if (Collection.class.isAssignableFrom(returnType))
+            return true;
+        if (returnType.isArray())
+            return true;
+
+        final String returnTypeName = returnType.getName();
+        return returnTypeName.startsWith("net.minecraft.network.chat.") ||
+            returnTypeName.endsWith("Component");
     }
 
     private static @Nullable String extractText(

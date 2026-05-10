@@ -7,7 +7,7 @@
 ## Git handling
 
 - When adding new files, also add them to git.
-- Never add `AGENTS.md` or any file in the `.codex` directory.
+- Never add any file in the `.codex` directory.
 - Rationale: `.codex` is local Codex-cli working state (plans/scratch output) and must stay out of version control.
 
 ## Project LightKeeper

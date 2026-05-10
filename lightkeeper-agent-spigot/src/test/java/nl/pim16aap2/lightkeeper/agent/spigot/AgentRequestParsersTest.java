@@ -36,6 +36,30 @@ class AgentRequestParsersTest
     }
 
     @Test
+    void parseDouble_shouldParseTrimmedValue()
+    {
+        // setup
+        final String input = " 13.37 ";
+
+        // execute
+        final double value = AgentRequestParsers.parseDouble(input);
+
+        // verify
+        assertThat(value).isEqualTo(13.37D);
+    }
+
+    @Test
+    void parseDouble_shouldThrowExceptionWhenInputIsNotNumeric()
+    {
+        // setup
+        final String input = "not-a-number";
+
+        // execute + verify
+        assertThatThrownBy(() -> AgentRequestParsers.parseDouble(input))
+            .isInstanceOf(NumberFormatException.class);
+    }
+
+    @Test
     void parseOptionalDouble_shouldReturnNullWhenInputIsNull()
     {
         // setup

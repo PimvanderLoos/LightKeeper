@@ -239,7 +239,18 @@ final class AgentRequestDispatcher
         if (eventClassName.isBlank())
             return AgentResponses.errorResponse(requestId, AgentErrorCode.INVALID_ARGUMENT, "Missing eventClassName.");
 
-        eventCapture.registerListener(eventClassName);
+        try
+        {
+            eventCapture.registerListener(eventClassName);
+        }
+        catch (ClassNotFoundException | IllegalArgumentException exception)
+        {
+            return AgentResponses.errorResponse(
+                requestId,
+                AgentErrorCode.INVALID_ARGUMENT,
+                Objects.requireNonNullElse(exception.getMessage(), exception.getClass().getName())
+            );
+        }
         return AgentResponses.successResponse(requestId, Map.of());
     }
 

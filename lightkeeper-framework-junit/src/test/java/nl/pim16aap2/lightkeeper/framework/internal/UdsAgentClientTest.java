@@ -23,10 +23,15 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class UdsAgentClientTest
 {
+    private static final ObjectMapper REQUEST_MAPPER = new ObjectMapper();
+    private static final java.util.UUID PLAYER_ID =
+        java.util.UUID.fromString("6efa93e0-6b5f-45b7-8af8-2453c9c7ef0c");
+
     @Test
     void send_shouldThrowExceptionWhenResponseIdDoesNotMatch(@TempDir Path tempDirectory)
         throws Exception
@@ -80,6 +85,148 @@ class UdsAgentClientTest
         }
     }
 
+    @Test
+    void serverPlatform_shouldSendPlatformRequestAndMapPaperResponse(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("agent-platform.sock");
+        try (AgentSocketServer server = AgentSocketServer.start(
+            socketPath,
+            successResponse(Map.of("platform", "Paper 1.21.11"))
+        ); UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            final nl.pim16aap2.lightkeeper.framework.Platform result = client.serverPlatform();
+
+            // verify
+            assertThat(result).isEqualTo(nl.pim16aap2.lightkeeper.framework.Platform.PAPER);
+            assertRequest(server, AgentAction.GET_SERVER_PLATFORM, Map.of());
+        }
+    }
+
+    @Test
+    void loadChunk_shouldSendChunkCoordinates(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("agent-load-chunk.sock");
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, successResponse(Map.of()));
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            client.loadChunk("world", 3, -4);
+
+            // verify
+            assertRequest(server, AgentAction.LOAD_CHUNK, Map.of("worldName", "world", "x", "3", "z", "-4"));
+        }
+    }
+
+    @Test
+    void playerInventory_shouldParseInventorySnapshot(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("agent-inventory.sock");
+        final String inventoryJson = "[{\"slot\":1,\"materialKey\":\"minecraft:stone\",\"displayName\":\"Stone\","
+            + "\"lore\":[\"Line\"]}]";
+        try (AgentSocketServer server = AgentSocketServer.start(
+            socketPath,
+            successResponse(Map.of("inventoryJson", inventoryJson))
+        ); UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            final nl.pim16aap2.lightkeeper.framework.InventorySnapshot result = client.playerInventory(PLAYER_ID);
+
+            // verify
+            assertThat(result.items()).hasSize(1);
+            assertThat(result.items().getFirst().materialKey()).isEqualTo("minecraft:stone");
+            assertRequest(server, AgentAction.GET_PLAYER_INVENTORY, Map.of("uuid", PLAYER_ID.toString()));
+        }
+    }
+
+    @Test
+    void dropItem_shouldParseCancellationState(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("agent-drop.sock");
+        try (AgentSocketServer server = AgentSocketServer.start(
+            socketPath,
+            successResponse(Map.of("cancelled", "true"))
+        ); UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            final boolean result = client.dropItem(PLAYER_ID);
+
+            // verify
+            assertThat(result).isTrue();
+            assertRequest(server, AgentAction.DROP_ITEM, Map.of("uuid", PLAYER_ID.toString()));
+        }
+    }
+
+    @Test
+    void playerChatComponents_shouldParseComponentSnapshots(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("agent-components.sock");
+        try (AgentSocketServer server = AgentSocketServer.start(
+            socketPath,
+            successResponse(Map.of("componentsJson", "[\"{\\\"text\\\":\\\"Hi\\\"}\"]"))
+        ); UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            final java.util.List<nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot> result =
+                client.playerChatComponents(PLAYER_ID);
+
+            // verify
+            assertThat(result).extracting(nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot::json)
+                .containsExactly("{\"text\":\"Hi\"}");
+            assertRequest(server, AgentAction.GET_PLAYER_CHAT_COMPONENTS, Map.of("uuid", PLAYER_ID.toString()));
+        }
+    }
+
+    @Test
+    void getCapturedEvents_shouldSendEventClassNameAndParseEvents(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("agent-events.sock");
+        try (AgentSocketServer server = AgentSocketServer.start(
+            socketPath,
+            successResponse(Map.of("eventsJson", "[{\"getValue\":\"value\"}]"))
+        ); UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            final java.util.List<nl.pim16aap2.lightkeeper.framework.CapturedEventSnapshot> result =
+                client.getCapturedEvents("org.bukkit.event.Event");
+
+            // verify
+            assertThat(result).hasSize(1);
+            assertThat(result.getFirst().data()).containsEntry("getValue", "value");
+            assertRequest(
+                server,
+                AgentAction.GET_CAPTURED_EVENTS,
+                Map.of("eventClassName", "org.bukkit.event.Event")
+            );
+        }
+    }
+
+    private static AgentResponse successResponse(Map<String, String> data)
+    {
+        return new AgentResponse("1", true, null, null, data);
+    }
+
+    private static void assertRequest(AgentSocketServer server, AgentAction action, Map<String, String> arguments)
+        throws IOException
+    {
+        final nl.pim16aap2.lightkeeper.runtime.agent.AgentRequest request =
+            REQUEST_MAPPER.readValue(server.requestLine(), nl.pim16aap2.lightkeeper.runtime.agent.AgentRequest.class);
+        assertThat(request.action()).isEqualTo(action);
+        assertThat(request.arguments()).isEqualTo(arguments);
+    }
+
     private static final class AgentSocketServer implements AutoCloseable
     {
         private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
@@ -88,6 +235,7 @@ class UdsAgentClientTest
         private final Thread workerThread;
         private final CountDownLatch started = new CountDownLatch(1);
         private final AtomicReference<Throwable> workerFailure = new AtomicReference<>();
+        private final AtomicReference<String> requestLine = new AtomicReference<>();
         private final Path socketPath;
 
         private AgentSocketServer(Path socketPath, AgentResponse response)
@@ -121,6 +269,7 @@ class UdsAgentClientTest
                 final String requestLine = reader.readLine();
                 if (requestLine == null)
                     return;
+                this.requestLine.set(requestLine);
                 writer.write(OBJECT_MAPPER.writeValueAsString(response));
                 writer.newLine();
                 writer.flush();
@@ -141,6 +290,11 @@ class UdsAgentClientTest
             if (failure != null)
                 throw new IllegalStateException("Socket server worker failed.", failure);
             Files.deleteIfExists(socketPath);
+        }
+
+        private String requestLine()
+        {
+            return java.util.Objects.requireNonNull(requestLine.get(), "No request was received.");
         }
     }
 }

@@ -3,6 +3,7 @@ package nl.pim16aap2.lightkeeper.framework;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Snapshot of a player's inventory.
@@ -15,6 +16,14 @@ public record InventorySnapshot(
 )
 {
     /**
+     * Creates a snapshot with a defensive immutable copy of the item list.
+     */
+    public InventorySnapshot
+    {
+        items = List.copyOf(Objects.requireNonNull(items, "items may not be null."));
+    }
+
+    /**
      * Finds an item in the inventory by material key.
      *
      * @param materialKey
@@ -23,6 +32,7 @@ public record InventorySnapshot(
      */
     public @Nullable MenuItemSnapshot findItem(String materialKey)
     {
+        Objects.requireNonNull(materialKey, "materialKey may not be null.");
         return items.stream()
             .filter(item -> item.materialKey().equalsIgnoreCase(materialKey))
             .findFirst()

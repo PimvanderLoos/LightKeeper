@@ -11,6 +11,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
@@ -123,6 +124,24 @@ class AgentRequestDispatcherTest
             .thenReturn(AgentResponses.successResponse("request-15", Map.of()));
         when(fixture.worldActions().handleGetServerTick("request-16"))
             .thenReturn(AgentResponses.successResponse("request-16", Map.of()));
+        when(fixture.playerActions().handleTeleportPlayer(eq("request-17"), anyMap()))
+            .thenReturn(AgentResponses.successResponse("request-17", Map.of()));
+        when(fixture.worldActions().handleLoadChunk(eq("request-18"), anyMap()))
+            .thenReturn(AgentResponses.successResponse("request-18", Map.of()));
+        when(fixture.worldActions().handleUnloadChunk(eq("request-19"), anyMap()))
+            .thenReturn(AgentResponses.successResponse("request-19", Map.of()));
+        when(fixture.worldActions().handleIsChunkLoaded(eq("request-20"), anyMap()))
+            .thenReturn(AgentResponses.successResponse("request-20", Map.of()));
+        when(fixture.playerActions().handleGetPlayerInventory(eq("request-21"), anyMap()))
+            .thenReturn(AgentResponses.successResponse("request-21", Map.of()));
+        when(fixture.playerActions().handleDropItem(eq("request-22"), anyMap()))
+            .thenReturn(AgentResponses.successResponse("request-22", Map.of()));
+        when(fixture.eventCapture().getCapturedEvents(eq("org.bukkit.event.Event")))
+            .thenReturn(List.of(Map.of("getEventName", "Event")));
+        when(fixture.playerActions().handleGetPlayerChatComponents(eq("request-27"), anyMap()))
+            .thenReturn(AgentResponses.successResponse("request-27", Map.of()));
+        when(fixture.worldActions().handleGetServerPlatform("request-28"))
+            .thenReturn(AgentResponses.successResponse("request-28", Map.of()));
 
         // execute
         fixture.dispatcher().handleRequestLine(createRequestLine("request-1", AgentAction.NEW_WORLD, Map.of()), true);
@@ -164,6 +183,44 @@ class AgentRequestDispatcherTest
             .handleRequestLine(createRequestLine("request-15", AgentAction.WAIT_TICKS, Map.of()), true);
         fixture.dispatcher()
             .handleRequestLine(createRequestLine("request-16", AgentAction.GET_SERVER_TICK, Map.of()), true);
+        fixture.dispatcher()
+            .handleRequestLine(createRequestLine("request-17", AgentAction.TELEPORT_PLAYER, Map.of()), true);
+        fixture.dispatcher()
+            .handleRequestLine(createRequestLine("request-18", AgentAction.LOAD_CHUNK, Map.of()), true);
+        fixture.dispatcher()
+            .handleRequestLine(createRequestLine("request-19", AgentAction.UNLOAD_CHUNK, Map.of()), true);
+        fixture.dispatcher()
+            .handleRequestLine(createRequestLine("request-20", AgentAction.IS_CHUNK_LOADED, Map.of()), true);
+        fixture.dispatcher()
+            .handleRequestLine(createRequestLine("request-21", AgentAction.GET_PLAYER_INVENTORY, Map.of()), true);
+        fixture.dispatcher()
+            .handleRequestLine(createRequestLine("request-22", AgentAction.DROP_ITEM, Map.of()), true);
+        fixture.dispatcher().handleRequestLine(createRequestLine(
+            "request-23",
+            AgentAction.REGISTER_EVENT_LISTENER,
+            Map.of("eventClassName", "org.bukkit.event.Event")
+        ), true);
+        fixture.dispatcher().handleRequestLine(createRequestLine(
+            "request-24",
+            AgentAction.GET_CAPTURED_EVENTS,
+            Map.of("eventClassName", "org.bukkit.event.Event")
+        ), true);
+        fixture.dispatcher().handleRequestLine(createRequestLine(
+            "request-25",
+            AgentAction.CLEAR_CAPTURED_EVENTS,
+            Map.of("eventClassName", "org.bukkit.event.Event")
+        ), true);
+        fixture.dispatcher().handleRequestLine(createRequestLine(
+            "request-26",
+            AgentAction.UNREGISTER_EVENT_LISTENER,
+            Map.of("eventClassName", "org.bukkit.event.Event")
+        ), true);
+        fixture.dispatcher().handleRequestLine(
+            createRequestLine("request-27", AgentAction.GET_PLAYER_CHAT_COMPONENTS, Map.of()),
+            true
+        );
+        fixture.dispatcher()
+            .handleRequestLine(createRequestLine("request-28", AgentAction.GET_SERVER_PLATFORM, Map.of()), true);
 
         // verify
         verify(fixture.worldActions()).handleNewWorld(eq("request-1"), anyMap());
@@ -182,6 +239,42 @@ class AgentRequestDispatcherTest
         verify(fixture.playerActions()).handleGetPlayerMessages(eq("request-14"), anyMap());
         verify(fixture.worldActions()).handleWaitTicks(eq("request-15"), anyMap());
         verify(fixture.worldActions()).handleGetServerTick("request-16");
+        verify(fixture.playerActions()).handleTeleportPlayer(eq("request-17"), anyMap());
+        verify(fixture.worldActions()).handleLoadChunk(eq("request-18"), anyMap());
+        verify(fixture.worldActions()).handleUnloadChunk(eq("request-19"), anyMap());
+        verify(fixture.worldActions()).handleIsChunkLoaded(eq("request-20"), anyMap());
+        verify(fixture.playerActions()).handleGetPlayerInventory(eq("request-21"), anyMap());
+        verify(fixture.playerActions()).handleDropItem(eq("request-22"), anyMap());
+        verify(fixture.eventCapture()).registerListener("org.bukkit.event.Event");
+        verify(fixture.eventCapture()).getCapturedEvents("org.bukkit.event.Event");
+        verify(fixture.eventCapture()).clearCapturedEvents("org.bukkit.event.Event");
+        verify(fixture.eventCapture()).unregisterListener("org.bukkit.event.Event");
+        verify(fixture.playerActions()).handleGetPlayerChatComponents(eq("request-27"), anyMap());
+        verify(fixture.worldActions()).handleGetServerPlatform("request-28");
+    }
+
+    @Test
+    void handleRequestLine_shouldReturnInvalidArgumentWhenEventClassIsNotValid()
+        throws Exception
+    {
+        // setup
+        final DispatcherFixture fixture = createDispatcherFixture();
+        doThrow(new IllegalArgumentException("Class 'java.lang.String' is not a Bukkit Event."))
+            .when(fixture.eventCapture()).registerListener("java.lang.String");
+        final String requestLine = createRequestLine(
+            "request-event",
+            AgentAction.REGISTER_EVENT_LISTENER,
+            Map.of("eventClassName", "java.lang.String")
+        );
+
+        // execute
+        final AgentRequestDispatcher.RequestDispatchResult result =
+            fixture.dispatcher().handleRequestLine(requestLine, true);
+
+        // verify
+        assertThat(result.response().success()).isFalse();
+        assertThat(result.response().errorCode()).isEqualTo("INVALID_ARGUMENT");
+        assertThat(result.response().errorMessage()).contains("not a Bukkit Event");
     }
 
     @Test
@@ -391,14 +484,15 @@ class AgentRequestDispatcherTest
             1,
             ""
         );
-        return new DispatcherFixture(dispatcher, worldActions, playerActions, menuActions);
+        return new DispatcherFixture(dispatcher, worldActions, playerActions, menuActions, eventCapture);
     }
 
     private record DispatcherFixture(
         AgentRequestDispatcher dispatcher,
         AgentWorldActions worldActions,
         AgentPlayerActions playerActions,
-        AgentMenuActions menuActions)
+        AgentMenuActions menuActions,
+        AgentEventCapture eventCapture)
     {
     }
 

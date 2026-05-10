@@ -29,27 +29,31 @@ final class AgentEventCapture
         this.plugin = plugin;
     }
 
-    @SuppressWarnings("unchecked")
     void registerListener(String eventClassName)
         throws ClassNotFoundException
     {
         if (activeListeners.containsKey(eventClassName))
             return;
 
-        final Class<? extends Event> eventClass = (Class<? extends Event>) Class.forName(eventClassName);
+        final Class<?> resolvedClass = Class.forName(eventClassName);
+        if (!Event.class.isAssignableFrom(resolvedClass))
+            throw new IllegalArgumentException("Class '%s' is not a Bukkit Event.".formatted(eventClassName));
+
+        final Class<? extends Event> eventClass = resolvedClass.asSubclass(Event.class);
+        final List<Map<String, String>> events =
+            capturedEvents.computeIfAbsent(eventClassName, ignored -> new CopyOnWriteArrayList<>());
         final Listener listener = new Listener() {};
 
         Bukkit.getPluginManager().registerEvent(
             eventClass,
             listener,
             EventPriority.MONITOR,
-            (l, event) -> captureEvent(event),
+            (listenerInstance, event) -> captureEventForList(event, events),
             plugin,
-            true
+            false
         );
 
         activeListeners.put(eventClassName, listener);
-        capturedEvents.putIfAbsent(eventClassName, new CopyOnWriteArrayList<>());
     }
 
     void unregisterListener(String eventClassName)
@@ -71,29 +75,6 @@ final class AgentEventCapture
         final List<Map<String, String>> events = capturedEvents.get(eventClassName);
         if (events != null)
             events.clear();
-    }
-
-    private void captureEvent(Event event)
-    {
-        // Check for the class name and its superclasses (e.g. if we listen for PlayerEvent but get PlayerMoveEvent)
-        // Actually, Bukkit's registerEvent handles the class hierarchy for us.
-        // But capturedEvents is keyed by the registered class name.
-        
-        for (final Map.Entry<String, List<Map<String, String>>> entry : capturedEvents.entrySet())
-        {
-            try
-            {
-                final Class<?> registeredClass = Class.forName(entry.getKey());
-                if (registeredClass.isInstance(event))
-                {
-                    captureEventForList(event, entry.getValue());
-                }
-            }
-            catch (ClassNotFoundException ignored)
-            {
-                // Ignored
-            }
-        }
     }
 
     private void captureEventForList(Event event, List<Map<String, String>> targetList)
