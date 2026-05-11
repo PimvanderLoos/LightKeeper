@@ -95,9 +95,9 @@ class PlayerHandleTest
     }
 
     @Test
-    void dropMainHandItem_shouldDelegateToGatewayAndReturnCancellationState()
+    void dropMainHandItem_shouldDelegateToGatewayAndReturnDroppedState()
     {
-        // setup
+        // setup — gateway returns true when the drop was not cancelled by any plugin
         when(frameworkGateway.dropItem(PLAYER_UUID)).thenReturn(true);
 
         // execute

@@ -334,7 +334,7 @@ class AgentPlayerActionsTest
     }
 
     @Test
-    void handleDropItem_shouldReturnFalseWhenMainHandIsEmpty()
+    void handleDropItem_shouldReturnNotDroppedWhenMainHandIsEmpty()
         throws Exception
     {
         // setup
@@ -352,9 +352,9 @@ class AgentPlayerActionsTest
             response = fixture.playerActions().handleDropItem("request-drop", Map.of("uuid", uuid.toString()));
         }
 
-        // verify
+        // verify - no item to drop, so dropped=false
         assertThat(response.success()).isTrue();
-        assertThat(response.data()).containsEntry("cancelled", "false");
+        assertThat(response.data()).containsEntry("dropped", "false");
     }
 
     @Test

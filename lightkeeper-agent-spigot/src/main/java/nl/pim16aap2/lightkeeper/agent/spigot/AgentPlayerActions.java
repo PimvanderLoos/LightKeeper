@@ -407,7 +407,7 @@ final class AgentPlayerActions
      * @param arguments
      *     Request arguments; requires {@code uuid}.
      * @return
-     *     Success response containing whether the drop event was cancelled.
+     *     Success response with {@code dropped=true} when no plugin cancelled the event, {@code false} otherwise.
      * @throws Exception
      *     Propagates parsing and main-thread execution failures.
      */
@@ -415,13 +415,16 @@ final class AgentPlayerActions
         throws Exception
     {
         final UUID uuid = UUID.fromString(arguments.getOrDefault("uuid", ""));
-        final Boolean cancelled = mainThreadExecutor.callOnMainThread(() ->
+        final Boolean dropped = mainThreadExecutor.callOnMainThread(() ->
         {
             final Player player = playerStore.getRequiredPlayer(uuid);
             final ItemStack item = player.getInventory().getItemInMainHand();
             if (item == null || AgentMaterials.isAir(item.getType()))
                 return Boolean.FALSE;
 
+            // Bukkit's PlayerDropItemEvent requires a pre-existing Item entity, so the entity is created
+            // unconditionally and removed afterwards. The response reflects whether a plugin *would* have
+            // allowed the drop (i.e., the event was not cancelled).
             final org.bukkit.entity.Item droppedItem =
                 player.getWorld().dropItemNaturally(player.getLocation(), item.clone());
             final org.bukkit.event.player.PlayerDropItemEvent event =
@@ -431,13 +434,12 @@ final class AgentPlayerActions
                 );
 
             Bukkit.getPluginManager().callEvent(event);
-            // Clean up the dropped item entity immediately as we only want to test the event
             droppedItem.remove();
 
-            return event.isCancelled();
+            return !event.isCancelled();
         });
 
-        return AgentResponses.successResponse(requestId, Map.of("cancelled", cancelled.toString()));
+        return AgentResponses.successResponse(requestId, Map.of("dropped", dropped.toString()));
     }
 
     /**

@@ -218,7 +218,9 @@ public final class PlayerHandle
     /**
      * Simulates the player dropping their main hand item.
      *
-     * @return True if the drop event was cancelled.
+     * @return {@code true} when no plugin cancelled the drop event (i.e., the item would have been dropped
+     *     in production). Note: the item entity is always created and removed to satisfy the Bukkit API
+     *     constraint; this return value reflects whether a plugin would have allowed the drop.
      */
     public boolean dropMainHandItem()
     {

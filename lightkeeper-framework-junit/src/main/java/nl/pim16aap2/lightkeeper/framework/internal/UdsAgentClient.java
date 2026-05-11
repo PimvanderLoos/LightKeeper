@@ -365,7 +365,7 @@ final class UdsAgentClient implements AutoCloseable
         final AgentResponse response = send(AgentAction.DROP_ITEM, Map.of(
             "uuid", uuid.toString()
         ));
-        return Boolean.parseBoolean(getRequiredData(response, "cancelled"));
+        return Boolean.parseBoolean(getRequiredData(response, "dropped"));
     }
 
     void registerEventListener(String eventClassName)

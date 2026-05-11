@@ -166,14 +166,14 @@ class UdsAgentClientTest
     }
 
     @Test
-    void dropItem_shouldParseCancellationState(@TempDir Path tempDirectory)
+    void dropItem_shouldParseDroppedState(@TempDir Path tempDirectory)
         throws Exception
     {
         // setup
         final Path socketPath = tempDirectory.resolve("agent-drop.sock");
         try (AgentSocketServer server = AgentSocketServer.start(
             socketPath,
-            successResponse(Map.of("cancelled", "true"))
+            successResponse(Map.of("dropped", "true"))
         ); UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
         {
             // execute
