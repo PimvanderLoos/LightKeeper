@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -147,6 +148,95 @@ class AgentPlayerActionsTest
         assertThat(response.errorMessage()).contains("block face");
     }
 
+    @Test
+    void handleGetPlayerMessages_shouldDrainAndReturnMessageHistory()
+        throws Exception
+    {
+        // setup
+        final PlayerActionsFixture fixture = createPlayerActionsFixture();
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mockPlayer(uuid);
+        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        when(fixture.nmsAdapter().drainReceivedMessages(uuid)).thenReturn(List.of("first", "second"));
+
+        // execute
+        final AgentResponse response;
+        try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
+        {
+            bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
+            response = fixture.playerActions().handleGetPlayerMessages("request-messages", Map.of(
+                "uuid", uuid.toString()
+            ));
+        }
+
+        // verify
+        assertThat(response.success()).isTrue();
+        assertThat(response.data()).containsEntry("messagesJson", "[\"first\",\"second\"]");
+    }
+
+    @Test
+    void handleGetPlayerChatComponents_shouldDrainAndReturnComponentHistory()
+        throws Exception
+    {
+        // setup
+        final PlayerActionsFixture fixture = createPlayerActionsFixture();
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mockPlayer(uuid);
+        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        when(fixture.nmsAdapter().drainChatComponents(uuid)).thenReturn(List.of("{\"text\":\"hello\"}"));
+
+        // execute
+        final AgentResponse response;
+        try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
+        {
+            bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
+            response = fixture.playerActions().handleGetPlayerChatComponents("request-components", Map.of(
+                "uuid", uuid.toString()
+            ));
+        }
+
+        // verify
+        assertThat(response.success()).isTrue();
+        assertThat(response.data()).containsEntry("componentsJson", "[\"{\\\"text\\\":\\\"hello\\\"}\"]");
+    }
+
+    @Test
+    void handleGetPlayerInventory_shouldSerializeNonAirItems()
+        throws Exception
+    {
+        // setup
+        final PlayerActionsFixture fixture = createPlayerActionsFixture();
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mockPlayer(uuid);
+        final PlayerInventory inventory = player.getInventory();
+        final ItemStack stone = mock();
+        when(stone.getType()).thenReturn(Material.STONE);
+        when(stone.getItemMeta()).thenReturn(null);
+        when(inventory.getContents()).thenReturn(new ItemStack[]{
+            null,
+            new ItemStack(Material.AIR),
+            stone
+        });
+        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+
+        // execute
+        final AgentResponse response;
+        try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
+        {
+            bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
+            response = fixture.playerActions().handleGetPlayerInventory("request-inventory", Map.of(
+                "uuid", uuid.toString()
+            ));
+        }
+
+        // verify
+        assertThat(response.success()).isTrue();
+        assertThat(response.data().get("inventoryJson"))
+            .contains("\"slot\":2")
+            .contains("\"materialKey\":\"minecraft:stone\"")
+            .contains("\"lore\":[]");
+    }
+
     private static AgentPlayerActions createPlayerActions()
     {
         return createPlayerActionsFixture().playerActions();
@@ -167,7 +257,7 @@ class AgentPlayerActionsTest
             objectMapper,
             nmsAdapter
         );
-        return new PlayerActionsFixture(playerActions, playerStore);
+        return new PlayerActionsFixture(playerActions, playerStore, nmsAdapter);
     }
 
     private static Player mockPlayer(UUID uuid)
@@ -187,7 +277,8 @@ class AgentPlayerActionsTest
 
     private record PlayerActionsFixture(
         AgentPlayerActions playerActions,
-        AgentSyntheticPlayerStore playerStore)
+        AgentSyntheticPlayerStore playerStore,
+        IBotPlayerNmsAdapter nmsAdapter)
     {
     }
 }

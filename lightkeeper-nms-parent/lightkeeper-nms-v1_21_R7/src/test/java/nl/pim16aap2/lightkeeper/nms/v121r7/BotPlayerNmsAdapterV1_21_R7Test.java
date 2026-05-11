@@ -283,6 +283,59 @@ class BotPlayerNmsAdapterV1_21_R7Test
     }
 
     @Test
+    void drains_shouldReturnEmptyListsWhenPlayerHasNoChannel()
+        throws Exception
+    {
+        // setup
+        final UUID playerId = UUID.randomUUID();
+        final BotPlayerNmsAdapterV1_21_R7 adapter = allocateAdapter();
+        setField(adapter, "playerChannels", new ConcurrentHashMap<UUID, Object>());
+
+        // execute
+        final List<String> messages = adapter.drainReceivedMessages(playerId);
+        final List<String> components = adapter.drainChatComponents(playerId);
+
+        // verify
+        assertThat(messages).isEmpty();
+        assertThat(components).isEmpty();
+    }
+
+    @Test
+    @SuppressWarnings("NullAway")
+    void drains_shouldRejectNullPlayerId()
+        throws Exception
+    {
+        // setup
+        final BotPlayerNmsAdapterV1_21_R7 adapter = allocateAdapter();
+
+        // execute + verify
+        assertThatThrownBy(() -> adapter.drainReceivedMessages(null))
+            .isInstanceOf(NullPointerException.class)
+            .hasMessageContaining("playerId");
+        assertThatThrownBy(() -> adapter.drainChatComponents(null))
+            .isInstanceOf(NullPointerException.class)
+            .hasMessageContaining("playerId");
+    }
+
+    @Test
+    void drainReceivedMessages_shouldWrapChannelReadFailures()
+        throws Exception
+    {
+        // setup
+        final UUID playerId = UUID.randomUUID();
+        final BotPlayerNmsAdapterV1_21_R7 adapter = allocateAdapter();
+        setField(adapter, "playerChannels", new ConcurrentHashMap<>(Map.of(playerId, new FailingChannel())));
+        setField(adapter, "playerMessageQueues", new ConcurrentHashMap<UUID, Queue<String>>());
+        setField(adapter, "playerChatComponentQueues", new ConcurrentHashMap<UUID, Queue<String>>());
+        setField(adapter, "embeddedChannelReadOutboundMethod", FailingChannel.class.getMethod("readOutbound"));
+
+        // execute + verify
+        assertThatThrownBy(() -> adapter.drainReceivedMessages(playerId))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("Failed to drain outbound packets");
+    }
+
+    @Test
     void drains_shouldKeepMessageAndComponentQueuesIndependent()
         throws Exception
     {
@@ -351,6 +404,35 @@ class BotPlayerNmsAdapterV1_21_R7Test
         assertThat(extracted).isEqualTo("{\"text\":\"hello\"}");
         assertThat(safeComponentAccessor).isTrue();
         assertThat(unsafeComponentAccessor).isFalse();
+    }
+
+    @Test
+    void extractComponentJson_shouldReturnNullWhenComponentSerializationFails()
+        throws Exception
+    {
+        // setup
+        final BotPlayerNmsAdapterV1_21_R7 adapter = allocateAdapter();
+        setField(adapter, "componentJsonCodec", new ThrowingCodec());
+        setField(adapter, "componentJsonOps", new Object());
+        setField(adapter, "componentCodecEncodeStartMethod", ThrowingCodec.class.getMethod(
+            "encodeStart",
+            Object.class,
+            Object.class
+        ));
+        setField(adapter, "dataResultResultMethod", FakeDataResult.class.getMethod("result"));
+
+        // execute
+        final String extracted = (String) invokeInstance(
+            adapter,
+            "extractComponentJson",
+            new Class<?>[]{Object.class, int.class, IdentityHashMap.class},
+            new FakeComponent("hello"),
+            4,
+            new IdentityHashMap<>()
+        );
+
+        // verify
+        assertThat(extracted).isNull();
     }
 
     @Test
@@ -617,6 +699,17 @@ class BotPlayerNmsAdapterV1_21_R7Test
         }
     }
 
+    public static final class FailingChannel
+    {
+        @SuppressWarnings("unused")
+        public @Nullable Object readOutbound()
+        {
+            if (System.nanoTime() >= 0L)
+                throw new IllegalStateException("boom");
+            return null;
+        }
+    }
+
     public record ComponentPacket(FakeComponent component)
     {
         @SuppressWarnings("unused")
@@ -645,6 +738,17 @@ class BotPlayerNmsAdapterV1_21_R7Test
         public FakeDataResult encodeStart(Object ops, Object component)
         {
             return new FakeDataResult(((FakeComponent) component).text());
+        }
+    }
+
+    public static final class ThrowingCodec
+    {
+        @SuppressWarnings("unused")
+        public FakeDataResult encodeStart(Object ops, Object component)
+        {
+            if (System.nanoTime() >= 0L)
+                throw new IllegalStateException("boom");
+            return new FakeDataResult("unreachable");
         }
     }
 

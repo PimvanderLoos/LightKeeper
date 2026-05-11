@@ -121,6 +121,41 @@ class AgentSyntheticPlayerStoreTest
     }
 
     @Test
+    void capturePlayerChatComponents_shouldAppendDrainedComponents()
+    {
+        // setup
+        final AgentSyntheticPlayerStore store = new AgentSyntheticPlayerStore();
+        final IBotPlayerNmsAdapter adapter = mock();
+        final UUID uuid = UUID.randomUUID();
+        when(adapter.drainChatComponents(uuid)).thenReturn(List.of("{\"text\":\"hello\"}"));
+
+        // execute
+        store.capturePlayerChatComponents(adapter, uuid);
+
+        // verify
+        assertThat(store.getPlayerChatComponents(uuid)).containsExactly("{\"text\":\"hello\"}");
+    }
+
+    @Test
+    void capturePlayerChatComponents_shouldKeepHistoryWhenNoComponentsWereDrained()
+    {
+        // setup
+        final AgentSyntheticPlayerStore store = new AgentSyntheticPlayerStore();
+        final IBotPlayerNmsAdapter adapter = mock();
+        final UUID uuid = UUID.randomUUID();
+        when(adapter.drainChatComponents(uuid))
+            .thenReturn(List.of("{\"text\":\"hello\"}"))
+            .thenReturn(List.of());
+        store.capturePlayerChatComponents(adapter, uuid);
+
+        // execute
+        store.capturePlayerChatComponents(adapter, uuid);
+
+        // verify
+        assertThat(store.getPlayerChatComponents(uuid)).containsExactly("{\"text\":\"hello\"}");
+    }
+
+    @Test
     void removeSyntheticPlayer_shouldRemovePlayerAndHistory()
     {
         // setup
