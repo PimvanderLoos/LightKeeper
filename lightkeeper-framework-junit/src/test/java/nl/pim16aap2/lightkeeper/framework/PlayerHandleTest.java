@@ -63,6 +63,52 @@ class PlayerHandleTest
     }
 
     @Test
+    void teleport_shouldDelegateToGatewayAndReturnSelf()
+    {
+        // setup
+        final WorldHandle world = mock(WorldHandle.class);
+        when(world.name()).thenReturn("world_nether");
+
+        // execute
+        final PlayerHandle result = playerHandle.teleport(world, 10.5, 64.0, 20.5);
+
+        // verify
+        assertThat(result).isSameAs(playerHandle);
+        verify(frameworkGateway).teleportPlayer(PLAYER_UUID, "world_nether", 10.5, 64.0, 20.5);
+    }
+
+    @Test
+    void inventory_shouldReturnInventorySnapshotFromGateway()
+    {
+        // setup
+        final InventorySnapshot snapshot = new InventorySnapshot(List.of(
+            new MenuItemSnapshot(0, "minecraft:stone", "Stone", List.of())
+        ));
+        when(frameworkGateway.playerInventory(PLAYER_UUID)).thenReturn(snapshot);
+
+        // execute
+        final InventorySnapshot result = playerHandle.inventory();
+
+        // verify
+        assertThat(result).isSameAs(snapshot);
+        verify(frameworkGateway).playerInventory(PLAYER_UUID);
+    }
+
+    @Test
+    void dropMainHandItem_shouldDelegateToGatewayAndReturnDroppedState()
+    {
+        // setup — gateway returns true when the drop was not cancelled by any plugin
+        when(frameworkGateway.dropItem(PLAYER_UUID)).thenReturn(true);
+
+        // execute
+        final boolean result = playerHandle.dropMainHandItem();
+
+        // verify
+        assertThat(result).isTrue();
+        verify(frameworkGateway).dropItem(PLAYER_UUID);
+    }
+
+    @Test
     void placeBlock_shouldDelegateToGatewayAndReturnSelf()
     {
         // execute
@@ -193,6 +239,21 @@ class PlayerHandleTest
     }
 
     @Test
+    void chatComponents_shouldReturnComponentsFromGateway()
+    {
+        // setup
+        final List<ChatComponentSnapshot> components = List.of(new ChatComponentSnapshot("{\"text\":\"Hello\"}"));
+        when(frameworkGateway.playerChatComponents(PLAYER_UUID)).thenReturn(components);
+
+        // execute
+        final List<ChatComponentSnapshot> result = playerHandle.chatComponents();
+
+        // verify
+        assertThat(result).isSameAs(components);
+        verify(frameworkGateway).playerChatComponents(PLAYER_UUID);
+    }
+
+    @Test
     void receivedMessagesText_shouldJoinMessagesWithLineSeparator()
     {
         // setup
@@ -213,5 +274,55 @@ class PlayerHandleTest
 
         // verify
         verify(frameworkGateway).removePlayer(playerHandle);
+    }
+
+    @Test
+    void leftClickBlock_shouldDelegateWithDefaultBlockFaceWhenOnlyPositionGiven()
+    {
+        // setup
+        final Vector3Di position = new Vector3Di(3, 70, 4);
+
+        // execute
+        final PlayerHandle result = playerHandle.leftClickBlock(position);
+
+        // verify
+        assertThat(result).isSameAs(playerHandle);
+        verify(frameworkGateway).leftClickBlock(PLAYER_UUID, position, "UP");
+    }
+
+    @Test
+    void leftClickBlock_shouldDelegateWithCoordinatesUsingDefaultBlockFace()
+    {
+        // execute
+        final PlayerHandle result = playerHandle.leftClickBlock(5, 64, 6);
+
+        // verify
+        assertThat(result).isSameAs(playerHandle);
+        verify(frameworkGateway).leftClickBlock(eq(PLAYER_UUID), any(Vector3Di.class), eq("UP"));
+    }
+
+    @Test
+    void rightClickBlock_shouldDelegateWithDefaultBlockFaceWhenOnlyPositionGiven()
+    {
+        // setup
+        final Vector3Di position = new Vector3Di(7, 70, 8);
+
+        // execute
+        final PlayerHandle result = playerHandle.rightClickBlock(position);
+
+        // verify
+        assertThat(result).isSameAs(playerHandle);
+        verify(frameworkGateway).rightClickBlock(PLAYER_UUID, position, "UP");
+    }
+
+    @Test
+    void rightClickBlock_shouldDelegateWithCoordinatesUsingDefaultBlockFace()
+    {
+        // execute
+        final PlayerHandle result = playerHandle.rightClickBlock(9, 64, 10);
+
+        // verify
+        assertThat(result).isSameAs(playerHandle);
+        verify(frameworkGateway).rightClickBlock(eq(PLAYER_UUID), any(Vector3Di.class), eq("UP"));
     }
 }

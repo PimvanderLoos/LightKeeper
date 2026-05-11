@@ -28,9 +28,29 @@ public interface IFrameworkGatewayView
     void executePlayerCommand(UUID playerId, String command);
 
     /**
+     * Teleports a synthetic player.
+     */
+    void teleportPlayer(UUID uuid, String worldName, double x, double y, double z);
+
+    /**
      * Places a block as a synthetic player.
      */
     void placePlayerBlock(UUID playerId, String material, int x, int y, int z);
+
+    /**
+     * Loads a chunk.
+     */
+    void loadChunk(String worldName, int x, int z);
+
+    /**
+     * Unloads a chunk.
+     */
+    boolean unloadChunk(String worldName, int x, int z);
+
+    /**
+     * Checks if a chunk is loaded.
+     */
+    boolean isChunkLoaded(String worldName, int x, int z);
 
     /**
      * Fires a left-click block interaction as a synthetic player.
@@ -76,4 +96,39 @@ public interface IFrameworkGatewayView
      * Gets received message history for a player.
      */
     List<String> playerMessages(UUID playerId);
+
+    /**
+     * Gets captured chat components for a player.
+     */
+    List<ChatComponentSnapshot> playerChatComponents(UUID playerId);
+
+    /**
+     * Gets player inventory snapshot.
+     */
+    InventorySnapshot playerInventory(UUID playerId);
+
+    /**
+     * Drops item from player's main hand.
+     */
+    boolean dropItem(UUID playerId);
+
+    /**
+     * Registers an event listener.
+     */
+    void registerEventListener(String eventClassName);
+
+    /**
+     * Gets captured events for a class.
+     */
+    List<CapturedEventSnapshot> getCapturedEvents(String eventClassName);
+
+    /**
+     * Clears captured events for a class.
+     */
+    void clearCapturedEvents(String eventClassName);
+
+    /**
+     * Unregisters an event listener.
+     */
+    void unregisterEventListener(String eventClassName);
 }
