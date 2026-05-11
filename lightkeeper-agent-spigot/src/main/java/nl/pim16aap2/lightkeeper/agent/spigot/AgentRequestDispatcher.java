@@ -67,7 +67,7 @@ final class AgentRequestDispatcher
     /**
      * Handler for dynamic Bukkit event capture.
      */
-    private final AgentEventCapture eventCapture;
+    private final AgentEventActions eventActions;
     /**
      * Plugin logger used for operational diagnostics.
      */
@@ -95,8 +95,8 @@ final class AgentRequestDispatcher
      *     Player action handler.
      * @param menuActions
      *     Menu action handler.
-     * @param eventCapture
-     *     Event capture handler.
+     * @param eventActions
+     *     Event capture action handler.
      * @param logger
      *     Logger for request and error diagnostics.
      * @param authToken
@@ -111,7 +111,7 @@ final class AgentRequestDispatcher
         AgentWorldActions worldActions,
         AgentPlayerActions playerActions,
         AgentMenuActions menuActions,
-        AgentEventCapture eventCapture,
+        AgentEventActions eventActions,
         java.util.logging.Logger logger,
         String authToken,
         int protocolVersion,
@@ -121,7 +121,7 @@ final class AgentRequestDispatcher
         this.worldActions = Objects.requireNonNull(worldActions, "worldActions");
         this.playerActions = Objects.requireNonNull(playerActions, "playerActions");
         this.menuActions = Objects.requireNonNull(menuActions, "menuActions");
-        this.eventCapture = Objects.requireNonNull(eventCapture, "eventCapture");
+        this.eventActions = Objects.requireNonNull(eventActions, "eventActions");
         this.logger = Objects.requireNonNull(logger, "logger");
         this.authToken = Objects.requireNonNull(authToken, "authToken");
         this.protocolVersion = protocolVersion;
@@ -226,10 +226,10 @@ final class AgentRequestDispatcher
                 case IsChunkLoadedCommand c -> worldActions.handleIsChunkLoaded(c);
                 case GetPlayerInventoryCommand c -> playerActions.handleGetPlayerInventory(c);
                 case DropItemCommand c -> playerActions.handleDropItem(c);
-                case RegisterEventListenerCommand c -> handleRegisterEventListener(c);
-                case GetCapturedEventsCommand c -> handleGetCapturedEvents(c);
-                case ClearCapturedEventsCommand c -> handleClearCapturedEvents(c);
-                case UnregisterEventListenerCommand c -> handleUnregisterEventListener(c);
+                case RegisterEventListenerCommand c -> eventActions.handleRegisterEventListener(c);
+                case GetCapturedEventsCommand c -> eventActions.handleGetCapturedEvents(c);
+                case ClearCapturedEventsCommand c -> eventActions.handleClearCapturedEvents(c);
+                case UnregisterEventListenerCommand c -> eventActions.handleUnregisterEventListener(c);
                 case GetPlayerChatComponentsCommand c -> playerActions.handleGetPlayerChatComponents(c);
                 case GetServerPlatformCommand c -> worldActions.handleGetServerPlatform(c);
                 case HandshakeCommand ignored ->
@@ -269,71 +269,6 @@ final class AgentRequestDispatcher
                 handshakeCompleted
             );
         }
-    }
-
-    private AgentResponse handleRegisterEventListener(RegisterEventListenerCommand command)
-        throws Exception
-    {
-        final String eventClassName = command.eventClassName();
-        if (eventClassName == null || eventClassName.isBlank())
-        {
-            return AgentResponses.errorResponse(
-                command.requestId(),
-                AgentErrorCode.INVALID_ARGUMENT,
-                "eventClassName may not be blank."
-            );
-        }
-        try
-        {
-            eventCapture.registerListener(eventClassName);
-            return AgentResponses.successResponse(command.requestId(), Map.of());
-        }
-        catch (ClassNotFoundException exception)
-        {
-            return AgentResponses.errorResponse(
-                command.requestId(),
-                AgentErrorCode.INVALID_ARGUMENT,
-                "Event class not found: " + eventClassName
-            );
-        }
-        catch (IllegalArgumentException exception)
-        {
-            return AgentResponses.errorResponse(
-                command.requestId(),
-                AgentErrorCode.INVALID_ARGUMENT,
-                exception.getMessage() == null ? "Invalid event class." : exception.getMessage()
-            );
-        }
-    }
-
-    private AgentResponse handleGetCapturedEvents(GetCapturedEventsCommand command)
-        throws Exception
-    {
-        final String eventClassName = command.eventClassName();
-        if (eventClassName == null || eventClassName.isBlank())
-        {
-            return AgentResponses.errorResponse(
-                command.requestId(),
-                AgentErrorCode.INVALID_ARGUMENT,
-                "eventClassName may not be blank."
-            );
-        }
-        final java.util.List<java.util.Map<String, String>> events = eventCapture.getCapturedEvents(eventClassName);
-        final String eventsJson = objectMapper.writeValueAsString(events);
-        return AgentResponses.successResponse(command.requestId(), Map.of("eventsJson", eventsJson));
-    }
-
-    private AgentResponse handleClearCapturedEvents(ClearCapturedEventsCommand command)
-    {
-        eventCapture.clearCapturedEvents(command.eventClassName());
-        return AgentResponses.successResponse(command.requestId(), Map.of());
-    }
-
-    private AgentResponse handleUnregisterEventListener(UnregisterEventListenerCommand command)
-        throws Exception
-    {
-        eventCapture.unregisterListener(command.eventClassName());
-        return AgentResponses.successResponse(command.requestId(), Map.of());
     }
 
     /**
