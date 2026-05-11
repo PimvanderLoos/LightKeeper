@@ -68,27 +68,6 @@ final class AgentRequestDispatcher
      * Handler for dynamic Bukkit event capture.
      */
     private final AgentEventActions eventActions;
-    /**
-     * Immutable configuration block for the dispatcher.
-     *
-     * @param authToken
-     *     Expected handshake token.
-     * @param protocolVersion
-     *     Expected runtime protocol version.
-     * @param expectedAgentSha256
-     *     Optional expected agent artifact SHA-256 hash; blank disables the check.
-     * @param logger
-     *     Logger for request and error diagnostics.
-     */
-    record Config(String authToken, int protocolVersion, String expectedAgentSha256, java.util.logging.Logger logger)
-    {
-        Config
-        {
-            Objects.requireNonNull(authToken, "authToken");
-            Objects.requireNonNull(expectedAgentSha256, "expectedAgentSha256");
-            Objects.requireNonNull(logger, "logger");
-        }
-    }
 
     /**
      * Plugin logger used for operational diagnostics.
@@ -340,5 +319,27 @@ final class AgentRequestDispatcher
      */
     record RequestDispatchResult(AgentResponse response, boolean handshakeCompleted)
     {
+    }
+
+    /**
+     * Immutable configuration block for the dispatcher.
+     *
+     * @param authToken
+     *     Expected handshake token.
+     * @param protocolVersion
+     *     Expected runtime protocol version.
+     * @param expectedAgentSha256
+     *     Optional expected agent artifact SHA-256 hash; blank disables the check.
+     * @param logger
+     *     Logger for request and error diagnostics.
+     */
+    record Config(String authToken, int protocolVersion, String expectedAgentSha256, java.util.logging.Logger logger)
+    {
+        Config
+        {
+            Objects.requireNonNull(authToken, "authToken");
+            Objects.requireNonNull(expectedAgentSha256, "expectedAgentSha256");
+            Objects.requireNonNull(logger, "logger");
+        }
     }
 }
