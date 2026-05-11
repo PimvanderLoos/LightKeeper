@@ -77,6 +77,16 @@ final class UdsAgentClient implements AutoCloseable
 {
     private static final System.Logger LOG = System.getLogger(UdsAgentClient.class.getName());
 
+    // Reusable TypeReference constants. Jackson captures the generic type at runtime via
+    // getGenericSuperclass(), which is preserved even when using the diamond operator on these
+    // explicit-target-type field declarations (Java 9+ behaviour).
+    private static final TypeReference<MenuItemSnapshot[]> TYPE_MENU_ITEM_ARRAY =
+        new TypeReference<>() {};
+    private static final TypeReference<String[]> TYPE_STRING_ARRAY =
+        new TypeReference<>() {};
+    private static final TypeReference<List<Map<String, String>>> TYPE_EVENT_DATA_LIST =
+        new TypeReference<>() {};
+
     /**
      * Maximum time to wait for a single agent response. Matches the agent-side WAIT_TICKS_TIMEOUT_MILLIS
      * so WAIT_TICKS is the longest action that can legitimately take close to this limit.
@@ -240,8 +250,7 @@ final class UdsAgentClient implements AutoCloseable
             return new MenuSnapshot(false, "", List.of());
 
         final String title = getRequiredData(response, "title");
-        final MenuItemSnapshot[] items =
-            parseJsonField(response, "itemsJson", new TypeReference<MenuItemSnapshot[]>() {});
+        final MenuItemSnapshot[] items = parseJsonField(response, "itemsJson", TYPE_MENU_ITEM_ARRAY);
         return new MenuSnapshot(true, title, List.of(items));
     }
 
@@ -263,13 +272,13 @@ final class UdsAgentClient implements AutoCloseable
     List<String> playerMessages(UUID uuid)
     {
         final AgentResponse response = send(new GetPlayerMessagesCommand(nextRequestId(), uuid));
-        return List.of(parseJsonField(response, "messagesJson", new TypeReference<String[]>() {}));
+        return List.of(parseJsonField(response, "messagesJson", TYPE_STRING_ARRAY));
     }
 
     List<ChatComponentSnapshot> playerChatComponents(UUID uuid)
     {
         final AgentResponse response = send(new GetPlayerChatComponentsCommand(nextRequestId(), uuid));
-        return java.util.Arrays.stream(parseJsonField(response, "componentsJson", new TypeReference<String[]>() {}))
+        return java.util.Arrays.stream(parseJsonField(response, "componentsJson", TYPE_STRING_ARRAY))
             .map(ChatComponentSnapshot::new)
             .toList();
     }
@@ -322,7 +331,7 @@ final class UdsAgentClient implements AutoCloseable
     List<Map<String, String>> getCapturedEvents(String eventClassName)
     {
         final AgentResponse response = send(new GetCapturedEventsCommand(nextRequestId(), eventClassName));
-        return parseJsonField(response, "eventsJson", new TypeReference<List<Map<String, String>>>() {});
+        return parseJsonField(response, "eventsJson", TYPE_EVENT_DATA_LIST);
     }
 
     void clearCapturedEvents(String eventClassName)
