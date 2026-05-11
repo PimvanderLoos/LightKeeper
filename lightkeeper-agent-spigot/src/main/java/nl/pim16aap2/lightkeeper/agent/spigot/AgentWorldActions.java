@@ -424,7 +424,54 @@ final class AgentWorldActions
      */
     AgentResponse handleGetServerPlatform(String requestId)
     {
-        final String platform = Bukkit.getName();
+        final String platform = detectServerPlatform();
         return AgentResponses.successResponse(requestId, Map.of("platform", platform));
+    }
+
+    private static String detectServerPlatform()
+    {
+        final ClassLoader serverClassLoader = Bukkit.getServer().getClass().getClassLoader();
+        return detectServerPlatform(
+            Bukkit.getName(),
+            Bukkit.getVersion(),
+            Bukkit.getServer().getClass().getName(),
+            isClassPresent("io.papermc.paper.ServerBuildInfo", serverClassLoader)
+        );
+    }
+
+    static String detectServerPlatform(
+        String bukkitName,
+        String bukkitVersion,
+        String serverClassName,
+        boolean paperClassPresent)
+    {
+        if (paperClassPresent || containsIgnoreCase(bukkitName, "paper") || containsIgnoreCase(bukkitVersion, "paper"))
+            return "PAPER";
+        if (containsIgnoreCase(bukkitName, "spigot") ||
+            containsIgnoreCase(bukkitName, "craftbukkit") ||
+            containsIgnoreCase(bukkitVersion, "spigot") ||
+            containsIgnoreCase(serverClassName, "craftbukkit"))
+        {
+            return "SPIGOT";
+        }
+        return "UNKNOWN";
+    }
+
+    private static boolean isClassPresent(String className, ClassLoader classLoader)
+    {
+        try
+        {
+            Class.forName(className, false, classLoader);
+            return true;
+        }
+        catch (ClassNotFoundException exception)
+        {
+            return false;
+        }
+    }
+
+    private static boolean containsIgnoreCase(String value, String fragment)
+    {
+        return value.toLowerCase(java.util.Locale.ROOT).contains(fragment.toLowerCase(java.util.Locale.ROOT));
     }
 }

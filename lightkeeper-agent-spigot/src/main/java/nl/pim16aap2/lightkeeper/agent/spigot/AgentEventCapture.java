@@ -5,13 +5,16 @@ import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -35,7 +38,7 @@ final class AgentEventCapture
         if (activeListeners.containsKey(eventClassName))
             return;
 
-        final Class<?> resolvedClass = Class.forName(eventClassName);
+        final Class<?> resolvedClass = resolveEventClass(eventClassName);
         if (!Event.class.isAssignableFrom(resolvedClass))
             throw new IllegalArgumentException("Class '%s' is not a Bukkit Event.".formatted(eventClassName));
 
@@ -54,6 +57,52 @@ final class AgentEventCapture
         );
 
         activeListeners.put(eventClassName, listener);
+    }
+
+    private Class<?> resolveEventClass(String eventClassName)
+        throws ClassNotFoundException
+    {
+        final Set<ClassLoader> classLoaders = new LinkedHashSet<>();
+        classLoaders.add(AgentEventCapture.class.getClassLoader());
+        classLoaders.add(plugin.getClass().getClassLoader());
+        final ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+        if (contextClassLoader != null)
+            classLoaders.add(contextClassLoader);
+
+        ClassNotFoundException failure = null;
+        for (final ClassLoader classLoader : classLoaders)
+        {
+            try
+            {
+                return Class.forName(eventClassName, false, classLoader);
+            }
+            catch (ClassNotFoundException exception)
+            {
+                if (failure == null)
+                    failure = exception;
+                else
+                    failure.addSuppressed(exception);
+            }
+        }
+
+        for (final Plugin registeredPlugin : Bukkit.getPluginManager().getPlugins())
+        {
+            try
+            {
+                return Class.forName(eventClassName, false, registeredPlugin.getClass().getClassLoader());
+            }
+            catch (ClassNotFoundException exception)
+            {
+                if (failure == null)
+                    failure = exception;
+                else
+                    failure.addSuppressed(exception);
+            }
+        }
+
+        if (failure != null)
+            throw failure;
+        throw new ClassNotFoundException(eventClassName);
     }
 
     void unregisterListener(String eventClassName)

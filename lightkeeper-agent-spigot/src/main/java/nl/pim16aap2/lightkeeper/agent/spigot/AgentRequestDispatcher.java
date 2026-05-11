@@ -208,6 +208,17 @@ final class AgentRequestDispatcher
                 case HANDSHAKE -> throw new IllegalStateException("Unreachable HANDSHAKE dispatch branch.");
             }, true);
         }
+        catch (IllegalArgumentException exception)
+        {
+            return new RequestDispatchResult(
+                AgentResponses.errorResponse(
+                    requestId,
+                    AgentErrorCode.INVALID_ARGUMENT,
+                    Objects.requireNonNullElse(exception.getMessage(), exception.getClass().getName())
+                ),
+                handshakeCompleted
+            );
+        }
         catch (Exception exception)
         {
             logger.log(

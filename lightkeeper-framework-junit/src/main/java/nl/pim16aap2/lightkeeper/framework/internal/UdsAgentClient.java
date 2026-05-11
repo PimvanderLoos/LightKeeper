@@ -80,7 +80,7 @@ final class UdsAgentClient implements AutoCloseable
         final String platformName = getRequiredData(response, "platform").toLowerCase(java.util.Locale.ROOT);
         if (platformName.contains("paper"))
             return Platform.PAPER;
-        if (platformName.contains("spigot"))
+        if (platformName.contains("spigot") || platformName.contains("craftbukkit"))
             return Platform.SPIGOT;
         return Platform.UNKNOWN;
     }
