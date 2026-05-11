@@ -29,7 +29,7 @@ class BotPlayerNmsAdapterV1_21_R7Test
         throws Exception
     {
         // execute
-        final Class<?> resolvedClass = (Class<?>) invokeStatic(
+        final Class<?> resolvedClass = (Class<?>) invokeStaticOnUtils(
             "resolveClass",
             new Class<?>[]{String.class, ClassLoader.class},
             "java.lang.String",
@@ -45,7 +45,7 @@ class BotPlayerNmsAdapterV1_21_R7Test
         throws Exception
     {
         // execute
-        final Class<?> resolvedClass = (Class<?>) invokeStatic(
+        final Class<?> resolvedClass = (Class<?>) invokeStaticOnUtils(
             "resolveFirstClass",
             new Class<?>[]{ClassLoader.class, String[].class},
             getClass().getClassLoader(),
@@ -60,7 +60,7 @@ class BotPlayerNmsAdapterV1_21_R7Test
     void resolveFirstClass_shouldThrowExceptionWhenNoCandidateExists()
     {
         // execute + verify
-        assertThatThrownBy(() -> invokeStatic(
+        assertThatThrownBy(() -> invokeStaticOnUtils(
             "resolveFirstClass",
             new Class<?>[]{ClassLoader.class, String[].class},
             getClass().getClassLoader(),
@@ -133,26 +133,26 @@ class BotPlayerNmsAdapterV1_21_R7Test
         throws Exception
     {
         // execute
-        final Method namedNoArg = (Method) invokeStatic(
+        final Method namedNoArg = (Method) invokeStaticOnUtils(
             "findNamedNoArgMethod",
             new Class<?>[]{Class.class, String.class},
             MethodFixture.class,
             "getValue"
         );
-        final Method byReturnType = (Method) invokeStatic(
+        final Method byReturnType = (Method) invokeStaticOnUtils(
             "findNoArgMethodByReturnType",
             new Class<?>[]{Class.class, Class.class},
             MethodFixture.class,
             CharSequence.class
         );
-        final Method namedMethod = (Method) invokeStatic(
+        final Method namedMethod = (Method) invokeStaticOnUtils(
             "findNamedMethod",
             new Class<?>[]{Class.class, String.class, Class[].class},
             MethodFixture.class,
             "setValue",
             new Class<?>[]{String.class}
         );
-        final Method compatibleMethod = (Method) invokeStatic(
+        final Method compatibleMethod = (Method) invokeStaticOnUtils(
             "findCompatibleMethod",
             new Class<?>[]{Class.class, Class[].class},
             MethodFixture.class,
@@ -171,20 +171,20 @@ class BotPlayerNmsAdapterV1_21_R7Test
         throws Exception
     {
         // execute
-        final Field byType = (Field) invokeStatic(
+        final Field byType = (Field) invokeStaticOnUtils(
             "findFieldByType",
             new Class<?>[]{Class.class, Class.class},
             FieldFixture.class,
             CharSequence.class
         );
-        final Field byNameOrType = (Field) invokeStatic(
+        final Field byNameOrType = (Field) invokeStaticOnUtils(
             "resolveFieldByNameOrType",
             new Class<?>[]{Class.class, String.class, Class.class},
             FieldFixture.class,
             "missing",
             CharSequence.class
         );
-        final Field byAcceptedType = (Field) invokeStatic(
+        final Field byAcceptedType = (Field) invokeStaticOnUtils(
             "resolveFieldByNameOrAcceptedType",
             new Class<?>[]{Class.class, String.class, Class.class},
             FieldFixture.class,
@@ -215,7 +215,7 @@ class BotPlayerNmsAdapterV1_21_R7Test
             4,
             new IdentityHashMap<>()
         );
-        final String stringFromMissingMethod = (String) invokeStatic(
+        final String stringFromMissingMethod = (String) invokeStaticOnUtils(
             "invokeStringMethod",
             new Class<?>[]{Object.class, String.class},
             new Object(),
@@ -244,7 +244,7 @@ class BotPlayerNmsAdapterV1_21_R7Test
     void helperMethods_shouldThrowExceptionWhenLookupCannotResolveMember()
     {
         // execute + verify
-        assertThatThrownBy(() -> invokeStatic(
+        assertThatThrownBy(() -> invokeStaticOnUtils(
             "findCompatibleMethod",
             new Class<?>[]{Class.class, Class[].class},
             NoCompatibleMethodFixture.class,
@@ -252,7 +252,7 @@ class BotPlayerNmsAdapterV1_21_R7Test
         ))
             .isInstanceOf(NoSuchMethodException.class);
 
-        assertThatThrownBy(() -> invokeStatic(
+        assertThatThrownBy(() -> invokeStaticOnUtils(
             "resolveFieldByNameOrType",
             new Class<?>[]{Class.class, String.class, Class.class},
             NoMatchingFieldFixture.class,
@@ -561,7 +561,23 @@ class BotPlayerNmsAdapterV1_21_R7Test
     private static Object invokeStatic(String methodName, Class<?>[] parameterTypes, Object... arguments)
         throws Exception
     {
-        final Method method = BotPlayerNmsAdapterV1_21_R7.class.getDeclaredMethod(methodName, parameterTypes);
+        return invokeStaticOn(BotPlayerNmsAdapterV1_21_R7.class, methodName, parameterTypes, arguments);
+    }
+
+    private static Object invokeStaticOnUtils(String methodName, Class<?>[] parameterTypes, Object... arguments)
+        throws Exception
+    {
+        return invokeStaticOn(NmsReflectionUtils.class, methodName, parameterTypes, arguments);
+    }
+
+    private static Object invokeStaticOn(
+        Class<?> targetClass,
+        String methodName,
+        Class<?>[] parameterTypes,
+        Object... arguments)
+        throws Exception
+    {
+        final Method method = targetClass.getDeclaredMethod(methodName, parameterTypes);
         method.setAccessible(true);
         try
         {
