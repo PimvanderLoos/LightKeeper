@@ -449,7 +449,7 @@ final class UdsAgentClient implements AutoCloseable
         }
     }
 
-    void rehandshake(Duration timeout, String token, int protocolVersion, String agentSha256)
+    synchronized void rehandshake(Duration timeout, String token, int protocolVersion, String agentSha256)
     {
         close();
         connect(timeout);
