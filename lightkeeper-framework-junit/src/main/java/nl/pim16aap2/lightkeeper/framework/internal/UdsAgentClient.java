@@ -51,6 +51,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.StandardProtocolFamily;
 import java.net.UnixDomainSocketAddress;
+import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.Channels;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
@@ -61,6 +62,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -70,8 +75,26 @@ final class UdsAgentClient implements AutoCloseable
 {
     private static final System.Logger LOG = System.getLogger(UdsAgentClient.class.getName());
 
+    /**
+     * Maximum time to wait for a single agent response. Matches the agent-side WAIT_TICKS_TIMEOUT_MILLIS
+     * so WAIT_TICKS is the longest action that can legitimately take close to this limit.
+     *
+     * <p>Unix Domain Sockets do not support SO_TIMEOUT, so the timeout is enforced by a watchdog that
+     * closes the channel directly; this causes {@link AsynchronousCloseException} on the blocked read.
+     */
+    private static final int SEND_TIMEOUT_MS = 120_000;
+
     private final ObjectMapper objectMapper = new ObjectMapper()
         .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+    /**
+     * Single-thread watchdog executor that closes the socket channel when a read takes longer than
+     * {@link #SEND_TIMEOUT_MS}. Closing the channel directly (not via {@link #close()}) avoids deadlock
+     * with the {@code synchronized} monitor held by {@link #send}.
+     */
+    private final ScheduledExecutorService readTimeoutWatchdog = Executors.newSingleThreadScheduledExecutor(
+        Thread.ofPlatform().name("lk-read-timeout-watchdog").daemon(true).factory()
+    );
 
     private final Path socketPath;
     private final AtomicLong requestCounter = new AtomicLong(0L);
@@ -370,6 +393,25 @@ final class UdsAgentClient implements AutoCloseable
     {
         final BufferedWriter out = Objects.requireNonNull(writer, "Client is not connected.");
         final BufferedReader in = Objects.requireNonNull(reader, "Client is not connected.");
+
+        // Capture the channel reference before the read; the watchdog closes it directly to avoid
+        // deadlocking on this synchronized method's monitor.
+        final SocketChannel channelSnapshot = this.socketChannel;
+        final ScheduledFuture<?> watchdog = readTimeoutWatchdog.schedule(() ->
+        {
+            if (channelSnapshot != null)
+            {
+                try
+                {
+                    channelSnapshot.close();
+                }
+                catch (IOException ignored)
+                {
+                    // Best-effort: the channel may already be closed.
+                }
+            }
+        }, SEND_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+
         try
         {
             out.write(objectMapper.writeValueAsString(command));
@@ -408,12 +450,24 @@ final class UdsAgentClient implements AutoCloseable
 
             return response;
         }
+        catch (AsynchronousCloseException exception)
+        {
+            throw new IllegalStateException(
+                "Agent did not respond within %d ms for action '%s' via socket '%s'."
+                    .formatted(SEND_TIMEOUT_MS, command.getClass().getSimpleName(), socketPath),
+                exception
+            );
+        }
         catch (IOException exception)
         {
             throw new IllegalStateException(
                 "Failed to communicate with agent via socket '%s'.".formatted(socketPath),
                 exception
             );
+        }
+        finally
+        {
+            watchdog.cancel(false);
         }
     }
 
