@@ -275,4 +275,54 @@ class PlayerHandleTest
         // verify
         verify(frameworkGateway).removePlayer(playerHandle);
     }
+
+    @Test
+    void leftClickBlock_shouldDelegateWithDefaultBlockFaceWhenOnlyPositionGiven()
+    {
+        // setup
+        final Vector3Di position = new Vector3Di(3, 70, 4);
+
+        // execute
+        final PlayerHandle result = playerHandle.leftClickBlock(position);
+
+        // verify
+        assertThat(result).isSameAs(playerHandle);
+        verify(frameworkGateway).leftClickBlock(PLAYER_UUID, position, "UP");
+    }
+
+    @Test
+    void leftClickBlock_shouldDelegateWithCoordinatesUsingDefaultBlockFace()
+    {
+        // execute
+        final PlayerHandle result = playerHandle.leftClickBlock(5, 64, 6);
+
+        // verify
+        assertThat(result).isSameAs(playerHandle);
+        verify(frameworkGateway).leftClickBlock(eq(PLAYER_UUID), any(Vector3Di.class), eq("UP"));
+    }
+
+    @Test
+    void rightClickBlock_shouldDelegateWithDefaultBlockFaceWhenOnlyPositionGiven()
+    {
+        // setup
+        final Vector3Di position = new Vector3Di(7, 70, 8);
+
+        // execute
+        final PlayerHandle result = playerHandle.rightClickBlock(position);
+
+        // verify
+        assertThat(result).isSameAs(playerHandle);
+        verify(frameworkGateway).rightClickBlock(PLAYER_UUID, position, "UP");
+    }
+
+    @Test
+    void rightClickBlock_shouldDelegateWithCoordinatesUsingDefaultBlockFace()
+    {
+        // execute
+        final PlayerHandle result = playerHandle.rightClickBlock(9, 64, 10);
+
+        // verify
+        assertThat(result).isSameAs(playerHandle);
+        verify(frameworkGateway).rightClickBlock(eq(PLAYER_UUID), any(Vector3Di.class), eq("UP"));
+    }
 }

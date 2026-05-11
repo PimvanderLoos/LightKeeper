@@ -87,6 +87,54 @@ class AgentRequestDispatcherTest
     }
 
     @Test
+    void handleRequestLine_shouldReturnInvalidArgumentWhenActionThrowsIllegalArgumentException()
+        throws Exception
+    {
+        // setup
+        final DispatcherFixture fixture = createDispatcherFixture();
+        when(fixture.playerActions().handleGetPlayerChatComponents(eq("request-invalid"), anyMap()))
+            .thenThrow(new IllegalArgumentException("Invalid UUID string: bad-uuid"));
+        final String requestLine = createRequestLine(
+            "request-invalid",
+            AgentAction.GET_PLAYER_CHAT_COMPONENTS,
+            Map.of("uuid", "bad-uuid")
+        );
+
+        // execute
+        final AgentRequestDispatcher.RequestDispatchResult result =
+            fixture.dispatcher().handleRequestLine(requestLine, true);
+
+        // verify
+        assertThat(result.response().success()).isFalse();
+        assertThat(result.response().errorCode()).isEqualTo("INVALID_ARGUMENT");
+        assertThat(result.response().errorMessage()).contains("bad-uuid");
+        assertThat(result.handshakeCompleted()).isTrue();
+    }
+
+    @Test
+    void handleRequestLine_shouldReturnInvalidArgumentWhenActionThrowsValidationException()
+        throws Exception
+    {
+        // setup
+        final AgentRequestDispatcher dispatcher = createDispatcher("token", 1, "");
+        final String requestLine = createRequestLine(
+            "request-invalid-uuid",
+            AgentAction.GET_PLAYER_MESSAGES,
+            Map.of("uuid", "not-a-uuid")
+        );
+
+        // execute
+        final AgentRequestDispatcher.RequestDispatchResult result =
+            dispatcher.handleRequestLine(requestLine, true);
+
+        // verify
+        assertThat(result.response().success()).isFalse();
+        assertThat(result.response().errorCode()).isEqualTo("INVALID_ARGUMENT");
+        assertThat(result.response().errorMessage()).contains("Invalid UUID");
+        assertThat(result.handshakeCompleted()).isTrue();
+    }
+
+    @Test
     void handleRequestLine_shouldDispatchSupportedActionsToTheirHandlers()
         throws Exception
     {
@@ -422,6 +470,90 @@ class AgentRequestDispatcherTest
         assertThat(result.response().requestId()).isEqualTo("request-4");
         assertThat(result.response().success()).isFalse();
         assertThat(result.response().errorCode()).isEqualTo("AGENT_SHA_MISMATCH");
+    }
+
+    @Test
+    void handleRequestLine_shouldReturnInvalidArgumentWhenRegisterEventListenerClassIsBlank()
+        throws Exception
+    {
+        // setup
+        final DispatcherFixture fixture = createDispatcherFixture();
+        final String requestLine = createRequestLine(
+            "request-blank-class",
+            AgentAction.REGISTER_EVENT_LISTENER,
+            Map.of("eventClassName", "")
+        );
+
+        // execute
+        final AgentRequestDispatcher.RequestDispatchResult result =
+            fixture.dispatcher().handleRequestLine(requestLine, true);
+
+        // verify
+        assertThat(result.response().success()).isFalse();
+        assertThat(result.response().errorCode()).isEqualTo("INVALID_ARGUMENT");
+        assertThat(result.response().errorMessage()).contains("eventClassName");
+    }
+
+    @Test
+    void handleRequestLine_shouldReturnInvalidArgumentWhenGetCapturedEventsClassIsBlank()
+        throws Exception
+    {
+        // setup
+        final DispatcherFixture fixture = createDispatcherFixture();
+        final String requestLine = createRequestLine(
+            "request-blank-events",
+            AgentAction.GET_CAPTURED_EVENTS,
+            Map.of("eventClassName", "")
+        );
+
+        // execute
+        final AgentRequestDispatcher.RequestDispatchResult result =
+            fixture.dispatcher().handleRequestLine(requestLine, true);
+
+        // verify
+        assertThat(result.response().success()).isFalse();
+        assertThat(result.response().errorCode()).isEqualTo("INVALID_ARGUMENT");
+        assertThat(result.response().errorMessage()).contains("eventClassName");
+    }
+
+    @Test
+    void handleRequestLine_shouldSucceedClearCapturedEventsWithBlankClassName()
+        throws Exception
+    {
+        // setup
+        final DispatcherFixture fixture = createDispatcherFixture();
+        final String requestLine = createRequestLine(
+            "request-clear-blank",
+            AgentAction.CLEAR_CAPTURED_EVENTS,
+            Map.of("eventClassName", "")
+        );
+
+        // execute
+        final AgentRequestDispatcher.RequestDispatchResult result =
+            fixture.dispatcher().handleRequestLine(requestLine, true);
+
+        // verify - blank is silently ignored, operation succeeds
+        assertThat(result.response().success()).isTrue();
+    }
+
+    @Test
+    void handleRequestLine_shouldSucceedUnregisterEventListenerWithBlankClassName()
+        throws Exception
+    {
+        // setup
+        final DispatcherFixture fixture = createDispatcherFixture();
+        final String requestLine = createRequestLine(
+            "request-unregister-blank",
+            AgentAction.UNREGISTER_EVENT_LISTENER,
+            Map.of("eventClassName", "")
+        );
+
+        // execute
+        final AgentRequestDispatcher.RequestDispatchResult result =
+            fixture.dispatcher().handleRequestLine(requestLine, true);
+
+        // verify - blank is silently ignored, operation succeeds
+        assertThat(result.response().success()).isTrue();
     }
 
     private static AgentRequestDispatcher createDispatcher(String authToken, int protocolVersion, String expectedSha)

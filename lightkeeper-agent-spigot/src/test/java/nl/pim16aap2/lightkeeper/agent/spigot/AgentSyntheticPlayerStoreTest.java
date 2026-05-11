@@ -173,4 +173,49 @@ class AgentSyntheticPlayerStoreTest
         assertThatThrownBy(() -> store.getRequiredPlayer(uuid))
             .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void capturePlayerMessages_shouldNotAppendWhenDrainReturnsEmpty()
+    {
+        // setup
+        final AgentSyntheticPlayerStore store = new AgentSyntheticPlayerStore();
+        final IBotPlayerNmsAdapter adapter = mock();
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mock();
+        when(player.getUniqueId()).thenReturn(uuid);
+        when(adapter.drainReceivedMessages(uuid)).thenReturn(List.of());
+        store.sendTrackedMessage(player, "existing");
+
+        // execute
+        store.capturePlayerMessages(adapter, uuid);
+
+        // verify - history unchanged when drain is empty
+        assertThat(store.getPlayerMessages(uuid)).containsExactly("existing");
+    }
+
+    @Test
+    void removePermissionAttachment_shouldBeNoOpWhenNoAttachmentWasSet()
+    {
+        // setup
+        final AgentSyntheticPlayerStore store = new AgentSyntheticPlayerStore();
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mock();
+
+        // execute + verify - should not throw
+        store.removePermissionAttachment(uuid, player);
+        verifyNoInteractions(player);
+    }
+
+    @Test
+    void getPlayerChatComponents_shouldReturnEmptyListForUnknownPlayer()
+    {
+        // setup
+        final AgentSyntheticPlayerStore store = new AgentSyntheticPlayerStore();
+
+        // execute
+        final List<String> components = store.getPlayerChatComponents(UUID.randomUUID());
+
+        // verify
+        assertThat(components).isEmpty();
+    }
 }

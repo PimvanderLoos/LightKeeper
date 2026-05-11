@@ -106,6 +106,26 @@ class UdsAgentClientTest
     }
 
     @Test
+    void serverPlatform_shouldMapCraftBukkitResponseToSpigot(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("agent-platform-craftbukkit.sock");
+        try (AgentSocketServer server = AgentSocketServer.start(
+            socketPath,
+            successResponse(Map.of("platform", "CraftBukkit"))
+        ); UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            final nl.pim16aap2.lightkeeper.framework.Platform result = client.serverPlatform();
+
+            // verify
+            assertThat(result).isEqualTo(nl.pim16aap2.lightkeeper.framework.Platform.SPIGOT);
+            assertRequest(server, AgentAction.GET_SERVER_PLATFORM, Map.of());
+        }
+    }
+
+    @Test
     void loadChunk_shouldSendChunkCoordinates(@TempDir Path tempDirectory)
         throws Exception
     {
@@ -210,6 +230,223 @@ class UdsAgentClientTest
                 AgentAction.GET_CAPTURED_EVENTS,
                 Map.of("eventClassName", "org.bukkit.event.Event")
             );
+        }
+    }
+
+    @Test
+    void handshake_shouldSendHandshakeRequest(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("agent-handshake.sock");
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, successResponse(Map.of("protocolVersion", "1", "bukkitVersion", "1.21.11")));
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            client.handshake("my-token", 1, "sha256");
+
+            // verify
+            assertRequest(server, AgentAction.HANDSHAKE, Map.of("token", "my-token", "protocolVersion", "1", "agentSha256", "sha256"));
+        }
+    }
+
+    @Test
+    void mainWorld_shouldSendRequestAndReturnWorldName(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("agent-mainworld.sock");
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, successResponse(Map.of("worldName", "world")));
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            final String result = client.mainWorld();
+
+            // verify
+            assertThat(result).isEqualTo("world");
+            assertRequest(server, AgentAction.MAIN_WORLD, Map.of());
+        }
+    }
+
+    @Test
+    void unloadChunk_shouldSendCoordinatesAndReturnResult(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("agent-unload-chunk.sock");
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, successResponse(Map.of("success", "false")));
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            final boolean result = client.unloadChunk("world", 5, -3);
+
+            // verify
+            assertThat(result).isFalse();
+            assertRequest(server, AgentAction.UNLOAD_CHUNK, Map.of("worldName", "world", "x", "5", "z", "-3"));
+        }
+    }
+
+    @Test
+    void isChunkLoaded_shouldSendCoordinatesAndReturnResult(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("agent-is-loaded.sock");
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, successResponse(Map.of("loaded", "true")));
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            final boolean result = client.isChunkLoaded("world", 1, 2);
+
+            // verify
+            assertThat(result).isTrue();
+            assertRequest(server, AgentAction.IS_CHUNK_LOADED, Map.of("worldName", "world", "x", "1", "z", "2"));
+        }
+    }
+
+    @Test
+    void executeCommand_shouldSendCommandAndReturnResult(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("agent-execute-cmd.sock");
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, successResponse(Map.of("success", "true")));
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            final boolean result = client.executeCommand(
+                nl.pim16aap2.lightkeeper.framework.CommandSource.CONSOLE, "time set day");
+
+            // verify
+            assertThat(result).isTrue();
+            assertRequest(server, AgentAction.EXECUTE_COMMAND, Map.of("source", "CONSOLE", "command", "time set day"));
+        }
+    }
+
+    @Test
+    void registerEventListener_shouldSendEventClassName(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("agent-register-event.sock");
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, successResponse(Map.of()));
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            client.registerEventListener("org.bukkit.event.player.PlayerJoinEvent");
+
+            // verify
+            assertRequest(server, AgentAction.REGISTER_EVENT_LISTENER,
+                Map.of("eventClassName", "org.bukkit.event.player.PlayerJoinEvent"));
+        }
+    }
+
+    @Test
+    void clearCapturedEvents_shouldSendEventClassName(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("agent-clear-events.sock");
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, successResponse(Map.of()));
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            client.clearCapturedEvents("org.bukkit.event.player.PlayerJoinEvent");
+
+            // verify
+            assertRequest(server, AgentAction.CLEAR_CAPTURED_EVENTS,
+                Map.of("eventClassName", "org.bukkit.event.player.PlayerJoinEvent"));
+        }
+    }
+
+    @Test
+    void unregisterEventListener_shouldSendEventClassName(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("agent-unregister-event.sock");
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, successResponse(Map.of()));
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            client.unregisterEventListener("org.bukkit.event.player.PlayerJoinEvent");
+
+            // verify
+            assertRequest(server, AgentAction.UNREGISTER_EVENT_LISTENER,
+                Map.of("eventClassName", "org.bukkit.event.player.PlayerJoinEvent"));
+        }
+    }
+
+    @Test
+    void waitTicks_shouldSendTickCount(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("agent-wait-ticks.sock");
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, successResponse(Map.of("startTick", "0", "endTick", "5")));
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            client.waitTicks(5);
+
+            // verify
+            assertRequest(server, AgentAction.WAIT_TICKS, Map.of("ticks", "5"));
+        }
+    }
+
+    @Test
+    void serverPlatform_shouldMapUnknownPlatformToUnknown(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("agent-platform-unknown.sock");
+        try (AgentSocketServer server = AgentSocketServer.start(
+            socketPath,
+            successResponse(Map.of("platform", "Sponge"))
+        ); UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            final nl.pim16aap2.lightkeeper.framework.Platform result = client.serverPlatform();
+
+            // verify
+            assertThat(result).isEqualTo(nl.pim16aap2.lightkeeper.framework.Platform.UNKNOWN);
+        }
+    }
+
+    @Test
+    void playerMessages_shouldParseMessageList(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("agent-messages.sock");
+        try (AgentSocketServer server = AgentSocketServer.start(
+            socketPath,
+            successResponse(Map.of("messagesJson", "[\"hello\",\"world\"]"))
+        ); UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            final java.util.List<String> result = client.playerMessages(PLAYER_ID);
+
+            // verify
+            assertThat(result).containsExactly("hello", "world");
+            assertRequest(server, AgentAction.GET_PLAYER_MESSAGES, Map.of("uuid", PLAYER_ID.toString()));
+        }
+    }
+
+    @Test
+    void send_shouldThrowExceptionWhenConnectionIsClosed(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("agent-closed.sock");
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, successResponse(Map.of())))
+        {
+            final UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3));
+            client.close();
+
+            // execute + verify
+            assertThatThrownBy(() -> client.send(AgentAction.WAIT_TICKS, Map.of("ticks", "1")))
+                .isInstanceOf(NullPointerException.class);
         }
     }
 

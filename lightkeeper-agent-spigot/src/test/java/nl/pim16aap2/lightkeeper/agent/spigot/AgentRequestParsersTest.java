@@ -157,4 +157,70 @@ class AgentRequestParsersTest
             assertThat(material).isEqualTo(org.bukkit.Material.STONE);
         }
     }
+
+    @Test
+    void parseMaterial_shouldReturnNullWhenInputIsNull()
+    {
+        // execute
+        final var material = AgentRequestParsers.parseMaterial(null);
+
+        // verify
+        assertThat(material).isNull();
+    }
+
+    @Test
+    void parseInt_shouldThrowExceptionForNonNumericInput()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> AgentRequestParsers.parseInt("not-a-number"))
+            .isInstanceOf(NumberFormatException.class);
+    }
+
+    @Test
+    void parseLong_shouldThrowExceptionForNonNumericInput()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> AgentRequestParsers.parseLong("not-a-number"))
+            .isInstanceOf(NumberFormatException.class);
+    }
+
+    @Test
+    void parseBlockFace_shouldReturnNullWhenInputIsNull()
+    {
+        // execute
+        final var blockFace = AgentRequestParsers.parseBlockFace(null);
+
+        // verify
+        assertThat(blockFace).isNull();
+    }
+
+    @Test
+    void parseBlockFace_shouldReturnNullWhenInputIsBlank()
+    {
+        // execute
+        final var blockFace = AgentRequestParsers.parseBlockFace("   ");
+
+        // verify
+        assertThat(blockFace).isNull();
+    }
+
+    @Test
+    void parseBlockFace_shouldParseCaseInsensitiveName()
+    {
+        // execute
+        final var blockFace = AgentRequestParsers.parseBlockFace("north");
+
+        // verify
+        assertThat(blockFace).isEqualTo(org.bukkit.block.BlockFace.NORTH);
+    }
+
+    @Test
+    void parseBlockFace_shouldReturnNullForUnknownName()
+    {
+        // execute
+        final var blockFace = AgentRequestParsers.parseBlockFace("not-a-face");
+
+        // verify
+        assertThat(blockFace).isNull();
+    }
 }
