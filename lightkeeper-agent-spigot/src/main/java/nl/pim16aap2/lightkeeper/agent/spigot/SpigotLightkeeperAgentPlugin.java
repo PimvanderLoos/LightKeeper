@@ -136,10 +136,12 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin
                 playerActions,
                 menuActions,
                 eventActions,
-                getLogger(),
-                configuration.authToken(),
-                configuration.protocolVersion(),
-                configuration.expectedAgentSha256()
+                new AgentRequestDispatcher.Config(
+                    configuration.authToken(),
+                    configuration.protocolVersion(),
+                    configuration.expectedAgentSha256(),
+                    getLogger()
+                )
             );
 
             startTickLoop(worldActions);
