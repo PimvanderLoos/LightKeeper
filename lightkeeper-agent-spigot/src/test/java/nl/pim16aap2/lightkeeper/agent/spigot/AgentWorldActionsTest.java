@@ -55,7 +55,7 @@ class AgentWorldActionsTest
         final String serverClassName = "org.bukkit.craftbukkit.v1_21_R7.CraftServer";
 
         // execute
-        final String result = AgentWorldActions.detectServerPlatform(
+        final String result = AgentPlatformDetector.detect(
             "CraftBukkit",
             "1.21.11-R0.1-SNAPSHOT",
             serverClassName,
@@ -73,7 +73,7 @@ class AgentWorldActionsTest
         final String serverClassName = "org.bukkit.craftbukkit.v1_21_R7.CraftServer";
 
         // execute
-        final String result = AgentWorldActions.detectServerPlatform(
+        final String result = AgentPlatformDetector.detect(
             "CraftBukkit",
             "1.21.11-R0.1-SNAPSHOT",
             serverClassName,
@@ -205,7 +205,7 @@ class AgentWorldActionsTest
     void detectServerPlatform_shouldPreferPaperClassSignal()
     {
         // execute
-        final String platform = AgentWorldActions.detectServerPlatform(
+        final String platform = AgentPlatformDetector.detect(
             "CraftBukkit",
             "git-Spigot-abc",
             "org.bukkit.craftbukkit.CraftServer",
@@ -220,7 +220,7 @@ class AgentWorldActionsTest
     void detectServerPlatform_shouldMapCraftBukkitServerToSpigot()
     {
         // execute
-        final String platform = AgentWorldActions.detectServerPlatform(
+        final String platform = AgentPlatformDetector.detect(
             "CraftBukkit",
             "1.21.11-R0.1-SNAPSHOT",
             "org.bukkit.craftbukkit.CraftServer",
@@ -235,7 +235,7 @@ class AgentWorldActionsTest
     void detectServerPlatform_shouldReturnUnknownWhenNeitherPaperNorSpigotIdentifiersFound()
     {
         // execute
-        final String platform = AgentWorldActions.detectServerPlatform(
+        final String platform = AgentPlatformDetector.detect(
             "SomeOtherServer",
             "1.21.11-R0.1-SNAPSHOT",
             "com.someother.SomeServer",
@@ -250,7 +250,7 @@ class AgentWorldActionsTest
     void detectServerPlatform_shouldReturnPaperWhenBukkitNameContainsPaper()
     {
         // execute
-        final String platform = AgentWorldActions.detectServerPlatform(
+        final String platform = AgentPlatformDetector.detect(
             "Paper",
             "1.21.11-R0.1-SNAPSHOT",
             "com.someserver.SomeServer",
@@ -265,7 +265,7 @@ class AgentWorldActionsTest
     void detectServerPlatform_shouldReturnSpigotWhenVersionContainsSpigot()
     {
         // execute
-        final String platform = AgentWorldActions.detectServerPlatform(
+        final String platform = AgentPlatformDetector.detect(
             "CraftBukkit",
             "git-Spigot-1.21.11-R0.1",
             "com.someserver.SomeServer",
