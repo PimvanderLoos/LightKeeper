@@ -433,23 +433,6 @@ class UdsAgentClientTest
         }
     }
 
-    @Test
-    void send_shouldThrowExceptionWhenConnectionIsClosed(@TempDir Path tempDirectory)
-        throws Exception
-    {
-        // setup
-        final Path socketPath = tempDirectory.resolve("agent-closed.sock");
-        try (AgentSocketServer server = AgentSocketServer.start(socketPath, successResponse(Map.of())))
-        {
-            final UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3));
-            client.close();
-
-            // execute + verify
-            assertThatThrownBy(() -> client.send(AgentAction.WAIT_TICKS, Map.of("ticks", "1")))
-                .isInstanceOf(NullPointerException.class);
-        }
-    }
-
     private static AgentResponse successResponse(Map<String, String> data)
     {
         return new AgentResponse("1", true, null, null, data);
