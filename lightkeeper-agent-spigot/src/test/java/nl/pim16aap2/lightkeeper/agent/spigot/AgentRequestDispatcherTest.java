@@ -11,7 +11,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
@@ -184,8 +183,8 @@ class AgentRequestDispatcherTest
             .thenReturn(AgentResponses.successResponse("request-21", Map.of()));
         when(fixture.playerActions().handleDropItem(eq("request-22"), anyMap()))
             .thenReturn(AgentResponses.successResponse("request-22", Map.of()));
-        when(fixture.eventCapture().getCapturedEvents(eq("org.bukkit.event.Event")))
-            .thenReturn(List.of(Map.of("getEventName", "Event")));
+        when(fixture.eventActions().handleGetCapturedEvents(eq("request-24"), anyMap()))
+            .thenReturn(AgentResponses.successResponse("request-24", Map.of("eventsJson", "[{\"getEventName\":\"Event\"}]")));
         when(fixture.playerActions().handleGetPlayerChatComponents(eq("request-27"), anyMap()))
             .thenReturn(AgentResponses.successResponse("request-27", Map.of()));
         when(fixture.worldActions().handleGetServerPlatform("request-28"))
@@ -293,10 +292,10 @@ class AgentRequestDispatcherTest
         verify(fixture.worldActions()).handleIsChunkLoaded(eq("request-20"), anyMap());
         verify(fixture.playerActions()).handleGetPlayerInventory(eq("request-21"), anyMap());
         verify(fixture.playerActions()).handleDropItem(eq("request-22"), anyMap());
-        verify(fixture.eventCapture()).registerListener("org.bukkit.event.Event");
-        verify(fixture.eventCapture()).getCapturedEvents("org.bukkit.event.Event");
-        verify(fixture.eventCapture()).clearCapturedEvents("org.bukkit.event.Event");
-        verify(fixture.eventCapture()).unregisterListener("org.bukkit.event.Event");
+        verify(fixture.eventActions()).handleRegisterEventListener(eq("request-23"), anyMap());
+        verify(fixture.eventActions()).handleGetCapturedEvents(eq("request-24"), anyMap());
+        verify(fixture.eventActions()).handleClearCapturedEvents(eq("request-25"), anyMap());
+        verify(fixture.eventActions()).handleUnregisterEventListener(eq("request-26"), anyMap());
         verify(fixture.playerActions()).handleGetPlayerChatComponents(eq("request-27"), anyMap());
         verify(fixture.worldActions()).handleGetServerPlatform("request-28");
     }
@@ -307,8 +306,12 @@ class AgentRequestDispatcherTest
     {
         // setup
         final DispatcherFixture fixture = createDispatcherFixture();
-        doThrow(new IllegalArgumentException("Class 'java.lang.String' is not a Bukkit Event."))
-            .when(fixture.eventCapture()).registerListener("java.lang.String");
+        when(fixture.eventActions().handleRegisterEventListener(eq("request-event"), anyMap()))
+            .thenReturn(AgentResponses.errorResponse(
+                "request-event",
+                nl.pim16aap2.lightkeeper.runtime.agent.AgentErrorCode.INVALID_ARGUMENT,
+                "Class 'java.lang.String' is not a Bukkit Event."
+            ));
         final String requestLine = createRequestLine(
             "request-event",
             AgentAction.REGISTER_EVENT_LISTENER,
@@ -472,90 +475,6 @@ class AgentRequestDispatcherTest
         assertThat(result.response().errorCode()).isEqualTo("AGENT_SHA_MISMATCH");
     }
 
-    @Test
-    void handleRequestLine_shouldReturnInvalidArgumentWhenRegisterEventListenerClassIsBlank()
-        throws Exception
-    {
-        // setup
-        final DispatcherFixture fixture = createDispatcherFixture();
-        final String requestLine = createRequestLine(
-            "request-blank-class",
-            AgentAction.REGISTER_EVENT_LISTENER,
-            Map.of("eventClassName", "")
-        );
-
-        // execute
-        final AgentRequestDispatcher.RequestDispatchResult result =
-            fixture.dispatcher().handleRequestLine(requestLine, true);
-
-        // verify
-        assertThat(result.response().success()).isFalse();
-        assertThat(result.response().errorCode()).isEqualTo("INVALID_ARGUMENT");
-        assertThat(result.response().errorMessage()).contains("eventClassName");
-    }
-
-    @Test
-    void handleRequestLine_shouldReturnInvalidArgumentWhenGetCapturedEventsClassIsBlank()
-        throws Exception
-    {
-        // setup
-        final DispatcherFixture fixture = createDispatcherFixture();
-        final String requestLine = createRequestLine(
-            "request-blank-events",
-            AgentAction.GET_CAPTURED_EVENTS,
-            Map.of("eventClassName", "")
-        );
-
-        // execute
-        final AgentRequestDispatcher.RequestDispatchResult result =
-            fixture.dispatcher().handleRequestLine(requestLine, true);
-
-        // verify
-        assertThat(result.response().success()).isFalse();
-        assertThat(result.response().errorCode()).isEqualTo("INVALID_ARGUMENT");
-        assertThat(result.response().errorMessage()).contains("eventClassName");
-    }
-
-    @Test
-    void handleRequestLine_shouldSucceedClearCapturedEventsWithBlankClassName()
-        throws Exception
-    {
-        // setup
-        final DispatcherFixture fixture = createDispatcherFixture();
-        final String requestLine = createRequestLine(
-            "request-clear-blank",
-            AgentAction.CLEAR_CAPTURED_EVENTS,
-            Map.of("eventClassName", "")
-        );
-
-        // execute
-        final AgentRequestDispatcher.RequestDispatchResult result =
-            fixture.dispatcher().handleRequestLine(requestLine, true);
-
-        // verify - blank is silently ignored, operation succeeds
-        assertThat(result.response().success()).isTrue();
-    }
-
-    @Test
-    void handleRequestLine_shouldSucceedUnregisterEventListenerWithBlankClassName()
-        throws Exception
-    {
-        // setup
-        final DispatcherFixture fixture = createDispatcherFixture();
-        final String requestLine = createRequestLine(
-            "request-unregister-blank",
-            AgentAction.UNREGISTER_EVENT_LISTENER,
-            Map.of("eventClassName", "")
-        );
-
-        // execute
-        final AgentRequestDispatcher.RequestDispatchResult result =
-            fixture.dispatcher().handleRequestLine(requestLine, true);
-
-        // verify - blank is silently ignored, operation succeeds
-        assertThat(result.response().success()).isTrue();
-    }
-
     private static AgentRequestDispatcher createDispatcher(String authToken, int protocolVersion, String expectedSha)
     {
         final ObjectMapper objectMapper = new ObjectMapper()
@@ -583,13 +502,14 @@ class AgentRequestDispatcherTest
         );
 
         final AgentEventCapture eventCapture = mock();
+        final AgentEventActions eventActions = new AgentEventActions(eventCapture, objectMapper);
 
         return new AgentRequestDispatcher(
             objectMapper,
             worldActions,
             playerActions,
             menuActions,
-            eventCapture,
+            eventActions,
             Logger.getLogger(AgentRequestDispatcherTest.class.getName()),
             authToken,
             protocolVersion,
@@ -604,19 +524,19 @@ class AgentRequestDispatcherTest
         final AgentWorldActions worldActions = mock();
         final AgentPlayerActions playerActions = mock();
         final AgentMenuActions menuActions = mock();
-        final AgentEventCapture eventCapture = mock();
+        final AgentEventActions eventActions = mock();
         final AgentRequestDispatcher dispatcher = new AgentRequestDispatcher(
             objectMapper,
             worldActions,
             playerActions,
             menuActions,
-            eventCapture,
+            eventActions,
             Logger.getLogger(AgentRequestDispatcherTest.class.getName()),
             "token",
             1,
             ""
         );
-        return new DispatcherFixture(dispatcher, worldActions, playerActions, menuActions, eventCapture);
+        return new DispatcherFixture(dispatcher, worldActions, playerActions, menuActions, eventActions);
     }
 
     private record DispatcherFixture(
@@ -624,7 +544,7 @@ class AgentRequestDispatcherTest
         AgentWorldActions worldActions,
         AgentPlayerActions playerActions,
         AgentMenuActions menuActions,
-        AgentEventCapture eventCapture)
+        AgentEventActions eventActions)
     {
     }
 

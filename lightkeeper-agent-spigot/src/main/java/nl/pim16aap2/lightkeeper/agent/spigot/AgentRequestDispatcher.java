@@ -7,7 +7,6 @@ import nl.pim16aap2.lightkeeper.runtime.agent.AgentRequest;
 import nl.pim16aap2.lightkeeper.runtime.agent.AgentResponse;
 import org.bukkit.Bukkit;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
@@ -39,7 +38,7 @@ final class AgentRequestDispatcher
     /**
      * Handler for dynamic event capture.
      */
-    private final AgentEventCapture eventCapture;
+    private final AgentEventActions eventActions;
     /**
      * Plugin logger used for operational diagnostics.
      */
@@ -67,8 +66,8 @@ final class AgentRequestDispatcher
      *     Player action handler.
      * @param menuActions
      *     Menu action handler.
-     * @param eventCapture
-     *     Event capture handler.
+     * @param eventActions
+     *     Event capture action handler.
      * @param logger
      *     Logger for request and error diagnostics.
      * @param authToken
@@ -83,7 +82,7 @@ final class AgentRequestDispatcher
         AgentWorldActions worldActions,
         AgentPlayerActions playerActions,
         AgentMenuActions menuActions,
-        AgentEventCapture eventCapture,
+        AgentEventActions eventActions,
         java.util.logging.Logger logger,
         String authToken,
         int protocolVersion,
@@ -93,7 +92,7 @@ final class AgentRequestDispatcher
         this.worldActions = Objects.requireNonNull(worldActions, "worldActions");
         this.playerActions = Objects.requireNonNull(playerActions, "playerActions");
         this.menuActions = Objects.requireNonNull(menuActions, "menuActions");
-        this.eventCapture = Objects.requireNonNull(eventCapture, "eventCapture");
+        this.eventActions = Objects.requireNonNull(eventActions, "eventActions");
         this.logger = Objects.requireNonNull(logger, "logger");
         this.authToken = Objects.requireNonNull(authToken, "authToken");
         this.protocolVersion = protocolVersion;
@@ -199,10 +198,10 @@ final class AgentRequestDispatcher
                 case IS_CHUNK_LOADED -> worldActions.handleIsChunkLoaded(requestId, arguments);
                 case GET_PLAYER_INVENTORY -> playerActions.handleGetPlayerInventory(requestId, arguments);
                 case DROP_ITEM -> playerActions.handleDropItem(requestId, arguments);
-                case REGISTER_EVENT_LISTENER -> handleRegisterEventListener(requestId, arguments);
-                case GET_CAPTURED_EVENTS -> handleGetCapturedEvents(requestId, arguments);
-                case CLEAR_CAPTURED_EVENTS -> handleClearCapturedEvents(requestId, arguments);
-                case UNREGISTER_EVENT_LISTENER -> handleUnregisterEventListener(requestId, arguments);
+                case REGISTER_EVENT_LISTENER -> eventActions.handleRegisterEventListener(requestId, arguments);
+                case GET_CAPTURED_EVENTS -> eventActions.handleGetCapturedEvents(requestId, arguments);
+                case CLEAR_CAPTURED_EVENTS -> eventActions.handleClearCapturedEvents(requestId, arguments);
+                case UNREGISTER_EVENT_LISTENER -> eventActions.handleUnregisterEventListener(requestId, arguments);
                 case GET_PLAYER_CHAT_COMPONENTS -> playerActions.handleGetPlayerChatComponents(requestId, arguments);
                 case GET_SERVER_PLATFORM -> worldActions.handleGetServerPlatform(requestId);
                 case HANDSHAKE -> throw new IllegalStateException("Unreachable HANDSHAKE dispatch branch.");
@@ -241,56 +240,6 @@ final class AgentRequestDispatcher
                 handshakeCompleted
             );
         }
-    }
-
-    private AgentResponse handleRegisterEventListener(String requestId, Map<String, String> arguments)
-        throws Exception
-    {
-        final String eventClassName = arguments.getOrDefault("eventClassName", "");
-        if (eventClassName.isBlank())
-            return AgentResponses.errorResponse(requestId, AgentErrorCode.INVALID_ARGUMENT, "Missing eventClassName.");
-
-        try
-        {
-            eventCapture.registerListener(eventClassName);
-        }
-        catch (ClassNotFoundException | IllegalArgumentException exception)
-        {
-            return AgentResponses.errorResponse(
-                requestId,
-                AgentErrorCode.INVALID_ARGUMENT,
-                Objects.requireNonNullElse(exception.getMessage(), exception.getClass().getName())
-            );
-        }
-        return AgentResponses.successResponse(requestId, Map.of());
-    }
-
-    private AgentResponse handleGetCapturedEvents(String requestId, Map<String, String> arguments)
-        throws Exception
-    {
-        final String eventClassName = arguments.getOrDefault("eventClassName", "");
-        if (eventClassName.isBlank())
-            return AgentResponses.errorResponse(requestId, AgentErrorCode.INVALID_ARGUMENT, "Missing eventClassName.");
-
-        final List<Map<String, String>> events = eventCapture.getCapturedEvents(eventClassName);
-        final String eventsJson = objectMapper.writeValueAsString(events);
-        return AgentResponses.successResponse(requestId, Map.of("eventsJson", eventsJson));
-    }
-
-    private AgentResponse handleClearCapturedEvents(String requestId, Map<String, String> arguments)
-    {
-        final String eventClassName = arguments.getOrDefault("eventClassName", "");
-        if (!eventClassName.isBlank())
-            eventCapture.clearCapturedEvents(eventClassName);
-        return AgentResponses.successResponse(requestId, Map.of());
-    }
-
-    private AgentResponse handleUnregisterEventListener(String requestId, Map<String, String> arguments)
-    {
-        final String eventClassName = arguments.getOrDefault("eventClassName", "");
-        if (!eventClassName.isBlank())
-            eventCapture.unregisterListener(eventClassName);
-        return AgentResponses.successResponse(requestId, Map.of());
     }
 
     /**
