@@ -82,10 +82,14 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
                 "net.minecraft.network.chat.ComponentSerialization",
                 serverClassLoader
             );
-            final Class<?> codecClass = NmsReflectionUtils.resolveClass("com.mojang.serialization.Codec", serverClassLoader);
-            final Class<?> dataResultClass = NmsReflectionUtils.resolveClass("com.mojang.serialization.DataResult", serverClassLoader);
-            final Class<?> dynamicOpsClass = NmsReflectionUtils.resolveClass("com.mojang.serialization.DynamicOps", serverClassLoader);
-            final Class<?> jsonOpsClass = NmsReflectionUtils.resolveClass("com.mojang.serialization.JsonOps", serverClassLoader);
+            final Class<?> codecClass =
+                NmsReflectionUtils.resolveClass("com.mojang.serialization.Codec", serverClassLoader);
+            final Class<?> dataResultClass =
+                NmsReflectionUtils.resolveClass("com.mojang.serialization.DataResult", serverClassLoader);
+            final Class<?> dynamicOpsClass =
+                NmsReflectionUtils.resolveClass("com.mojang.serialization.DynamicOps", serverClassLoader);
+            final Class<?> jsonOpsClass =
+                NmsReflectionUtils.resolveClass("com.mojang.serialization.JsonOps", serverClassLoader);
             componentJsonCodec = resolveComponentJsonCodec(componentSerializationClass, codecClass);
             componentJsonOps = jsonOpsClass.getField("INSTANCE").get(null);
             componentCodecEncodeStartMethod = codecClass.getMethod("encodeStart", dynamicOpsClass, Object.class);
@@ -174,8 +178,10 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
                 serverClassLoader
             );
             craftPlayerGetHandleMethod = craftPlayerClass.getMethod("getHandle");
-            connectionChannelField = NmsReflectionUtils.resolveFieldByNameOrAcceptedType(connectionClass, "channel", embeddedChannelClass);
-            connectionAddressField = NmsReflectionUtils.resolveFieldByNameOrType(connectionClass, "address", SocketAddress.class);
+            connectionChannelField = NmsReflectionUtils.resolveFieldByNameOrAcceptedType(
+                connectionClass, "channel", embeddedChannelClass);
+            connectionAddressField = NmsReflectionUtils.resolveFieldByNameOrType(
+                connectionClass, "address", SocketAddress.class);
             embeddedChannelReadOutboundMethod = embeddedChannelClass.getMethod("readOutbound");
         }
         catch (Exception exception)
@@ -255,15 +261,18 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
     private static Object resolvePlayerList(Object minecraftServer, ClassLoader serverClassLoader)
         throws ReflectiveOperationException
     {
-        final Method namedMethod = NmsReflectionUtils.findNamedNoArgMethod(minecraftServer.getClass(), "getPlayerList");
+        final Method namedMethod =
+            NmsReflectionUtils.findNamedNoArgMethod(minecraftServer.getClass(), "getPlayerList");
         if (namedMethod != null)
         {
             return namedMethod.invoke(minecraftServer);
         }
 
-        final Class<?> playerListClass = NmsReflectionUtils.resolveClass("net.minecraft.server.players.PlayerList", serverClassLoader);
+        final Class<?> playerListClass =
+            NmsReflectionUtils.resolveClass("net.minecraft.server.players.PlayerList", serverClassLoader);
 
-        final Method typedMethod = NmsReflectionUtils.findNoArgMethodByReturnType(minecraftServer.getClass(), playerListClass);
+        final Method typedMethod =
+            NmsReflectionUtils.findNoArgMethodByReturnType(minecraftServer.getClass(), playerListClass);
         if (typedMethod != null)
         {
             return typedMethod.invoke(minecraftServer);
@@ -299,7 +308,8 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
         {
             return namedMethod;
         }
-        return NmsReflectionUtils.findCompatibleMethod(playerListClass, connectionClass, serverPlayerClass, commonListenerCookieClass);
+        return NmsReflectionUtils.findCompatibleMethod(
+            playerListClass, connectionClass, serverPlayerClass, commonListenerCookieClass);
     }
 
     private static Method resolvePlayerListRemoveMethod(Class<?> playerListClass, Class<?> serverPlayerClass)
@@ -446,7 +456,8 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
             return List.of();
 
         drainOutboundPackets(playerId, embeddedChannel);
-        return NmsReflectionUtils.drainQueue(playerMessageQueues.computeIfAbsent(playerId, ignored -> new ConcurrentLinkedQueue<>()));
+        return NmsReflectionUtils.drainQueue(
+            playerMessageQueues.computeIfAbsent(playerId, ignored -> new ConcurrentLinkedQueue<>()));
     }
 
     /**

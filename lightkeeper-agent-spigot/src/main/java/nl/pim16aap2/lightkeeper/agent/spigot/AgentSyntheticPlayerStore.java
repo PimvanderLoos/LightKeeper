@@ -218,19 +218,19 @@ final class AgentSyntheticPlayerStore
         /**
          * Live Bukkit player instance.
          */
-        final Player player;
+        private final Player player;
         /**
          * Permission attachment, or {@code null} when no permissions have been assigned.
          */
-        @Nullable PermissionAttachment permissionAttachment;
+        @Nullable private PermissionAttachment permissionAttachment;
         /**
          * Accumulated plain-text message history (direct sends + NMS adapter drains).
          */
-        final List<String> messageHistory = new CopyOnWriteArrayList<>();
+        private final List<String> messageHistory = new CopyOnWriteArrayList<>();
         /**
          * Accumulated chat-component JSON history.
          */
-        final List<String> componentHistory = new CopyOnWriteArrayList<>();
+        private final List<String> componentHistory = new CopyOnWriteArrayList<>();
 
         private SyntheticPlayerState(Player player)
         {
