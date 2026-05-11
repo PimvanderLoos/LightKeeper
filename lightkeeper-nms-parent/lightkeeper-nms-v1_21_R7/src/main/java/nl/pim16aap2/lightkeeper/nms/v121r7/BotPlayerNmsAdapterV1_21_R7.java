@@ -7,7 +7,6 @@ import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.jspecify.annotations.Nullable;
 
-import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -19,10 +18,10 @@ import java.net.SocketAddress;
 import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,8 +34,7 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
 {
     private static final System.Logger LOG = System.getLogger(BotPlayerNmsAdapterV1_21_R7.class.getName());
 
-    private static final int TEXT_EXTRACTION_MAX_DEPTH = 4;
-    private static final int TEXT_EXTRACTION_MAX_METHODS = 24;
+    private static final int TEXT_EXTRACTION_MAX_DEPTH = NmsValueExtractor.MAX_DEPTH;
 
     private final Object minecraftServer;
     private final Object playerList;
@@ -508,77 +506,31 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
         int depth,
         IdentityHashMap<Object, Boolean> seen)
     {
-        if (value == null || depth < 0 || seen.put(value, Boolean.TRUE) != null)
-            return null;
-
-        if (value.getClass().getSimpleName().endsWith("Component") ||
-            value.getClass().getName().startsWith("net.minecraft.network.chat."))
-        {
-            final String serializedComponent = serializeComponentToJson(value);
-            if (serializedComponent != null)
-                return serializedComponent;
-        }
-
-        if (value instanceof Optional<?> optional)
-            return optional.map(inner -> extractComponentJson(inner, depth - 1, seen)).orElse(null);
-        if (value instanceof Collection<?> collection)
-        {
-            for (final Object element : collection)
-            {
-                final String json = extractComponentJson(element, depth - 1, seen);
-                if (json != null)
-                    return json;
-            }
-            return null;
-        }
-        if (value.getClass().isArray())
-        {
-            final int arrayLength = Array.getLength(value);
-            for (int index = 0; index < arrayLength; ++index)
-            {
-                final String json = extractComponentJson(Array.get(value, index), depth - 1, seen);
-                if (json != null)
-                    return json;
-            }
-            return null;
-        }
-
-        int inspectedMethodCount = 0;
-        for (final Method method : value.getClass().getMethods())
-        {
-            if (!isSafeComponentAccessor(method))
-                continue;
-            if (inspectedMethodCount >= TEXT_EXTRACTION_MAX_METHODS)
-                break;
-            ++inspectedMethodCount;
-
-            try
-            {
-                final Object nestedValue = method.invoke(value);
-                final String json = extractComponentJson(nestedValue, depth - 1, seen);
-                if (json != null)
-                    return json;
-            }
-            catch (Exception exception)
-            {
-                LOG.log(
-                    System.Logger.Level.TRACE,
-                    "Ignoring reflective accessor failure while extracting packet component.",
-                    exception
-                );
-            }
-        }
-        return null;
+        return NmsValueExtractor.extract(
+            value, depth, seen,
+            this::trySerializeComponentToJson,
+            BotPlayerNmsAdapterV1_21_R7::isSafeComponentAccessor,
+            false
+        );
     }
 
-    private @Nullable String serializeComponentToJson(Object component)
+    /**
+     * Detects NMS chat component objects and serialises them to JSON.
+     * Returns {@code null} when {@code value} is not a component or serialisation fails.
+     */
+    private @Nullable String trySerializeComponentToJson(Object value)
     {
+        if (!value.getClass().getSimpleName().endsWith("Component") &&
+            !value.getClass().getName().startsWith("net.minecraft.network.chat."))
+        {
+            return null;
+        }
         try
         {
             final Object dataResult = componentCodecEncodeStartMethod.invoke(
                 componentJsonCodec,
                 componentJsonOps,
-                component
+                value
             );
             final Optional<?> serializedJson = (Optional<?>) dataResultResultMethod.invoke(dataResult);
             return serializedJson.map(Object::toString).orElse(null);
@@ -636,76 +588,20 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
         int depth,
         IdentityHashMap<Object, Boolean> seen)
     {
-        if (value == null || depth < 0 || seen.put(value, Boolean.TRUE) != null)
-            return null;
-
-        switch (value)
-        {
-            case String stringValue ->
+        // Try getString() directly first (net.minecraft.network.chat.Component has this method).
+        // NmsValueExtractor.extract handles containers first, so we pre-check for String leaves here.
+        return NmsValueExtractor.extract(
+            value, depth, seen,
+            v ->
             {
-                return stringValue;
-            }
-            case Optional<?> optional ->
-            {
-                return optional.map(inner -> extractText(inner, depth - 1, seen)).orElse(null);
-            }
-            case Collection<?> collection ->
-            {
-                for (final Object element : collection)
-                {
-                    final String extracted = extractText(element, depth - 1, seen);
-                    if (extracted != null && !extracted.isBlank())
-                        return extracted;
-                }
-                return null;
-            }
-            default ->
-            {
-            }
-        }
-        if (value.getClass().isArray())
-        {
-            final int arrayLength = Array.getLength(value);
-            for (int index = 0; index < arrayLength; ++index)
-            {
-                final String extracted = extractText(Array.get(value, index), depth - 1, seen);
-                if (extracted != null && !extracted.isBlank())
-                    return extracted;
-            }
-            return null;
-        }
-
-        // net.minecraft.network.chat.Component has getString().
-        final String directText = NmsReflectionUtils.invokeStringMethod(value, "getString");
-        if (directText != null && !directText.isBlank())
-            return directText;
-
-        int inspectedMethodCount = 0;
-        for (final Method method : value.getClass().getMethods())
-        {
-            if (!isSafeTextAccessor(method))
-                continue;
-            if (inspectedMethodCount >= TEXT_EXTRACTION_MAX_METHODS)
-                break;
-            ++inspectedMethodCount;
-
-            try
-            {
-                final Object nestedValue = method.invoke(value);
-                final String extracted = extractText(nestedValue, depth - 1, seen);
-                if (extracted != null && !extracted.isBlank())
-                    return extracted;
-            }
-            catch (Exception exception)
-            {
-                LOG.log(
-                    System.Logger.Level.TRACE,
-                    "Ignoring reflective accessor failure while extracting packet text.",
-                    exception
-                );
-            }
-        }
-        return null;
+                if (v instanceof String s)
+                    return s.isBlank() ? null : s;
+                final String direct = NmsReflectionUtils.invokeStringMethod(v, "getString");
+                return (direct != null && !direct.isBlank()) ? direct : null;
+            },
+            BotPlayerNmsAdapterV1_21_R7::isSafeTextAccessor,
+            true
+        );
     }
 
     private static boolean isSafeTextAccessor(Method method)
