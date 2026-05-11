@@ -40,6 +40,28 @@ final class AgentRequestDispatcher
      */
     private final AgentEventActions eventActions;
     /**
+     * Immutable configuration block for the dispatcher.
+     *
+     * @param authToken
+     *     Expected handshake token.
+     * @param protocolVersion
+     *     Expected runtime protocol version.
+     * @param expectedAgentSha256
+     *     Optional expected agent artifact SHA-256 hash; blank disables the check.
+     * @param logger
+     *     Logger for request and error diagnostics.
+     */
+    record Config(String authToken, int protocolVersion, String expectedAgentSha256, java.util.logging.Logger logger)
+    {
+        Config
+        {
+            Objects.requireNonNull(authToken, "authToken");
+            Objects.requireNonNull(expectedAgentSha256, "expectedAgentSha256");
+            Objects.requireNonNull(logger, "logger");
+        }
+    }
+
+    /**
      * Plugin logger used for operational diagnostics.
      */
     private final java.util.logging.Logger logger;
@@ -68,14 +90,8 @@ final class AgentRequestDispatcher
      *     Menu action handler.
      * @param eventActions
      *     Event capture action handler.
-     * @param logger
-     *     Logger for request and error diagnostics.
-     * @param authToken
-     *     Expected handshake token.
-     * @param protocolVersion
-     *     Expected protocol version.
-     * @param expectedAgentSha256
-     *     Optional expected agent artifact hash.
+     * @param config
+     *     Immutable dispatcher configuration (auth, protocol, SHA, logger).
      */
     AgentRequestDispatcher(
         ObjectMapper objectMapper,
@@ -83,20 +99,18 @@ final class AgentRequestDispatcher
         AgentPlayerActions playerActions,
         AgentMenuActions menuActions,
         AgentEventActions eventActions,
-        java.util.logging.Logger logger,
-        String authToken,
-        int protocolVersion,
-        String expectedAgentSha256)
+        Config config)
     {
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper");
         this.worldActions = Objects.requireNonNull(worldActions, "worldActions");
         this.playerActions = Objects.requireNonNull(playerActions, "playerActions");
         this.menuActions = Objects.requireNonNull(menuActions, "menuActions");
         this.eventActions = Objects.requireNonNull(eventActions, "eventActions");
-        this.logger = Objects.requireNonNull(logger, "logger");
-        this.authToken = Objects.requireNonNull(authToken, "authToken");
-        this.protocolVersion = protocolVersion;
-        this.expectedAgentSha256 = Objects.requireNonNull(expectedAgentSha256, "expectedAgentSha256");
+        Objects.requireNonNull(config, "config");
+        this.logger = config.logger();
+        this.authToken = config.authToken();
+        this.protocolVersion = config.protocolVersion();
+        this.expectedAgentSha256 = config.expectedAgentSha256();
     }
 
     /**

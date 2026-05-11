@@ -510,10 +510,12 @@ class AgentRequestDispatcherTest
             playerActions,
             menuActions,
             eventActions,
-            Logger.getLogger(AgentRequestDispatcherTest.class.getName()),
-            authToken,
-            protocolVersion,
-            expectedSha
+            new AgentRequestDispatcher.Config(
+                authToken,
+                protocolVersion,
+                expectedSha,
+                Logger.getLogger(AgentRequestDispatcherTest.class.getName())
+            )
         );
     }
 
@@ -531,10 +533,12 @@ class AgentRequestDispatcherTest
             playerActions,
             menuActions,
             eventActions,
-            Logger.getLogger(AgentRequestDispatcherTest.class.getName()),
-            "token",
-            1,
-            ""
+            new AgentRequestDispatcher.Config(
+                "token",
+                1,
+                "",
+                Logger.getLogger(AgentRequestDispatcherTest.class.getName())
+            )
         );
         return new DispatcherFixture(dispatcher, worldActions, playerActions, menuActions, eventActions);
     }
