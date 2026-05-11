@@ -240,7 +240,8 @@ final class UdsAgentClient implements AutoCloseable
             return new MenuSnapshot(false, "", List.of());
 
         final String title = getRequiredData(response, "title");
-        final MenuItemSnapshot[] items = parseJsonField(response, "itemsJson", new TypeReference<MenuItemSnapshot[]>() {});
+        final MenuItemSnapshot[] items =
+            parseJsonField(response, "itemsJson", new TypeReference<MenuItemSnapshot[]>() {});
         return new MenuSnapshot(true, title, List.of(items));
     }
 
