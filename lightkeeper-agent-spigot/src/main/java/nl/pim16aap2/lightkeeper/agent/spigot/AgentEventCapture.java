@@ -29,6 +29,17 @@ import java.util.concurrent.CopyOnWriteArrayList;
 final class AgentEventCapture
 {
     /**
+     * Maximum number of events retained per registered event class name.
+     * Prevents unbounded memory growth when a test forgets to close the capture handle.
+     */
+    private static final int MAX_CAPTURED_EVENTS_PER_CLASS = 10_000;
+    /**
+     * Maximum number of getter/isser methods inspected per event instance during capture.
+     * Bounds reflection overhead for events with very wide APIs.
+     */
+    private static final int MAX_CAPTURE_METHODS_PER_EVENT = 32;
+
+    /**
      * Owning plugin used as registration context for Bukkit listeners.
      */
     private final JavaPlugin plugin;
@@ -222,15 +233,23 @@ final class AgentEventCapture
 
     private void captureEventForList(Event event, List<Map<String, String>> targetList)
     {
+        if (targetList.size() >= MAX_CAPTURED_EVENTS_PER_CLASS)
+            return;
+
         final Map<String, String> data = new ConcurrentHashMap<>();
+        int inspectedMethodCount = 0;
         for (final Method method : event.getClass().getMethods())
         {
+            if (inspectedMethodCount >= MAX_CAPTURE_METHODS_PER_EVENT)
+                break;
+
             if (method.getParameterCount() == 0 &&
                 (method.getName().startsWith("get") || method.getName().startsWith("is")) &&
                 !method.getName().equals("getClass") &&
                 !method.getName().equals("getHandlers") &&
                 !method.getName().equals("getEventName"))
             {
+                ++inspectedMethodCount;
                 try
                 {
                     final Object value = method.invoke(event);
