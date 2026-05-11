@@ -372,31 +372,35 @@ final class AgentPlayerActions
         final String inventoryJson = mainThreadExecutor.callOnMainThread(() ->
         {
             final Player player = playerStore.getRequiredPlayer(uuid);
-            final List<Map<String, Object>> items = new ArrayList<>();
-            final ItemStack[] contents = player.getInventory().getContents();
-            for (int i = 0; i < contents.length; i++)
-            {
-                final ItemStack item = contents[i];
-                if (item != null && !AgentMaterials.isAir(item.getType()))
-                {
-                    final Map<String, Object> itemData = new HashMap<>();
-                    itemData.put("slot", i);
-                    itemData.put("materialKey", item.getType().getKey().toString());
-                    final String displayName = item.getItemMeta() == null ? null : item.getItemMeta().getDisplayName();
-                    itemData.put("displayName", displayName);
-                    itemData.put(
-                        "lore",
-                        item.getItemMeta() == null
-                            ? List.of()
-                            : Objects.requireNonNullElse(item.getItemMeta().getLore(), List.of())
-                    );
-                    items.add(itemData);
-                }
-            }
-            return objectMapper.writeValueAsString(items);
+            return objectMapper.writeValueAsString(buildInventoryItems(player.getInventory().getContents()));
         });
 
         return AgentResponses.successResponse(requestId, Map.of("inventoryJson", inventoryJson));
+    }
+
+    private static List<Map<String, Object>> buildInventoryItems(ItemStack[] contents)
+    {
+        final List<Map<String, Object>> items = new ArrayList<>();
+        for (int i = 0; i < contents.length; i++)
+        {
+            final ItemStack item = contents[i];
+            if (item == null || AgentMaterials.isAir(item.getType()))
+                continue;
+
+            final Map<String, Object> itemData = new HashMap<>();
+            itemData.put("slot", i);
+            itemData.put("materialKey", item.getType().getKey().toString());
+            final String displayName = item.getItemMeta() == null ? null : item.getItemMeta().getDisplayName();
+            itemData.put("displayName", displayName);
+            itemData.put(
+                "lore",
+                item.getItemMeta() == null
+                    ? List.of()
+                    : Objects.requireNonNullElse(item.getItemMeta().getLore(), List.of())
+            );
+            items.add(itemData);
+        }
+        return items;
     }
 
     /**

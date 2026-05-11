@@ -129,6 +129,7 @@ final class MinecraftServerProcess
         command.add("-D" + RuntimeProtocol.PROPERTY_PROTOCOL_VERSION + "=" + runtimeManifest.runtimeProtocolVersion());
         command.add("-D" + RuntimeProtocol.PROPERTY_EXPECTED_AGENT_SHA256 + "=" +
             Objects.requireNonNullElse(runtimeManifest.agentJarSha256(), ""));
+        // Suppresses Spigot's stale-build warning so non-latest Spigot builds don't hang on startup.
         command.add("-DIReallyKnowWhatIAmDoingISwear=true");
         command.add("-jar");
         command.add(serverJar.toString());
@@ -143,7 +144,13 @@ final class MinecraftServerProcess
     {
         if (extraJvmArgs == null || extraJvmArgs.isBlank())
             return;
-        command.addAll(Arrays.asList(extraJvmArgs.split("\\s+")));
+
+        // Split on whitespace that is not inside double-quoted tokens so arguments like
+        // -Dfoo="hello world" are not broken into multiple invalid args.
+        final java.util.regex.Matcher matcher =
+            java.util.regex.Pattern.compile("\"([^\"]*)\"|\\S+").matcher(extraJvmArgs.trim());
+        while (matcher.find())
+            command.add(matcher.group(1) != null ? matcher.group(1) : matcher.group());
     }
 
     void kill()

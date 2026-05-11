@@ -193,7 +193,7 @@ final class AgentWorldActions
             final World world = Bukkit.getWorld(worldName);
             if (world == null)
                 throw new IllegalArgumentException("World '%s' does not exist.".formatted(worldName));
-            return world.getBlockAt(x, y, z).getType().name();
+            return world.getBlockAt(x, y, z).getType().getKey().toString();
         });
 
         return AgentResponses.successResponse(requestId, Map.of("material", materialName));
