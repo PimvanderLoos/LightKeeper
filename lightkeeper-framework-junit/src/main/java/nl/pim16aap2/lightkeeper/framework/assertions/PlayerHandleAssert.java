@@ -1,11 +1,14 @@
 package nl.pim16aap2.lightkeeper.framework.assertions;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.AbstractStringAssert;
 import org.assertj.core.api.Assertions;
 import org.jspecify.annotations.Nullable;
 
+import java.io.IOException;
 import java.util.Objects;
 
 /**
@@ -97,13 +100,28 @@ public final class PlayerHandleAssert extends AbstractAssert<PlayerHandleAssert,
     public PlayerHandleAssert hasClickableChatText(String expectedText)
     {
         final var actual = nonNullActual();
-        final boolean found = actual.chatComponents().stream()
-            .anyMatch(component -> component.json().contains(expectedText) &&
-                component.json().contains("clickEvent"));
+        final ObjectMapper mapper = new ObjectMapper();
+        final boolean found = actual.chatComponents().stream().anyMatch(component ->
+        {
+            if (!component.json().contains(expectedText))
+                return false;
+            try
+            {
+                final JsonNode root = mapper.readTree(component.json());
+                return root.has("clickEvent");
+            }
+            catch (IOException ignored)
+            {
+                return false;
+            }
+        });
         if (!found)
         {
-            failWithMessage("Expected player '%s' to receive clickable chat text matching '%s', but none was found.",
-                actual.name(), expectedText);
+            failWithMessage(
+                "Expected player '%s' to have a clickable chat text matching '%s', "
+                    + "but no component with a top-level clickEvent field and that text was found.",
+                actual.name(), expectedText
+            );
         }
         return this;
     }

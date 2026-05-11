@@ -93,7 +93,7 @@ class UdsAgentClientTest
         final Path socketPath = tempDirectory.resolve("agent-platform.sock");
         try (AgentSocketServer server = AgentSocketServer.start(
             socketPath,
-            successResponse(Map.of("platform", "Paper 1.21.11"))
+            successResponse(Map.of("platform", "PAPER"))
         ); UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
         {
             // execute
@@ -113,7 +113,7 @@ class UdsAgentClientTest
         final Path socketPath = tempDirectory.resolve("agent-platform-craftbukkit.sock");
         try (AgentSocketServer server = AgentSocketServer.start(
             socketPath,
-            successResponse(Map.of("platform", "CraftBukkit"))
+            successResponse(Map.of("platform", "SPIGOT"))
         ); UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
         {
             // execute

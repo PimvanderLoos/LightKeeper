@@ -17,6 +17,8 @@ import nl.pim16aap2.lightkeeper.runtime.agent.AgentRequest;
 import nl.pim16aap2.lightkeeper.runtime.agent.AgentResponse;
 import org.jspecify.annotations.Nullable;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -32,6 +34,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -41,6 +44,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * Agent RPC client backed by a Unix Domain Socket.
@@ -99,13 +104,15 @@ final class UdsAgentClient implements AutoCloseable
 
     Platform serverPlatform()
     {
-        final AgentResponse response = send(AgentAction.GET_SERVER_PLATFORM, Map.of());
-        final String platformName = getRequiredData(response, "platform").toLowerCase(java.util.Locale.ROOT);
-        if (platformName.contains("paper"))
-            return Platform.PAPER;
-        if (platformName.contains("spigot") || platformName.contains("craftbukkit"))
-            return Platform.SPIGOT;
-        return Platform.UNKNOWN;
+        final String name = getRequiredData(send(AgentAction.GET_SERVER_PLATFORM, Map.of()), "platform");
+        try
+        {
+            return Platform.valueOf(name.toUpperCase(Locale.ROOT));
+        }
+        catch (IllegalArgumentException ignored)
+        {
+            return Platform.UNKNOWN;
+        }
     }
 
     String newWorld(WorldSpec worldSpec)
@@ -267,16 +274,8 @@ final class UdsAgentClient implements AutoCloseable
             return new MenuSnapshot(false, "", List.of());
 
         final String title = getRequiredData(response, "title");
-        final String itemsJson = response.data().getOrDefault("itemsJson", "[]");
-        try
-        {
-            final MenuItemSnapshot[] items = objectMapper.readValue(itemsJson, MenuItemSnapshot[].class);
-            return new MenuSnapshot(true, title, List.of(items));
-        }
-        catch (IOException exception)
-        {
-            throw new IllegalStateException("Failed to parse menu snapshot JSON.", exception);
-        }
+        final MenuItemSnapshot[] items = parseJsonField(response, "itemsJson", new TypeReference<MenuItemSnapshot[]>() {});
+        return new MenuSnapshot(true, title, List.of(items));
     }
 
     void clickMenuSlot(UUID uuid, int slot)
@@ -289,10 +288,9 @@ final class UdsAgentClient implements AutoCloseable
 
     void dragMenuSlots(UUID uuid, String materialKey, int... slots)
     {
-        final String slotList = Arrays.stream(slots)
+        final String slotList = IntStream.of(slots)
             .mapToObj(Integer::toString)
-            .reduce((left, right) -> left + "," + right)
-            .orElse("");
+            .collect(Collectors.joining(","));
         send(AgentAction.DRAG_MENU_SLOTS, Map.of(
             "uuid", uuid.toString(),
             "material", materialKey,
@@ -309,55 +307,24 @@ final class UdsAgentClient implements AutoCloseable
 
     List<String> playerMessages(UUID uuid)
     {
-        final AgentResponse response = send(AgentAction.GET_PLAYER_MESSAGES, Map.of(
-            "uuid", uuid.toString()
-        ));
-        final String messagesJson = response.data().getOrDefault("messagesJson", "[]");
-        try
-        {
-            final String[] messages = objectMapper.readValue(messagesJson, String[].class);
-            return List.of(messages);
-        }
-        catch (IOException exception)
-        {
-            throw new IllegalStateException("Failed to parse player messages JSON.", exception);
-        }
+        final AgentResponse response = send(AgentAction.GET_PLAYER_MESSAGES, Map.of("uuid", uuid.toString()));
+        return List.of(parseJsonField(response, "messagesJson", new TypeReference<String[]>() {}));
     }
 
     List<ChatComponentSnapshot> playerChatComponents(UUID uuid)
     {
-        final AgentResponse response = send(AgentAction.GET_PLAYER_CHAT_COMPONENTS, Map.of(
-            "uuid", uuid.toString()
-        ));
-        final String componentsJson = response.data().getOrDefault("componentsJson", "[]");
-        try
-        {
-            final String[] components = objectMapper.readValue(componentsJson, String[].class);
-            return Arrays.stream(components)
-                .map(ChatComponentSnapshot::new)
-                .toList();
-        }
-        catch (IOException exception)
-        {
-            throw new IllegalStateException("Failed to parse player chat components JSON.", exception);
-        }
+        final AgentResponse response = send(AgentAction.GET_PLAYER_CHAT_COMPONENTS, Map.of("uuid", uuid.toString()));
+        return Arrays.stream(parseJsonField(response, "componentsJson", new TypeReference<String[]>() {}))
+            .map(ChatComponentSnapshot::new)
+            .toList();
     }
 
     InventorySnapshot playerInventory(UUID uuid)
     {
-        final AgentResponse response = send(AgentAction.GET_PLAYER_INVENTORY, Map.of(
-            "uuid", uuid.toString()
-        ));
-        final String inventoryJson = response.data().getOrDefault("inventoryJson", "[]");
-        try
-        {
-            final MenuItemSnapshot[] items = objectMapper.readValue(inventoryJson, MenuItemSnapshot[].class);
-            return new InventorySnapshot(List.of(items));
-        }
-        catch (IOException exception)
-        {
-            throw new IllegalStateException("Failed to parse player inventory JSON.", exception);
-        }
+        final AgentResponse response = send(AgentAction.GET_PLAYER_INVENTORY, Map.of("uuid", uuid.toString()));
+        return new InventorySnapshot(
+            List.of(parseJsonField(response, "inventoryJson", new TypeReference<MenuItemSnapshot[]>() {}))
+        );
     }
 
     boolean dropItem(UUID uuid)
@@ -380,19 +347,12 @@ final class UdsAgentClient implements AutoCloseable
         final AgentResponse response = send(AgentAction.GET_CAPTURED_EVENTS, Map.of(
             "eventClassName", eventClassName
         ));
-        final String eventsJson = response.data().getOrDefault("eventsJson", "[]");
-        try
-        {
-            @SuppressWarnings("unchecked")
-            final List<Map<String, String>> events = objectMapper.readValue(eventsJson, List.class);
-            return events.stream()
-                .map(data -> new CapturedEventSnapshot(eventClassName, data))
-                .toList();
-        }
-        catch (IOException exception)
-        {
-            throw new IllegalStateException("Failed to parse captured events JSON.", exception);
-        }
+        final List<Map<String, String>> events = parseJsonField(
+            response, "eventsJson", new TypeReference<List<Map<String, String>>>() {}
+        );
+        return events.stream()
+            .map(data -> new CapturedEventSnapshot(eventClassName, data))
+            .toList();
     }
 
     void clearCapturedEvents(String eventClassName)
@@ -588,6 +548,35 @@ final class UdsAgentClient implements AutoCloseable
         if (value == null)
             throw new IllegalStateException("Missing response field '%s' from agent.".formatted(key));
         return value;
+    }
+
+    /**
+     * Reads a JSON string from a response data field and deserializes it using the supplied type reference.
+     *
+     * @param response
+     *     Agent response whose data map is searched.
+     * @param key
+     *     Data field key; defaults to {@code "[]"} when absent.
+     * @param typeRef
+     *     Jackson type reference for deserialization.
+     * @param <T>
+     *     Expected return type.
+     * @return
+     *     Deserialized value.
+     * @throws IllegalStateException
+     *     When deserialization fails.
+     */
+    private <T> T parseJsonField(AgentResponse response, String key, TypeReference<T> typeRef)
+    {
+        final String json = response.data().getOrDefault(key, "[]");
+        try
+        {
+            return objectMapper.readValue(json, typeRef);
+        }
+        catch (IOException exception)
+        {
+            throw new IllegalStateException("Failed to parse '%s' JSON from agent response.".formatted(key), exception);
+        }
     }
 
     private static void sleep(long millis)
