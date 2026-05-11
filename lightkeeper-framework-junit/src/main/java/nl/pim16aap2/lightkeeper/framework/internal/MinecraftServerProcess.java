@@ -162,8 +162,14 @@ final class MinecraftServerProcess
         finally
         {
             joinOutputThread(Duration.ofSeconds(5));
-            waitForWorldSessionLockRelease(SESSION_LOCK_RELEASE_TIMEOUT);
-            clearProcessState(currentProcess);
+            try
+            {
+                waitForWorldSessionLockRelease(SESSION_LOCK_RELEASE_TIMEOUT);
+            }
+            finally
+            {
+                clearProcessState(currentProcess);
+            }
         }
     }
 
@@ -203,8 +209,14 @@ final class MinecraftServerProcess
         finally
         {
             joinOutputThread(Duration.ofSeconds(5));
-            waitForWorldSessionLockRelease(SESSION_LOCK_RELEASE_TIMEOUT);
-            clearProcessState(currentProcess);
+            try
+            {
+                waitForWorldSessionLockRelease(SESSION_LOCK_RELEASE_TIMEOUT);
+            }
+            finally
+            {
+                clearProcessState(currentProcess);
+            }
         }
     }
 

@@ -377,7 +377,7 @@ final class AgentPlayerActions
             for (int i = 0; i < contents.length; i++)
             {
                 final ItemStack item = contents[i];
-                if (item != null && item.getType() != Material.AIR)
+                if (item != null && !AgentMaterials.isAir(item.getType()))
                 {
                     final Map<String, Object> itemData = new HashMap<>();
                     itemData.put("slot", i);
@@ -419,7 +419,7 @@ final class AgentPlayerActions
         {
             final Player player = playerStore.getRequiredPlayer(uuid);
             final ItemStack item = player.getInventory().getItemInMainHand();
-            if (item == null || item.getType() == Material.AIR)
+            if (item == null || AgentMaterials.isAir(item.getType()))
                 return Boolean.FALSE;
 
             final org.bukkit.entity.Item droppedItem =
@@ -470,7 +470,7 @@ final class AgentPlayerActions
              );
          }
 
-         mainThreadExecutor.callOnMainThread(() ->
+         final Boolean teleported = mainThreadExecutor.callOnMainThread(() ->
          {
              final Player player = playerStore.getRequiredPlayer(uuid);
              final World world = Bukkit.getWorld(worldName);
@@ -478,11 +478,10 @@ final class AgentPlayerActions
                  throw new IllegalArgumentException("World '%s' does not exist.".formatted(worldName));
 
              final Location location = new Location(world, x, y, z);
-             player.teleport(location);
-             return Boolean.TRUE;
+             return player.teleport(location);
          });
 
-         return AgentResponses.successResponse(requestId, Map.of("teleported", "true"));
+         return AgentResponses.successResponse(requestId, Map.of("teleported", teleported.toString()));
      }
 
      private AgentResponse handleClickBlock(String requestId, Map<String, String> arguments, Action action)

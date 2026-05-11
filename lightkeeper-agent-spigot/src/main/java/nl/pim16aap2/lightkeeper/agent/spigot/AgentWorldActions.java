@@ -218,16 +218,15 @@ final class AgentWorldActions
         final int chunkX = AgentRequestParsers.parseInt(arguments.getOrDefault("x", "0"));
         final int chunkZ = AgentRequestParsers.parseInt(arguments.getOrDefault("z", "0"));
 
-        mainThreadExecutor.callOnMainThread(() ->
+        final Boolean loaded = mainThreadExecutor.callOnMainThread(() ->
         {
             final World world = Bukkit.getWorld(worldName);
             if (world == null)
                 throw new IllegalArgumentException("World '%s' does not exist.".formatted(worldName));
-            world.getChunkAt(chunkX, chunkZ).load();
-            return Boolean.TRUE;
+            return world.getChunkAt(chunkX, chunkZ).load();
         });
 
-        return AgentResponses.successResponse(requestId, Map.of("loaded", "true"));
+        return AgentResponses.successResponse(requestId, Map.of("loaded", loaded.toString()));
     }
 
     /**

@@ -126,6 +126,7 @@ class AgentWorldActionsTest
         final World world = mock();
         final Chunk chunk = mock();
         when(world.getChunkAt(2, 3)).thenReturn(chunk);
+        when(chunk.load()).thenReturn(true);
 
         // execute
         final AgentResponse response;

@@ -35,12 +35,13 @@ class AgentEventCaptureTest
         // setup
         final JavaPlugin plugin = mock();
         final PluginManager pluginManager = mock();
-        final AgentEventCapture eventCapture = new AgentEventCapture(plugin);
+        final AgentEventCapture eventCapture = new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin));
         final ArgumentCaptor<EventExecutor> executorCaptor = ArgumentCaptor.forClass(EventExecutor.class);
 
         // execute
         try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
         {
+            bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
             when(pluginManager.getPlugins()).thenReturn(new Plugin[0]);
             bukkitMockedStatic.when(Bukkit::getPluginManager).thenReturn(pluginManager);
             eventCapture.registerListener(TestCaptureEvent.class.getName());
@@ -67,12 +68,14 @@ class AgentEventCaptureTest
     void registerListener_shouldThrowExceptionWhenClassIsNotBukkitEvent()
     {
         // setup
-        final AgentEventCapture eventCapture = new AgentEventCapture(mock());
+        final JavaPlugin plugin = mock();
+        final AgentEventCapture eventCapture = new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin));
         final PluginManager pluginManager = mock();
 
         // execute + verify
         try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
         {
+            bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
             when(pluginManager.getPlugins()).thenReturn(new Plugin[0]);
             bukkitMockedStatic.when(Bukkit::getPluginManager).thenReturn(pluginManager);
             assertThatThrownBy(() -> eventCapture.registerListener(String.class.getName()))
@@ -86,13 +89,23 @@ class AgentEventCaptureTest
         throws Exception
     {
         // setup
-        final AgentEventCapture eventCapture = registeredCaptureWithOneEvent();
+        final JavaPlugin plugin = mock();
+        final PluginManager pluginManager = mock();
+        final AgentEventCapture eventCapture = new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin));
 
-        // execute
-        eventCapture.clearCapturedEvents(TestCaptureEvent.class.getName());
+        try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
+        {
+            bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
+            when(pluginManager.getPlugins()).thenReturn(new Plugin[0]);
+            bukkitMockedStatic.when(Bukkit::getPluginManager).thenReturn(pluginManager);
+            fireOneTestCaptureEvent(eventCapture, pluginManager, plugin);
 
-        // verify
-        assertThat(eventCapture.getCapturedEvents(TestCaptureEvent.class.getName())).isEmpty();
+            // execute
+            eventCapture.clearCapturedEvents(TestCaptureEvent.class.getName());
+
+            // verify
+            assertThat(eventCapture.getCapturedEvents(TestCaptureEvent.class.getName())).isEmpty();
+        }
     }
 
     @Test
@@ -100,13 +113,23 @@ class AgentEventCaptureTest
         throws Exception
     {
         // setup
-        final AgentEventCapture eventCapture = registeredCaptureWithOneEvent();
+        final JavaPlugin plugin = mock();
+        final PluginManager pluginManager = mock();
+        final AgentEventCapture eventCapture = new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin));
 
-        // execute
-        eventCapture.unregisterListener(TestCaptureEvent.class.getName());
+        try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
+        {
+            bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
+            when(pluginManager.getPlugins()).thenReturn(new Plugin[0]);
+            bukkitMockedStatic.when(Bukkit::getPluginManager).thenReturn(pluginManager);
+            fireOneTestCaptureEvent(eventCapture, pluginManager, plugin);
 
-        // verify
-        assertThat(eventCapture.getCapturedEvents(TestCaptureEvent.class.getName())).isEmpty();
+            // execute
+            eventCapture.unregisterListener(TestCaptureEvent.class.getName());
+
+            // verify
+            assertThat(eventCapture.getCapturedEvents(TestCaptureEvent.class.getName())).isEmpty();
+        }
     }
 
     @Test
@@ -116,10 +139,11 @@ class AgentEventCaptureTest
         // setup
         final JavaPlugin plugin = mock();
         final PluginManager pluginManager = mock();
-        final AgentEventCapture eventCapture = new AgentEventCapture(plugin);
+        final AgentEventCapture eventCapture = new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin));
 
         try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
         {
+            bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
             when(pluginManager.getPlugins()).thenReturn(new Plugin[0]);
             bukkitMockedStatic.when(Bukkit::getPluginManager).thenReturn(pluginManager);
 
@@ -143,7 +167,8 @@ class AgentEventCaptureTest
     void getCapturedEvents_shouldReturnEmptyListForUnregisteredClass()
     {
         // setup
-        final AgentEventCapture eventCapture = new AgentEventCapture(mock());
+        final JavaPlugin plugin = mock();
+        final AgentEventCapture eventCapture = new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin));
 
         // execute
         final List<Map<String, String>> events = eventCapture.getCapturedEvents("com.example.NonExistentEvent");
@@ -156,12 +181,14 @@ class AgentEventCaptureTest
     void registerListener_shouldThrowExceptionWhenClassIsNotFound()
     {
         // setup
-        final AgentEventCapture eventCapture = new AgentEventCapture(mock());
+        final JavaPlugin plugin = mock();
+        final AgentEventCapture eventCapture = new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin));
         final PluginManager pluginManager = mock();
 
         // execute + verify
         try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
         {
+            bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
             when(pluginManager.getPlugins()).thenReturn(new Plugin[0]);
             bukkitMockedStatic.when(Bukkit::getPluginManager).thenReturn(pluginManager);
             assertThatThrownBy(() -> eventCapture.registerListener("com.example.NonExistentEvent"))
@@ -176,11 +203,12 @@ class AgentEventCaptureTest
         // setup
         final JavaPlugin plugin = mock();
         final PluginManager pluginManager = mock();
-        final AgentEventCapture eventCapture = new AgentEventCapture(plugin);
+        final AgentEventCapture eventCapture = new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin));
         final ArgumentCaptor<EventExecutor> executorCaptor = ArgumentCaptor.forClass(EventExecutor.class);
 
         try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
         {
+            bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
             when(pluginManager.getPlugins()).thenReturn(new Plugin[0]);
             bukkitMockedStatic.when(Bukkit::getPluginManager).thenReturn(pluginManager);
             eventCapture.registerListener(MixedFieldsEvent.class.getName());
@@ -204,19 +232,12 @@ class AgentEventCaptureTest
         assertThat(events.getFirst()).doesNotContainKey("getNullValue");
     }
 
-    private static AgentEventCapture registeredCaptureWithOneEvent()
+    private static void fireOneTestCaptureEvent(
+        AgentEventCapture eventCapture, PluginManager pluginManager, JavaPlugin plugin)
         throws ClassNotFoundException, EventException
     {
-        final JavaPlugin plugin = mock();
-        final PluginManager pluginManager = mock();
-        final AgentEventCapture eventCapture = new AgentEventCapture(plugin);
         final ArgumentCaptor<EventExecutor> executorCaptor = ArgumentCaptor.forClass(EventExecutor.class);
-        try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
-        {
-            when(pluginManager.getPlugins()).thenReturn(new Plugin[0]);
-            bukkitMockedStatic.when(Bukkit::getPluginManager).thenReturn(pluginManager);
-            eventCapture.registerListener(TestCaptureEvent.class.getName());
-        }
+        eventCapture.registerListener(TestCaptureEvent.class.getName());
         verify(pluginManager).registerEvent(
             eq(TestCaptureEvent.class),
             any(Listener.class),
@@ -226,7 +247,6 @@ class AgentEventCaptureTest
             eq(false)
         );
         executorCaptor.getValue().execute(mock(Listener.class), new TestCaptureEvent("value", false));
-        return eventCapture;
     }
 
     public static final class TestCaptureEvent extends Event

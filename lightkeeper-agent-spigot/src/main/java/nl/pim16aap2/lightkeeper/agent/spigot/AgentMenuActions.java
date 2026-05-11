@@ -91,7 +91,7 @@ final class AgentMenuActions
             for (int rawSlot = 0; rawSlot < view.countSlots(); ++rawSlot)
             {
                 final ItemStack item = view.getItem(rawSlot);
-                if (item == null || item.getType().isAir())
+                if (item == null || AgentMaterials.isAir(item.getType()))
                     continue;
 
                 final Map<String, @Nullable Object> itemData = new HashMap<>();
