@@ -268,9 +268,9 @@ class AgentEventCaptureTest
     {
         private static final HandlerList HANDLERS = new HandlerList();
         private final String label;
-        private final Object nullValue;
+        private final @org.jspecify.annotations.Nullable Object nullValue;
 
-        private MixedFieldsEvent(String label, Object nullValue)
+        private MixedFieldsEvent(String label, @org.jspecify.annotations.Nullable Object nullValue)
         {
             this.label = label;
             this.nullValue = nullValue;
@@ -282,7 +282,7 @@ class AgentEventCaptureTest
         }
 
         @SuppressWarnings("unused")
-        public Object getNullValue()
+        public @org.jspecify.annotations.Nullable Object getNullValue()
         {
             return nullValue;
         }

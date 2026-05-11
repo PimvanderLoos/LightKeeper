@@ -295,8 +295,8 @@ class AgentWorldActionsTest
         waitingThread.join(2000);
 
         // verify
-        final nl.pim16aap2.lightkeeper.runtime.agent.AgentResponse response = responseRef.get();
-        assertThat(response).isNotNull();
+        final nl.pim16aap2.lightkeeper.runtime.agent.AgentResponse response =
+            java.util.Objects.requireNonNull(responseRef.get(), "Thread should have set response before joining");
         assertThat(response.success()).isFalse();
         assertThat(response.errorCode()).isEqualTo("INTERRUPTED");
     }
