@@ -378,7 +378,7 @@ final class AgentPlayerActions
         return AgentResponses.successResponse(requestId, Map.of("inventoryJson", inventoryJson));
     }
 
-    private static List<Map<String, Object>> buildInventoryItems(ItemStack[] contents)
+    private static List<Map<String, Object>> buildInventoryItems(ItemStack... contents)
     {
         final List<Map<String, Object>> items = new ArrayList<>();
         for (int i = 0; i < contents.length; i++)
