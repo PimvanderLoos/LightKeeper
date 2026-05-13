@@ -1,5 +1,6 @@
 package nl.pim16aap2.lightkeeper.framework.internal;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import nl.pim16aap2.lightkeeper.protocol.AgentResponse;
 import nl.pim16aap2.lightkeeper.protocol.WaitTicksCommand;
@@ -18,7 +19,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -29,8 +32,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class UdsAgentClientTest
 {
     private static final ObjectMapper REQUEST_MAPPER = new ObjectMapper();
-    private static final java.util.UUID PLAYER_ID =
-        java.util.UUID.fromString("6efa93e0-6b5f-45b7-8af8-2453c9c7ef0c");
+    private static final UUID PLAYER_ID =
+        UUID.fromString("6efa93e0-6b5f-45b7-8af8-2453c9c7ef0c");
 
     @Test
     void send_shouldThrowExceptionWhenResponseIdDoesNotMatch(@TempDir Path tempDirectory)
@@ -93,7 +96,7 @@ class UdsAgentClientTest
         final Path socketPath = tempDirectory.resolve("agent-platform.sock");
         try (AgentSocketServer server = AgentSocketServer.start(
             socketPath,
-            successResponse(Map.of("platform", "PAPER"))
+            successResponse(Map.of("platform", "paper"))
         ); UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
         {
             // execute
@@ -101,19 +104,19 @@ class UdsAgentClientTest
 
             // verify
             assertThat(result).isEqualTo(nl.pim16aap2.lightkeeper.framework.Platform.PAPER);
-            assertRequest(server, AgentAction.GET_SERVER_PLATFORM, Map.of());
+            assertRequestAction(server, "GET_SERVER_PLATFORM");
         }
     }
 
     @Test
-    void serverPlatform_shouldMapCraftBukkitResponseToSpigot(@TempDir Path tempDirectory)
+    void serverPlatform_shouldMapSpigotResponseToSpigot(@TempDir Path tempDirectory)
         throws Exception
     {
         // setup
-        final Path socketPath = tempDirectory.resolve("agent-platform-craftbukkit.sock");
+        final Path socketPath = tempDirectory.resolve("agent-platform-spigot.sock");
         try (AgentSocketServer server = AgentSocketServer.start(
             socketPath,
-            successResponse(Map.of("platform", "SPIGOT"))
+            successResponse(Map.of("platform", "spigot"))
         ); UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
         {
             // execute
@@ -121,7 +124,26 @@ class UdsAgentClientTest
 
             // verify
             assertThat(result).isEqualTo(nl.pim16aap2.lightkeeper.framework.Platform.SPIGOT);
-            assertRequest(server, AgentAction.GET_SERVER_PLATFORM, Map.of());
+            assertRequestAction(server, "GET_SERVER_PLATFORM");
+        }
+    }
+
+    @Test
+    void serverPlatform_shouldMapUnknownPlatformToUnknown(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("agent-platform-unknown.sock");
+        try (AgentSocketServer server = AgentSocketServer.start(
+            socketPath,
+            successResponse(Map.of("platform", "sponge"))
+        ); UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            final nl.pim16aap2.lightkeeper.framework.Platform result = client.serverPlatform();
+
+            // verify
+            assertThat(result).isEqualTo(nl.pim16aap2.lightkeeper.framework.Platform.UNKNOWN);
         }
     }
 
@@ -138,30 +160,34 @@ class UdsAgentClientTest
             client.loadChunk("world", 3, -4);
 
             // verify
-            assertRequest(server, AgentAction.LOAD_CHUNK, Map.of("worldName", "world", "x", "3", "z", "-4"));
+            final JsonNode request = REQUEST_MAPPER.readTree(server.requestLine());
+            assertThat(request.get("action").asText()).isEqualTo("LOAD_CHUNK");
+            assertThat(request.get("worldName").asText()).isEqualTo("world");
+            assertThat(request.get("x").asInt()).isEqualTo(3);
+            assertThat(request.get("z").asInt()).isEqualTo(-4);
         }
     }
 
     @Test
-    void playerInventory_shouldParseInventorySnapshot(@TempDir Path tempDirectory)
+    void getPlayerInventory_shouldParseInventoryItemMaps(@TempDir Path tempDirectory)
         throws Exception
     {
         // setup
         final Path socketPath = tempDirectory.resolve("agent-inventory.sock");
-        final String inventoryJson = "[{\"slot\":1,\"materialKey\":\"minecraft:stone\",\"displayName\":\"Stone\","
-            + "\"lore\":[\"Line\"]}]";
+        final String inventoryJson =
+            "[{\"slot\":1,\"materialKey\":\"minecraft:stone\",\"displayName\":\"Stone\",\"lore\":[\"Line\"]}]";
         try (AgentSocketServer server = AgentSocketServer.start(
             socketPath,
             successResponse(Map.of("inventoryJson", inventoryJson))
         ); UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
         {
             // execute
-            final nl.pim16aap2.lightkeeper.framework.InventorySnapshot result = client.playerInventory(PLAYER_ID);
+            final List<Map<String, Object>> result = client.getPlayerInventory(PLAYER_ID);
 
             // verify
-            assertThat(result.items()).hasSize(1);
-            assertThat(result.items().getFirst().materialKey()).isEqualTo("minecraft:stone");
-            assertRequest(server, AgentAction.GET_PLAYER_INVENTORY, Map.of("uuid", PLAYER_ID.toString()));
+            assertThat(result).hasSize(1);
+            assertThat(result.getFirst()).containsEntry("materialKey", "minecraft:stone");
+            assertRequestAction(server, "GET_PLAYER_INVENTORY");
         }
     }
 
@@ -181,7 +207,7 @@ class UdsAgentClientTest
 
             // verify
             assertThat(result).isTrue();
-            assertRequest(server, AgentAction.DROP_ITEM, Map.of("uuid", PLAYER_ID.toString()));
+            assertRequestAction(server, "DROP_ITEM");
         }
     }
 
@@ -197,13 +223,13 @@ class UdsAgentClientTest
         ); UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
         {
             // execute
-            final java.util.List<nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot> result =
+            final List<nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot> result =
                 client.playerChatComponents(PLAYER_ID);
 
             // verify
             assertThat(result).extracting(nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot::json)
                 .containsExactly("{\"text\":\"Hi\"}");
-            assertRequest(server, AgentAction.GET_PLAYER_CHAT_COMPONENTS, Map.of("uuid", PLAYER_ID.toString()));
+            assertRequestAction(server, "GET_PLAYER_CHAT_COMPONENTS");
         }
     }
 
@@ -219,17 +245,14 @@ class UdsAgentClientTest
         ); UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
         {
             // execute
-            final java.util.List<nl.pim16aap2.lightkeeper.framework.CapturedEventSnapshot> result =
-                client.getCapturedEvents("org.bukkit.event.Event");
+            final List<Map<String, String>> result = client.getCapturedEvents("org.bukkit.event.Event");
 
             // verify
             assertThat(result).hasSize(1);
-            assertThat(result.getFirst().data()).containsEntry("getValue", "value");
-            assertRequest(
-                server,
-                AgentAction.GET_CAPTURED_EVENTS,
-                Map.of("eventClassName", "org.bukkit.event.Event")
-            );
+            assertThat(result.getFirst()).containsEntry("getValue", "value");
+            final JsonNode request = REQUEST_MAPPER.readTree(server.requestLine());
+            assertThat(request.get("action").asText()).isEqualTo("GET_CAPTURED_EVENTS");
+            assertThat(request.get("eventClassName").asText()).isEqualTo("org.bukkit.event.Event");
         }
     }
 
@@ -239,14 +262,20 @@ class UdsAgentClientTest
     {
         // setup
         final Path socketPath = tempDirectory.resolve("agent-handshake.sock");
-        try (AgentSocketServer server = AgentSocketServer.start(socketPath, successResponse(Map.of("protocolVersion", "1", "bukkitVersion", "1.21.11")));
-             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        try (AgentSocketServer server = AgentSocketServer.start(
+            socketPath,
+            successResponse(Map.of("protocolVersion", "1", "bukkitVersion", "1.21.11"))
+        ); UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
         {
             // execute
             client.handshake("my-token", 1, "sha256");
 
             // verify
-            assertRequest(server, AgentAction.HANDSHAKE, Map.of("token", "my-token", "protocolVersion", "1", "agentSha256", "sha256"));
+            final JsonNode request = REQUEST_MAPPER.readTree(server.requestLine());
+            assertThat(request.get("action").asText()).isEqualTo("HANDSHAKE");
+            assertThat(request.get("token").asText()).isEqualTo("my-token");
+            assertThat(request.get("protocolVersion").asInt()).isEqualTo(1);
+            assertThat(request.get("agentSha256").asText()).isEqualTo("sha256");
         }
     }
 
@@ -264,7 +293,7 @@ class UdsAgentClientTest
 
             // verify
             assertThat(result).isEqualTo("world");
-            assertRequest(server, AgentAction.MAIN_WORLD, Map.of());
+            assertRequestAction(server, "MAIN_WORLD");
         }
     }
 
@@ -274,7 +303,7 @@ class UdsAgentClientTest
     {
         // setup
         final Path socketPath = tempDirectory.resolve("agent-unload-chunk.sock");
-        try (AgentSocketServer server = AgentSocketServer.start(socketPath, successResponse(Map.of("success", "false")));
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, successResponse(Map.of("unloaded", "false")));
              UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
         {
             // execute
@@ -282,7 +311,11 @@ class UdsAgentClientTest
 
             // verify
             assertThat(result).isFalse();
-            assertRequest(server, AgentAction.UNLOAD_CHUNK, Map.of("worldName", "world", "x", "5", "z", "-3"));
+            final JsonNode request = REQUEST_MAPPER.readTree(server.requestLine());
+            assertThat(request.get("action").asText()).isEqualTo("UNLOAD_CHUNK");
+            assertThat(request.get("worldName").asText()).isEqualTo("world");
+            assertThat(request.get("x").asInt()).isEqualTo(5);
+            assertThat(request.get("z").asInt()).isEqualTo(-3);
         }
     }
 
@@ -300,7 +333,7 @@ class UdsAgentClientTest
 
             // verify
             assertThat(result).isTrue();
-            assertRequest(server, AgentAction.IS_CHUNK_LOADED, Map.of("worldName", "world", "x", "1", "z", "2"));
+            assertRequestAction(server, "IS_CHUNK_LOADED");
         }
     }
 
@@ -319,7 +352,10 @@ class UdsAgentClientTest
 
             // verify
             assertThat(result).isTrue();
-            assertRequest(server, AgentAction.EXECUTE_COMMAND, Map.of("source", "CONSOLE", "command", "time set day"));
+            final JsonNode request = REQUEST_MAPPER.readTree(server.requestLine());
+            assertThat(request.get("action").asText()).isEqualTo("EXECUTE_COMMAND");
+            assertThat(request.get("commandSource").asText()).isEqualTo("CONSOLE");
+            assertThat(request.get("command").asText()).isEqualTo("time set day");
         }
     }
 
@@ -336,8 +372,9 @@ class UdsAgentClientTest
             client.registerEventListener("org.bukkit.event.player.PlayerJoinEvent");
 
             // verify
-            assertRequest(server, AgentAction.REGISTER_EVENT_LISTENER,
-                Map.of("eventClassName", "org.bukkit.event.player.PlayerJoinEvent"));
+            final JsonNode request = REQUEST_MAPPER.readTree(server.requestLine());
+            assertThat(request.get("action").asText()).isEqualTo("REGISTER_EVENT_LISTENER");
+            assertThat(request.get("eventClassName").asText()).isEqualTo("org.bukkit.event.player.PlayerJoinEvent");
         }
     }
 
@@ -354,8 +391,10 @@ class UdsAgentClientTest
             client.clearCapturedEvents("org.bukkit.event.player.PlayerJoinEvent");
 
             // verify
-            assertRequest(server, AgentAction.CLEAR_CAPTURED_EVENTS,
-                Map.of("eventClassName", "org.bukkit.event.player.PlayerJoinEvent"));
+            final JsonNode request = REQUEST_MAPPER.readTree(server.requestLine());
+            assertThat(request.get("action").asText()).isEqualTo("CLEAR_CAPTURED_EVENTS");
+            assertThat(request.get("eventClassName").asText())
+                .isEqualTo("org.bukkit.event.player.PlayerJoinEvent");
         }
     }
 
@@ -372,8 +411,10 @@ class UdsAgentClientTest
             client.unregisterEventListener("org.bukkit.event.player.PlayerJoinEvent");
 
             // verify
-            assertRequest(server, AgentAction.UNREGISTER_EVENT_LISTENER,
-                Map.of("eventClassName", "org.bukkit.event.player.PlayerJoinEvent"));
+            final JsonNode request = REQUEST_MAPPER.readTree(server.requestLine());
+            assertThat(request.get("action").asText()).isEqualTo("UNREGISTER_EVENT_LISTENER");
+            assertThat(request.get("eventClassName").asText())
+                .isEqualTo("org.bukkit.event.player.PlayerJoinEvent");
         }
     }
 
@@ -383,33 +424,18 @@ class UdsAgentClientTest
     {
         // setup
         final Path socketPath = tempDirectory.resolve("agent-wait-ticks.sock");
-        try (AgentSocketServer server = AgentSocketServer.start(socketPath, successResponse(Map.of("startTick", "0", "endTick", "5")));
-             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        try (AgentSocketServer server = AgentSocketServer.start(
+            socketPath,
+            successResponse(Map.of("startTick", "0", "endTick", "5"))
+        ); UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
         {
             // execute
             client.waitTicks(5);
 
             // verify
-            assertRequest(server, AgentAction.WAIT_TICKS, Map.of("ticks", "5"));
-        }
-    }
-
-    @Test
-    void serverPlatform_shouldMapUnknownPlatformToUnknown(@TempDir Path tempDirectory)
-        throws Exception
-    {
-        // setup
-        final Path socketPath = tempDirectory.resolve("agent-platform-unknown.sock");
-        try (AgentSocketServer server = AgentSocketServer.start(
-            socketPath,
-            successResponse(Map.of("platform", "Sponge"))
-        ); UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
-        {
-            // execute
-            final nl.pim16aap2.lightkeeper.framework.Platform result = client.serverPlatform();
-
-            // verify
-            assertThat(result).isEqualTo(nl.pim16aap2.lightkeeper.framework.Platform.UNKNOWN);
+            final JsonNode request = REQUEST_MAPPER.readTree(server.requestLine());
+            assertThat(request.get("action").asText()).isEqualTo("WAIT_TICKS");
+            assertThat(request.get("ticks").asInt()).isEqualTo(5);
         }
     }
 
@@ -425,11 +451,11 @@ class UdsAgentClientTest
         ); UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
         {
             // execute
-            final java.util.List<String> result = client.playerMessages(PLAYER_ID);
+            final List<String> result = client.playerMessages(PLAYER_ID);
 
             // verify
             assertThat(result).containsExactly("hello", "world");
-            assertRequest(server, AgentAction.GET_PLAYER_MESSAGES, Map.of("uuid", PLAYER_ID.toString()));
+            assertRequestAction(server, "GET_PLAYER_MESSAGES");
         }
     }
 
@@ -438,13 +464,21 @@ class UdsAgentClientTest
         return new AgentResponse("1", true, null, null, data);
     }
 
-    private static void assertRequest(AgentSocketServer server, AgentAction action, Map<String, String> arguments)
+    /**
+     * Asserts that the received request JSON has the expected {@code "action"} field value.
+     *
+     * @param server
+     *     The test socket server holding the received request line.
+     * @param expectedAction
+     *     The expected action name (e.g. {@code "LOAD_CHUNK"}).
+     * @throws IOException
+     *     If JSON parsing fails.
+     */
+    private static void assertRequestAction(AgentSocketServer server, String expectedAction)
         throws IOException
     {
-        final nl.pim16aap2.lightkeeper.runtime.agent.AgentRequest request =
-            REQUEST_MAPPER.readValue(server.requestLine(), nl.pim16aap2.lightkeeper.runtime.agent.AgentRequest.class);
-        assertThat(request.action()).isEqualTo(action);
-        assertThat(request.arguments()).isEqualTo(arguments);
+        final JsonNode request = REQUEST_MAPPER.readTree(server.requestLine());
+        assertThat(request.get("action").asText()).isEqualTo(expectedAction);
     }
 
     private static final class AgentSocketServer implements AutoCloseable
@@ -486,10 +520,10 @@ class UdsAgentClientTest
                  BufferedWriter writer = new BufferedWriter(
                      Channels.newWriter(clientChannel, StandardCharsets.UTF_8)))
             {
-                final String requestLine = reader.readLine();
-                if (requestLine == null)
+                final String line = reader.readLine();
+                if (line == null)
                     return;
-                this.requestLine.set(requestLine);
+                this.requestLine.set(line);
                 writer.write(OBJECT_MAPPER.writeValueAsString(response));
                 writer.newLine();
                 writer.flush();

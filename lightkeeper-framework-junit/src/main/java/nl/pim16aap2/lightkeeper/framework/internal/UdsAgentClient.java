@@ -86,6 +86,8 @@ final class UdsAgentClient implements AutoCloseable
         new TypeReference<>() {};
     private static final TypeReference<List<Map<String, String>>> TYPE_EVENT_DATA_LIST =
         new TypeReference<>() {};
+    private static final TypeReference<List<Map<String, Object>>> TYPE_INVENTORY_ITEM_LIST =
+        new TypeReference<>() {};
 
     /**
      * Maximum time to wait for a single agent response. Matches the agent-side WAIT_TICKS_TIMEOUT_MILLIS
@@ -314,7 +316,7 @@ final class UdsAgentClient implements AutoCloseable
     List<Map<String, Object>> getPlayerInventory(UUID uuid)
     {
         final AgentResponse response = send(new GetPlayerInventoryCommand(nextRequestId(), uuid));
-        return parseJsonField(response, "inventoryJson", new TypeReference<List<Map<String, Object>>>() {});
+        return parseJsonField(response, "inventoryJson", TYPE_INVENTORY_ITEM_LIST);
     }
 
     boolean dropItem(UUID uuid)
