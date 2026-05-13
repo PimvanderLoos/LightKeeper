@@ -38,6 +38,15 @@ planned and reviewed by a human.
 4. Your tests connect through `lightkeeper-framework-junit` (using the runtime manifest path).
 5. During `post-integration-test`, `lightkeeper:cleanup-server` can delete server work directories when tests pass.
 
+## Key Features
+
+- **Server Lifecycle Control**: Crash and restart the server mid-test to verify recovery logic.
+- **World & Chunk Control**: Load/unload chunks, check chunk status, and teleport players between worlds.
+- **Inventory & Item Drops**: Inspect player inventories and simulate item drops.
+- **Dynamic Event Capture**: Capture and assert on any Bukkit event dynamically without writing custom listeners.
+- **Clickable Chat Interaction**: Verify and interact with clickable chat messages.
+- **Platform Awareness**: Write tests that adapt to Paper or Spigot specifics.
+
 ## Requirements
 
 - Java 21
