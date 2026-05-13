@@ -1,11 +1,11 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import nl.pim16aap2.lightkeeper.runtime.agent.AgentResponse;
+import nl.pim16aap2.lightkeeper.protocol.AgentResponse;
+import nl.pim16aap2.lightkeeper.protocol.ClickMenuSlotCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.junit.jupiter.api.Test;
 
-import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
@@ -19,13 +19,11 @@ class AgentMenuActionsTest
     {
         // setup
         final AgentMenuActions menuActions = createMenuActions();
-        final Map<String, String> arguments = Map.of(
-            "uuid", UUID.randomUUID().toString(),
-            "slot", "-1"
-        );
+        final ClickMenuSlotCommand command =
+            new ClickMenuSlotCommand("request-1", UUID.randomUUID(), -1, "LEFT");
 
         // execute
-        final AgentResponse response = menuActions.handleClickMenuSlot("request-1", arguments);
+        final AgentResponse response = menuActions.handleClickMenuSlot(command);
 
         // verify
         assertThat(response.success()).isFalse();

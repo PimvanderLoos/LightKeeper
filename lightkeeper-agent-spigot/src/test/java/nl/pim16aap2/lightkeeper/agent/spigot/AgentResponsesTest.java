@@ -1,7 +1,7 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
-import nl.pim16aap2.lightkeeper.runtime.agent.AgentErrorCode;
-import nl.pim16aap2.lightkeeper.runtime.agent.AgentResponse;
+import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
+import nl.pim16aap2.lightkeeper.protocol.AgentResponse;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;

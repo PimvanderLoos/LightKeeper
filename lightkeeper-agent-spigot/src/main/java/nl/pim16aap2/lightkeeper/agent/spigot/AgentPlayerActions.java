@@ -2,8 +2,23 @@ package nl.pim16aap2.lightkeeper.agent.spigot;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import nl.pim16aap2.lightkeeper.nms.api.IBotPlayerNmsAdapter;
-import nl.pim16aap2.lightkeeper.runtime.agent.AgentErrorCode;
-import nl.pim16aap2.lightkeeper.runtime.agent.AgentResponse;
+import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
+import nl.pim16aap2.lightkeeper.protocol.AgentResponse;
+import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEventsCommand;
+import nl.pim16aap2.lightkeeper.protocol.CreatePlayerCommand;
+import nl.pim16aap2.lightkeeper.protocol.DropItemCommand;
+import nl.pim16aap2.lightkeeper.protocol.ExecutePlayerCommandCommand;
+import nl.pim16aap2.lightkeeper.protocol.GetCapturedEventsCommand;
+import nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponentsCommand;
+import nl.pim16aap2.lightkeeper.protocol.GetPlayerInventoryCommand;
+import nl.pim16aap2.lightkeeper.protocol.GetPlayerMessagesCommand;
+import nl.pim16aap2.lightkeeper.protocol.LeftClickBlockCommand;
+import nl.pim16aap2.lightkeeper.protocol.PlacePlayerBlockCommand;
+import nl.pim16aap2.lightkeeper.protocol.RegisterEventListenerCommand;
+import nl.pim16aap2.lightkeeper.protocol.RemovePlayerCommand;
+import nl.pim16aap2.lightkeeper.protocol.RightClickBlockCommand;
+import nl.pim16aap2.lightkeeper.protocol.TeleportPlayerCommand;
+import nl.pim16aap2.lightkeeper.protocol.UnregisterEventListenerCommand;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -17,6 +32,9 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -79,43 +97,24 @@ final class AgentPlayerActions
     /**
      * Handles {@code CREATE_PLAYER} by spawning a synthetic player and registering it in the store.
      *
-     * @param requestId
-     *     Runtime request identifier.
-     * @param arguments
-     *     Request arguments. Requires {@code name} and {@code worldName}; optional spawn/health/permission fields.
+     * @param command
+     *     Typed command carrying player name, UUID, world, spawn coordinates, health, and permissions.
      * @return
      *     Success response containing the created player's UUID and name, or a validation error response.
      * @throws Exception
-     *     Propagates parsing, validation, and main-thread execution failures.
+     *     Propagates validation and main-thread execution failures.
      */
-    AgentResponse handleCreatePlayer(String requestId, Map<String, String> arguments)
+    AgentResponse handleCreatePlayer(CreatePlayerCommand command)
         throws Exception
     {
-        final String name = arguments.getOrDefault("name", "").trim();
-        final String worldName = arguments.getOrDefault("worldName", "").trim();
-        if (name.isBlank())
-        {
-            return AgentResponses.errorResponse(
-                requestId,
-                AgentErrorCode.INVALID_ARGUMENT,
-                "Argument 'name' must not be blank."
-            );
-        }
-        if (worldName.isBlank())
-        {
-            return AgentResponses.errorResponse(
-                requestId,
-                AgentErrorCode.INVALID_ARGUMENT,
-                "Argument 'worldName' must not be blank."
-            );
-        }
-
-        final UUID uuid = UUID.fromString(arguments.getOrDefault("uuid", UUID.randomUUID().toString()));
-        final Double x = AgentRequestParsers.parseOptionalDouble(arguments.get("x"));
-        final Double y = AgentRequestParsers.parseOptionalDouble(arguments.get("y"));
-        final Double z = AgentRequestParsers.parseOptionalDouble(arguments.get("z"));
-        final Double health = AgentRequestParsers.parseOptionalDouble(arguments.get("health"));
-        final String permissionsCsv = arguments.getOrDefault("permissions", "");
+        final String name = command.name();
+        final UUID uuid = command.uuid();
+        final String worldName = command.worldName();
+        final Double x = command.x();
+        final Double y = command.y();
+        final Double z = command.z();
+        final Double health = command.health();
+        final String permissionsCsv = command.permissionsCsv();
 
         final Player player = mainThreadExecutor.callOnMainThread(() ->
         {
@@ -130,7 +129,7 @@ final class AgentPlayerActions
             if (health != null)
                 spawnedPlayer.setHealth(Math.min(spawnedPlayer.getMaxHealth(), health));
 
-            if (!permissionsCsv.isBlank())
+            if (permissionsCsv != null && !permissionsCsv.isBlank())
                 playerStore.setPermissions(plugin, uuid, spawnedPlayer, permissionsCsv);
 
             return spawnedPlayer;
@@ -142,7 +141,7 @@ final class AgentPlayerActions
             "LK_AGENT: Created synthetic player '%s' (%s) in world '%s'."
                 .formatted(player.getName(), player.getUniqueId(), worldName)
         );
-        return AgentResponses.successResponse(requestId, Map.of(
+        return AgentResponses.successResponse(command.requestId(), Map.of(
             "uuid", player.getUniqueId().toString(),
             "name", player.getName()
         ));
@@ -151,19 +150,17 @@ final class AgentPlayerActions
     /**
      * Handles {@code REMOVE_PLAYER} by removing permissions, despawning the synthetic player, and cleaning state.
      *
-     * @param requestId
-     *     Runtime request identifier.
-     * @param arguments
-     *     Request arguments; requires {@code uuid}.
+     * @param command
+     *     Typed command carrying the player UUID.
      * @return
      *     Success response when cleanup completes.
      * @throws Exception
-     *     Propagates parsing and main-thread execution failures.
+     *     Propagates main-thread execution failures.
      */
-    AgentResponse handleRemovePlayer(String requestId, Map<String, String> arguments)
+    AgentResponse handleRemovePlayer(RemovePlayerCommand command)
         throws Exception
     {
-        final UUID uuid = UUID.fromString(arguments.getOrDefault("uuid", ""));
+        final UUID uuid = command.uuid();
         mainThreadExecutor.callOnMainThread(() ->
         {
             final Player player = playerStore.getRequiredPlayer(uuid);
@@ -177,75 +174,62 @@ final class AgentPlayerActions
             return Boolean.TRUE;
         });
 
-        return AgentResponses.successResponse(requestId, Map.of("removed", "true"));
+        return AgentResponses.successResponse(command.requestId(), Map.of("removed", "true"));
     }
 
     /**
      * Handles {@code EXECUTE_PLAYER_COMMAND} by dispatching the command in the player's execution context.
      *
-     * @param requestId
-     *     Runtime request identifier.
-     * @param arguments
-     *     Request arguments; requires {@code uuid} and non-blank {@code command}.
+     * @param command
+     *     Typed command carrying the player UUID and command string.
      * @return
      *     Success response containing whether dispatch succeeded.
      * @throws Exception
-     *     Propagates parsing and main-thread execution failures.
+     *     Propagates main-thread execution failures.
      */
-    AgentResponse handleExecutePlayerCommand(String requestId, Map<String, String> arguments)
+    AgentResponse handleExecutePlayerCommand(ExecutePlayerCommandCommand command)
         throws Exception
     {
-        final UUID uuid = UUID.fromString(arguments.getOrDefault("uuid", ""));
-        final String rawCommand = arguments.getOrDefault("command", "").trim();
-        if (rawCommand.isBlank())
-        {
-            return AgentResponses.errorResponse(
-                requestId,
-                AgentErrorCode.INVALID_ARGUMENT,
-                "Argument 'command' must not be blank."
-            );
-        }
-
-        final String command = rawCommand.startsWith("/") ? rawCommand.substring(1) : rawCommand;
+        final UUID uuid = command.uuid();
+        final String rawCommand = command.command();
+        final String cmd = rawCommand.startsWith("/") ? rawCommand.substring(1) : rawCommand;
         final Boolean success = mainThreadExecutor.callOnMainThread(() ->
         {
             final Player player = playerStore.getRequiredPlayer(uuid);
-            boolean result = player.performCommand(command);
+            boolean result = player.performCommand(cmd);
             if (!result)
-                result = Bukkit.dispatchCommand(player, command);
+                result = Bukkit.dispatchCommand(player, cmd);
             return result;
         });
 
-        return AgentResponses.successResponse(requestId, Map.of("success", success.toString()));
+        return AgentResponses.successResponse(command.requestId(), Map.of("success", success.toString()));
     }
 
     /**
      * Handles {@code PLACE_PLAYER_BLOCK} by setting the target block type in the player's current world.
      *
-     * @param requestId
-     *     Runtime request identifier.
-     * @param arguments
-     *     Request arguments; requires {@code uuid}, block coordinates, and {@code material}.
+     * @param command
+     *     Typed command carrying UUID, material key, and block coordinates.
      * @return
-     *     Success response containing the resulting block material key.
+     *     Success response containing the resulting block material key, or validation error when material is unknown.
      * @throws Exception
-     *     Propagates parsing, validation, and main-thread execution failures.
+     *     Propagates validation and main-thread execution failures.
      */
-    AgentResponse handlePlacePlayerBlock(String requestId, Map<String, String> arguments)
+    AgentResponse handlePlacePlayerBlock(PlacePlayerBlockCommand command)
         throws Exception
     {
-        final UUID uuid = UUID.fromString(arguments.getOrDefault("uuid", ""));
-        final String materialName = arguments.getOrDefault("material", "");
-        final int x = AgentRequestParsers.parseInt(arguments.getOrDefault("x", "0"));
-        final int y = AgentRequestParsers.parseInt(arguments.getOrDefault("y", "0"));
-        final int z = AgentRequestParsers.parseInt(arguments.getOrDefault("z", "0"));
-        final Material material = AgentRequestParsers.parseMaterial(materialName);
+        final UUID uuid = command.uuid();
+        final String materialKey = command.materialKey();
+        final int x = command.x();
+        final int y = command.y();
+        final int z = command.z();
+        final Material material = AgentRequestParsers.parseMaterial(materialKey);
         if (material == null)
         {
             return AgentResponses.errorResponse(
-                requestId,
+                command.requestId(),
                 AgentErrorCode.INVALID_ARGUMENT,
-                "Unknown material '%s'.".formatted(materialName)
+                "Unknown material '%s'.".formatted(materialKey)
             );
         }
 
@@ -257,63 +241,57 @@ final class AgentPlayerActions
             return world.getBlockAt(x, y, z).getType().getKey().toString();
         });
 
-        return AgentResponses.successResponse(requestId, Map.of("material", finalMaterial));
+        return AgentResponses.successResponse(command.requestId(), Map.of("material", finalMaterial));
     }
 
     /**
      * Handles {@code LEFT_CLICK_BLOCK} by firing a synthetic left-click block interaction event.
      *
-     * @param requestId
-     *     Runtime request identifier.
-     * @param arguments
-     *     Request arguments; requires {@code uuid} and block coordinates. Optional {@code blockFace} defaults to
-     *     {@code UP}.
+     * @param command
+     *     Typed command carrying UUID, block coordinates, and block face.
      * @return
      *     Success response containing whether the fired interaction event was cancelled.
      * @throws Exception
-     *     Propagates parsing, validation, and main-thread execution failures.
+     *     Propagates validation and main-thread execution failures.
      */
-    AgentResponse handleLeftClickBlock(String requestId, Map<String, String> arguments)
+    AgentResponse handleLeftClickBlock(LeftClickBlockCommand command)
         throws Exception
     {
-        return handleClickBlock(requestId, arguments, Action.LEFT_CLICK_BLOCK);
+        return handleClickBlock(command.requestId(), command.uuid(),
+            command.x(), command.y(), command.z(), command.blockFace(), Action.LEFT_CLICK_BLOCK);
     }
 
     /**
      * Handles {@code RIGHT_CLICK_BLOCK} by firing a synthetic right-click block interaction event.
      *
-     * @param requestId
-     *     Runtime request identifier.
-     * @param arguments
-     *     Request arguments; requires {@code uuid} and block coordinates. Optional {@code blockFace} defaults to
-     *     {@code UP}.
+     * @param command
+     *     Typed command carrying UUID, block coordinates, and block face.
      * @return
      *     Success response containing whether the fired interaction event was cancelled.
      * @throws Exception
-     *     Propagates parsing, validation, and main-thread execution failures.
+     *     Propagates validation and main-thread execution failures.
      */
-    AgentResponse handleRightClickBlock(String requestId, Map<String, String> arguments)
+    AgentResponse handleRightClickBlock(RightClickBlockCommand command)
         throws Exception
     {
-        return handleClickBlock(requestId, arguments, Action.RIGHT_CLICK_BLOCK);
+        return handleClickBlock(command.requestId(), command.uuid(),
+            command.x(), command.y(), command.z(), command.blockFace(), Action.RIGHT_CLICK_BLOCK);
     }
 
     /**
      * Handles {@code GET_PLAYER_MESSAGES} by draining adapter messages and returning full tracked history.
      *
-     * @param requestId
-     *     Runtime request identifier.
-     * @param arguments
-     *     Request arguments; requires {@code uuid}.
+     * @param command
+     *     Typed command carrying the player UUID.
      * @return
      *     Success response with {@code messagesJson}.
      * @throws Exception
-     *     Propagates parsing and main-thread execution failures.
+     *     Propagates main-thread execution failures.
      */
-    AgentResponse handleGetPlayerMessages(String requestId, Map<String, String> arguments)
+    AgentResponse handleGetPlayerMessages(GetPlayerMessagesCommand command)
         throws Exception
     {
-        final UUID uuid = UUID.fromString(arguments.getOrDefault("uuid", ""));
+        final UUID uuid = command.uuid();
         final String messagesJson = mainThreadExecutor.callOnMainThread(() ->
         {
             playerStore.getRequiredPlayer(uuid);
@@ -321,44 +299,187 @@ final class AgentPlayerActions
             return objectMapper.writeValueAsString(playerStore.getPlayerMessages(uuid));
         });
 
-        return AgentResponses.successResponse(requestId, Map.of("messagesJson", messagesJson));
+        return AgentResponses.successResponse(command.requestId(), Map.of("messagesJson", messagesJson));
     }
 
-    private AgentResponse handleClickBlock(String requestId, Map<String, String> arguments, Action action)
+    /**
+     * Handles {@code GET_PLAYER_CHAT_COMPONENTS} by returning the serialized chat component history.
+     *
+     * @param command
+     *     Typed command carrying the player UUID.
+     * @return
+     *     Success response with {@code componentsJson}.
+     * @throws Exception
+     *     Propagates main-thread execution failures.
+     */
+    AgentResponse handleGetPlayerChatComponents(GetPlayerChatComponentsCommand command)
         throws Exception
     {
-        final UUID uuid = UUID.fromString(arguments.getOrDefault("uuid", ""));
-        final int x = AgentRequestParsers.parseInt(arguments.getOrDefault("x", "0"));
-        final int y = AgentRequestParsers.parseInt(arguments.getOrDefault("y", "0"));
-        final int z = AgentRequestParsers.parseInt(arguments.getOrDefault("z", "0"));
-        final BlockFace blockFace = AgentRequestParsers.parseBlockFace(arguments.getOrDefault("blockFace", "UP"));
-        if (blockFace == null)
+        final UUID uuid = command.uuid();
+        final String componentsJson = mainThreadExecutor.callOnMainThread(() ->
         {
-            return AgentResponses.errorResponse(
-                requestId,
-                AgentErrorCode.INVALID_ARGUMENT,
-                "Unknown block face '%s'.".formatted(arguments.getOrDefault("blockFace", ""))
-            );
-        }
-
-        final Boolean cancelled = mainThreadExecutor.callOnMainThread(() ->
-        {
-            final Player player = playerStore.getRequiredPlayer(uuid);
-            final Block block = player.getWorld().getBlockAt(x, y, z);
-            final ItemStack item = player.getInventory().getItemInMainHand();
-            final PlayerInteractEvent event = new PlayerInteractEvent(
-                player,
-                action,
-                item,
-                block,
-                blockFace,
-                EquipmentSlot.HAND
-            );
-            Bukkit.getPluginManager().callEvent(event);
-            return event.isCancelled();
+            playerStore.getRequiredPlayer(uuid);
+            return objectMapper.writeValueAsString(List.of());
         });
 
-        return AgentResponses.successResponse(requestId, Map.of("cancelled", cancelled.toString()));
+        return AgentResponses.successResponse(command.requestId(), Map.of("componentsJson", componentsJson));
+    }
+
+    /**
+     * Handles {@code GET_PLAYER_INVENTORY} by returning a snapshot of the player's inventory.
+     *
+     * @param command
+     *     Typed command carrying the player UUID.
+     * @return
+     *     Success response with {@code inventoryJson}.
+     * @throws Exception
+     *     Propagates main-thread execution failures.
+     */
+    AgentResponse handleGetPlayerInventory(GetPlayerInventoryCommand command)
+        throws Exception
+    {
+        final UUID uuid = command.uuid();
+        final String inventoryJson = mainThreadExecutor.callOnMainThread(() ->
+        {
+            final Player player = playerStore.getRequiredPlayer(uuid);
+            return objectMapper.writeValueAsString(buildInventoryItems(player.getInventory().getContents()));
+        });
+
+        return AgentResponses.successResponse(command.requestId(), Map.of("inventoryJson", inventoryJson));
+    }
+
+    /**
+     * Handles {@code DROP_ITEM} by simulating the player dropping their main hand item.
+     *
+     * @param command
+     *     Typed command carrying the player UUID.
+     * @return
+     *     Success response with {@code dropped=true} when no plugin cancelled the event, {@code false} otherwise.
+     * @throws Exception
+     *     Propagates main-thread execution failures.
+     */
+    AgentResponse handleDropItem(DropItemCommand command)
+        throws Exception
+    {
+        final UUID uuid = command.uuid();
+        final Boolean dropped = mainThreadExecutor.callOnMainThread(() ->
+        {
+            final Player player = playerStore.getRequiredPlayer(uuid);
+            final ItemStack item = player.getInventory().getItemInMainHand();
+            if (item == null || item.getType().isAir())
+                return Boolean.FALSE;
+
+            final org.bukkit.entity.Item droppedItem =
+                player.getWorld().dropItemNaturally(player.getLocation(), item.clone());
+            final org.bukkit.event.player.PlayerDropItemEvent event =
+                new org.bukkit.event.player.PlayerDropItemEvent(player, droppedItem);
+
+            Bukkit.getPluginManager().callEvent(event);
+            droppedItem.remove();
+
+            return !event.isCancelled();
+        });
+
+        return AgentResponses.successResponse(command.requestId(), Map.of("dropped", dropped.toString()));
+    }
+
+    /**
+     * Handles {@code TELEPORT_PLAYER} by teleporting a synthetic player to the given world coordinates.
+     *
+     * @param command
+     *     Typed command carrying player UUID, world name, and target coordinates.
+     * @return
+     *     Success response with {@code teleported} result, or error when the world does not exist.
+     * @throws Exception
+     *     Propagates main-thread execution failures.
+     */
+    AgentResponse handleTeleportPlayer(TeleportPlayerCommand command)
+        throws Exception
+    {
+        final UUID uuid = command.uuid();
+        final String worldName = command.worldName();
+        final double x = command.x();
+        final double y = command.y();
+        final double z = command.z();
+
+        final Boolean teleported = mainThreadExecutor.callOnMainThread(() ->
+        {
+            final Player player = playerStore.getRequiredPlayer(uuid);
+            final World world = Bukkit.getWorld(worldName);
+            if (world == null)
+                throw new IllegalArgumentException("World '%s' does not exist.".formatted(worldName));
+            return player.teleport(new Location(world, x, y, z));
+        });
+
+        return AgentResponses.successResponse(command.requestId(), Map.of("teleported", teleported.toString()));
+    }
+
+    /**
+     * Handles {@code REGISTER_EVENT_LISTENER} — not yet implemented in this split branch.
+     *
+     * @param command
+     *     Typed command carrying the event class name.
+     * @return
+     *     Error response indicating the action is not yet supported.
+     */
+    AgentResponse handleRegisterEventListener(RegisterEventListenerCommand command)
+    {
+        return AgentResponses.errorResponse(
+            command.requestId(),
+            AgentErrorCode.REQUEST_FAILED,
+            "REGISTER_EVENT_LISTENER is not yet implemented in this build."
+        );
+    }
+
+    /**
+     * Handles {@code GET_CAPTURED_EVENTS} — not yet implemented in this split branch.
+     *
+     * @param command
+     *     Typed command carrying the event class name.
+     * @return
+     *     Error response indicating the action is not yet supported.
+     */
+    AgentResponse handleGetCapturedEvents(GetCapturedEventsCommand command)
+    {
+        return AgentResponses.errorResponse(
+            command.requestId(),
+            AgentErrorCode.REQUEST_FAILED,
+            "GET_CAPTURED_EVENTS is not yet implemented in this build."
+        );
+    }
+
+    /**
+     * Handles {@code CLEAR_CAPTURED_EVENTS} — not yet implemented in this split branch.
+     *
+     * @param command
+     *     Typed command carrying the event class name.
+     * @return
+     *     Error response indicating the action is not yet supported.
+     */
+    AgentResponse handleClearCapturedEvents(ClearCapturedEventsCommand command)
+    {
+        return AgentResponses.errorResponse(
+            command.requestId(),
+            AgentErrorCode.REQUEST_FAILED,
+            "CLEAR_CAPTURED_EVENTS is not yet implemented in this build."
+        );
+    }
+
+    /**
+     * Handles {@code UNREGISTER_EVENT_LISTENER} — not yet implemented in this split branch.
+     *
+     * @param command
+     *     Typed command carrying the event class name.
+     * @return
+     *     Error response indicating the action is not yet supported.
+     */
+    AgentResponse handleUnregisterEventListener(UnregisterEventListenerCommand command)
+    {
+        return AgentResponses.errorResponse(
+            command.requestId(),
+            AgentErrorCode.REQUEST_FAILED,
+            "UNREGISTER_EVENT_LISTENER is not yet implemented in this build."
+        );
     }
 
     /**
@@ -388,5 +509,70 @@ final class AgentPlayerActions
                 );
             }
         }
+    }
+
+    private AgentResponse handleClickBlock(
+        String requestId,
+        UUID uuid,
+        int x,
+        int y,
+        int z,
+        String blockFaceName,
+        Action action)
+        throws Exception
+    {
+        final BlockFace blockFace = AgentRequestParsers.parseBlockFace(blockFaceName);
+        if (blockFace == null)
+        {
+            return AgentResponses.errorResponse(
+                requestId,
+                AgentErrorCode.INVALID_ARGUMENT,
+                "Unknown block face '%s'.".formatted(blockFaceName)
+            );
+        }
+
+        final Boolean cancelled = mainThreadExecutor.callOnMainThread(() ->
+        {
+            final Player player = playerStore.getRequiredPlayer(uuid);
+            final Block block = player.getWorld().getBlockAt(x, y, z);
+            final ItemStack item = player.getInventory().getItemInMainHand();
+            final PlayerInteractEvent event = new PlayerInteractEvent(
+                player,
+                action,
+                item,
+                block,
+                blockFace,
+                EquipmentSlot.HAND
+            );
+            Bukkit.getPluginManager().callEvent(event);
+            return event.isCancelled();
+        });
+
+        return AgentResponses.successResponse(requestId, Map.of("cancelled", cancelled.toString()));
+    }
+
+    private static List<Map<String, Object>> buildInventoryItems(ItemStack... contents)
+    {
+        final List<Map<String, Object>> items = new ArrayList<>();
+        for (int i = 0; i < contents.length; i++)
+        {
+            final ItemStack item = contents[i];
+            if (item == null || item.getType().isAir())
+                continue;
+
+            final Map<String, Object> itemData = new HashMap<>();
+            itemData.put("slot", i);
+            itemData.put("materialKey", item.getType().getKey().toString());
+            final String displayName = item.getItemMeta() == null ? null : item.getItemMeta().getDisplayName();
+            itemData.put("displayName", displayName);
+            itemData.put(
+                "lore",
+                item.getItemMeta() == null
+                    ? List.of()
+                    : Objects.requireNonNullElse(item.getItemMeta().getLore(), List.of())
+            );
+            items.add(itemData);
+        }
+        return items;
     }
 }

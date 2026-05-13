@@ -37,6 +37,12 @@
 
         <dependency>
             <groupId>nl.pim16aap2.lightkeeper</groupId>
+            <artifactId>lightkeeper-protocol</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>nl.pim16aap2.lightkeeper</groupId>
             <artifactId>lightkeeper-nms-api</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -96,6 +102,7 @@
                             <artifactSet>
                                 <includes>
                                     <include>nl.pim16aap2.lightkeeper:lightkeeper-runtime-core</include>
+                                    <include>nl.pim16aap2.lightkeeper:lightkeeper-protocol</include>
                                     <include>nl.pim16aap2.lightkeeper:lightkeeper-nms-api</include>
                                     <include>nl.pim16aap2.lightkeeper:lightkeeper-nms-v1_21_R7</include>
                                     <include>com.fasterxml.jackson.core:jackson-databind</include>

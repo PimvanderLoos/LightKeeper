@@ -1,8 +1,11 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import nl.pim16aap2.lightkeeper.runtime.agent.AgentErrorCode;
-import nl.pim16aap2.lightkeeper.runtime.agent.AgentResponse;
+import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
+import nl.pim16aap2.lightkeeper.protocol.AgentResponse;
+import nl.pim16aap2.lightkeeper.protocol.ClickMenuSlotCommand;
+import nl.pim16aap2.lightkeeper.protocol.DragMenuSlotsCommand;
+import nl.pim16aap2.lightkeeper.protocol.GetOpenMenuCommand;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -16,7 +19,6 @@ import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,19 +68,17 @@ final class AgentMenuActions
     /**
      * Handles {@code GET_OPEN_MENU} by returning title and non-air slot metadata for the active inventory.
      *
-     * @param requestId
-     *     Runtime request identifier.
-     * @param arguments
-     *     Request arguments; requires {@code uuid}.
+     * @param command
+     *     Typed command carrying the player UUID.
      * @return
      *     Success response with menu state or {@code open=false} when no actionable menu is open.
      * @throws Exception
-     *     Propagates parsing and Bukkit execution failures.
+     *     Propagates Bukkit execution failures.
      */
-    AgentResponse handleGetOpenMenu(String requestId, Map<String, String> arguments)
+    AgentResponse handleGetOpenMenu(GetOpenMenuCommand command)
         throws Exception
     {
-        final UUID uuid = UUID.fromString(arguments.getOrDefault("uuid", ""));
+        final UUID uuid = command.uuid();
         final Map<String, String> data = mainThreadExecutor.callOnMainThread(() ->
         {
             final Player player = playerStore.getRequiredPlayer(uuid);
@@ -114,30 +114,28 @@ final class AgentMenuActions
             );
         });
 
-        return AgentResponses.successResponse(requestId, data);
+        return AgentResponses.successResponse(command.requestId(), data);
     }
 
     /**
      * Handles {@code CLICK_MENU_SLOT} by synthesizing and dispatching an inventory click event.
      *
-     * @param requestId
-     *     Runtime request identifier.
-     * @param arguments
-     *     Request arguments; requires {@code uuid} and non-negative {@code slot}.
+     * @param command
+     *     Typed command carrying the player UUID, slot index, and click type.
      * @return
      *     Success or validation error response.
      * @throws Exception
-     *     Propagates parsing and Bukkit execution failures.
+     *     Propagates Bukkit execution failures.
      */
-    AgentResponse handleClickMenuSlot(String requestId, Map<String, String> arguments)
+    AgentResponse handleClickMenuSlot(ClickMenuSlotCommand command)
         throws Exception
     {
-        final UUID uuid = UUID.fromString(arguments.getOrDefault("uuid", ""));
-        final int slot = AgentRequestParsers.parseInt(arguments.getOrDefault("slot", "-1"));
+        final UUID uuid = command.uuid();
+        final int slot = command.slot();
         if (slot < 0)
         {
             return AgentResponses.errorResponse(
-                requestId,
+                command.requestId(),
                 AgentErrorCode.INVALID_ARGUMENT,
                 "Argument 'slot' must be >= 0."
             );
@@ -161,51 +159,43 @@ final class AgentMenuActions
             return Boolean.TRUE;
         });
 
-        return AgentResponses.successResponse(requestId, Map.of("clicked", "true"));
+        return AgentResponses.successResponse(command.requestId(), Map.of("clicked", "true"));
     }
 
     /**
      * Handles {@code DRAG_MENU_SLOTS} by creating and dispatching an inventory drag event.
      *
-     * @param requestId
-     *     Runtime request identifier.
-     * @param arguments
-     *     Request arguments; requires {@code uuid}, {@code material}, and comma-separated {@code slots}.
+     * @param command
+     *     Typed command carrying the player UUID, material key, and target slot indices.
      * @return
      *     Success or validation error response.
      * @throws Exception
-     *     Propagates parsing and Bukkit execution failures.
+     *     Propagates Bukkit execution failures.
      */
-    AgentResponse handleDragMenuSlots(String requestId, Map<String, String> arguments)
+    AgentResponse handleDragMenuSlots(DragMenuSlotsCommand command)
         throws Exception
     {
-        final UUID uuid = UUID.fromString(arguments.getOrDefault("uuid", ""));
-        final String materialName = arguments.getOrDefault("material", "").trim();
-        final Material material = AgentRequestParsers.parseMaterial(materialName);
+        final UUID uuid = command.uuid();
+        final String materialKey = command.materialKey();
+        final Material material = AgentRequestParsers.parseMaterial(materialKey);
         if (material == null)
         {
             return AgentResponses.errorResponse(
-                requestId,
+                command.requestId(),
                 AgentErrorCode.INVALID_ARGUMENT,
-                "Unknown material '%s'.".formatted(materialName)
+                "Unknown material '%s'.".formatted(materialKey)
             );
         }
 
-        final String slots = arguments.getOrDefault("slots", "").trim();
-        if (slots.isBlank())
+        final int[] rawSlots = command.slots();
+        if (rawSlots.length == 0)
         {
             return AgentResponses.errorResponse(
-                requestId,
+                command.requestId(),
                 AgentErrorCode.INVALID_ARGUMENT,
-                "Argument 'slots' must not be blank."
+                "Argument 'slots' must not be empty."
             );
         }
-
-        final List<Integer> rawSlots = Arrays.stream(slots.split(","))
-            .map(String::trim)
-            .filter(value -> !value.isEmpty())
-            .map(Integer::parseInt)
-            .toList();
 
         mainThreadExecutor.callOnMainThread(() ->
         {
@@ -216,7 +206,7 @@ final class AgentMenuActions
 
             final ItemStack cursorItem = new ItemStack(material);
             final Map<Integer, ItemStack> newItems = new HashMap<>();
-            for (final Integer rawSlot : rawSlots)
+            for (final int rawSlot : rawSlots)
                 newItems.put(rawSlot, cursorItem.clone());
 
             final InventoryDragEvent event = new InventoryDragEvent(
@@ -235,7 +225,7 @@ final class AgentMenuActions
             return Boolean.TRUE;
         });
 
-        return AgentResponses.successResponse(requestId, Map.of("dragged", "true"));
+        return AgentResponses.successResponse(command.requestId(), Map.of("dragged", "true"));
     }
 
     /**

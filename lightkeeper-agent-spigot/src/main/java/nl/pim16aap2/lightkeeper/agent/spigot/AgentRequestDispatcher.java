@@ -1,10 +1,39 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import nl.pim16aap2.lightkeeper.runtime.agent.AgentAction;
-import nl.pim16aap2.lightkeeper.runtime.agent.AgentErrorCode;
-import nl.pim16aap2.lightkeeper.runtime.agent.AgentRequest;
-import nl.pim16aap2.lightkeeper.runtime.agent.AgentResponse;
+import nl.pim16aap2.lightkeeper.protocol.IAgentCommand;
+import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
+import nl.pim16aap2.lightkeeper.protocol.AgentResponse;
+import nl.pim16aap2.lightkeeper.protocol.BlockTypeCommand;
+import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEventsCommand;
+import nl.pim16aap2.lightkeeper.protocol.ClickMenuSlotCommand;
+import nl.pim16aap2.lightkeeper.protocol.CreatePlayerCommand;
+import nl.pim16aap2.lightkeeper.protocol.DragMenuSlotsCommand;
+import nl.pim16aap2.lightkeeper.protocol.DropItemCommand;
+import nl.pim16aap2.lightkeeper.protocol.ExecuteCommandCommand;
+import nl.pim16aap2.lightkeeper.protocol.ExecutePlayerCommandCommand;
+import nl.pim16aap2.lightkeeper.protocol.GetCapturedEventsCommand;
+import nl.pim16aap2.lightkeeper.protocol.GetOpenMenuCommand;
+import nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponentsCommand;
+import nl.pim16aap2.lightkeeper.protocol.GetPlayerInventoryCommand;
+import nl.pim16aap2.lightkeeper.protocol.GetPlayerMessagesCommand;
+import nl.pim16aap2.lightkeeper.protocol.GetServerPlatformCommand;
+import nl.pim16aap2.lightkeeper.protocol.GetServerTickCommand;
+import nl.pim16aap2.lightkeeper.protocol.HandshakeCommand;
+import nl.pim16aap2.lightkeeper.protocol.IsChunkLoadedCommand;
+import nl.pim16aap2.lightkeeper.protocol.LeftClickBlockCommand;
+import nl.pim16aap2.lightkeeper.protocol.LoadChunkCommand;
+import nl.pim16aap2.lightkeeper.protocol.MainWorldCommand;
+import nl.pim16aap2.lightkeeper.protocol.NewWorldCommand;
+import nl.pim16aap2.lightkeeper.protocol.PlacePlayerBlockCommand;
+import nl.pim16aap2.lightkeeper.protocol.RegisterEventListenerCommand;
+import nl.pim16aap2.lightkeeper.protocol.RemovePlayerCommand;
+import nl.pim16aap2.lightkeeper.protocol.RightClickBlockCommand;
+import nl.pim16aap2.lightkeeper.protocol.SetBlockCommand;
+import nl.pim16aap2.lightkeeper.protocol.TeleportPlayerCommand;
+import nl.pim16aap2.lightkeeper.protocol.UnloadChunkCommand;
+import nl.pim16aap2.lightkeeper.protocol.UnregisterEventListenerCommand;
+import nl.pim16aap2.lightkeeper.protocol.WaitTicksCommand;
 import org.bukkit.Bukkit;
 
 import java.util.Map;
@@ -113,8 +142,8 @@ final class AgentRequestDispatcher
     {
         try
         {
-            final AgentRequest request = objectMapper.readValue(line, AgentRequest.class);
-            return dispatchRequest(request, handshakeCompleted);
+            final IAgentCommand command = objectMapper.readValue(line, IAgentCommand.class);
+            return dispatchCommand(command, handshakeCompleted);
         }
         catch (Exception exception)
         {
@@ -130,25 +159,24 @@ final class AgentRequestDispatcher
     }
 
     /**
-     * Dispatches a parsed request to the relevant action handler.
+     * Dispatches a parsed command to the relevant action handler.
      *
-     * @param request
-     *     Parsed protocol request.
+     * @param command
+     *     Parsed protocol command.
      * @param handshakeCompleted
      *     Current connection handshake state.
      * @return
      *     Dispatch result containing response payload and updated handshake state.
      */
-    private RequestDispatchResult dispatchRequest(AgentRequest request, boolean handshakeCompleted)
+    private RequestDispatchResult dispatchCommand(IAgentCommand command, boolean handshakeCompleted)
     {
-        final Map<String, String> arguments = request.arguments();
-        final String requestId = request.requestId();
+        final String requestId = command.requestId();
 
         try
         {
-            if (request.action() == AgentAction.HANDSHAKE)
+            if (command instanceof HandshakeCommand hc)
             {
-                final AgentResponse handshakeResponse = handleHandshake(requestId, arguments);
+                final AgentResponse handshakeResponse = handleHandshake(hc);
                 return new RequestDispatchResult(handshakeResponse, handshakeCompleted || handshakeResponse.success());
             }
 
@@ -159,32 +187,45 @@ final class AgentRequestDispatcher
                         requestId,
                         AgentErrorCode.HANDSHAKE_REQUIRED,
                         "A successful HANDSHAKE action is required before '%s'."
-                            .formatted(String.valueOf(request.action()))
+                            .formatted(command.getClass().getSimpleName())
                     ),
                     false
                 );
             }
 
-            return new RequestDispatchResult(switch (request.action())
+            return new RequestDispatchResult(switch (command)
             {
-                case MAIN_WORLD -> worldActions.handleMainWorld(requestId);
-                case NEW_WORLD -> worldActions.handleNewWorld(requestId, arguments);
-                case EXECUTE_COMMAND -> worldActions.handleExecuteCommand(requestId, arguments);
-                case BLOCK_TYPE -> worldActions.handleBlockType(requestId, arguments);
-                case SET_BLOCK -> worldActions.handleSetBlock(requestId, arguments);
-                case CREATE_PLAYER -> playerActions.handleCreatePlayer(requestId, arguments);
-                case REMOVE_PLAYER -> playerActions.handleRemovePlayer(requestId, arguments);
-                case EXECUTE_PLAYER_COMMAND -> playerActions.handleExecutePlayerCommand(requestId, arguments);
-                case PLACE_PLAYER_BLOCK -> playerActions.handlePlacePlayerBlock(requestId, arguments);
-                case LEFT_CLICK_BLOCK -> playerActions.handleLeftClickBlock(requestId, arguments);
-                case RIGHT_CLICK_BLOCK -> playerActions.handleRightClickBlock(requestId, arguments);
-                case GET_OPEN_MENU -> menuActions.handleGetOpenMenu(requestId, arguments);
-                case CLICK_MENU_SLOT -> menuActions.handleClickMenuSlot(requestId, arguments);
-                case DRAG_MENU_SLOTS -> menuActions.handleDragMenuSlots(requestId, arguments);
-                case GET_PLAYER_MESSAGES -> playerActions.handleGetPlayerMessages(requestId, arguments);
-                case WAIT_TICKS -> worldActions.handleWaitTicks(requestId, arguments);
-                case GET_SERVER_TICK -> worldActions.handleGetServerTick(requestId);
-                case HANDSHAKE -> throw new IllegalStateException("Unreachable HANDSHAKE dispatch branch.");
+                case MainWorldCommand c -> worldActions.handleMainWorld(c);
+                case NewWorldCommand c -> worldActions.handleNewWorld(c);
+                case ExecuteCommandCommand c -> worldActions.handleExecuteCommand(c);
+                case BlockTypeCommand c -> worldActions.handleBlockType(c);
+                case SetBlockCommand c -> worldActions.handleSetBlock(c);
+                case CreatePlayerCommand c -> playerActions.handleCreatePlayer(c);
+                case RemovePlayerCommand c -> playerActions.handleRemovePlayer(c);
+                case ExecutePlayerCommandCommand c -> playerActions.handleExecutePlayerCommand(c);
+                case PlacePlayerBlockCommand c -> playerActions.handlePlacePlayerBlock(c);
+                case LeftClickBlockCommand c -> playerActions.handleLeftClickBlock(c);
+                case RightClickBlockCommand c -> playerActions.handleRightClickBlock(c);
+                case GetOpenMenuCommand c -> menuActions.handleGetOpenMenu(c);
+                case ClickMenuSlotCommand c -> menuActions.handleClickMenuSlot(c);
+                case DragMenuSlotsCommand c -> menuActions.handleDragMenuSlots(c);
+                case GetPlayerMessagesCommand c -> playerActions.handleGetPlayerMessages(c);
+                case WaitTicksCommand c -> worldActions.handleWaitTicks(c);
+                case GetServerTickCommand c -> worldActions.handleGetServerTick(c);
+                case TeleportPlayerCommand c -> playerActions.handleTeleportPlayer(c);
+                case LoadChunkCommand c -> worldActions.handleLoadChunk(c);
+                case UnloadChunkCommand c -> worldActions.handleUnloadChunk(c);
+                case IsChunkLoadedCommand c -> worldActions.handleIsChunkLoaded(c);
+                case GetPlayerInventoryCommand c -> playerActions.handleGetPlayerInventory(c);
+                case DropItemCommand c -> playerActions.handleDropItem(c);
+                case RegisterEventListenerCommand c -> playerActions.handleRegisterEventListener(c);
+                case GetCapturedEventsCommand c -> playerActions.handleGetCapturedEvents(c);
+                case ClearCapturedEventsCommand c -> playerActions.handleClearCapturedEvents(c);
+                case UnregisterEventListenerCommand c -> playerActions.handleUnregisterEventListener(c);
+                case GetPlayerChatComponentsCommand c -> playerActions.handleGetPlayerChatComponents(c);
+                case GetServerPlatformCommand c -> worldActions.handleGetServerPlatform(c);
+                case HandshakeCommand ignored ->
+                    throw new IllegalStateException("Unreachable HANDSHAKE dispatch branch.");
             }, true);
         }
         catch (Exception exception)
@@ -193,7 +234,7 @@ final class AgentRequestDispatcher
                 Level.SEVERE,
                 "Agent action '%s' failed for request '%s': %s"
                     .formatted(
-                        request.action(),
+                        command.getClass().getSimpleName(),
                         requestId,
                         Objects.requireNonNullElse(exception.getMessage(), exception.getClass().getName())
                     ),
@@ -214,40 +255,20 @@ final class AgentRequestDispatcher
     /**
      * Validates handshake credentials and compatibility metadata.
      *
-     * @param requestId
-     *     Runtime request identifier.
-     * @param arguments
-     *     Handshake arguments containing token/protocol/hash values.
+     * @param command
+     *     Handshake command containing token, protocol version, and agent hash.
      * @return
      *     Success response when validation succeeds; otherwise a specific handshake error response.
      */
-    private AgentResponse handleHandshake(String requestId, Map<String, String> arguments)
+    private AgentResponse handleHandshake(HandshakeCommand command)
     {
-        final String token = arguments.getOrDefault("token", "");
-        final String rawClientProtocolVersion = arguments.getOrDefault("protocolVersion", "").trim();
-        final String clientAgentSha = arguments.getOrDefault("agentSha256", "");
+        final String requestId = command.requestId();
+        final String token = command.token();
+        final int clientProtocolVersion = command.protocolVersion();
+        final String clientAgentSha = command.agentSha256();
 
         if (!authToken.equals(token))
             return AgentResponses.errorResponse(requestId, AgentErrorCode.AUTH_FAILED, "Auth token mismatch.");
-
-        final int clientProtocolVersion;
-        try
-        {
-            clientProtocolVersion = Integer.parseInt(rawClientProtocolVersion);
-        }
-        catch (NumberFormatException exception)
-        {
-            return AgentResponses.errorResponse(
-                requestId,
-                AgentErrorCode.PROTOCOL_MISMATCH,
-                "Runtime protocol version mismatch. expected=%d actual=%s."
-                    .formatted(protocolVersion, rawClientProtocolVersion),
-                Map.of(
-                    "expectedProtocolVersion", Integer.toString(protocolVersion),
-                    "actualProtocolVersion", rawClientProtocolVersion
-                )
-            );
-        }
 
         if (protocolVersion != clientProtocolVersion)
         {
