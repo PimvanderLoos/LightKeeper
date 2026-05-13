@@ -204,7 +204,7 @@ final class AgentWorldActions
         final int x = command.x();
         final int z = command.z();
 
-        mainThreadExecutor.callOnMainThread(() ->
+        final Boolean loaded = mainThreadExecutor.callOnMainThread(() ->
         {
             final World world = Bukkit.getWorld(worldName);
             if (world == null)
