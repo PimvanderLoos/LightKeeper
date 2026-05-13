@@ -34,6 +34,44 @@ public final class PlayerHandleAssert extends AbstractAssert<PlayerHandleAssert,
     }
 
     /**
+     * Asserts that the player has an item with the specified material in their inventory.
+     *
+     * @param materialKey
+     *     Material key (e.g. "minecraft:stone").
+     * @return This assertion for fluent chaining.
+     */
+    public PlayerHandleAssert hasItemInInventory(String materialKey)
+    {
+        final var actual = nonNullActual();
+        final var item = actual.inventory().findItem(materialKey);
+        if (item == null)
+        {
+            failWithMessage("Expected player '%s' to have item '%s' in inventory, but it was not found.",
+                actual.name(), materialKey);
+        }
+        return this;
+    }
+
+    /**
+     * Asserts that the player does not have an item with the specified material in their inventory.
+     *
+     * @param materialKey
+     *     Material key (e.g. "minecraft:stone").
+     * @return This assertion for fluent chaining.
+     */
+    public PlayerHandleAssert doesNotHaveItemInInventory(String materialKey)
+    {
+        final var actual = nonNullActual();
+        final var item = actual.inventory().findItem(materialKey);
+        if (item != null)
+        {
+            failWithMessage("Expected player '%s' to not have item '%s' in inventory, but it was found at slot %d.",
+                actual.name(), materialKey, item.slot());
+        }
+        return this;
+    }
+
+    /**
      * Asserts that at least one received message contains the requested text fragment.
      *
      * @param expectedFragment

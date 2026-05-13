@@ -1,12 +1,15 @@
 package nl.pim16aap2.lightkeeper.framework.internal;
 
+import nl.pim16aap2.lightkeeper.framework.CapturedEventSnapshot;
 import nl.pim16aap2.lightkeeper.framework.CommandResult;
 import nl.pim16aap2.lightkeeper.framework.CommandSource;
 import nl.pim16aap2.lightkeeper.framework.Condition;
+import nl.pim16aap2.lightkeeper.framework.EventCaptureHandle;
 import nl.pim16aap2.lightkeeper.framework.FrameworkHandleFactory;
 import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.IPlayerBuilder;
 import nl.pim16aap2.lightkeeper.framework.IWorldBuilder;
+import nl.pim16aap2.lightkeeper.framework.InventorySnapshot;
 import nl.pim16aap2.lightkeeper.framework.MenuSnapshot;
 import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
 import nl.pim16aap2.lightkeeper.framework.Vector3Di;
@@ -389,6 +392,61 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
         ensureOpen();
         Objects.requireNonNull(playerId, "playerId may not be null.");
         return agentClient.playerMessages(playerId);
+    }
+
+    @Override
+    public EventCaptureHandle captureEvents(String eventClassName)
+    {
+        ensureOpen();
+        Objects.requireNonNull(eventClassName, "eventClassName may not be null.");
+        agentClient.registerEventListener(eventClassName);
+        return FrameworkHandleFactory.eventCaptureHandle(this, eventClassName);
+    }
+
+    @Override
+    public InventorySnapshot playerInventory(UUID playerId)
+    {
+        ensureOpen();
+        Objects.requireNonNull(playerId, "playerId may not be null.");
+        return InventorySnapshot.fromItemMaps(agentClient.getPlayerInventory(playerId));
+    }
+
+    @Override
+    public boolean dropItem(UUID playerId)
+    {
+        ensureOpen();
+        Objects.requireNonNull(playerId, "playerId may not be null.");
+        return agentClient.dropItem(playerId);
+    }
+
+    @Override
+    public void registerEventListener(String eventClassName)
+    {
+        ensureOpen();
+        agentClient.registerEventListener(eventClassName);
+    }
+
+    @Override
+    public List<CapturedEventSnapshot> getCapturedEvents(String eventClassName)
+    {
+        ensureOpen();
+        return agentClient.getCapturedEvents(eventClassName).stream()
+            .map(data -> new CapturedEventSnapshot(eventClassName, data))
+            .toList();
+    }
+
+    @Override
+    public void clearCapturedEvents(String eventClassName)
+    {
+        ensureOpen();
+        agentClient.clearCapturedEvents(eventClassName);
+    }
+
+    @Override
+    public void unregisterEventListener(String eventClassName)
+    {
+        ensureOpen();
+        agentClient.unregisterEventListener(eventClassName);
     }
 
     @Override

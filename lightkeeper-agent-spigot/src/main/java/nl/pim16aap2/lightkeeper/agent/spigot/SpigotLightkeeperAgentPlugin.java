@@ -127,12 +127,14 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin
                 objectMapper,
                 botPlayerNmsAdapter
             );
+            final AgentEventCapture eventCapture = new AgentEventCapture(this, mainThreadExecutor);
 
             requestDispatcher = new AgentRequestDispatcher(
                 objectMapper,
                 worldActions,
                 playerActions,
                 menuActions,
+                eventCapture,
                 getLogger(),
                 configuration.authToken(),
                 configuration.protocolVersion(),
