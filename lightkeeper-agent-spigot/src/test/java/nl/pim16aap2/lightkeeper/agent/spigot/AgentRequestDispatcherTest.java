@@ -18,6 +18,7 @@ import nl.pim16aap2.lightkeeper.protocol.GetOpenMenuCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponentsCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerInventoryCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerMessagesCommand;
+import nl.pim16aap2.lightkeeper.protocol.GetServerPlatformCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetServerTickCommand;
 import nl.pim16aap2.lightkeeper.protocol.HandshakeCommand;
 import nl.pim16aap2.lightkeeper.protocol.IsChunkLoadedCommand;
@@ -217,6 +218,8 @@ class AgentRequestDispatcherTest
         when(fixture.playerActions().handleGetPlayerChatComponents(
             any(GetPlayerChatComponentsCommand.class)))
             .thenReturn(AgentResponses.successResponse("request-27", Map.of()));
+        when(fixture.worldActions().handleGetServerPlatform(any(GetServerPlatformCommand.class)))
+            .thenReturn(AgentResponses.successResponse("request-28", Map.of()));
 
         // execute
         fixture.dispatcher().handleRequestLine(toJson(new NewWorldCommand("request-1", "w", "NORMAL", "NORMAL", 0L)), true);
@@ -256,6 +259,7 @@ class AgentRequestDispatcherTest
             toJson(new UnregisterEventListenerCommand("request-26", eventClass)), true);
         fixture.dispatcher().handleRequestLine(
             toJson(new GetPlayerChatComponentsCommand("request-27", uuid)), true);
+        fixture.dispatcher().handleRequestLine(toJson(new GetServerPlatformCommand("request-28")), true);
 
         // verify
         verify(fixture.worldActions()).handleNewWorld(any(NewWorldCommand.class));
@@ -284,8 +288,8 @@ class AgentRequestDispatcherTest
         verify(fixture.eventCapture()).getCapturedEvents(eventClass);
         verify(fixture.eventCapture()).clearCapturedEvents(eventClass);
         verify(fixture.eventCapture()).unregisterListener(eventClass);
-        verify(fixture.playerActions()).handleGetPlayerChatComponents(
-            any(GetPlayerChatComponentsCommand.class));
+        verify(fixture.playerActions()).handleGetPlayerChatComponents(any(GetPlayerChatComponentsCommand.class));
+        verify(fixture.worldActions()).handleGetServerPlatform(any(GetServerPlatformCommand.class));
     }
 
     @Test

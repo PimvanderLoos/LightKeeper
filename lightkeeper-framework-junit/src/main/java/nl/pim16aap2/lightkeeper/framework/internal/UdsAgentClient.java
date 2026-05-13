@@ -96,17 +96,6 @@ final class UdsAgentClient implements AutoCloseable
         return getRequiredData(response, "worldName");
     }
 
-    Platform serverPlatform()
-    {
-        final AgentResponse response = send(AgentAction.GET_SERVER_PLATFORM, Map.of());
-        final String platformName = getRequiredData(response, "platform").toLowerCase(java.util.Locale.ROOT);
-        if (platformName.contains("paper"))
-            return Platform.PAPER;
-        if (platformName.contains("spigot"))
-            return Platform.SPIGOT;
-        return Platform.UNKNOWN;
-    }
-
     String newWorld(WorldSpec worldSpec)
     {
         final AgentResponse response = send(new NewWorldCommand(
@@ -366,10 +355,15 @@ final class UdsAgentClient implements AutoCloseable
         send(new UnregisterEventListenerCommand(nextRequestId(), eventClassName));
     }
 
-    String serverPlatform()
+    Platform serverPlatform()
     {
         final AgentResponse response = send(new GetServerPlatformCommand(nextRequestId()));
-        return getRequiredData(response, "serverName");
+        final String platformName = getRequiredData(response, "platform").toLowerCase(java.util.Locale.ROOT);
+        if (platformName.contains("paper"))
+            return Platform.PAPER;
+        if (platformName.contains("spigot") || platformName.contains("craftbukkit"))
+            return Platform.SPIGOT;
+        return Platform.UNKNOWN;
     }
 
     synchronized AgentResponse send(IAgentCommand command)
