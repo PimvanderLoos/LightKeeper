@@ -271,9 +271,10 @@ final class UdsAgentClient implements AutoCloseable
         send(new LoadChunkCommand(nextRequestId(), worldName, x, z));
     }
 
-    void unloadChunk(String worldName, int x, int z)
+    boolean unloadChunk(String worldName, int x, int z)
     {
-        send(new UnloadChunkCommand(nextRequestId(), worldName, x, z));
+        final AgentResponse response = send(new UnloadChunkCommand(nextRequestId(), worldName, x, z));
+        return Boolean.parseBoolean(getRequiredData(response, "unloaded"));
     }
 
     boolean isChunkLoaded(String worldName, int x, int z)
