@@ -73,6 +73,26 @@ public final class PlayerHandle
     }
 
     /**
+     * Teleports this player to target coordinates in a world.
+     *
+     * @param world
+     *     Target world.
+     * @param x
+     *     X coordinate.
+     * @param y
+     *     Y coordinate.
+     * @param z
+     *     Z coordinate.
+     * @return This handle for fluent chaining.
+     */
+    public PlayerHandle teleport(WorldHandle world, double x, double y, double z)
+    {
+        Objects.requireNonNull(world, "world may not be null.");
+        frameworkGateway.teleportPlayer(uniqueId, world.name(), x, y, z);
+        return this;
+    }
+
+    /**
      * Places a block from this player perspective.
      *
      * @param materialKey
