@@ -131,7 +131,7 @@ class DefaultLightkeeperFrameworkLifecycleTest
             java.time.Duration.ofSeconds(45),
             runtimeManifest.agentAuthToken(),
             runtimeManifest.runtimeProtocolVersion(),
-            runtimeManifest.agentJarSha256()
+            java.util.Objects.requireNonNull(runtimeManifest.agentJarSha256())
         );
     }
 
