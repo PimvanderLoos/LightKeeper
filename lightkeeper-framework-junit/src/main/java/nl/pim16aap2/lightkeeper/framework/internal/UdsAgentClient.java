@@ -80,10 +80,9 @@ final class UdsAgentClient implements AutoCloseable
 
     private final Path socketPath;
     private final AtomicLong requestCounter = new AtomicLong(0L);
-
     private @Nullable SocketChannel socketChannel;
-    private BufferedReader reader;
-    private BufferedWriter writer;
+    private @Nullable BufferedReader reader;
+    private @Nullable BufferedWriter writer;
 
     UdsAgentClient(Path socketPath, Duration connectTimeout)
     {
@@ -366,13 +365,15 @@ final class UdsAgentClient implements AutoCloseable
     {
         if (command.requestId() == null || command.requestId().isBlank())
             throw new IllegalArgumentException("'requestId' must be non-blank.");
+        final BufferedWriter out = Objects.requireNonNull(writer, "Client is not connected.");
+        final BufferedReader in = Objects.requireNonNull(reader, "Client is not connected.");
         try
         {
-            writer.write(objectMapper.writeValueAsString(command));
-            writer.newLine();
-            writer.flush();
+            out.write(objectMapper.writeValueAsString(command));
+            out.newLine();
+            out.flush();
 
-            final String responseLine = reader.readLine();
+            final String responseLine = in.readLine();
             if (responseLine == null)
                 throw new IllegalStateException("Agent connection closed unexpectedly.");
 
@@ -409,7 +410,7 @@ final class UdsAgentClient implements AutoCloseable
         }
     }
 
-    void rehandshake(Duration timeout, String token, int protocolVersion, String agentSha256)
+    synchronized void rehandshake(Duration timeout, String token, int protocolVersion, String agentSha256)
     {
         close();
         connect(timeout);
