@@ -78,6 +78,37 @@ class PlayerHandleTest
     }
 
     @Test
+    void inventory_shouldReturnInventorySnapshotFromGateway()
+    {
+        // setup
+        final InventorySnapshot snapshot = new InventorySnapshot(List.of(
+            new MenuItemSnapshot(0, "minecraft:stone", "Stone", List.of())
+        ));
+        when(frameworkGateway.playerInventory(PLAYER_UUID)).thenReturn(snapshot);
+
+        // execute
+        final InventorySnapshot result = playerHandle.inventory();
+
+        // verify
+        assertThat(result).isSameAs(snapshot);
+        verify(frameworkGateway).playerInventory(PLAYER_UUID);
+    }
+
+    @Test
+    void dropMainHandItem_shouldDelegateToGatewayAndReturnCancellationState()
+    {
+        // setup
+        when(frameworkGateway.dropItem(PLAYER_UUID)).thenReturn(true);
+
+        // execute
+        final boolean result = playerHandle.dropMainHandItem();
+
+        // verify
+        assertThat(result).isTrue();
+        verify(frameworkGateway).dropItem(PLAYER_UUID);
+    }
+
+    @Test
     void placeBlock_shouldDelegateToGatewayAndReturnSelf()
     {
         // execute

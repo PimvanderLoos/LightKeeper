@@ -4,21 +4,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import nl.pim16aap2.lightkeeper.nms.api.IBotPlayerNmsAdapter;
 import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
 import nl.pim16aap2.lightkeeper.protocol.AgentResponse;
-import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEventsCommand;
 import nl.pim16aap2.lightkeeper.protocol.CreatePlayerCommand;
 import nl.pim16aap2.lightkeeper.protocol.DropItemCommand;
 import nl.pim16aap2.lightkeeper.protocol.ExecutePlayerCommandCommand;
-import nl.pim16aap2.lightkeeper.protocol.GetCapturedEventsCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponentsCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerInventoryCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerMessagesCommand;
 import nl.pim16aap2.lightkeeper.protocol.LeftClickBlockCommand;
 import nl.pim16aap2.lightkeeper.protocol.PlacePlayerBlockCommand;
-import nl.pim16aap2.lightkeeper.protocol.RegisterEventListenerCommand;
 import nl.pim16aap2.lightkeeper.protocol.RemovePlayerCommand;
 import nl.pim16aap2.lightkeeper.protocol.RightClickBlockCommand;
 import nl.pim16aap2.lightkeeper.protocol.TeleportPlayerCommand;
-import nl.pim16aap2.lightkeeper.protocol.UnregisterEventListenerCommand;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -366,7 +362,7 @@ final class AgentPlayerActions
         {
             final Player player = playerStore.getRequiredPlayer(uuid);
             final ItemStack item = player.getInventory().getItemInMainHand();
-            if (item == null || item.getType().isAir())
+            if (item == null || AgentMaterials.isAir(item.getType()))
                 return Boolean.FALSE;
 
             final org.bukkit.entity.Item droppedItem =
@@ -402,6 +398,15 @@ final class AgentPlayerActions
         final double y = command.y();
         final double z = command.z();
 
+        if (worldName.isBlank())
+        {
+            return AgentResponses.errorResponse(
+                command.requestId(),
+                AgentErrorCode.INVALID_ARGUMENT,
+                "Argument 'worldName' must not be blank."
+            );
+        }
+
         final Boolean teleported = mainThreadExecutor.callOnMainThread(() ->
         {
             final Player player = playerStore.getRequiredPlayer(uuid);
@@ -412,74 +417,6 @@ final class AgentPlayerActions
         });
 
         return AgentResponses.successResponse(command.requestId(), Map.of("teleported", teleported.toString()));
-    }
-
-    /**
-     * Handles {@code REGISTER_EVENT_LISTENER} — not yet implemented in this split branch.
-     *
-     * @param command
-     *     Typed command carrying the event class name.
-     * @return
-     *     Error response indicating the action is not yet supported.
-     */
-    AgentResponse handleRegisterEventListener(RegisterEventListenerCommand command)
-    {
-        return AgentResponses.errorResponse(
-            command.requestId(),
-            AgentErrorCode.REQUEST_FAILED,
-            "REGISTER_EVENT_LISTENER is not yet implemented in this build."
-        );
-    }
-
-    /**
-     * Handles {@code GET_CAPTURED_EVENTS} — not yet implemented in this split branch.
-     *
-     * @param command
-     *     Typed command carrying the event class name.
-     * @return
-     *     Error response indicating the action is not yet supported.
-     */
-    AgentResponse handleGetCapturedEvents(GetCapturedEventsCommand command)
-    {
-        return AgentResponses.errorResponse(
-            command.requestId(),
-            AgentErrorCode.REQUEST_FAILED,
-            "GET_CAPTURED_EVENTS is not yet implemented in this build."
-        );
-    }
-
-    /**
-     * Handles {@code CLEAR_CAPTURED_EVENTS} — not yet implemented in this split branch.
-     *
-     * @param command
-     *     Typed command carrying the event class name.
-     * @return
-     *     Error response indicating the action is not yet supported.
-     */
-    AgentResponse handleClearCapturedEvents(ClearCapturedEventsCommand command)
-    {
-        return AgentResponses.errorResponse(
-            command.requestId(),
-            AgentErrorCode.REQUEST_FAILED,
-            "CLEAR_CAPTURED_EVENTS is not yet implemented in this build."
-        );
-    }
-
-    /**
-     * Handles {@code UNREGISTER_EVENT_LISTENER} — not yet implemented in this split branch.
-     *
-     * @param command
-     *     Typed command carrying the event class name.
-     * @return
-     *     Error response indicating the action is not yet supported.
-     */
-    AgentResponse handleUnregisterEventListener(UnregisterEventListenerCommand command)
-    {
-        return AgentResponses.errorResponse(
-            command.requestId(),
-            AgentErrorCode.REQUEST_FAILED,
-            "UNREGISTER_EVENT_LISTENER is not yet implemented in this build."
-        );
     }
 
     /**
@@ -557,7 +494,7 @@ final class AgentPlayerActions
         for (int i = 0; i < contents.length; i++)
         {
             final ItemStack item = contents[i];
-            if (item == null || item.getType().isAir())
+            if (item == null || AgentMaterials.isAir(item.getType()))
                 continue;
 
             final Map<String, Object> itemData = new HashMap<>();

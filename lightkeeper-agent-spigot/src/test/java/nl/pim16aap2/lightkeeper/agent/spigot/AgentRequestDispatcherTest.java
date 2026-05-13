@@ -6,28 +6,39 @@ import nl.pim16aap2.lightkeeper.nms.api.IBotPlayerNmsAdapter;
 import nl.pim16aap2.lightkeeper.protocol.IAgentCommand;
 import nl.pim16aap2.lightkeeper.protocol.AgentResponse;
 import nl.pim16aap2.lightkeeper.protocol.BlockTypeCommand;
+import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEventsCommand;
 import nl.pim16aap2.lightkeeper.protocol.ClickMenuSlotCommand;
 import nl.pim16aap2.lightkeeper.protocol.CreatePlayerCommand;
 import nl.pim16aap2.lightkeeper.protocol.DragMenuSlotsCommand;
+import nl.pim16aap2.lightkeeper.protocol.DropItemCommand;
 import nl.pim16aap2.lightkeeper.protocol.ExecuteCommandCommand;
 import nl.pim16aap2.lightkeeper.protocol.ExecutePlayerCommandCommand;
+import nl.pim16aap2.lightkeeper.protocol.GetCapturedEventsCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetOpenMenuCommand;
+import nl.pim16aap2.lightkeeper.protocol.GetPlayerInventoryCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerMessagesCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetServerTickCommand;
 import nl.pim16aap2.lightkeeper.protocol.HandshakeCommand;
+import nl.pim16aap2.lightkeeper.protocol.IsChunkLoadedCommand;
 import nl.pim16aap2.lightkeeper.protocol.LeftClickBlockCommand;
+import nl.pim16aap2.lightkeeper.protocol.LoadChunkCommand;
 import nl.pim16aap2.lightkeeper.protocol.MainWorldCommand;
 import nl.pim16aap2.lightkeeper.protocol.NewWorldCommand;
 import nl.pim16aap2.lightkeeper.protocol.PlacePlayerBlockCommand;
+import nl.pim16aap2.lightkeeper.protocol.RegisterEventListenerCommand;
 import nl.pim16aap2.lightkeeper.protocol.RemovePlayerCommand;
 import nl.pim16aap2.lightkeeper.protocol.RightClickBlockCommand;
 import nl.pim16aap2.lightkeeper.protocol.SetBlockCommand;
+import nl.pim16aap2.lightkeeper.protocol.TeleportPlayerCommand;
+import nl.pim16aap2.lightkeeper.protocol.UnloadChunkCommand;
+import nl.pim16aap2.lightkeeper.protocol.UnregisterEventListenerCommand;
 import nl.pim16aap2.lightkeeper.protocol.WaitTicksCommand;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
@@ -109,6 +120,7 @@ class AgentRequestDispatcherTest
         // setup
         final DispatcherFixture fixture = createDispatcherFixture();
         final UUID uuid = UUID.randomUUID();
+        final String eventClass = "org.bukkit.event.Event";
 
         when(fixture.worldActions().handleNewWorld(any(NewWorldCommand.class)))
             .thenReturn(AgentResponses.successResponse("request-1", Map.of()));
@@ -142,24 +154,57 @@ class AgentRequestDispatcherTest
             .thenReturn(AgentResponses.successResponse("request-15", Map.of()));
         when(fixture.worldActions().handleGetServerTick(any(GetServerTickCommand.class)))
             .thenReturn(AgentResponses.successResponse("request-16", Map.of()));
+        when(fixture.playerActions().handleTeleportPlayer(any(TeleportPlayerCommand.class)))
+            .thenReturn(AgentResponses.successResponse("request-17", Map.of()));
+        when(fixture.worldActions().handleLoadChunk(any(LoadChunkCommand.class)))
+            .thenReturn(AgentResponses.successResponse("request-18", Map.of()));
+        when(fixture.worldActions().handleUnloadChunk(any(UnloadChunkCommand.class)))
+            .thenReturn(AgentResponses.successResponse("request-19", Map.of("unloaded", "true")));
+        when(fixture.worldActions().handleIsChunkLoaded(any(IsChunkLoadedCommand.class)))
+            .thenReturn(AgentResponses.successResponse("request-20", Map.of("loaded", "true")));
+        when(fixture.playerActions().handleGetPlayerInventory(any(GetPlayerInventoryCommand.class)))
+            .thenReturn(AgentResponses.successResponse("request-21", Map.of("inventoryJson", "[]")));
+        when(fixture.playerActions().handleDropItem(any(DropItemCommand.class)))
+            .thenReturn(AgentResponses.successResponse("request-22", Map.of("dropped", "false")));
+        when(fixture.eventCapture().getCapturedEvents(eq(eventClass)))
+            .thenReturn(List.of(Map.of("getEventName", "Event")));
 
         // execute
         fixture.dispatcher().handleRequestLine(toJson(new NewWorldCommand("request-1", "w", "NORMAL", "NORMAL", 0L)), true);
-        fixture.dispatcher().handleRequestLine(toJson(new ExecuteCommandCommand("request-2", "CONSOLE", "time set day")), true);
+        fixture.dispatcher().handleRequestLine(
+            toJson(new ExecuteCommandCommand("request-2", "CONSOLE", "time set day")), true);
         fixture.dispatcher().handleRequestLine(toJson(new BlockTypeCommand("request-3", "world", 0, 64, 0)), true);
-        fixture.dispatcher().handleRequestLine(toJson(new SetBlockCommand("request-4", "world", 0, 64, 0, "stone")), true);
-        fixture.dispatcher().handleRequestLine(toJson(new CreatePlayerCommand("request-5", "bot", uuid, "world", null, null, null, null, null)), true);
+        fixture.dispatcher().handleRequestLine(
+            toJson(new SetBlockCommand("request-4", "world", 0, 64, 0, "stone")), true);
+        fixture.dispatcher().handleRequestLine(
+            toJson(new CreatePlayerCommand("request-5", "bot", uuid, "world", null, null, null, null, null)), true);
         fixture.dispatcher().handleRequestLine(toJson(new RemovePlayerCommand("request-6", uuid)), true);
-        fixture.dispatcher().handleRequestLine(toJson(new ExecutePlayerCommandCommand("request-7", uuid, "gamemode creative")), true);
-        fixture.dispatcher().handleRequestLine(toJson(new PlacePlayerBlockCommand("request-8", uuid, "stone", 0, 64, 0)), true);
+        fixture.dispatcher().handleRequestLine(
+            toJson(new ExecutePlayerCommandCommand("request-7", uuid, "gamemode creative")), true);
+        fixture.dispatcher().handleRequestLine(
+            toJson(new PlacePlayerBlockCommand("request-8", uuid, "stone", 0, 64, 0)), true);
         fixture.dispatcher().handleRequestLine(toJson(new LeftClickBlockCommand("request-9", uuid, 0, 64, 0, "UP")), true);
-        fixture.dispatcher().handleRequestLine(toJson(new RightClickBlockCommand("request-10", uuid, 0, 64, 0, "UP")), true);
+        fixture.dispatcher().handleRequestLine(
+            toJson(new RightClickBlockCommand("request-10", uuid, 0, 64, 0, "UP")), true);
         fixture.dispatcher().handleRequestLine(toJson(new GetOpenMenuCommand("request-11", uuid)), true);
         fixture.dispatcher().handleRequestLine(toJson(new ClickMenuSlotCommand("request-12", uuid, 0, "LEFT")), true);
-        fixture.dispatcher().handleRequestLine(toJson(new DragMenuSlotsCommand("request-13", uuid, "stone", new int[]{0, 1})), true);
+        fixture.dispatcher().handleRequestLine(
+            toJson(new DragMenuSlotsCommand("request-13", uuid, "stone", new int[]{0, 1})), true);
         fixture.dispatcher().handleRequestLine(toJson(new GetPlayerMessagesCommand("request-14", uuid)), true);
         fixture.dispatcher().handleRequestLine(toJson(new WaitTicksCommand("request-15", 0)), true);
         fixture.dispatcher().handleRequestLine(toJson(new GetServerTickCommand("request-16")), true);
+        fixture.dispatcher().handleRequestLine(
+            toJson(new TeleportPlayerCommand("request-17", uuid, "world", 0, 64, 0)), true);
+        fixture.dispatcher().handleRequestLine(toJson(new LoadChunkCommand("request-18", "world", 0, 0)), true);
+        fixture.dispatcher().handleRequestLine(toJson(new UnloadChunkCommand("request-19", "world", 0, 0)), true);
+        fixture.dispatcher().handleRequestLine(toJson(new IsChunkLoadedCommand("request-20", "world", 0, 0)), true);
+        fixture.dispatcher().handleRequestLine(toJson(new GetPlayerInventoryCommand("request-21", uuid)), true);
+        fixture.dispatcher().handleRequestLine(toJson(new DropItemCommand("request-22", uuid)), true);
+        fixture.dispatcher().handleRequestLine(toJson(new RegisterEventListenerCommand("request-23", eventClass)), true);
+        fixture.dispatcher().handleRequestLine(toJson(new GetCapturedEventsCommand("request-24", eventClass)), true);
+        fixture.dispatcher().handleRequestLine(toJson(new ClearCapturedEventsCommand("request-25", eventClass)), true);
+        fixture.dispatcher().handleRequestLine(
+            toJson(new UnregisterEventListenerCommand("request-26", eventClass)), true);
 
         // verify
         verify(fixture.worldActions()).handleNewWorld(any(NewWorldCommand.class));
@@ -178,6 +223,36 @@ class AgentRequestDispatcherTest
         verify(fixture.playerActions()).handleGetPlayerMessages(any(GetPlayerMessagesCommand.class));
         verify(fixture.worldActions()).handleWaitTicks(any(WaitTicksCommand.class));
         verify(fixture.worldActions()).handleGetServerTick(any(GetServerTickCommand.class));
+        verify(fixture.playerActions()).handleTeleportPlayer(any(TeleportPlayerCommand.class));
+        verify(fixture.worldActions()).handleLoadChunk(any(LoadChunkCommand.class));
+        verify(fixture.worldActions()).handleUnloadChunk(any(UnloadChunkCommand.class));
+        verify(fixture.worldActions()).handleIsChunkLoaded(any(IsChunkLoadedCommand.class));
+        verify(fixture.playerActions()).handleGetPlayerInventory(any(GetPlayerInventoryCommand.class));
+        verify(fixture.playerActions()).handleDropItem(any(DropItemCommand.class));
+        verify(fixture.eventCapture()).registerListener(eventClass);
+        verify(fixture.eventCapture()).getCapturedEvents(eventClass);
+        verify(fixture.eventCapture()).clearCapturedEvents(eventClass);
+        verify(fixture.eventCapture()).unregisterListener(eventClass);
+    }
+
+    @Test
+    void handleRequestLine_shouldReturnInvalidArgumentWhenEventClassIsNotValid()
+        throws Exception
+    {
+        // setup
+        final DispatcherFixture fixture = createDispatcherFixture();
+        doThrow(new IllegalArgumentException("Class 'java.lang.String' is not a Bukkit Event."))
+            .when(fixture.eventCapture()).registerListener("java.lang.String");
+        final String requestLine = toJson(new RegisterEventListenerCommand("request-event", "java.lang.String"));
+
+        // execute
+        final AgentRequestDispatcher.RequestDispatchResult result =
+            fixture.dispatcher().handleRequestLine(requestLine, true);
+
+        // verify
+        assertThat(result.response().success()).isFalse();
+        assertThat(result.response().errorCode()).isEqualTo("INVALID_ARGUMENT");
+        assertThat(result.response().errorMessage()).contains("not a Bukkit Event");
     }
 
     @Test
@@ -311,12 +386,14 @@ class AgentRequestDispatcherTest
             objectMapper,
             nmsAdapter
         );
+        final AgentEventCapture eventCapture = mock();
 
         return new AgentRequestDispatcher(
             objectMapper,
             worldActions,
             playerActions,
             menuActions,
+            eventCapture,
             Logger.getLogger(AgentRequestDispatcherTest.class.getName()),
             authToken,
             protocolVersion,
@@ -331,24 +408,27 @@ class AgentRequestDispatcherTest
         final AgentWorldActions worldActions = mock();
         final AgentPlayerActions playerActions = mock();
         final AgentMenuActions menuActions = mock();
+        final AgentEventCapture eventCapture = mock();
         final AgentRequestDispatcher dispatcher = new AgentRequestDispatcher(
             objectMapper,
             worldActions,
             playerActions,
             menuActions,
+            eventCapture,
             Logger.getLogger(AgentRequestDispatcherTest.class.getName()),
             "token",
             1,
             ""
         );
-        return new DispatcherFixture(dispatcher, worldActions, playerActions, menuActions);
+        return new DispatcherFixture(dispatcher, worldActions, playerActions, menuActions, eventCapture);
     }
 
     private record DispatcherFixture(
         AgentRequestDispatcher dispatcher,
         AgentWorldActions worldActions,
         AgentPlayerActions playerActions,
-        AgentMenuActions menuActions)
+        AgentMenuActions menuActions,
+        AgentEventCapture eventCapture)
     {
     }
 

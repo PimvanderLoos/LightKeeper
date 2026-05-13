@@ -408,7 +408,7 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     {
         ensureOpen();
         Objects.requireNonNull(playerId, "playerId may not be null.");
-        return agentClient.playerInventory(playerId);
+        return InventorySnapshot.fromItemMaps(agentClient.getPlayerInventory(playerId));
     }
 
     @Override
@@ -430,7 +430,9 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     public List<CapturedEventSnapshot> getCapturedEvents(String eventClassName)
     {
         ensureOpen();
-        return agentClient.getCapturedEvents(eventClassName);
+        return agentClient.getCapturedEvents(eventClassName).stream()
+            .map(data -> new CapturedEventSnapshot(eventClassName, data))
+            .toList();
     }
 
     @Override
