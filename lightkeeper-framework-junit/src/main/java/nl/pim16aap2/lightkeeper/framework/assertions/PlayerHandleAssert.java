@@ -88,6 +88,27 @@ public final class PlayerHandleAssert extends AbstractAssert<PlayerHandleAssert,
     }
 
     /**
+     * Asserts that at least one captured chat component contains clickable text matching the fragment.
+     *
+     * @param expectedText
+     *     Required text fragment that should be clickable.
+     * @return This assertion for fluent chaining.
+     */
+    public PlayerHandleAssert hasClickableChatText(String expectedText)
+    {
+        final var actual = nonNullActual();
+        final boolean found = actual.chatComponents().stream()
+            .anyMatch(component -> component.json().contains(expectedText) &&
+                component.json().contains("clickEvent"));
+        if (!found)
+        {
+            failWithMessage("Expected player '%s' to receive clickable chat text matching '%s', but none was found.",
+                actual.name(), expectedText);
+        }
+        return this;
+    }
+
+    /**
      * Returns an AssertJ string assertion over all received messages concatenated into one text block.
      *
      * @return AssertJ string assertion.

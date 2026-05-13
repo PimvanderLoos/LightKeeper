@@ -2,6 +2,7 @@ package nl.pim16aap2.lightkeeper.framework.internal;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot;
 import nl.pim16aap2.lightkeeper.framework.CommandSource;
 import nl.pim16aap2.lightkeeper.framework.MenuItemSnapshot;
 import nl.pim16aap2.lightkeeper.framework.MenuSnapshot;
@@ -255,6 +256,23 @@ final class UdsAgentClient implements AutoCloseable
         }
     }
 
+    List<ChatComponentSnapshot> playerChatComponents(UUID uuid)
+    {
+        final AgentResponse response = send(new GetPlayerChatComponentsCommand(nextRequestId(), uuid));
+        final String componentsJson = response.data().getOrDefault("componentsJson", "[]");
+        try
+        {
+            final String[] components = objectMapper.readValue(componentsJson, String[].class);
+            return java.util.Arrays.stream(components)
+                .map(ChatComponentSnapshot::new)
+                .toList();
+        }
+        catch (IOException exception)
+        {
+            throw new IllegalStateException("Failed to parse player chat components JSON.", exception);
+        }
+    }
+
     long getServerTick()
     {
         final AgentResponse response = send(new GetServerTickCommand(nextRequestId()));
@@ -334,21 +352,6 @@ final class UdsAgentClient implements AutoCloseable
     void unregisterEventListener(String eventClassName)
     {
         send(new UnregisterEventListenerCommand(nextRequestId(), eventClassName));
-    }
-
-    List<String> getPlayerChatComponents(UUID uuid)
-    {
-        final AgentResponse response = send(new GetPlayerChatComponentsCommand(nextRequestId(), uuid));
-        final String componentsJson = response.data().getOrDefault("componentsJson", "[]");
-        try
-        {
-            final String[] components = objectMapper.readValue(componentsJson, String[].class);
-            return List.of(components);
-        }
-        catch (IOException exception)
-        {
-            throw new IllegalStateException("Failed to parse player chat components JSON.", exception);
-        }
     }
 
     String serverPlatform()

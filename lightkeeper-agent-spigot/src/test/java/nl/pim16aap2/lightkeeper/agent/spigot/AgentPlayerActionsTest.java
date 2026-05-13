@@ -7,6 +7,7 @@ import nl.pim16aap2.lightkeeper.protocol.CreatePlayerCommand;
 import nl.pim16aap2.lightkeeper.protocol.DropItemCommand;
 import nl.pim16aap2.lightkeeper.protocol.ExecutePlayerCommandCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerInventoryCommand;
+import nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponentsCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerMessagesCommand;
 import nl.pim16aap2.lightkeeper.protocol.LeftClickBlockCommand;
 import nl.pim16aap2.lightkeeper.protocol.PlacePlayerBlockCommand;
@@ -135,6 +136,32 @@ class AgentPlayerActionsTest
         // verify
         assertThat(response.success()).isTrue();
         assertThat(response.data()).containsEntry("messagesJson", "[\"first\",\"second\"]");
+    }
+
+    @Test
+    void handleGetPlayerChatComponents_shouldDrainAndReturnComponentHistory()
+        throws Exception
+    {
+        // setup
+        final PlayerActionsFixture fixture = createPlayerActionsFixture();
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mockPlayer(uuid);
+        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        when(fixture.nmsAdapter().drainChatComponents(uuid)).thenReturn(List.of("{\"text\":\"hello\"}"));
+        final GetPlayerChatComponentsCommand command =
+            new GetPlayerChatComponentsCommand("request-components", uuid);
+
+        // execute
+        final AgentResponse response;
+        try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
+        {
+            bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
+            response = fixture.playerActions().handleGetPlayerChatComponents(command);
+        }
+
+        // verify
+        assertThat(response.success()).isTrue();
+        assertThat(response.data()).containsEntry("componentsJson", "[\"{\\\"text\\\":\\\"hello\\\"}\"]");
     }
 
     @Test
@@ -347,7 +374,8 @@ class AgentPlayerActionsTest
         final World world = mock();
         final Block block = mock();
         final PlayerInventory inventory = mock();
-        final ItemStack item = new ItemStack(Material.STICK);
+        final ItemStack item = mock();
+        when(item.getType()).thenReturn(Material.STICK);
         when(player.getUniqueId()).thenReturn(uuid);
         when(player.getWorld()).thenReturn(world);
         when(player.getInventory()).thenReturn(inventory);

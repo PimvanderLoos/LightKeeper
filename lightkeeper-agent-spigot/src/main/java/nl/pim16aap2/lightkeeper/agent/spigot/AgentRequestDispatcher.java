@@ -236,6 +236,17 @@ final class AgentRequestDispatcher
                     throw new IllegalStateException("Unreachable HANDSHAKE dispatch branch.");
             }, true);
         }
+        catch (IllegalArgumentException exception)
+        {
+            return new RequestDispatchResult(
+                AgentResponses.errorResponse(
+                    requestId,
+                    AgentErrorCode.INVALID_ARGUMENT,
+                    Objects.requireNonNullElse(exception.getMessage(), exception.getClass().getName())
+                ),
+                handshakeCompleted
+            );
+        }
         catch (Exception exception)
         {
             logger.log(
@@ -264,6 +275,14 @@ final class AgentRequestDispatcher
         throws Exception
     {
         final String eventClassName = command.eventClassName();
+        if (eventClassName == null || eventClassName.isBlank())
+        {
+            return AgentResponses.errorResponse(
+                command.requestId(),
+                AgentErrorCode.INVALID_ARGUMENT,
+                "eventClassName may not be blank."
+            );
+        }
         try
         {
             eventCapture.registerListener(eventClassName);
@@ -291,6 +310,14 @@ final class AgentRequestDispatcher
         throws Exception
     {
         final String eventClassName = command.eventClassName();
+        if (eventClassName == null || eventClassName.isBlank())
+        {
+            return AgentResponses.errorResponse(
+                command.requestId(),
+                AgentErrorCode.INVALID_ARGUMENT,
+                "eventClassName may not be blank."
+            );
+        }
         final java.util.List<java.util.Map<String, String>> events = eventCapture.getCapturedEvents(eventClassName);
         final String eventsJson = objectMapper.writeValueAsString(events);
         return AgentResponses.successResponse(command.requestId(), Map.of("eventsJson", eventsJson));

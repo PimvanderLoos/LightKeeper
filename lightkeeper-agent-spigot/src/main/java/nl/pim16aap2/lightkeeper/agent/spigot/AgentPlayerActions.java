@@ -315,7 +315,8 @@ final class AgentPlayerActions
         final String componentsJson = mainThreadExecutor.callOnMainThread(() ->
         {
             playerStore.getRequiredPlayer(uuid);
-            return objectMapper.writeValueAsString(List.of());
+            playerStore.capturePlayerChatComponents(botPlayerNmsAdapter, uuid);
+            return objectMapper.writeValueAsString(playerStore.getPlayerChatComponents(uuid));
         });
 
         return AgentResponses.successResponse(command.requestId(), Map.of("componentsJson", componentsJson));
