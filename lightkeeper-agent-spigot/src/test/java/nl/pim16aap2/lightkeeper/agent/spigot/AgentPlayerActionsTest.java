@@ -7,6 +7,7 @@ import nl.pim16aap2.lightkeeper.protocol.CreatePlayerCommand;
 import nl.pim16aap2.lightkeeper.protocol.DropItemCommand;
 import nl.pim16aap2.lightkeeper.protocol.ExecutePlayerCommandCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerInventoryCommand;
+import nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponentsCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerMessagesCommand;
 import nl.pim16aap2.lightkeeper.protocol.LeftClickBlockCommand;
 import nl.pim16aap2.lightkeeper.protocol.PlacePlayerBlockCommand;
@@ -147,8 +148,8 @@ class AgentPlayerActionsTest
         final Player player = mockPlayer(uuid);
         fixture.playerStore().registerSyntheticPlayer(uuid, player);
         when(fixture.nmsAdapter().drainChatComponents(uuid)).thenReturn(List.of("{\"text\":\"hello\"}"));
-        final nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponentsCommand command =
-            new nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponentsCommand("request-components", uuid);
+        final GetPlayerChatComponentsCommand command =
+            new GetPlayerChatComponentsCommand("request-components", uuid);
 
         // execute
         final AgentResponse response;

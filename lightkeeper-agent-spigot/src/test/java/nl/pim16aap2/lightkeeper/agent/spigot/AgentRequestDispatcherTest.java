@@ -15,6 +15,7 @@ import nl.pim16aap2.lightkeeper.protocol.ExecuteCommandCommand;
 import nl.pim16aap2.lightkeeper.protocol.ExecutePlayerCommandCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetCapturedEventsCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetOpenMenuCommand;
+import nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponentsCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerInventoryCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerMessagesCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetServerTickCommand;
@@ -122,7 +123,7 @@ class AgentRequestDispatcherTest
         when(fixture.playerActions().handleGetPlayerChatComponents(any()))
             .thenThrow(new IllegalArgumentException("Invalid UUID string: bad-uuid"));
         final String requestLine = toJson(
-            new nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponentsCommand(
+            new GetPlayerChatComponentsCommand(
                 "request-invalid", UUID.randomUUID()));
 
         // execute
@@ -214,7 +215,7 @@ class AgentRequestDispatcherTest
         when(fixture.eventCapture().getCapturedEvents(eq(eventClass)))
             .thenReturn(List.of(Map.of("getEventName", "Event")));
         when(fixture.playerActions().handleGetPlayerChatComponents(
-            any(nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponentsCommand.class)))
+            any(GetPlayerChatComponentsCommand.class)))
             .thenReturn(AgentResponses.successResponse("request-27", Map.of()));
 
         // execute
@@ -254,7 +255,7 @@ class AgentRequestDispatcherTest
         fixture.dispatcher().handleRequestLine(
             toJson(new UnregisterEventListenerCommand("request-26", eventClass)), true);
         fixture.dispatcher().handleRequestLine(
-            toJson(new nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponentsCommand("request-27", uuid)), true);
+            toJson(new GetPlayerChatComponentsCommand("request-27", uuid)), true);
 
         // verify
         verify(fixture.worldActions()).handleNewWorld(any(NewWorldCommand.class));
@@ -284,7 +285,7 @@ class AgentRequestDispatcherTest
         verify(fixture.eventCapture()).clearCapturedEvents(eventClass);
         verify(fixture.eventCapture()).unregisterListener(eventClass);
         verify(fixture.playerActions()).handleGetPlayerChatComponents(
-            any(nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponentsCommand.class));
+            any(GetPlayerChatComponentsCommand.class));
     }
 
     @Test
