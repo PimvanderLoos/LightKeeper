@@ -7,9 +7,11 @@ import org.jspecify.annotations.Nullable;
 import java.util.Locale;
 
 /**
- * Shared parser utilities for converting string request arguments to typed values.
+ * Shared parser utilities for converting typed command arguments to Bukkit domain objects.
  *
- * <p>This class centralizes argument normalization rules so protocol handlers apply consistent parsing behavior.
+ * <p>This class centralizes material and block-face resolution so protocol handlers apply consistent
+ * parsing behavior. Numeric type coercion is handled by Jackson during deserialization and no longer
+ * requires helpers here.
  */
 final class AgentRequestParsers
 {
@@ -18,47 +20,6 @@ final class AgentRequestParsers
      */
     private AgentRequestParsers()
     {
-    }
-
-    /**
-     * Parses a trimmed integer value.
-     *
-     * @param value
-     *     Input string.
-     * @return
-     *     Parsed integer.
-     */
-    static int parseInt(String value)
-    {
-        return Integer.parseInt(value.trim());
-    }
-
-    /**
-     * Parses a trimmed long value.
-     *
-     * @param value
-     *     Input string.
-     * @return
-     *     Parsed long.
-     */
-    static long parseLong(String value)
-    {
-        return Long.parseLong(value.trim());
-    }
-
-    /**
-     * Parses a nullable/blankable decimal argument.
-     *
-     * @param value
-     *     Nullable input string.
-     * @return
-     *     Parsed decimal value, or {@code null} when input is absent/blank.
-     */
-    static @Nullable Double parseOptionalDouble(@Nullable String value)
-    {
-        if (value == null || value.isBlank())
-            return null;
-        return Double.parseDouble(value.trim());
     }
 
     /**

@@ -2,7 +2,10 @@ package nl.pim16aap2.lightkeeper.agent.spigot;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import nl.pim16aap2.lightkeeper.nms.api.IBotPlayerNmsAdapter;
-import nl.pim16aap2.lightkeeper.runtime.agent.AgentResponse;
+import nl.pim16aap2.lightkeeper.protocol.AgentResponse;
+import nl.pim16aap2.lightkeeper.protocol.ExecutePlayerCommandCommand;
+import nl.pim16aap2.lightkeeper.protocol.LeftClickBlockCommand;
+import nl.pim16aap2.lightkeeper.protocol.RightClickBlockCommand;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -19,7 +22,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 
-import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
@@ -28,63 +30,28 @@ import static org.mockito.Mockito.*;
 class AgentPlayerActionsTest
 {
     @Test
-    void handleCreatePlayer_shouldReturnErrorWhenNameIsBlank()
+    void handleExecutePlayerCommand_shouldStripLeadingSlashFromCommand()
         throws Exception
     {
         // setup
-        final AgentPlayerActions playerActions = createPlayerActions();
-        final Map<String, String> arguments = Map.of(
-            "name", "   ",
-            "worldName", "world"
-        );
+        final PlayerActionsFixture fixture = createPlayerActionsFixture();
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mock();
+        when(player.performCommand("gamemode creative")).thenReturn(true);
+        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        final ExecutePlayerCommandCommand command =
+            new ExecutePlayerCommandCommand("request-cmd", uuid, "/gamemode creative");
 
         // execute
-        final AgentResponse response = playerActions.handleCreatePlayer("request-1", arguments);
+        final AgentResponse response;
+        try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
+        {
+            bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
+            response = fixture.playerActions().handleExecutePlayerCommand(command);
+        }
 
         // verify
-        assertThat(response.success()).isFalse();
-        assertThat(response.errorCode()).isEqualTo("INVALID_ARGUMENT");
-        assertThat(response.errorMessage()).contains("name");
-    }
-
-    @Test
-    void handleCreatePlayer_shouldReturnErrorWhenWorldNameIsBlank()
-        throws Exception
-    {
-        // setup
-        final AgentPlayerActions playerActions = createPlayerActions();
-        final Map<String, String> arguments = Map.of(
-            "name", "bot",
-            "worldName", "   "
-        );
-
-        // execute
-        final AgentResponse response = playerActions.handleCreatePlayer("request-2", arguments);
-
-        // verify
-        assertThat(response.success()).isFalse();
-        assertThat(response.errorCode()).isEqualTo("INVALID_ARGUMENT");
-        assertThat(response.errorMessage()).contains("worldName");
-    }
-
-    @Test
-    void handleExecutePlayerCommand_shouldReturnErrorWhenCommandIsBlank()
-        throws Exception
-    {
-        // setup
-        final AgentPlayerActions playerActions = createPlayerActions();
-        final Map<String, String> arguments = Map.of(
-            "uuid", UUID.randomUUID().toString(),
-            "command", "   "
-        );
-
-        // execute
-        final AgentResponse response = playerActions.handleExecutePlayerCommand("request-3", arguments);
-
-        // verify
-        assertThat(response.success()).isFalse();
-        assertThat(response.errorCode()).isEqualTo("INVALID_ARGUMENT");
-        assertThat(response.errorMessage()).contains("command");
+        assertThat(response.success()).isTrue();
     }
 
     @Test
@@ -98,13 +65,8 @@ class AgentPlayerActionsTest
         final PluginManager pluginManager = mock();
         final ArgumentCaptor<PlayerInteractEvent> eventCaptor = ArgumentCaptor.forClass(PlayerInteractEvent.class);
         fixture.playerStore().registerSyntheticPlayer(uuid, player);
-        final Map<String, String> arguments = Map.of(
-            "uuid", uuid.toString(),
-            "x", "1",
-            "y", "64",
-            "z", "2",
-            "blockFace", "north"
-        );
+        final LeftClickBlockCommand command =
+            new LeftClickBlockCommand("request-click", uuid, 1, 64, 2, "NORTH");
 
         // execute
         final AgentResponse response;
@@ -112,7 +74,7 @@ class AgentPlayerActionsTest
         {
             bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
             bukkitMockedStatic.when(Bukkit::getPluginManager).thenReturn(pluginManager);
-            response = fixture.playerActions().handleLeftClickBlock("request-click", arguments);
+            response = fixture.playerActions().handleLeftClickBlock(command);
         }
 
         // verify
@@ -130,16 +92,11 @@ class AgentPlayerActionsTest
     {
         // setup
         final AgentPlayerActions playerActions = createPlayerActions();
-        final Map<String, String> arguments = Map.of(
-            "uuid", UUID.randomUUID().toString(),
-            "x", "1",
-            "y", "64",
-            "z", "2",
-            "blockFace", "not-a-face"
-        );
+        final RightClickBlockCommand command =
+            new RightClickBlockCommand("request-click", UUID.randomUUID(), 1, 64, 2, "not-a-face");
 
         // execute
-        final AgentResponse response = playerActions.handleRightClickBlock("request-click", arguments);
+        final AgentResponse response = playerActions.handleRightClickBlock(command);
 
         // verify
         assertThat(response.success()).isFalse();

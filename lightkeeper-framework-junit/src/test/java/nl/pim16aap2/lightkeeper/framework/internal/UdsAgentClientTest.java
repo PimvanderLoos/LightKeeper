@@ -1,8 +1,8 @@
 package nl.pim16aap2.lightkeeper.framework.internal;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import nl.pim16aap2.lightkeeper.runtime.agent.AgentAction;
-import nl.pim16aap2.lightkeeper.runtime.agent.AgentResponse;
+import nl.pim16aap2.lightkeeper.protocol.AgentResponse;
+import nl.pim16aap2.lightkeeper.protocol.WaitTicksCommand;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -44,7 +44,7 @@ class UdsAgentClientTest
             final UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3));
 
             // execute + verify
-            assertThatThrownBy(() -> client.send(AgentAction.WAIT_TICKS, Map.of("ticks", "1")))
+            assertThatThrownBy(() -> client.send(new WaitTicksCommand("1", 1)))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Unexpected response id");
             client.close();
@@ -71,7 +71,7 @@ class UdsAgentClientTest
             final UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3));
 
             // execute + verify
-            assertThatThrownBy(() -> client.send(AgentAction.WAIT_TICKS, Map.of("ticks", "1")))
+            assertThatThrownBy(() -> client.send(new WaitTicksCommand("1", 1)))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("code=PROTOCOL_MISMATCH")
                 .hasMessageContaining("expectedProtocolVersion=7")
