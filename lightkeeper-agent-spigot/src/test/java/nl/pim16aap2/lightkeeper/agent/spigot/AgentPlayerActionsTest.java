@@ -138,6 +138,32 @@ class AgentPlayerActionsTest
     }
 
     @Test
+    void handleGetPlayerChatComponents_shouldDrainAndReturnComponentHistory()
+        throws Exception
+    {
+        // setup
+        final PlayerActionsFixture fixture = createPlayerActionsFixture();
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mockPlayer(uuid);
+        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        when(fixture.nmsAdapter().drainChatComponents(uuid)).thenReturn(List.of("{\"text\":\"hello\"}"));
+        final nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponentsCommand command =
+            new nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponentsCommand("request-components", uuid);
+
+        // execute
+        final AgentResponse response;
+        try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
+        {
+            bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
+            response = fixture.playerActions().handleGetPlayerChatComponents(command);
+        }
+
+        // verify
+        assertThat(response.success()).isTrue();
+        assertThat(response.data()).containsEntry("componentsJson", "[\"{\\\"text\\\":\\\"hello\\\"}\"]");
+    }
+
+    @Test
     void handleGetPlayerInventory_shouldSerializeNonAirItems()
         throws Exception
     {
@@ -347,7 +373,8 @@ class AgentPlayerActionsTest
         final World world = mock();
         final Block block = mock();
         final PlayerInventory inventory = mock();
-        final ItemStack item = new ItemStack(Material.STICK);
+        final ItemStack item = mock();
+        when(item.getType()).thenReturn(Material.STICK);
         when(player.getUniqueId()).thenReturn(uuid);
         when(player.getWorld()).thenReturn(world);
         when(player.getInventory()).thenReturn(inventory);
