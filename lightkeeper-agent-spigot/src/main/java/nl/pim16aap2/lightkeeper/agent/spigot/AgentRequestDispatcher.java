@@ -234,7 +234,11 @@ final class AgentRequestDispatcher
         }
         catch (AgentProtocolException exception)
         {
-            return buildErrorResult(requestId, exception.errorCode(), exception.getMessage(), handshakeCompleted);
+            return buildErrorResult(
+                requestId,
+                exception.errorCode(),
+                Objects.requireNonNullElse(exception.getMessage(), exception.getClass().getName()),
+                handshakeCompleted);
         }
         catch (Exception exception)
         {
