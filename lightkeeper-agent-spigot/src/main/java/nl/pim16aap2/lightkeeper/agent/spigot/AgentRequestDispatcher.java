@@ -195,7 +195,7 @@ final class AgentRequestDispatcher
                     requestId,
                     AgentErrorCode.HANDSHAKE_REQUIRED,
                     "A successful HANDSHAKE action is required before '%s'."
-                        .formatted(command.getClass().getSimpleName()),
+                        .formatted(qualifiedCommandName(command)),
                     false
                 );
             }
@@ -251,7 +251,7 @@ final class AgentRequestDispatcher
                 Level.SEVERE,
                 "Agent action '%s' failed for request '%s': %s"
                     .formatted(
-                        command.getClass().getSimpleName(),
+                        qualifiedCommandName(command),
                         requestId,
                         Objects.requireNonNullElse(exception.getMessage(), exception.getClass().getName())
                     ),
@@ -332,9 +332,41 @@ final class AgentRequestDispatcher
             final String fallback =
                 ("{\"requestId\":\"%s\",\"success\":false,\"errorCode\":\"%s\","
                     + "\"errorMessage\":\"serialization failure\"}")
-                    .formatted(requestId, errorCode.wireCode());
+                    .formatted(jsonEscape(requestId), errorCode.wireCode());
             return new RequestDispatchResult(fallback, handshakeCompleted);
         }
+    }
+
+    /**
+     * Returns a qualified name for a command for use in log messages and error strings.
+     *
+     * <p>For nested classes like {@code MainWorld.Command}, {@code getSimpleName()} alone returns {@code "Command"},
+     * which is indistinguishable across all command types. This method combines the enclosing class name to produce
+     * {@code "MainWorld.Command"}.
+     */
+    @SuppressWarnings("rawtypes")
+    private static String qualifiedCommandName(IAgentCommand command)
+    {
+        final Class<?> cls = command.getClass();
+        final Class<?> enclosing = cls.getEnclosingClass();
+        return enclosing != null
+            ? enclosing.getSimpleName() + "." + cls.getSimpleName()
+            : cls.getSimpleName();
+    }
+
+    /**
+     * Escapes a string for safe embedding in a manually constructed JSON value.
+     *
+     * <p>Only called on the fallback error path when Jackson serialization itself has failed.
+     */
+    private static String jsonEscape(String value)
+    {
+        return value
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\n", "\\n")
+            .replace("\r", "\\r")
+            .replace("\t", "\\t");
     }
 
     /**

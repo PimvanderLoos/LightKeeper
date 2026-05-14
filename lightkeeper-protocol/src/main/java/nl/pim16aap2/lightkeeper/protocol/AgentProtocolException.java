@@ -27,7 +27,7 @@ public final class AgentProtocolException extends RuntimeException
     public AgentProtocolException(AgentErrorCode errorCode, String message)
     {
         super(message);
-        this.errorCode = errorCode;
+        this.errorCode = java.util.Objects.requireNonNull(errorCode, "errorCode");
     }
 
     /**
@@ -41,7 +41,7 @@ public final class AgentProtocolException extends RuntimeException
     public AgentProtocolException(AgentErrorCode errorCode, String message, Throwable cause)
     {
         super(message, cause);
-        this.errorCode = errorCode;
+        this.errorCode = java.util.Objects.requireNonNull(errorCode, "errorCode");
     }
 
     /**

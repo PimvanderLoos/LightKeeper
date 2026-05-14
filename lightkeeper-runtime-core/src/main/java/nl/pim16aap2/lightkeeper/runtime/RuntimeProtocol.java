@@ -6,7 +6,7 @@ import java.io.UncheckedIOException;
 import java.util.Properties;
 
 /**
- * Shared runtime protocol constants for LightKeeper v1.
+ * Shared runtime protocol constants for LightKeeper.
  */
 public final class RuntimeProtocol
 {
@@ -15,8 +15,12 @@ public final class RuntimeProtocol
 
     /**
      * Runtime protocol version understood by the framework and in-server agent.
+     *
+     * <p>Increment this whenever the agent wire format, command set, or response semantics change
+     * in a backward-incompatible way. Both the framework and the agent must agree on this value;
+     * a mismatch causes an {@code HANDSHAKE} failure.
      */
-    public static final int VERSION = 1;
+    public static final int VERSION = 2;
 
     /**
      * Minecraft server version supported by this LightKeeper build.

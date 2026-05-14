@@ -49,9 +49,9 @@ public final class CreatePlayer
     {
         public Command
         {
-            if (name.isBlank())
+            if (name == null || name.isBlank())
                 throw new IllegalArgumentException("'name' must not be blank.");
-            if (worldName.isBlank())
+            if (worldName == null || worldName.isBlank())
                 throw new IllegalArgumentException("'worldName' must not be blank.");
         }
 
