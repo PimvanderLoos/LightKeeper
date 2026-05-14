@@ -2,6 +2,7 @@ package nl.pim16aap2.lightkeeper.maven;
 
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.SystemStreamLog;
 import org.junit.jupiter.api.Test;
@@ -292,8 +293,9 @@ class PaperDownloadsClientTest
     @SuppressWarnings("unchecked")
     private static PaperDownloadsClient createClient(HttpClient httpClient)
     {
-        final ObjectMapper objectMapper = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        final ObjectMapper objectMapper = JsonMapper.builder()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
         return new PaperDownloadsClient(new SystemStreamLog(), "LightKeeper/Tests", httpClient, objectMapper);
     }
 }
