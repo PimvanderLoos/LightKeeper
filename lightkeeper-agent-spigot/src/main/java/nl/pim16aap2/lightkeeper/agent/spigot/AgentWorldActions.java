@@ -143,11 +143,11 @@ final class AgentWorldActions
 
         final String rawCommand = req.command();
         final String command = rawCommand.startsWith("/") ? rawCommand.substring(1) : rawCommand;
-        final Boolean success = mainThreadExecutor.callOnMainThread(() ->
+        final Boolean dispatched = mainThreadExecutor.callOnMainThread(() ->
             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command)
         );
 
-        return new ExecuteCommand.Response(req.requestId(), success);
+        return new ExecuteCommand.Response(req.requestId(), dispatched);
     }
 
     /**

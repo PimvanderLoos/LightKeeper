@@ -53,7 +53,7 @@ class AgentPlayerActionsTest
 
         // verify
         assertThat(response.requestId()).isEqualTo("request-cmd");
-        assertThat(response.success()).isTrue();
+        assertThat(response.dispatched()).isTrue();
     }
 
     @Test
@@ -124,7 +124,7 @@ class AgentPlayerActionsTest
 
         // verify
         assertThat(response.requestId()).isEqualTo("req-drop");
-        assertThat(response.eventCancelled()).isFalse();
+        assertThat(response.dropped()).isTrue();
         verify(entity, never()).remove();
         verify(item).setAmount(2);
         verify(inventory).setItemInMainHand(item);
@@ -171,7 +171,7 @@ class AgentPlayerActionsTest
 
         // verify
         assertThat(response.requestId()).isEqualTo("req-drop-cancel");
-        assertThat(response.eventCancelled()).isTrue();
+        assertThat(response.dropped()).isFalse();
         verify(entity).remove();
         verify(inventory, never()).setItemInMainHand(any());
     }

@@ -1,6 +1,7 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
 import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import nl.pim16aap2.lightkeeper.protocol.BlockType;
 import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEvents;
@@ -141,16 +142,20 @@ final class AgentRequestDispatcher
      */
     RequestDispatchResult handleRequestLine(String line, boolean handshakeCompleted)
     {
+        // Pre-extract requestId so validation failures still return a correlated error response.
+        String requestId = "unknown";
         try
         {
+            final JsonNode tree = objectMapper.readTree(line);
+            requestId = tree.path("requestId").asString("unknown");
             @SuppressWarnings("rawtypes")
-            final IAgentCommand command = objectMapper.readValue(line, IAgentCommand.class);
+            final IAgentCommand command = objectMapper.treeToValue(tree, IAgentCommand.class);
             return dispatchCommand(command, handshakeCompleted);
         }
         catch (Exception exception)
         {
             return buildErrorResult(
-                "unknown",
+                requestId,
                 AgentErrorCode.INVALID_REQUEST,
                 "Failed to parse request: " + exception.getMessage(),
                 handshakeCompleted

@@ -190,7 +190,7 @@ final class AgentPlayerActions
         final UUID uuid = req.uuid();
         final String rawCommand = req.command();
         final String command = rawCommand.startsWith("/") ? rawCommand.substring(1) : rawCommand;
-        final Boolean success = mainThreadExecutor.callOnMainThread(() ->
+        final Boolean dispatched = mainThreadExecutor.callOnMainThread(() ->
         {
             final Player player = playerStore.getRequiredPlayer(uuid);
             boolean result = player.performCommand(command);
@@ -199,7 +199,7 @@ final class AgentPlayerActions
             return result;
         });
 
-        return new ExecutePlayerCommand.Response(req.requestId(), success);
+        return new ExecutePlayerCommand.Response(req.requestId(), dispatched);
     }
 
     /**
@@ -347,7 +347,7 @@ final class AgentPlayerActions
      * @param command
      *     Typed command carrying the player UUID.
      * @return
-     *     Response with {@code eventCancelled=true} when a plugin blocked the drop.
+     *     Response indicating whether the drop materialised.
      * @throws Exception
      *     Propagates main-thread execution failures.
      */
@@ -355,12 +355,12 @@ final class AgentPlayerActions
         throws Exception
     {
         final UUID uuid = command.uuid();
-        final Boolean eventCancelled = mainThreadExecutor.callOnMainThread(() ->
+        final Boolean dropped = mainThreadExecutor.callOnMainThread(() ->
         {
             final Player player = playerStore.getRequiredPlayer(uuid);
             final ItemStack item = player.getInventory().getItemInMainHand();
             if (item == null || item.getType().isAir())
-                return Boolean.TRUE;
+                return Boolean.FALSE;
 
             final org.bukkit.entity.Item droppedItem =
                 player.getWorld().dropItemNaturally(player.getLocation(), item.clone());
@@ -372,7 +372,7 @@ final class AgentPlayerActions
             if (event.isCancelled())
             {
                 droppedItem.remove();
-                return Boolean.TRUE;
+                return Boolean.FALSE;
             }
 
             // Consume one item from the player's main hand
@@ -386,10 +386,10 @@ final class AgentPlayerActions
                 player.getInventory().setItemInMainHand(null);
             }
 
-            return Boolean.FALSE;
+            return Boolean.TRUE;
         });
 
-        return new DropItem.Response(command.requestId(), eventCancelled);
+        return new DropItem.Response(command.requestId(), dropped);
     }
 
     /**

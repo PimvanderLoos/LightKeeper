@@ -273,6 +273,25 @@ class AgentRequestDispatcherTest
     }
 
     @Test
+    void handleRequestLine_shouldReturnCorrectRequestIdWhenCommandValidationFails()
+    {
+        // setup — valid JSON with a known requestId, but name="" fails the CreatePlayer compact constructor
+        final AgentRequestDispatcher dispatcher = createDispatcher("token", 1, "");
+        final String requestLine = "{\"requestId\":\"req-123\",\"action\":\"CREATE_PLAYER\","
+            + "\"name\":\"\",\"uuid\":\"550e8400-e29b-41d4-a716-446655440000\","
+            + "\"worldName\":\"world\"}";
+
+        // execute
+        final AgentRequestDispatcher.RequestDispatchResult result =
+            dispatcher.handleRequestLine(requestLine, true);
+
+        // verify — requestId must be "req-123", not "unknown"
+        assertThat(isSuccess(result.responseJson())).isFalse();
+        assertThat(requestId(result.responseJson())).isEqualTo("req-123");
+        assertThat(errorCode(result.responseJson())).isEqualTo("INVALID_REQUEST");
+    }
+
+    @Test
     void handleRequestLine_shouldRejectNonHandshakeRequestBeforeHandshakeCompletes()
         throws Exception
     {
