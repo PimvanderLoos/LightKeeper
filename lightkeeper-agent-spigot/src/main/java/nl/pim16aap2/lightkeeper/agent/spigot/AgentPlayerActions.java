@@ -362,8 +362,10 @@ final class AgentPlayerActions
             if (item == null || item.getType().isAir())
                 return Boolean.FALSE;
 
+            final ItemStack singleItem = item.clone();
+            singleItem.setAmount(1);
             final org.bukkit.entity.Item droppedItem =
-                player.getWorld().dropItemNaturally(player.getLocation(), item.clone());
+                player.getWorld().dropItemNaturally(player.getLocation(), singleItem);
             final org.bukkit.event.player.PlayerDropItemEvent event =
                 new org.bukkit.event.player.PlayerDropItemEvent(player, droppedItem);
 
