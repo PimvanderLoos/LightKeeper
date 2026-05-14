@@ -266,7 +266,7 @@ class AgentCommandSerializationTest
 
         // verify
         assertThat(result.requestId()).isEqualTo("req-10");
-        assertThat(result.eventCancelled()).isTrue();
+        assertThat(result.dropped()).isTrue();
     }
 
     // -----------------------------------------------------------------------

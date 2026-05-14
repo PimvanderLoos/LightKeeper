@@ -40,13 +40,13 @@ public final class DropItem
      *
      * @param requestId
      *     Correlated request id.
-     * @param eventCancelled
-     *     Whether the {@code PlayerDropItemEvent} was cancelled by a plugin.
-     *     {@code true} means the drop was blocked; {@code false} means it was allowed.
+     * @param dropped
+     *     {@code true} when the drop materialised (item entity created, inventory slot consumed);
+     *     {@code false} when the player had nothing in hand, or the {@code PlayerDropItemEvent} was cancelled.
      */
     public record Response(
         String requestId,
-        boolean eventCancelled
+        boolean dropped
     ) implements IAgentResponse
     {
     }

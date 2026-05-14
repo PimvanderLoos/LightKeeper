@@ -33,6 +33,8 @@ public final class DragMenuSlots
     {
         public Command
         {
+            if (slots == null)
+                throw new IllegalArgumentException("'slots' must not be null.");
             slots = slots.clone();
         }
 

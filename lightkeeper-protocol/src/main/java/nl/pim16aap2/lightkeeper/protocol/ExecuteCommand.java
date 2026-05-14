@@ -37,12 +37,12 @@ public final class ExecuteCommand
      *
      * @param requestId
      *     Correlated request id.
-     * @param success
-     *     Whether the command dispatch reported success.
+     * @param dispatched
+     *     Whether the underlying {@code dispatchCommand} call returned {@code true}.
      */
     public record Response(
         String requestId,
-        boolean success
+        boolean dispatched
     ) implements IAgentResponse
     {
     }
