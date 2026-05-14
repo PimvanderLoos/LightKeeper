@@ -1,6 +1,6 @@
 package nl.pim16aap2.lightkeeper.maven;
 
-import tools.jackson.core.exc.JacksonException;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
@@ -169,7 +169,7 @@ public final class SpigotDownloadsClient
         {
             return objectMapper.readTree(response.body());
         }
-        catch (JsonProcessingException exception)
+        catch (JacksonException exception)
         {
             throw new MojoExecutionException(
                 "Failed to parse BuildTools metadata response from '%s'."

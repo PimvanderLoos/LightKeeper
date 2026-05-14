@@ -1,7 +1,7 @@
 package nl.pim16aap2.lightkeeper.maven;
 
-import tools.jackson.core.exc.JacksonException;
-import com.fasterxml.jackson.core.type.TypeReference;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -174,11 +174,11 @@ public final class PaperDownloadsClient
     {
         try
         {
-            return objectMapper.readValue(root.traverse(), new TypeReference<>()
+            return objectMapper.treeToValue(root, new TypeReference<>()
             {
             });
         }
-        catch (IOException exception)
+        catch (JacksonException exception)
         {
             throw new MojoExecutionException("Failed to parse Fill builds response.", exception);
         }
@@ -224,7 +224,7 @@ public final class PaperDownloadsClient
                 );
             return root;
         }
-        catch (JsonProcessingException exception)
+        catch (JacksonException exception)
         {
             throw new MojoExecutionException("Failed to parse Fill API response from '%s'.".formatted(uri), exception);
         }

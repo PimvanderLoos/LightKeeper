@@ -1,7 +1,7 @@
 package nl.pim16aap2.lightkeeper.maven;
 
-import tools.jackson.core.exc.JacksonException;
-import com.fasterxml.jackson.core.type.TypeReference;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -57,8 +57,8 @@ public final class ModrinthDownloadsClient
                 .build(),
             JsonMapper.builder()
                 .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
                 .build()
-                .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
         );
     }
 
@@ -70,8 +70,8 @@ public final class ModrinthDownloadsClient
             httpClient,
             JsonMapper.builder()
                 .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
                 .build()
-                .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
         );
     }
 
@@ -164,11 +164,11 @@ public final class ModrinthDownloadsClient
     {
         try
         {
-            return objectMapper.readValue(fetchJson(uri).traverse(), new TypeReference<>()
+            return objectMapper.treeToValue(fetchJson(uri), new TypeReference<>()
             {
             });
         }
-        catch (IOException exception)
+        catch (JacksonException exception)
         {
             throw new MojoExecutionException("Failed to parse Modrinth versions response from '%s'.".formatted(uri),
                 exception);
@@ -182,7 +182,7 @@ public final class ModrinthDownloadsClient
         {
             return objectMapper.treeToValue(root, VersionResponse.class);
         }
-        catch (JsonProcessingException exception)
+        catch (JacksonException exception)
         {
             throw new MojoExecutionException("Failed to parse Modrinth version response from '%s'.".formatted(uri),
                 exception);
@@ -329,7 +329,7 @@ public final class ModrinthDownloadsClient
         {
             return objectMapper.readTree(response.body());
         }
-        catch (JsonProcessingException exception)
+        catch (JacksonException exception)
         {
             throw new MojoExecutionException("Failed to parse Modrinth API response from '%s'.".formatted(uri),
                 exception);
