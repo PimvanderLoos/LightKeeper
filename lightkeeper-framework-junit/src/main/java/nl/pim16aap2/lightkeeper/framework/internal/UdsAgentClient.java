@@ -315,7 +315,8 @@ final class UdsAgentClient implements AutoCloseable
 
     void registerEventListener(String eventClassName)
     {
-        final RegisterEventListener.Command command = new RegisterEventListener.Command(nextRequestId(), eventClassName);
+        final RegisterEventListener.Command command =
+            new RegisterEventListener.Command(nextRequestId(), eventClassName);
         send(command);
     }
 
