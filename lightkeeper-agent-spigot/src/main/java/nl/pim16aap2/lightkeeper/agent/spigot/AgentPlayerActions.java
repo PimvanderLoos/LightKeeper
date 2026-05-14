@@ -1,6 +1,5 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
-import tools.jackson.databind.ObjectMapper;
 import nl.pim16aap2.lightkeeper.nms.api.IBotPlayerNmsAdapter;
 import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
 import nl.pim16aap2.lightkeeper.protocol.AgentProtocolException;
@@ -25,12 +24,15 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -99,8 +101,8 @@ final class AgentPlayerActions
      *
      * @param command
      *     Typed command carrying player name, UUID, world, spawn coordinates, health, and permissions.
-     * @return
-     *     Response containing the created player's UUID and name.
+     * @return Response containing the created player's UUID and name.
+     *
      * @throws Exception
      *     Propagates validation and main-thread execution failures.
      */
@@ -149,8 +151,8 @@ final class AgentPlayerActions
      *
      * @param command
      *     Typed command carrying the player UUID.
-     * @return
-     *     Response when cleanup completes.
+     * @return Response when cleanup completes.
+     *
      * @throws Exception
      *     Propagates main-thread execution failures.
      */
@@ -177,10 +179,10 @@ final class AgentPlayerActions
     /**
      * Handles {@code EXECUTE_PLAYER_COMMAND} by dispatching the command in the player's execution context.
      *
-     * @param command
+     * @param req
      *     Typed command carrying the player UUID and command string.
-     * @return
-     *     Response containing whether dispatch succeeded.
+     * @return Response containing whether dispatch succeeded.
+     *
      * @throws Exception
      *     Propagates main-thread execution failures.
      */
@@ -207,8 +209,8 @@ final class AgentPlayerActions
      *
      * @param command
      *     Typed command carrying UUID, material key, and block coordinates.
-     * @return
-     *     Response containing the resulting block material key.
+     * @return Response containing the resulting block material key.
+     *
      * @throws Exception
      *     Propagates validation and main-thread execution failures.
      */
@@ -240,8 +242,8 @@ final class AgentPlayerActions
      *
      * @param command
      *     Typed command carrying UUID, block coordinates, and block face.
-     * @return
-     *     Response containing whether the fired interaction event was cancelled.
+     * @return Response containing whether the fired interaction event was cancelled.
+     *
      * @throws Exception
      *     Propagates validation and main-thread execution failures.
      */
@@ -259,8 +261,8 @@ final class AgentPlayerActions
      *
      * @param command
      *     Typed command carrying UUID, block coordinates, and block face.
-     * @return
-     *     Response containing whether the fired interaction event was cancelled.
+     * @return Response containing whether the fired interaction event was cancelled.
+     *
      * @throws Exception
      *     Propagates validation and main-thread execution failures.
      */
@@ -278,8 +280,8 @@ final class AgentPlayerActions
      *
      * @param command
      *     Typed command carrying the player UUID.
-     * @return
-     *     Response with the accumulated message list.
+     * @return Response with the accumulated message list.
+     *
      * @throws Exception
      *     Propagates main-thread execution failures.
      */
@@ -302,8 +304,8 @@ final class AgentPlayerActions
      *
      * @param command
      *     Typed command carrying the player UUID.
-     * @return
-     *     Never returns normally; always throws.
+     * @return Never returns normally; always throws.
+     *
      * @throws AgentProtocolException
      *     Always, since this action is not yet implemented.
      */
@@ -320,8 +322,8 @@ final class AgentPlayerActions
      *
      * @param command
      *     Typed command carrying the player UUID.
-     * @return
-     *     Response with {@code inventoryJson}.
+     * @return Response with {@code inventoryJson}.
+     *
      * @throws Exception
      *     Propagates main-thread execution failures.
      */
@@ -346,8 +348,8 @@ final class AgentPlayerActions
      *
      * @param command
      *     Typed command carrying the player UUID.
-     * @return
-     *     Response indicating whether the drop materialised.
+     * @return Response indicating whether the drop materialised.
+     *
      * @throws Exception
      *     Propagates main-thread execution failures.
      */
@@ -359,15 +361,13 @@ final class AgentPlayerActions
         {
             final Player player = playerStore.getRequiredPlayer(uuid);
             final ItemStack item = player.getInventory().getItemInMainHand();
-            if (item == null || item.getType().isAir())
+            if (item.getType().isAir())
                 return Boolean.FALSE;
 
             final ItemStack singleItem = item.clone();
             singleItem.setAmount(1);
-            final org.bukkit.entity.Item droppedItem =
-                player.getWorld().dropItemNaturally(player.getLocation(), singleItem);
-            final org.bukkit.event.player.PlayerDropItemEvent event =
-                new org.bukkit.event.player.PlayerDropItemEvent(player, droppedItem);
+            final Item droppedItem = player.getWorld().dropItemNaturally(player.getLocation(), singleItem);
+            final PlayerDropItemEvent event = new PlayerDropItemEvent(player, droppedItem);
 
             Bukkit.getPluginManager().callEvent(event);
 
@@ -399,8 +399,8 @@ final class AgentPlayerActions
      *
      * @param command
      *     Typed command carrying player UUID, world name, and target coordinates.
-     * @return
-     *     Response with {@code teleported} result.
+     * @return Response with {@code teleported} result.
+     *
      * @throws Exception
      *     Propagates main-thread execution failures.
      */
@@ -430,8 +430,8 @@ final class AgentPlayerActions
      *
      * @param command
      *     Typed command carrying the event class name.
-     * @return
-     *     Never returns normally; always throws.
+     * @return Never returns normally; always throws.
+     *
      * @throws AgentProtocolException
      *     Always, since this action is not yet implemented.
      */
@@ -448,8 +448,8 @@ final class AgentPlayerActions
      *
      * @param command
      *     Typed command carrying the event class name.
-     * @return
-     *     Never returns normally; always throws.
+     * @return Never returns normally; always throws.
+     *
      * @throws AgentProtocolException
      *     Always, since this action is not yet implemented.
      */
@@ -466,8 +466,8 @@ final class AgentPlayerActions
      *
      * @param command
      *     Typed command carrying the event class name.
-     * @return
-     *     Never returns normally; always throws.
+     * @return Never returns normally; always throws.
+     *
      * @throws AgentProtocolException
      *     Always, since this action is not yet implemented.
      */
@@ -484,8 +484,8 @@ final class AgentPlayerActions
      *
      * @param command
      *     Typed command carrying the event class name.
-     * @return
-     *     Never returns normally; always throws.
+     * @return Never returns normally; always throws.
+     *
      * @throws AgentProtocolException
      *     Always, since this action is not yet implemented.
      */
@@ -541,8 +541,8 @@ final class AgentPlayerActions
      *     Bukkit {@code BlockFace} enum name.
      * @param action
      *     Bukkit {@code Action} for left or right click.
-     * @return
-     *     {@code true} if the event was cancelled.
+     * @return {@code true} if the event was cancelled.
+     *
      * @throws Exception
      *     Propagates main-thread execution failures.
      */
