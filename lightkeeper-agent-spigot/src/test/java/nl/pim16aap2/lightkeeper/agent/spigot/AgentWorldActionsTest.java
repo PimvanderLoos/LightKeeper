@@ -1,6 +1,5 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
-import nl.pim16aap2.lightkeeper.protocol.AgentProtocolException;
 import nl.pim16aap2.lightkeeper.protocol.GetServerTick;
 import nl.pim16aap2.lightkeeper.protocol.WaitTicks;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -43,15 +42,11 @@ class AgentWorldActionsTest
     }
 
     @Test
-    void handleWaitTicks_shouldThrowProtocolExceptionWhenTicksAreNegative()
+    void handleWaitTicks_shouldThrowWhenTicksAreNegative()
     {
-        // setup
-        final AtomicLong tickCounter = new AtomicLong(3L);
-        final AgentWorldActions worldActions = createWorldActions(tickCounter);
-
-        // execute + verify
-        assertThatThrownBy(() -> worldActions.handleWaitTicks(new WaitTicks.Command("request-2", -1)))
-            .isInstanceOf(AgentProtocolException.class)
+        // setup + execute + verify
+        assertThatThrownBy(() -> new WaitTicks.Command("request-2", -1))
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("ticks");
     }
 

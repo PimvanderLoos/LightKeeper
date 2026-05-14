@@ -22,6 +22,12 @@ public final class WaitTicks
         int ticks
     ) implements IAgentCommand<Response>
     {
+        public Command
+        {
+            if (ticks < 0)
+                throw new IllegalArgumentException("'ticks' must be >= 0, got: " + ticks);
+        }
+
         @Override
         public Class<Response> responseType()
         {

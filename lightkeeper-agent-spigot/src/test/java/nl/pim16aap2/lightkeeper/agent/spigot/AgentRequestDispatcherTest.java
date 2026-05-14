@@ -5,23 +5,36 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import nl.pim16aap2.lightkeeper.nms.api.IBotPlayerNmsAdapter;
 import nl.pim16aap2.lightkeeper.protocol.BlockType;
+import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEvents;
 import nl.pim16aap2.lightkeeper.protocol.ClickMenuSlot;
+import nl.pim16aap2.lightkeeper.protocol.CommandSource;
 import nl.pim16aap2.lightkeeper.protocol.CreatePlayer;
 import nl.pim16aap2.lightkeeper.protocol.DragMenuSlots;
+import nl.pim16aap2.lightkeeper.protocol.DropItem;
 import nl.pim16aap2.lightkeeper.protocol.ExecuteCommand;
 import nl.pim16aap2.lightkeeper.protocol.ExecutePlayerCommand;
+import nl.pim16aap2.lightkeeper.protocol.GetCapturedEvents;
 import nl.pim16aap2.lightkeeper.protocol.GetOpenMenu;
+import nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponents;
+import nl.pim16aap2.lightkeeper.protocol.GetPlayerInventory;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerMessages;
+import nl.pim16aap2.lightkeeper.protocol.GetServerPlatform;
 import nl.pim16aap2.lightkeeper.protocol.GetServerTick;
 import nl.pim16aap2.lightkeeper.protocol.Handshake;
 import nl.pim16aap2.lightkeeper.protocol.IAgentCommand;
+import nl.pim16aap2.lightkeeper.protocol.IsChunkLoaded;
 import nl.pim16aap2.lightkeeper.protocol.LeftClickBlock;
+import nl.pim16aap2.lightkeeper.protocol.LoadChunk;
 import nl.pim16aap2.lightkeeper.protocol.MainWorld;
 import nl.pim16aap2.lightkeeper.protocol.NewWorld;
 import nl.pim16aap2.lightkeeper.protocol.PlacePlayerBlock;
+import nl.pim16aap2.lightkeeper.protocol.RegisterEventListener;
 import nl.pim16aap2.lightkeeper.protocol.RemovePlayer;
 import nl.pim16aap2.lightkeeper.protocol.RightClickBlock;
 import nl.pim16aap2.lightkeeper.protocol.SetBlock;
+import nl.pim16aap2.lightkeeper.protocol.TeleportPlayer;
+import nl.pim16aap2.lightkeeper.protocol.UnloadChunk;
+import nl.pim16aap2.lightkeeper.protocol.UnregisterEventListener;
 import nl.pim16aap2.lightkeeper.protocol.WaitTicks;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -141,10 +154,34 @@ class AgentRequestDispatcherTest
             .thenReturn(new WaitTicks.Response("request-15", 0L, 0L));
         when(fixture.worldActions().handleGetServerTick(any(GetServerTick.Command.class)))
             .thenReturn(new GetServerTick.Response("request-16", 0L));
+        when(fixture.playerActions().handleTeleportPlayer(any(TeleportPlayer.Command.class)))
+            .thenReturn(new TeleportPlayer.Response("request-17", true));
+        when(fixture.worldActions().handleLoadChunk(any(LoadChunk.Command.class)))
+            .thenReturn(new LoadChunk.Response("request-18", true));
+        when(fixture.worldActions().handleUnloadChunk(any(UnloadChunk.Command.class)))
+            .thenReturn(new UnloadChunk.Response("request-19", true));
+        when(fixture.worldActions().handleIsChunkLoaded(any(IsChunkLoaded.Command.class)))
+            .thenReturn(new IsChunkLoaded.Response("request-20", true));
+        when(fixture.playerActions().handleGetPlayerInventory(any(GetPlayerInventory.Command.class)))
+            .thenReturn(new GetPlayerInventory.Response("request-21", "[]"));
+        when(fixture.playerActions().handleDropItem(any(DropItem.Command.class)))
+            .thenReturn(new DropItem.Response("request-22", false));
+        when(fixture.playerActions().handleRegisterEventListener(any(RegisterEventListener.Command.class)))
+            .thenReturn(new RegisterEventListener.Response("request-23"));
+        when(fixture.playerActions().handleGetCapturedEvents(any(GetCapturedEvents.Command.class)))
+            .thenReturn(new GetCapturedEvents.Response("request-24", "[]"));
+        when(fixture.playerActions().handleClearCapturedEvents(any(ClearCapturedEvents.Command.class)))
+            .thenReturn(new ClearCapturedEvents.Response("request-25"));
+        when(fixture.playerActions().handleUnregisterEventListener(any(UnregisterEventListener.Command.class)))
+            .thenReturn(new UnregisterEventListener.Response("request-26"));
+        when(fixture.playerActions().handleGetPlayerChatComponents(any(GetPlayerChatComponents.Command.class)))
+            .thenReturn(new GetPlayerChatComponents.Response("request-27"));
+        when(fixture.worldActions().handleGetServerPlatform(any(GetServerPlatform.Command.class)))
+            .thenReturn(new GetServerPlatform.Response("request-28", "CraftBukkit", "1.21"));
 
         // execute
         fixture.dispatcher().handleRequestLine(toJson(new NewWorld.Command("request-1", "w", "NORMAL", "NORMAL", 0L)), true);
-        fixture.dispatcher().handleRequestLine(toJson(new ExecuteCommand.Command("request-2", "CONSOLE", "time set day")), true);
+        fixture.dispatcher().handleRequestLine(toJson(new ExecuteCommand.Command("request-2", CommandSource.CONSOLE, "time set day")), true);
         fixture.dispatcher().handleRequestLine(toJson(new BlockType.Command("request-3", "world", 0, 64, 0)), true);
         fixture.dispatcher().handleRequestLine(toJson(new SetBlock.Command("request-4", "world", 0, 64, 0, "stone")), true);
         fixture.dispatcher().handleRequestLine(toJson(new CreatePlayer.Command("request-5", "bot", uuid, "world", null, null, null, null, null)), true);
@@ -159,6 +196,18 @@ class AgentRequestDispatcherTest
         fixture.dispatcher().handleRequestLine(toJson(new GetPlayerMessages.Command("request-14", uuid)), true);
         fixture.dispatcher().handleRequestLine(toJson(new WaitTicks.Command("request-15", 0)), true);
         fixture.dispatcher().handleRequestLine(toJson(new GetServerTick.Command("request-16")), true);
+        fixture.dispatcher().handleRequestLine(toJson(new TeleportPlayer.Command("request-17", uuid, "world", 0, 64, 0)), true);
+        fixture.dispatcher().handleRequestLine(toJson(new LoadChunk.Command("request-18", "world", 0, 0)), true);
+        fixture.dispatcher().handleRequestLine(toJson(new UnloadChunk.Command("request-19", "world", 0, 0)), true);
+        fixture.dispatcher().handleRequestLine(toJson(new IsChunkLoaded.Command("request-20", "world", 0, 0)), true);
+        fixture.dispatcher().handleRequestLine(toJson(new GetPlayerInventory.Command("request-21", uuid)), true);
+        fixture.dispatcher().handleRequestLine(toJson(new DropItem.Command("request-22", uuid)), true);
+        fixture.dispatcher().handleRequestLine(toJson(new RegisterEventListener.Command("request-23", "org.bukkit.event.player.PlayerJoinEvent")), true);
+        fixture.dispatcher().handleRequestLine(toJson(new GetCapturedEvents.Command("request-24", "org.bukkit.event.player.PlayerJoinEvent")), true);
+        fixture.dispatcher().handleRequestLine(toJson(new ClearCapturedEvents.Command("request-25", "org.bukkit.event.player.PlayerJoinEvent")), true);
+        fixture.dispatcher().handleRequestLine(toJson(new UnregisterEventListener.Command("request-26", "org.bukkit.event.player.PlayerJoinEvent")), true);
+        fixture.dispatcher().handleRequestLine(toJson(new GetPlayerChatComponents.Command("request-27", uuid)), true);
+        fixture.dispatcher().handleRequestLine(toJson(new GetServerPlatform.Command("request-28")), true);
 
         // verify
         verify(fixture.worldActions()).handleNewWorld(any(NewWorld.Command.class));
@@ -177,6 +226,18 @@ class AgentRequestDispatcherTest
         verify(fixture.playerActions()).handleGetPlayerMessages(any(GetPlayerMessages.Command.class));
         verify(fixture.worldActions()).handleWaitTicks(any(WaitTicks.Command.class));
         verify(fixture.worldActions()).handleGetServerTick(any(GetServerTick.Command.class));
+        verify(fixture.playerActions()).handleTeleportPlayer(any(TeleportPlayer.Command.class));
+        verify(fixture.worldActions()).handleLoadChunk(any(LoadChunk.Command.class));
+        verify(fixture.worldActions()).handleUnloadChunk(any(UnloadChunk.Command.class));
+        verify(fixture.worldActions()).handleIsChunkLoaded(any(IsChunkLoaded.Command.class));
+        verify(fixture.playerActions()).handleGetPlayerInventory(any(GetPlayerInventory.Command.class));
+        verify(fixture.playerActions()).handleDropItem(any(DropItem.Command.class));
+        verify(fixture.playerActions()).handleRegisterEventListener(any(RegisterEventListener.Command.class));
+        verify(fixture.playerActions()).handleGetCapturedEvents(any(GetCapturedEvents.Command.class));
+        verify(fixture.playerActions()).handleClearCapturedEvents(any(ClearCapturedEvents.Command.class));
+        verify(fixture.playerActions()).handleUnregisterEventListener(any(UnregisterEventListener.Command.class));
+        verify(fixture.playerActions()).handleGetPlayerChatComponents(any(GetPlayerChatComponents.Command.class));
+        verify(fixture.worldActions()).handleGetServerPlatform(any(GetServerPlatform.Command.class));
     }
 
     @Test

@@ -31,6 +31,11 @@ public final class DragMenuSlots
         int[] slots
     ) implements IAgentCommand<Response>
     {
+        public Command
+        {
+            slots = slots.clone();
+        }
+
         @Override
         public Class<Response> responseType()
         {

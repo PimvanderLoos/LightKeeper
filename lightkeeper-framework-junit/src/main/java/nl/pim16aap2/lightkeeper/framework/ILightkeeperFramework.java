@@ -1,5 +1,7 @@
 package nl.pim16aap2.lightkeeper.framework;
 
+import nl.pim16aap2.lightkeeper.protocol.CommandSource;
+
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;

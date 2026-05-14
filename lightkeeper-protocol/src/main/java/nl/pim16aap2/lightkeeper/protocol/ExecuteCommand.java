@@ -15,13 +15,13 @@ public final class ExecuteCommand
      * @param requestId
      *     Correlation identifier matching the response's {@code requestId}.
      * @param commandSource
-     *     Wire name of the {@code CommandSource} enum identifying who issues the command.
+     *     Who issues the command.
      * @param command
      *     Full command string without a leading slash.
      */
     public record Command(
         String requestId,
-        String commandSource,
+        CommandSource commandSource,
         String command
     ) implements IAgentCommand<Response>
     {

@@ -2,6 +2,7 @@ package nl.pim16aap2.lightkeeper.agent.spigot;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import nl.pim16aap2.lightkeeper.nms.api.IBotPlayerNmsAdapter;
+import nl.pim16aap2.lightkeeper.protocol.DropItem;
 import nl.pim16aap2.lightkeeper.protocol.ExecutePlayerCommand;
 import nl.pim16aap2.lightkeeper.protocol.LeftClickBlock;
 import nl.pim16aap2.lightkeeper.protocol.RightClickBlock;
@@ -12,6 +13,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -84,6 +86,94 @@ class AgentPlayerActionsTest
         assertThat(eventCaptor.getValue().getAction()).isEqualTo(Action.LEFT_CLICK_BLOCK);
         assertThat(eventCaptor.getValue().getBlockFace()).isEqualTo(BlockFace.NORTH);
         assertThat(eventCaptor.getValue().getPlayer()).isSameAs(player);
+    }
+
+    @Test
+    void handleDropItem_shouldKeepEntityAndConsumeInventoryWhenEventNotCancelled()
+        throws Exception
+    {
+        // setup
+        final PlayerActionsFixture fixture = createPlayerActionsFixture();
+        final UUID uuid = UUID.randomUUID();
+        final ItemStack item = mock();
+        final Material nonAirMaterial = mock(Material.class);
+        final Player player = mock();
+        final World world = mock();
+        final org.bukkit.entity.Item entity = mock();
+        final PlayerInventory inventory = mock();
+        final PluginManager pluginManager = mock();
+        when(nonAirMaterial.isAir()).thenReturn(false);
+        when(item.getType()).thenReturn(nonAirMaterial);
+        when(item.getAmount()).thenReturn(3);
+        when(item.clone()).thenReturn(item);
+        when(player.getInventory()).thenReturn(inventory);
+        when(player.getWorld()).thenReturn(world);
+        when(inventory.getItemInMainHand()).thenReturn(item);
+        when(world.dropItemNaturally(any(), any())).thenReturn(entity);
+        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        final DropItem.Command command = new DropItem.Command("req-drop", uuid);
+
+        // execute
+        final DropItem.Response response;
+        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class))
+        {
+            bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
+            bukkit.when(Bukkit::getPluginManager).thenReturn(pluginManager);
+            response = fixture.playerActions().handleDropItem(command);
+        }
+
+        // verify
+        assertThat(response.requestId()).isEqualTo("req-drop");
+        assertThat(response.eventCancelled()).isFalse();
+        verify(entity, never()).remove();
+        verify(item).setAmount(2);
+        verify(inventory).setItemInMainHand(item);
+    }
+
+    @Test
+    void handleDropItem_shouldRemoveEntityAndLeaveInventoryWhenEventCancelled()
+        throws Exception
+    {
+        // setup
+        final PlayerActionsFixture fixture = createPlayerActionsFixture();
+        final UUID uuid = UUID.randomUUID();
+        final ItemStack item = mock();
+        final Material nonAirMaterial = mock(Material.class);
+        final Player player = mock();
+        final World world = mock();
+        final org.bukkit.entity.Item entity = mock();
+        final PlayerInventory inventory = mock();
+        final PluginManager pluginManager = mock();
+        when(nonAirMaterial.isAir()).thenReturn(false);
+        when(item.getType()).thenReturn(nonAirMaterial);
+        when(item.clone()).thenReturn(item);
+        when(player.getInventory()).thenReturn(inventory);
+        when(player.getWorld()).thenReturn(world);
+        when(inventory.getItemInMainHand()).thenReturn(item);
+        when(world.dropItemNaturally(any(), any())).thenReturn(entity);
+        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        final DropItem.Command command = new DropItem.Command("req-drop-cancel", uuid);
+
+        // execute
+        final DropItem.Response response;
+        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class))
+        {
+            bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
+            bukkit.when(Bukkit::getPluginManager).thenReturn(pluginManager);
+            doAnswer(inv ->
+            {
+                final PlayerDropItemEvent event = inv.getArgument(0);
+                event.setCancelled(true);
+                return null;
+            }).when(pluginManager).callEvent(any(PlayerDropItemEvent.class));
+            response = fixture.playerActions().handleDropItem(command);
+        }
+
+        // verify
+        assertThat(response.requestId()).isEqualTo("req-drop-cancel");
+        assertThat(response.eventCancelled()).isTrue();
+        verify(entity).remove();
+        verify(inventory, never()).setItemInMainHand(any());
     }
 
     @Test

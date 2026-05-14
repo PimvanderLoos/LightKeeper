@@ -3,10 +3,11 @@ package nl.pim16aap2.lightkeeper.protocol;
 import java.util.UUID;
 
 /**
- * Simulates a main-hand item drop event for the player.
+ * Drops the player's main-hand item into the world.
  *
- * <p>The item entity is created and immediately removed regardless of event cancellation; the response indicates
- * whether the drop event was cancelled by a plugin.
+ * <p>Fires a {@code PlayerDropItemEvent}. If the event is cancelled the item entity is removed and the player's
+ * inventory is unchanged. If the event is not cancelled the item entity stays in the world and one item is consumed
+ * from the player's main hand.
  */
 public final class DropItem
 {

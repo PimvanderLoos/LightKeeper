@@ -184,22 +184,22 @@ final class AgentPlayerActions
      * @throws Exception
      *     Propagates main-thread execution failures.
      */
-    ExecutePlayerCommand.Response handleExecutePlayerCommand(ExecutePlayerCommand.Command command)
+    ExecutePlayerCommand.Response handleExecutePlayerCommand(ExecutePlayerCommand.Command req)
         throws Exception
     {
-        final UUID uuid = command.uuid();
-        final String rawCommand = command.command();
-        final String cmd = rawCommand.startsWith("/") ? rawCommand.substring(1) : rawCommand;
+        final UUID uuid = req.uuid();
+        final String rawCommand = req.command();
+        final String command = rawCommand.startsWith("/") ? rawCommand.substring(1) : rawCommand;
         final Boolean success = mainThreadExecutor.callOnMainThread(() ->
         {
             final Player player = playerStore.getRequiredPlayer(uuid);
-            boolean result = player.performCommand(cmd);
+            boolean result = player.performCommand(command);
             if (!result)
-                result = Bukkit.dispatchCommand(player, cmd);
+                result = Bukkit.dispatchCommand(player, command);
             return result;
         });
 
-        return new ExecutePlayerCommand.Response(command.requestId(), success);
+        return new ExecutePlayerCommand.Response(req.requestId(), success);
     }
 
     /**
@@ -339,7 +339,10 @@ final class AgentPlayerActions
     }
 
     /**
-     * Handles {@code DROP_ITEM} by simulating the player dropping their main hand item.
+     * Handles {@code DROP_ITEM} by dropping the player's main-hand item into the world.
+     *
+     * <p>Fires a {@code PlayerDropItemEvent}. If cancelled, the item entity is removed and inventory is unchanged.
+     * If not cancelled, the entity stays in the world and one item is consumed from the player's main hand.
      *
      * @param command
      *     Typed command carrying the player UUID.
@@ -357,7 +360,7 @@ final class AgentPlayerActions
             final Player player = playerStore.getRequiredPlayer(uuid);
             final ItemStack item = player.getInventory().getItemInMainHand();
             if (item == null || item.getType().isAir())
-                return Boolean.FALSE;
+                return Boolean.TRUE;
 
             final org.bukkit.entity.Item droppedItem =
                 player.getWorld().dropItemNaturally(player.getLocation(), item.clone());
@@ -365,9 +368,25 @@ final class AgentPlayerActions
                 new org.bukkit.event.player.PlayerDropItemEvent(player, droppedItem);
 
             Bukkit.getPluginManager().callEvent(event);
-            droppedItem.remove();
 
-            return event.isCancelled();
+            if (event.isCancelled())
+            {
+                droppedItem.remove();
+                return Boolean.TRUE;
+            }
+
+            // Consume one item from the player's main hand
+            if (item.getAmount() > 1)
+            {
+                item.setAmount(item.getAmount() - 1);
+                player.getInventory().setItemInMainHand(item);
+            }
+            else
+            {
+                player.getInventory().setItemInMainHand(null);
+            }
+
+            return Boolean.FALSE;
         });
 
         return new DropItem.Response(command.requestId(), eventCancelled);

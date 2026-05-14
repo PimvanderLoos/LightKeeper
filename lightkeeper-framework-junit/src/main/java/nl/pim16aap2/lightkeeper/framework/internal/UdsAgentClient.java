@@ -3,13 +3,13 @@ package nl.pim16aap2.lightkeeper.framework.internal;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import nl.pim16aap2.lightkeeper.framework.CommandSource;
 import nl.pim16aap2.lightkeeper.framework.MenuItemSnapshot;
 import nl.pim16aap2.lightkeeper.framework.MenuSnapshot;
 import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.framework.WorldSpec;
 import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
 import nl.pim16aap2.lightkeeper.protocol.BlockType;
+import nl.pim16aap2.lightkeeper.protocol.CommandSource;
 import nl.pim16aap2.lightkeeper.protocol.ClickMenuSlot;
 import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEvents;
 import nl.pim16aap2.lightkeeper.protocol.CreatePlayer;
@@ -114,7 +114,7 @@ final class UdsAgentClient implements AutoCloseable
 
     boolean executeCommand(CommandSource source, String command)
     {
-        final ExecuteCommand.Command cmd = new ExecuteCommand.Command(nextRequestId(), source.name(), command);
+        final ExecuteCommand.Command cmd = new ExecuteCommand.Command(nextRequestId(), source, command);
         return send(cmd).success();
     }
 

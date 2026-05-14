@@ -47,6 +47,14 @@ public final class CreatePlayer
         @Nullable String permissionsCsv
     ) implements IAgentCommand<Response>
     {
+        public Command
+        {
+            if (name.isBlank())
+                throw new IllegalArgumentException("'name' must not be blank.");
+            if (worldName.isBlank())
+                throw new IllegalArgumentException("'worldName' must not be blank.");
+        }
+
         @Override
         public Class<Response> responseType()
         {

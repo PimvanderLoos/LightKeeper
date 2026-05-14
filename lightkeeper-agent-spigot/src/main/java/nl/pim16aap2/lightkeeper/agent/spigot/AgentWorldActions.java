@@ -3,6 +3,7 @@ package nl.pim16aap2.lightkeeper.agent.spigot;
 import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
 import nl.pim16aap2.lightkeeper.protocol.AgentProtocolException;
 import nl.pim16aap2.lightkeeper.protocol.BlockType;
+import nl.pim16aap2.lightkeeper.protocol.CommandSource;
 import nl.pim16aap2.lightkeeper.protocol.ExecuteCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetServerPlatform;
 import nl.pim16aap2.lightkeeper.protocol.GetServerTick;
@@ -134,21 +135,19 @@ final class AgentWorldActions
      * @throws Exception
      *     Propagates main-thread execution failures.
      */
-    ExecuteCommand.Response handleExecuteCommand(ExecuteCommand.Command command)
+    ExecuteCommand.Response handleExecuteCommand(ExecuteCommand.Command req)
         throws Exception
     {
-        final String source = command.commandSource();
-        final String rawCommand = command.command();
-
-        if (!source.equalsIgnoreCase("CONSOLE"))
+        if (req.commandSource() != CommandSource.CONSOLE)
             throw new IllegalArgumentException("Only CONSOLE command source is supported in v1.");
 
-        final String cmd = rawCommand.startsWith("/") ? rawCommand.substring(1) : rawCommand;
+        final String rawCommand = req.command();
+        final String command = rawCommand.startsWith("/") ? rawCommand.substring(1) : rawCommand;
         final Boolean success = mainThreadExecutor.callOnMainThread(() ->
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd)
+            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command)
         );
 
-        return new ExecuteCommand.Response(command.requestId(), success);
+        return new ExecuteCommand.Response(req.requestId(), success);
     }
 
     /**
@@ -228,12 +227,6 @@ final class AgentWorldActions
     WaitTicks.Response handleWaitTicks(WaitTicks.Command command)
     {
         final int ticks = command.ticks();
-        if (ticks < 0)
-            throw new AgentProtocolException(
-                AgentErrorCode.INVALID_ARGUMENT,
-                "Argument 'ticks' must be >= 0."
-            );
-
         final long startTick = tickCounter.get();
         final long targetTick = startTick + ticks;
         final long deadline = System.currentTimeMillis() + WAIT_TICKS_TIMEOUT_MILLIS;
