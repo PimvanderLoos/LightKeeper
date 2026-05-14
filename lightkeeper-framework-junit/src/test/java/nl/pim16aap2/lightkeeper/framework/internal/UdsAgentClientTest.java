@@ -133,14 +133,14 @@ class UdsAgentClientTest
     {
         // setup
         final Path socketPath = tempDirectory.resolve("drop-item.sock");
-        final String responseJson = "{\"requestId\":\"1\",\"success\":true,\"eventCancelled\":false}";
+        final String responseJson = "{\"requestId\":\"1\",\"success\":true,\"dropped\":true}";
         try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
              UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
         {
             // execute
             final boolean dropped = client.dropItem(UUID.randomUUID());
 
-            // verify — dropItem() returns !eventCancelled
+            // verify
             assertThat(dropped).isTrue();
         }
     }
@@ -151,7 +151,7 @@ class UdsAgentClientTest
     {
         // setup
         final Path socketPath = tempDirectory.resolve("drop-item-cancel.sock");
-        final String responseJson = "{\"requestId\":\"1\",\"success\":true,\"eventCancelled\":true}";
+        final String responseJson = "{\"requestId\":\"1\",\"success\":true,\"dropped\":false}";
         try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
              UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
         {
@@ -229,7 +229,7 @@ class UdsAgentClientTest
     {
         // setup
         final Path socketPath = tempDirectory.resolve("exec-cmd.sock");
-        final String responseJson = "{\"requestId\":\"1\",\"success\":true,\"success\":true}";
+        final String responseJson = "{\"requestId\":\"1\",\"success\":true,\"dispatched\":true}";
         try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
              UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
         {
@@ -240,6 +240,163 @@ class UdsAgentClientTest
             assertThat(server.capturedRequest())
                 .contains("\"action\":\"EXECUTE_COMMAND\"")
                 .contains("\"commandSource\":\"CONSOLE\"");
+        }
+    }
+
+    @Test
+    void menuSnapshot_shouldHandleNullItemsJsonWhenMenuIsOpen(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("menu-null-items.sock");
+        final String responseJson =
+            "{\"requestId\":\"1\",\"success\":true,\"open\":true,\"title\":\"Test\",\"itemsJson\":null}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            final var snapshot = client.menuSnapshot(UUID.randomUUID());
+
+            // verify
+            assertThat(snapshot.open()).isTrue();
+            assertThat(snapshot.items()).isEmpty();
+        }
+    }
+
+    @Test
+    void teleportPlayer_shouldSendTeleportRequest(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("teleport.sock");
+        final String responseJson = "{\"requestId\":\"1\",\"success\":true,\"teleported\":true}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            client.teleportPlayer(UUID.randomUUID(), "world", 1.0, 64.0, 1.0);
+
+            // verify
+            assertThat(server.capturedRequest()).contains("\"action\":\"TELEPORT_PLAYER\"");
+        }
+    }
+
+    @Test
+    void loadChunk_shouldSendLoadChunkRequest(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("load-chunk.sock");
+        final String responseJson = "{\"requestId\":\"1\",\"success\":true,\"loaded\":true}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            client.loadChunk("world", 0, 0);
+
+            // verify
+            assertThat(server.capturedRequest()).contains("\"action\":\"LOAD_CHUNK\"");
+        }
+    }
+
+    @Test
+    void unloadChunk_shouldSendUnloadChunkRequest(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("unload-chunk.sock");
+        final String responseJson = "{\"requestId\":\"1\",\"success\":true,\"unloaded\":true}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            client.unloadChunk("world", 0, 0);
+
+            // verify
+            assertThat(server.capturedRequest()).contains("\"action\":\"UNLOAD_CHUNK\"");
+        }
+    }
+
+    @Test
+    void registerEventListener_shouldSendRegisterRequest(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("register-event.sock");
+        final String responseJson = "{\"requestId\":\"1\",\"success\":true}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            client.registerEventListener("org.bukkit.event.player.PlayerJoinEvent");
+
+            // verify
+            assertThat(server.capturedRequest())
+                .contains("\"action\":\"REGISTER_EVENT_LISTENER\"")
+                .contains("PlayerJoinEvent");
+        }
+    }
+
+    @Test
+    void clearCapturedEvents_shouldSendClearRequest(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("clear-events.sock");
+        final String responseJson = "{\"requestId\":\"1\",\"success\":true}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            client.clearCapturedEvents("org.bukkit.event.player.PlayerJoinEvent");
+
+            // verify
+            assertThat(server.capturedRequest())
+                .contains("\"action\":\"CLEAR_CAPTURED_EVENTS\"")
+                .contains("PlayerJoinEvent");
+        }
+    }
+
+    @Test
+    void unregisterEventListener_shouldSendUnregisterRequest(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("unregister-event.sock");
+        final String responseJson = "{\"requestId\":\"1\",\"success\":true}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            client.unregisterEventListener("org.bukkit.event.player.PlayerJoinEvent");
+
+            // verify
+            assertThat(server.capturedRequest())
+                .contains("\"action\":\"UNREGISTER_EVENT_LISTENER\"")
+                .contains("PlayerJoinEvent");
+        }
+    }
+
+    @Test
+    void send_shouldThrowWithVersionInfoWhenProtocolMismatch(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("mismatch.sock");
+        final String responseJson = "{\"requestId\":\"1\",\"success\":false,"
+            + "\"errorCode\":\"PROTOCOL_MISMATCH\","
+            + "\"errorMessage\":\"Runtime protocol version mismatch. expected=7 actual=8.\"}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson))
+        {
+            final UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3));
+
+            // execute + verify
+            assertThatThrownBy(() -> client.send(new WaitTicks.Command("1", 1)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("PROTOCOL_MISMATCH")
+                .hasMessageContaining("expected=7")
+                .hasMessageContaining("actual=8");
+            client.close();
         }
     }
 
