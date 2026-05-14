@@ -118,7 +118,7 @@ final class UdsAgentClient implements AutoCloseable
     boolean executeCommand(CommandSource source, String command)
     {
         final ExecuteCommand.Command cmd = new ExecuteCommand.Command(nextRequestId(), source, command);
-        return send(cmd).success();
+        return send(cmd).dispatched();
     }
 
     String blockType(String worldName, Vector3Di position)
@@ -228,7 +228,8 @@ final class UdsAgentClient implements AutoCloseable
 
         try
         {
-            final MenuItemSnapshot[] items = objectMapper.readValue(response.itemsJson(), MenuItemSnapshot[].class);
+            final MenuItemSnapshot[] items = objectMapper.readValue(
+                Objects.requireNonNullElse(response.itemsJson(), "[]"), MenuItemSnapshot[].class);
             return new MenuSnapshot(true, Objects.requireNonNullElse(response.title(), ""), List.of(items));
         }
         catch (JacksonException exception)
@@ -310,7 +311,7 @@ final class UdsAgentClient implements AutoCloseable
     boolean dropItem(UUID uuid)
     {
         final DropItem.Command command = new DropItem.Command(nextRequestId(), uuid);
-        return !send(command).eventCancelled();
+        return send(command).dropped();
     }
 
     void registerEventListener(String eventClassName)
@@ -364,6 +365,8 @@ final class UdsAgentClient implements AutoCloseable
 
     synchronized <R extends IAgentResponse> R send(IAgentCommand<R> command)
     {
+        if (command.requestId() == null || command.requestId().isBlank())
+            throw new IllegalArgumentException("'requestId' must be non-blank.");
         try
         {
             writer.write(objectMapper.writeValueAsString(command));
