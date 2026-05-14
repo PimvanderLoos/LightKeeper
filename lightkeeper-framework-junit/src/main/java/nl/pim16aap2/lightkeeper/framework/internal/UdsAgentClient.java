@@ -229,7 +229,7 @@ final class UdsAgentClient implements AutoCloseable
         try
         {
             final MenuItemSnapshot[] items = objectMapper.readValue(response.itemsJson(), MenuItemSnapshot[].class);
-            return new MenuSnapshot(true, response.title(), List.of(items));
+            return new MenuSnapshot(true, Objects.requireNonNullElse(response.title(), ""), List.of(items));
         }
         catch (JacksonException exception)
         {
