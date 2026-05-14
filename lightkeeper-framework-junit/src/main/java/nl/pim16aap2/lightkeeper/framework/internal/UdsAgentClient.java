@@ -374,7 +374,7 @@ final class UdsAgentClient implements AutoCloseable
                 throw new IllegalStateException("Agent connection closed unexpectedly.");
 
             final JsonNode root = objectMapper.readTree(responseLine);
-            final String responseRequestId = root.path("requestId").asText("unknown");
+            final String responseRequestId = root.path("requestId").asString("unknown");
             final String requestId = command.requestId();
 
             if (!requestId.equals(responseRequestId))
@@ -387,9 +387,9 @@ final class UdsAgentClient implements AutoCloseable
 
             if (!root.path("success").asBoolean())
             {
-                final AgentErrorCode errorCode = AgentErrorCode.fromWireCode(root.path("errorCode").asText())
+                final AgentErrorCode errorCode = AgentErrorCode.fromWireCode(root.path("errorCode").asString())
                     .orElse(AgentErrorCode.UNKNOWN);
-                final String errorMessage = root.path("errorMessage").asText("");
+                final String errorMessage = root.path("errorMessage").asString("");
                 throw new IllegalStateException(
                     "Agent request failed. code=%s message=%s".formatted(errorCode.wireCode(), errorMessage)
                 );

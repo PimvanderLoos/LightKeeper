@@ -24,9 +24,9 @@ class AgentResponsesTest
         final JsonNode node = OBJECT_MAPPER.readTree(json);
 
         // verify
-        assertThat(node.path("requestId").asText()).isEqualTo("request-1");
+        assertThat(node.path("requestId").asString()).isEqualTo("request-1");
         assertThat(node.path("success").asBoolean()).isTrue();
-        assertThat(node.path("worldName").asText()).isEqualTo("overworld");
+        assertThat(node.path("worldName").asString()).isEqualTo("overworld");
     }
 
     @Test
@@ -43,9 +43,9 @@ class AgentResponsesTest
         final JsonNode node = OBJECT_MAPPER.readTree(json);
 
         // verify
-        assertThat(node.path("requestId").asText()).isEqualTo(requestId);
+        assertThat(node.path("requestId").asString()).isEqualTo(requestId);
         assertThat(node.path("success").asBoolean()).isFalse();
-        assertThat(node.path("errorCode").asText()).isEqualTo(errorCode.wireCode());
-        assertThat(node.path("errorMessage").asText()).isEqualTo(message);
+        assertThat(node.path("errorCode").asString()).isEqualTo(errorCode.wireCode());
+        assertThat(node.path("errorMessage").asString()).isEqualTo(message);
     }
 }

@@ -220,7 +220,7 @@ public final class PaperDownloadsClient
             final JsonNode root = objectMapper.readTree(response.body());
             if (root.isObject() && root.has("ok") && !root.path("ok").asBoolean(true))
                 throw new MojoExecutionException(
-                    "Fill API request to '%s' failed: %s".formatted(uri, root.path("message").asText("unknown error"))
+                    "Fill API request to '%s' failed: %s".formatted(uri, root.path("message").asString("unknown error"))
                 );
             return root;
         }

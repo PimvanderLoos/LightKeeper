@@ -185,7 +185,7 @@ public final class SpigotDownloadsClient
         if (explicitBuildNumber > 0L)
             return Optional.of(explicitBuildNumber);
 
-        final String buildUrl = buildMetadata.path("url").asText("");
+        final String buildUrl = buildMetadata.path("url").asString("");
         final var matcher = BUILDTOOLS_BUILD_URL_PATTERN.matcher(buildUrl);
         if (!matcher.matches())
             return Optional.empty();

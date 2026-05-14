@@ -436,7 +436,7 @@ class AgentRequestDispatcherTest
     {
         try
         {
-            return OBJECT_MAPPER.readTree(responseJson).path("errorCode").asText("");
+            return OBJECT_MAPPER.readTree(responseJson).path("errorCode").asString("");
         }
         catch (Exception exception)
         {
@@ -448,7 +448,7 @@ class AgentRequestDispatcherTest
     {
         try
         {
-            return OBJECT_MAPPER.readTree(responseJson).path("errorMessage").asText("");
+            return OBJECT_MAPPER.readTree(responseJson).path("errorMessage").asString("");
         }
         catch (Exception exception)
         {
@@ -461,7 +461,7 @@ class AgentRequestDispatcherTest
         try
         {
             final JsonNode node = OBJECT_MAPPER.readTree(responseJson);
-            return node.path("requestId").asText("unknown");
+            return node.path("requestId").asString("unknown");
         }
         catch (Exception exception)
         {
