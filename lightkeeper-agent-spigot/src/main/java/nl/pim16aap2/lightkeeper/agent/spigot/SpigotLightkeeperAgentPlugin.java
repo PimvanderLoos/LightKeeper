@@ -1,7 +1,8 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import nl.pim16aap2.lightkeeper.nms.api.IBotPlayerNmsAdapter;
 import nl.pim16aap2.lightkeeper.nms.v121r7.BotPlayerNmsAdapterV1_21_R7;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
@@ -62,8 +63,9 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin
     /**
      * Shared object mapper for request/response serialization.
      */
-    private final ObjectMapper objectMapper = new ObjectMapper()
-        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    private final ObjectMapper objectMapper = JsonMapper.builder()
+        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+        .build();
 
     /**
      * Single-thread executor that accepts incoming socket connections.

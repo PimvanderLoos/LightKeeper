@@ -1,8 +1,8 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
 import nl.pim16aap2.lightkeeper.protocol.IAgentResponse;
 
@@ -32,11 +32,11 @@ final class AgentResponses
      *     Typed domain response record.
      * @return
      *     JSON string ready to write on the wire.
-     * @throws JsonProcessingException
+     * @throws JacksonException
      *     When serialization fails.
      */
     static String successJson(ObjectMapper objectMapper, IAgentResponse response)
-        throws JsonProcessingException
+        throws JacksonException
     {
         final ObjectNode node = objectMapper.valueToTree(response);
         node.put("success", true);
@@ -56,11 +56,11 @@ final class AgentResponses
      *     Human-readable failure detail.
      * @return
      *     JSON string ready to write on the wire.
-     * @throws JsonProcessingException
+     * @throws JacksonException
      *     When serialization fails.
      */
     static String errorJson(ObjectMapper objectMapper, String requestId, AgentErrorCode errorCode, String message)
-        throws JsonProcessingException
+        throws JacksonException
     {
         final ObjectNode node = objectMapper.createObjectNode();
         node.put("requestId", requestId);

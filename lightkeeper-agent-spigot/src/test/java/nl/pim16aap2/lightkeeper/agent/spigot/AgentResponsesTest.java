@@ -1,7 +1,7 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
 import nl.pim16aap2.lightkeeper.protocol.MainWorld;
 import org.junit.jupiter.api.Test;

@@ -1,8 +1,10 @@
 package nl.pim16aap2.lightkeeper.framework.internal;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import nl.pim16aap2.lightkeeper.framework.MenuItemSnapshot;
 import nl.pim16aap2.lightkeeper.framework.MenuSnapshot;
 import nl.pim16aap2.lightkeeper.framework.Vector3Di;
@@ -73,8 +75,9 @@ final class UdsAgentClient implements AutoCloseable
 {
     private static final System.Logger LOG = System.getLogger(UdsAgentClient.class.getName());
 
-    private final ObjectMapper objectMapper = new ObjectMapper()
-        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    private final ObjectMapper objectMapper = JsonMapper.builder()
+        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+        .build();
 
     private final Path socketPath;
     private final AtomicLong requestCounter = new AtomicLong(0L);
@@ -228,7 +231,7 @@ final class UdsAgentClient implements AutoCloseable
             final MenuItemSnapshot[] items = objectMapper.readValue(response.itemsJson(), MenuItemSnapshot[].class);
             return new MenuSnapshot(true, response.title(), List.of(items));
         }
-        catch (IOException exception)
+        catch (JacksonException exception)
         {
             throw new IllegalStateException("Failed to parse menu snapshot JSON.", exception);
         }
@@ -298,7 +301,7 @@ final class UdsAgentClient implements AutoCloseable
             final List<Map<String, Object>> items = objectMapper.readValue(response.inventoryJson(), List.class);
             return items;
         }
-        catch (IOException exception)
+        catch (JacksonException exception)
         {
             throw new IllegalStateException("Failed to parse player inventory JSON.", exception);
         }
@@ -326,7 +329,7 @@ final class UdsAgentClient implements AutoCloseable
             final List<Map<String, String>> events = objectMapper.readValue(response.eventsJson(), List.class);
             return events;
         }
-        catch (IOException exception)
+        catch (JacksonException exception)
         {
             throw new IllegalStateException("Failed to parse captured events JSON.", exception);
         }

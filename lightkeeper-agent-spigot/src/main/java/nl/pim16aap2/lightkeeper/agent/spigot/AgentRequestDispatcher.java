@@ -1,7 +1,7 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import nl.pim16aap2.lightkeeper.protocol.BlockType;
 import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEvents;
 import nl.pim16aap2.lightkeeper.protocol.ClickMenuSlot;
@@ -317,7 +317,7 @@ final class AgentRequestDispatcher
                 handshakeCompleted
             );
         }
-        catch (JsonProcessingException serializationException)
+        catch (JacksonException serializationException)
         {
             logger.log(Level.SEVERE, "Failed to serialize error response.", serializationException);
             final String fallback =

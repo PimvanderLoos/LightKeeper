@@ -105,8 +105,8 @@
                                     <include>nl.pim16aap2.lightkeeper:lightkeeper-protocol</include>
                                     <include>nl.pim16aap2.lightkeeper:lightkeeper-nms-api</include>
                                     <include>nl.pim16aap2.lightkeeper:lightkeeper-nms-v1_21_R7</include>
-                                    <include>com.fasterxml.jackson.core:jackson-databind</include>
-                                    <include>com.fasterxml.jackson.core:jackson-core</include>
+                                    <include>tools.jackson.core:jackson-databind</include>
+                                    <include>tools.jackson.core:jackson-core</include>
                                     <include>com.fasterxml.jackson.core:jackson-annotations</include>
                                 </includes>
                             </artifactSet>

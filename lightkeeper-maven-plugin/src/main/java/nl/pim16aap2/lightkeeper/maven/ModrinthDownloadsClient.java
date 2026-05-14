@@ -1,11 +1,12 @@
 package nl.pim16aap2.lightkeeper.maven;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import tools.jackson.core.exc.JacksonException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.PropertyNamingStrategies;
 import nl.pim16aap2.lightkeeper.maven.provisioning.PluginArtifactSpec;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
@@ -54,8 +55,9 @@ public final class ModrinthDownloadsClient
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .connectTimeout(Duration.ofSeconds(15))
                 .build(),
-            new ObjectMapper()
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            JsonMapper.builder()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build()
                 .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
         );
     }
@@ -66,8 +68,9 @@ public final class ModrinthDownloadsClient
             log,
             userAgent,
             httpClient,
-            new ObjectMapper()
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            JsonMapper.builder()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build()
                 .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
         );
     }

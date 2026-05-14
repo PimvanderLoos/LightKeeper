@@ -1,6 +1,6 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import nl.pim16aap2.lightkeeper.protocol.ClickMenuSlot;
 import nl.pim16aap2.lightkeeper.protocol.DragMenuSlots;
 import nl.pim16aap2.lightkeeper.protocol.GetOpenMenu;

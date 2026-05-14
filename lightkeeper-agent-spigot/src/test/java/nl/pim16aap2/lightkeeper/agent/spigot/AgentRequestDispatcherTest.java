@@ -1,8 +1,9 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import nl.pim16aap2.lightkeeper.nms.api.IBotPlayerNmsAdapter;
 import nl.pim16aap2.lightkeeper.protocol.BlockType;
 import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEvents;
@@ -50,8 +51,9 @@ import static org.mockito.Mockito.*;
 
 class AgentRequestDispatcherTest
 {
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
-        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    private static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder()
+        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+        .build();
 
     @Test
     void handleRequestLine_shouldCompleteHandshakeWhenTokenAndProtocolMatch()
@@ -345,8 +347,9 @@ class AgentRequestDispatcherTest
 
     private static AgentRequestDispatcher createDispatcher(String authToken, int protocolVersion, String expectedSha)
     {
-        final ObjectMapper objectMapper = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        final ObjectMapper objectMapper = JsonMapper.builder()
+        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+        .build();
         final JavaPlugin plugin = mock();
         final AgentMainThreadExecutor mainThreadExecutor = new AgentMainThreadExecutor(plugin);
         final AgentSyntheticPlayerStore playerStore = new AgentSyntheticPlayerStore();
@@ -383,8 +386,9 @@ class AgentRequestDispatcherTest
 
     private static DispatcherFixture createDispatcherFixture()
     {
-        final ObjectMapper objectMapper = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        final ObjectMapper objectMapper = JsonMapper.builder()
+        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+        .build();
         final AgentWorldActions worldActions = mock();
         final AgentPlayerActions playerActions = mock();
         final AgentMenuActions menuActions = mock();
