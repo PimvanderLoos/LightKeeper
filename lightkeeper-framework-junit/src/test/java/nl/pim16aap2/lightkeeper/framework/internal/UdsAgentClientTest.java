@@ -1,6 +1,5 @@
 package nl.pim16aap2.lightkeeper.framework.internal;
 
-import tools.jackson.databind.ObjectMapper;
 import nl.pim16aap2.lightkeeper.protocol.CommandSource;
 import nl.pim16aap2.lightkeeper.protocol.WaitTicks;
 import org.junit.jupiter.api.Test;
@@ -20,6 +19,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -30,8 +30,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class UdsAgentClientTest
 {
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
     @Test
     void send_shouldThrowExceptionWhenResponseIdDoesNotMatch(@TempDir Path tempDirectory)
         throws Exception
@@ -276,7 +274,7 @@ class UdsAgentClientTest
 
         String capturedRequest()
         {
-            return requestLine.get();
+            return Objects.requireNonNullElse(requestLine.get(), "");
         }
 
         private void serveSingleResponse(String responseJson)
