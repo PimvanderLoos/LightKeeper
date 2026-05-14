@@ -1,35 +1,37 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
-import nl.pim16aap2.lightkeeper.protocol.AgentResponse;
+import nl.pim16aap2.lightkeeper.protocol.MainWorld;
 import org.junit.jupiter.api.Test;
-
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.*;
 
 class AgentResponsesTest
 {
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
     @Test
-    void successResponse_shouldCreateSuccessfulResponseWithProvidedData()
+    void successJson_shouldProduceJsonWithSuccessTrueAndDomainFields()
+        throws Exception
     {
         // setup
-        final String requestId = "request-1";
-        final Map<String, String> data = Map.of("key", "value");
+        final MainWorld.Response response = new MainWorld.Response("request-1", "overworld");
 
         // execute
-        final AgentResponse response = AgentResponses.successResponse(requestId, data);
+        final String json = AgentResponses.successJson(OBJECT_MAPPER, response);
+        final JsonNode node = OBJECT_MAPPER.readTree(json);
 
         // verify
-        assertThat(response.requestId()).isEqualTo(requestId);
-        assertThat(response.success()).isTrue();
-        assertThat(response.errorCode()).isNull();
-        assertThat(response.errorMessage()).isNull();
-        assertThat(response.data()).containsExactlyEntriesOf(data);
+        assertThat(node.path("requestId").asText()).isEqualTo("request-1");
+        assertThat(node.path("success").asBoolean()).isTrue();
+        assertThat(node.path("worldName").asText()).isEqualTo("overworld");
     }
 
     @Test
-    void errorResponse_shouldCreateFailedResponseWithEmptyData()
+    void errorJson_shouldProduceJsonWithSuccessFalseAndErrorFields()
+        throws Exception
     {
         // setup
         final String requestId = "request-2";
@@ -37,13 +39,13 @@ class AgentResponsesTest
         final String message = "Argument 'x' must not be blank.";
 
         // execute
-        final AgentResponse response = AgentResponses.errorResponse(requestId, errorCode, message);
+        final String json = AgentResponses.errorJson(OBJECT_MAPPER, requestId, errorCode, message);
+        final JsonNode node = OBJECT_MAPPER.readTree(json);
 
         // verify
-        assertThat(response.requestId()).isEqualTo(requestId);
-        assertThat(response.success()).isFalse();
-        assertThat(response.errorCode()).isEqualTo(errorCode.wireCode());
-        assertThat(response.errorMessage()).isEqualTo(message);
-        assertThat(response.data()).isEmpty();
+        assertThat(node.path("requestId").asText()).isEqualTo(requestId);
+        assertThat(node.path("success").asBoolean()).isFalse();
+        assertThat(node.path("errorCode").asText()).isEqualTo(errorCode.wireCode());
+        assertThat(node.path("errorMessage").asText()).isEqualTo(message);
     }
 }

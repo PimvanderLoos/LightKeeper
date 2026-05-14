@@ -3,22 +3,22 @@ package nl.pim16aap2.lightkeeper.agent.spigot;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import nl.pim16aap2.lightkeeper.nms.api.IBotPlayerNmsAdapter;
 import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
-import nl.pim16aap2.lightkeeper.protocol.AgentResponse;
-import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEventsCommand;
-import nl.pim16aap2.lightkeeper.protocol.CreatePlayerCommand;
-import nl.pim16aap2.lightkeeper.protocol.DropItemCommand;
-import nl.pim16aap2.lightkeeper.protocol.ExecutePlayerCommandCommand;
-import nl.pim16aap2.lightkeeper.protocol.GetCapturedEventsCommand;
-import nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponentsCommand;
-import nl.pim16aap2.lightkeeper.protocol.GetPlayerInventoryCommand;
-import nl.pim16aap2.lightkeeper.protocol.GetPlayerMessagesCommand;
-import nl.pim16aap2.lightkeeper.protocol.LeftClickBlockCommand;
-import nl.pim16aap2.lightkeeper.protocol.PlacePlayerBlockCommand;
-import nl.pim16aap2.lightkeeper.protocol.RegisterEventListenerCommand;
-import nl.pim16aap2.lightkeeper.protocol.RemovePlayerCommand;
-import nl.pim16aap2.lightkeeper.protocol.RightClickBlockCommand;
-import nl.pim16aap2.lightkeeper.protocol.TeleportPlayerCommand;
-import nl.pim16aap2.lightkeeper.protocol.UnregisterEventListenerCommand;
+import nl.pim16aap2.lightkeeper.protocol.AgentProtocolException;
+import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEvents;
+import nl.pim16aap2.lightkeeper.protocol.CreatePlayer;
+import nl.pim16aap2.lightkeeper.protocol.DropItem;
+import nl.pim16aap2.lightkeeper.protocol.ExecutePlayerCommand;
+import nl.pim16aap2.lightkeeper.protocol.GetCapturedEvents;
+import nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponents;
+import nl.pim16aap2.lightkeeper.protocol.GetPlayerInventory;
+import nl.pim16aap2.lightkeeper.protocol.GetPlayerMessages;
+import nl.pim16aap2.lightkeeper.protocol.LeftClickBlock;
+import nl.pim16aap2.lightkeeper.protocol.PlacePlayerBlock;
+import nl.pim16aap2.lightkeeper.protocol.RegisterEventListener;
+import nl.pim16aap2.lightkeeper.protocol.RemovePlayer;
+import nl.pim16aap2.lightkeeper.protocol.RightClickBlock;
+import nl.pim16aap2.lightkeeper.protocol.TeleportPlayer;
+import nl.pim16aap2.lightkeeper.protocol.UnregisterEventListener;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -60,7 +60,7 @@ final class AgentPlayerActions
      */
     private final AgentSyntheticPlayerStore playerStore;
     /**
-     * JSON mapper used to serialize message payloads.
+     * JSON mapper used to serialize inventory snapshot payloads.
      */
     private final ObjectMapper objectMapper;
     /**
@@ -76,7 +76,7 @@ final class AgentPlayerActions
      * @param playerStore
      *     Registry containing synthetic players and related state.
      * @param objectMapper
-     *     JSON serializer for message lists.
+     *     JSON serializer for inventory snapshots.
      * @param botPlayerNmsAdapter
      *     NMS adapter used to spawn/remove synthetic players and drain received messages.
      */
@@ -100,11 +100,11 @@ final class AgentPlayerActions
      * @param command
      *     Typed command carrying player name, UUID, world, spawn coordinates, health, and permissions.
      * @return
-     *     Success response containing the created player's UUID and name, or a validation error response.
+     *     Response containing the created player's UUID and name.
      * @throws Exception
      *     Propagates validation and main-thread execution failures.
      */
-    AgentResponse handleCreatePlayer(CreatePlayerCommand command)
+    CreatePlayer.Response handleCreatePlayer(CreatePlayer.Command command)
         throws Exception
     {
         final String name = command.name();
@@ -141,10 +141,7 @@ final class AgentPlayerActions
             "LK_AGENT: Created synthetic player '%s' (%s) in world '%s'."
                 .formatted(player.getName(), player.getUniqueId(), worldName)
         );
-        return AgentResponses.successResponse(command.requestId(), Map.of(
-            "uuid", player.getUniqueId().toString(),
-            "name", player.getName()
-        ));
+        return new CreatePlayer.Response(command.requestId(), player.getUniqueId(), player.getName());
     }
 
     /**
@@ -153,11 +150,11 @@ final class AgentPlayerActions
      * @param command
      *     Typed command carrying the player UUID.
      * @return
-     *     Success response when cleanup completes.
+     *     Response when cleanup completes.
      * @throws Exception
      *     Propagates main-thread execution failures.
      */
-    AgentResponse handleRemovePlayer(RemovePlayerCommand command)
+    RemovePlayer.Response handleRemovePlayer(RemovePlayer.Command command)
         throws Exception
     {
         final UUID uuid = command.uuid();
@@ -174,7 +171,7 @@ final class AgentPlayerActions
             return Boolean.TRUE;
         });
 
-        return AgentResponses.successResponse(command.requestId(), Map.of("removed", "true"));
+        return new RemovePlayer.Response(command.requestId());
     }
 
     /**
@@ -183,11 +180,11 @@ final class AgentPlayerActions
      * @param command
      *     Typed command carrying the player UUID and command string.
      * @return
-     *     Success response containing whether dispatch succeeded.
+     *     Response containing whether dispatch succeeded.
      * @throws Exception
      *     Propagates main-thread execution failures.
      */
-    AgentResponse handleExecutePlayerCommand(ExecutePlayerCommandCommand command)
+    ExecutePlayerCommand.Response handleExecutePlayerCommand(ExecutePlayerCommand.Command command)
         throws Exception
     {
         final UUID uuid = command.uuid();
@@ -202,7 +199,7 @@ final class AgentPlayerActions
             return result;
         });
 
-        return AgentResponses.successResponse(command.requestId(), Map.of("success", success.toString()));
+        return new ExecutePlayerCommand.Response(command.requestId(), success);
     }
 
     /**
@@ -211,11 +208,11 @@ final class AgentPlayerActions
      * @param command
      *     Typed command carrying UUID, material key, and block coordinates.
      * @return
-     *     Success response containing the resulting block material key, or validation error when material is unknown.
+     *     Response containing the resulting block material key.
      * @throws Exception
      *     Propagates validation and main-thread execution failures.
      */
-    AgentResponse handlePlacePlayerBlock(PlacePlayerBlockCommand command)
+    PlacePlayerBlock.Response handlePlacePlayerBlock(PlacePlayerBlock.Command command)
         throws Exception
     {
         final UUID uuid = command.uuid();
@@ -225,13 +222,7 @@ final class AgentPlayerActions
         final int z = command.z();
         final Material material = AgentRequestParsers.parseMaterial(materialKey);
         if (material == null)
-        {
-            return AgentResponses.errorResponse(
-                command.requestId(),
-                AgentErrorCode.INVALID_ARGUMENT,
-                "Unknown material '%s'.".formatted(materialKey)
-            );
-        }
+            throw new IllegalArgumentException("Unknown material '%s'.".formatted(materialKey));
 
         final String finalMaterial = mainThreadExecutor.callOnMainThread(() ->
         {
@@ -241,7 +232,7 @@ final class AgentPlayerActions
             return world.getBlockAt(x, y, z).getType().getKey().toString();
         });
 
-        return AgentResponses.successResponse(command.requestId(), Map.of("material", finalMaterial));
+        return new PlacePlayerBlock.Response(command.requestId(), finalMaterial);
     }
 
     /**
@@ -250,15 +241,17 @@ final class AgentPlayerActions
      * @param command
      *     Typed command carrying UUID, block coordinates, and block face.
      * @return
-     *     Success response containing whether the fired interaction event was cancelled.
+     *     Response containing whether the fired interaction event was cancelled.
      * @throws Exception
      *     Propagates validation and main-thread execution failures.
      */
-    AgentResponse handleLeftClickBlock(LeftClickBlockCommand command)
+    LeftClickBlock.Response handleLeftClickBlock(LeftClickBlock.Command command)
         throws Exception
     {
-        return handleClickBlock(command.requestId(), command.uuid(),
-            command.x(), command.y(), command.z(), command.blockFace(), Action.LEFT_CLICK_BLOCK);
+        final boolean cancelled = handleClickBlock(
+            command.uuid(), command.x(), command.y(), command.z(), command.blockFace(), Action.LEFT_CLICK_BLOCK
+        );
+        return new LeftClickBlock.Response(command.requestId(), cancelled);
     }
 
     /**
@@ -267,15 +260,17 @@ final class AgentPlayerActions
      * @param command
      *     Typed command carrying UUID, block coordinates, and block face.
      * @return
-     *     Success response containing whether the fired interaction event was cancelled.
+     *     Response containing whether the fired interaction event was cancelled.
      * @throws Exception
      *     Propagates validation and main-thread execution failures.
      */
-    AgentResponse handleRightClickBlock(RightClickBlockCommand command)
+    RightClickBlock.Response handleRightClickBlock(RightClickBlock.Command command)
         throws Exception
     {
-        return handleClickBlock(command.requestId(), command.uuid(),
-            command.x(), command.y(), command.z(), command.blockFace(), Action.RIGHT_CLICK_BLOCK);
+        final boolean cancelled = handleClickBlock(
+            command.uuid(), command.x(), command.y(), command.z(), command.blockFace(), Action.RIGHT_CLICK_BLOCK
+        );
+        return new RightClickBlock.Response(command.requestId(), cancelled);
     }
 
     /**
@@ -284,45 +279,40 @@ final class AgentPlayerActions
      * @param command
      *     Typed command carrying the player UUID.
      * @return
-     *     Success response with {@code messagesJson}.
+     *     Response with the accumulated message list.
      * @throws Exception
      *     Propagates main-thread execution failures.
      */
-    AgentResponse handleGetPlayerMessages(GetPlayerMessagesCommand command)
+    GetPlayerMessages.Response handleGetPlayerMessages(GetPlayerMessages.Command command)
         throws Exception
     {
         final UUID uuid = command.uuid();
-        final String messagesJson = mainThreadExecutor.callOnMainThread(() ->
+        final List<String> messages = mainThreadExecutor.callOnMainThread(() ->
         {
             playerStore.getRequiredPlayer(uuid);
             playerStore.capturePlayerMessages(botPlayerNmsAdapter, uuid);
-            return objectMapper.writeValueAsString(playerStore.getPlayerMessages(uuid));
+            return playerStore.getPlayerMessages(uuid);
         });
 
-        return AgentResponses.successResponse(command.requestId(), Map.of("messagesJson", messagesJson));
+        return new GetPlayerMessages.Response(command.requestId(), messages);
     }
 
     /**
-     * Handles {@code GET_PLAYER_CHAT_COMPONENTS} by returning the serialized chat component history.
+     * Handles {@code GET_PLAYER_CHAT_COMPONENTS} — not yet implemented in this build.
      *
      * @param command
      *     Typed command carrying the player UUID.
      * @return
-     *     Success response with {@code componentsJson}.
-     * @throws Exception
-     *     Propagates main-thread execution failures.
+     *     Never returns normally; always throws.
+     * @throws AgentProtocolException
+     *     Always, since this action is not yet implemented.
      */
-    AgentResponse handleGetPlayerChatComponents(GetPlayerChatComponentsCommand command)
-        throws Exception
+    GetPlayerChatComponents.Response handleGetPlayerChatComponents(GetPlayerChatComponents.Command command)
     {
-        final UUID uuid = command.uuid();
-        final String componentsJson = mainThreadExecutor.callOnMainThread(() ->
-        {
-            playerStore.getRequiredPlayer(uuid);
-            return objectMapper.writeValueAsString(List.of());
-        });
-
-        return AgentResponses.successResponse(command.requestId(), Map.of("componentsJson", componentsJson));
+        throw new AgentProtocolException(
+            AgentErrorCode.REQUEST_FAILED,
+            "GET_PLAYER_CHAT_COMPONENTS is not yet implemented in this build."
+        );
     }
 
     /**
@@ -331,11 +321,11 @@ final class AgentPlayerActions
      * @param command
      *     Typed command carrying the player UUID.
      * @return
-     *     Success response with {@code inventoryJson}.
+     *     Response with {@code inventoryJson}.
      * @throws Exception
      *     Propagates main-thread execution failures.
      */
-    AgentResponse handleGetPlayerInventory(GetPlayerInventoryCommand command)
+    GetPlayerInventory.Response handleGetPlayerInventory(GetPlayerInventory.Command command)
         throws Exception
     {
         final UUID uuid = command.uuid();
@@ -345,7 +335,7 @@ final class AgentPlayerActions
             return objectMapper.writeValueAsString(buildInventoryItems(player.getInventory().getContents()));
         });
 
-        return AgentResponses.successResponse(command.requestId(), Map.of("inventoryJson", inventoryJson));
+        return new GetPlayerInventory.Response(command.requestId(), inventoryJson);
     }
 
     /**
@@ -354,15 +344,15 @@ final class AgentPlayerActions
      * @param command
      *     Typed command carrying the player UUID.
      * @return
-     *     Success response with {@code dropped=true} when no plugin cancelled the event, {@code false} otherwise.
+     *     Response with {@code eventCancelled=true} when a plugin blocked the drop.
      * @throws Exception
      *     Propagates main-thread execution failures.
      */
-    AgentResponse handleDropItem(DropItemCommand command)
+    DropItem.Response handleDropItem(DropItem.Command command)
         throws Exception
     {
         final UUID uuid = command.uuid();
-        final Boolean dropped = mainThreadExecutor.callOnMainThread(() ->
+        final Boolean eventCancelled = mainThreadExecutor.callOnMainThread(() ->
         {
             final Player player = playerStore.getRequiredPlayer(uuid);
             final ItemStack item = player.getInventory().getItemInMainHand();
@@ -377,10 +367,10 @@ final class AgentPlayerActions
             Bukkit.getPluginManager().callEvent(event);
             droppedItem.remove();
 
-            return !event.isCancelled();
+            return event.isCancelled();
         });
 
-        return AgentResponses.successResponse(command.requestId(), Map.of("dropped", dropped.toString()));
+        return new DropItem.Response(command.requestId(), eventCancelled);
     }
 
     /**
@@ -389,11 +379,11 @@ final class AgentPlayerActions
      * @param command
      *     Typed command carrying player UUID, world name, and target coordinates.
      * @return
-     *     Success response with {@code teleported} result, or error when the world does not exist.
+     *     Response with {@code teleported} result.
      * @throws Exception
      *     Propagates main-thread execution failures.
      */
-    AgentResponse handleTeleportPlayer(TeleportPlayerCommand command)
+    TeleportPlayer.Response handleTeleportPlayer(TeleportPlayer.Command command)
         throws Exception
     {
         final UUID uuid = command.uuid();
@@ -411,72 +401,76 @@ final class AgentPlayerActions
             return player.teleport(new Location(world, x, y, z));
         });
 
-        return AgentResponses.successResponse(command.requestId(), Map.of("teleported", teleported.toString()));
+        return new TeleportPlayer.Response(command.requestId(), teleported);
     }
 
     /**
-     * Handles {@code REGISTER_EVENT_LISTENER} — not yet implemented in this split branch.
+     * Handles {@code REGISTER_EVENT_LISTENER} — not yet implemented in this build.
      *
      * @param command
      *     Typed command carrying the event class name.
      * @return
-     *     Error response indicating the action is not yet supported.
+     *     Never returns normally; always throws.
+     * @throws AgentProtocolException
+     *     Always, since this action is not yet implemented.
      */
-    AgentResponse handleRegisterEventListener(RegisterEventListenerCommand command)
+    RegisterEventListener.Response handleRegisterEventListener(RegisterEventListener.Command command)
     {
-        return AgentResponses.errorResponse(
-            command.requestId(),
+        throw new AgentProtocolException(
             AgentErrorCode.REQUEST_FAILED,
             "REGISTER_EVENT_LISTENER is not yet implemented in this build."
         );
     }
 
     /**
-     * Handles {@code GET_CAPTURED_EVENTS} — not yet implemented in this split branch.
+     * Handles {@code GET_CAPTURED_EVENTS} — not yet implemented in this build.
      *
      * @param command
      *     Typed command carrying the event class name.
      * @return
-     *     Error response indicating the action is not yet supported.
+     *     Never returns normally; always throws.
+     * @throws AgentProtocolException
+     *     Always, since this action is not yet implemented.
      */
-    AgentResponse handleGetCapturedEvents(GetCapturedEventsCommand command)
+    GetCapturedEvents.Response handleGetCapturedEvents(GetCapturedEvents.Command command)
     {
-        return AgentResponses.errorResponse(
-            command.requestId(),
+        throw new AgentProtocolException(
             AgentErrorCode.REQUEST_FAILED,
             "GET_CAPTURED_EVENTS is not yet implemented in this build."
         );
     }
 
     /**
-     * Handles {@code CLEAR_CAPTURED_EVENTS} — not yet implemented in this split branch.
+     * Handles {@code CLEAR_CAPTURED_EVENTS} — not yet implemented in this build.
      *
      * @param command
      *     Typed command carrying the event class name.
      * @return
-     *     Error response indicating the action is not yet supported.
+     *     Never returns normally; always throws.
+     * @throws AgentProtocolException
+     *     Always, since this action is not yet implemented.
      */
-    AgentResponse handleClearCapturedEvents(ClearCapturedEventsCommand command)
+    ClearCapturedEvents.Response handleClearCapturedEvents(ClearCapturedEvents.Command command)
     {
-        return AgentResponses.errorResponse(
-            command.requestId(),
+        throw new AgentProtocolException(
             AgentErrorCode.REQUEST_FAILED,
             "CLEAR_CAPTURED_EVENTS is not yet implemented in this build."
         );
     }
 
     /**
-     * Handles {@code UNREGISTER_EVENT_LISTENER} — not yet implemented in this split branch.
+     * Handles {@code UNREGISTER_EVENT_LISTENER} — not yet implemented in this build.
      *
      * @param command
      *     Typed command carrying the event class name.
      * @return
-     *     Error response indicating the action is not yet supported.
+     *     Never returns normally; always throws.
+     * @throws AgentProtocolException
+     *     Always, since this action is not yet implemented.
      */
-    AgentResponse handleUnregisterEventListener(UnregisterEventListenerCommand command)
+    UnregisterEventListener.Response handleUnregisterEventListener(UnregisterEventListener.Command command)
     {
-        return AgentResponses.errorResponse(
-            command.requestId(),
+        throw new AgentProtocolException(
             AgentErrorCode.REQUEST_FAILED,
             "UNREGISTER_EVENT_LISTENER is not yet implemented in this build."
         );
@@ -511,27 +505,34 @@ final class AgentPlayerActions
         }
     }
 
-    private AgentResponse handleClickBlock(
-        String requestId,
-        UUID uuid,
-        int x,
-        int y,
-        int z,
-        String blockFaceName,
-        Action action)
+    /**
+     * Fires a synthetic block-click interaction event and returns whether it was cancelled.
+     *
+     * @param uuid
+     *     Player performing the click.
+     * @param x
+     *     Target block X coordinate.
+     * @param y
+     *     Target block Y coordinate.
+     * @param z
+     *     Target block Z coordinate.
+     * @param blockFaceName
+     *     Bukkit {@code BlockFace} enum name.
+     * @param action
+     *     Bukkit {@code Action} for left or right click.
+     * @return
+     *     {@code true} if the event was cancelled.
+     * @throws Exception
+     *     Propagates main-thread execution failures.
+     */
+    private boolean handleClickBlock(UUID uuid, int x, int y, int z, String blockFaceName, Action action)
         throws Exception
     {
         final BlockFace blockFace = AgentRequestParsers.parseBlockFace(blockFaceName);
         if (blockFace == null)
-        {
-            return AgentResponses.errorResponse(
-                requestId,
-                AgentErrorCode.INVALID_ARGUMENT,
-                "Unknown block face '%s'.".formatted(blockFaceName)
-            );
-        }
+            throw new IllegalArgumentException("Unknown block face '%s'.".formatted(blockFaceName));
 
-        final Boolean cancelled = mainThreadExecutor.callOnMainThread(() ->
+        return mainThreadExecutor.callOnMainThread(() ->
         {
             final Player player = playerStore.getRequiredPlayer(uuid);
             final Block block = player.getWorld().getBlockAt(x, y, z);
@@ -547,8 +548,6 @@ final class AgentPlayerActions
             Bukkit.getPluginManager().callEvent(event);
             return event.isCancelled();
         });
-
-        return AgentResponses.successResponse(requestId, Map.of("cancelled", cancelled.toString()));
     }
 
     private static List<Map<String, Object>> buildInventoryItems(ItemStack... contents)

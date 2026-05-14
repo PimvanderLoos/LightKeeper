@@ -8,12 +8,13 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Verifies round-trip JSON serialization and polymorphic deserialization for {@link IAgentCommand} subtypes.
+ * Verifies round-trip JSON serialization and polymorphic deserialization for {@link IAgentCommand} subtypes,
+ * and round-trip serialization for selected {@link IAgentResponse} subtypes.
  */
 class AgentCommandSerializationTest
 {
     // -----------------------------------------------------------------------
-    // Round-trip: MainWorldCommand (no extra fields)
+    // Round-trip: MainWorld.Command (no extra fields)
     // -----------------------------------------------------------------------
 
     @Test
@@ -21,20 +22,21 @@ class AgentCommandSerializationTest
     {
         // setup
         final ObjectMapper mapper = new ObjectMapper();
-        final MainWorldCommand original = new MainWorldCommand("req-1");
+        final MainWorld.Command original = new MainWorld.Command("req-1");
 
         // execute
         final String json = mapper.writeValueAsString(original);
+        @SuppressWarnings("rawtypes")
         final IAgentCommand deserialized = mapper.readValue(json, IAgentCommand.class);
 
         // verify
-        assertThat(deserialized).isInstanceOf(MainWorldCommand.class);
-        final MainWorldCommand result = (MainWorldCommand) deserialized;
+        assertThat(deserialized).isInstanceOf(MainWorld.Command.class);
+        final MainWorld.Command result = (MainWorld.Command) deserialized;
         assertThat(result.requestId()).isEqualTo("req-1");
     }
 
     // -----------------------------------------------------------------------
-    // Round-trip: TeleportPlayerCommand (UUID + doubles)
+    // Round-trip: TeleportPlayer.Command (UUID + doubles)
     // -----------------------------------------------------------------------
 
     @Test
@@ -43,15 +45,17 @@ class AgentCommandSerializationTest
         // setup
         final ObjectMapper mapper = new ObjectMapper();
         final UUID uuid = UUID.fromString("00000000-0000-0000-0000-000000000001");
-        final TeleportPlayerCommand original = new TeleportPlayerCommand("req-2", uuid, "world", 1.5, 64.0, -3.25);
+        final TeleportPlayer.Command original =
+            new TeleportPlayer.Command("req-2", uuid, "world", 1.5, 64.0, -3.25);
 
         // execute
         final String json = mapper.writeValueAsString(original);
+        @SuppressWarnings("rawtypes")
         final IAgentCommand deserialized = mapper.readValue(json, IAgentCommand.class);
 
         // verify
-        assertThat(deserialized).isInstanceOf(TeleportPlayerCommand.class);
-        final TeleportPlayerCommand result = (TeleportPlayerCommand) deserialized;
+        assertThat(deserialized).isInstanceOf(TeleportPlayer.Command.class);
+        final TeleportPlayer.Command result = (TeleportPlayer.Command) deserialized;
         assertThat(result.requestId()).isEqualTo("req-2");
         assertThat(result.uuid()).isEqualTo(uuid);
         assertThat(result.worldName()).isEqualTo("world");
@@ -61,7 +65,7 @@ class AgentCommandSerializationTest
     }
 
     // -----------------------------------------------------------------------
-    // Round-trip: CreatePlayerCommand with null optional fields
+    // Round-trip: CreatePlayer.Command with null optional fields
     // -----------------------------------------------------------------------
 
     @Test
@@ -70,7 +74,7 @@ class AgentCommandSerializationTest
         // setup
         final ObjectMapper mapper = new ObjectMapper();
         final UUID uuid = UUID.fromString("00000000-0000-0000-0000-000000000002");
-        final CreatePlayerCommand original = new CreatePlayerCommand(
+        final CreatePlayer.Command original = new CreatePlayer.Command(
             "req-3", "Alice", uuid, "world",
             null, null, null,
             null, null
@@ -78,11 +82,12 @@ class AgentCommandSerializationTest
 
         // execute
         final String json = mapper.writeValueAsString(original);
+        @SuppressWarnings("rawtypes")
         final IAgentCommand deserialized = mapper.readValue(json, IAgentCommand.class);
 
         // verify
-        assertThat(deserialized).isInstanceOf(CreatePlayerCommand.class);
-        final CreatePlayerCommand result = (CreatePlayerCommand) deserialized;
+        assertThat(deserialized).isInstanceOf(CreatePlayer.Command.class);
+        final CreatePlayer.Command result = (CreatePlayer.Command) deserialized;
         assertThat(result.requestId()).isEqualTo("req-3");
         assertThat(result.name()).isEqualTo("Alice");
         assertThat(result.uuid()).isEqualTo(uuid);
@@ -95,7 +100,7 @@ class AgentCommandSerializationTest
     }
 
     // -----------------------------------------------------------------------
-    // Round-trip: CreatePlayerCommand with all fields present
+    // Round-trip: CreatePlayer.Command with all fields present
     // -----------------------------------------------------------------------
 
     @Test
@@ -104,7 +109,7 @@ class AgentCommandSerializationTest
         // setup
         final ObjectMapper mapper = new ObjectMapper();
         final UUID uuid = UUID.fromString("00000000-0000-0000-0000-000000000003");
-        final CreatePlayerCommand original = new CreatePlayerCommand(
+        final CreatePlayer.Command original = new CreatePlayer.Command(
             "req-4", "Bob", uuid, "nether",
             10.0, 64.0, -5.0,
             20.0, "minecraft.command.tp,some.other.node"
@@ -112,11 +117,12 @@ class AgentCommandSerializationTest
 
         // execute
         final String json = mapper.writeValueAsString(original);
+        @SuppressWarnings("rawtypes")
         final IAgentCommand deserialized = mapper.readValue(json, IAgentCommand.class);
 
         // verify
-        assertThat(deserialized).isInstanceOf(CreatePlayerCommand.class);
-        final CreatePlayerCommand result = (CreatePlayerCommand) deserialized;
+        assertThat(deserialized).isInstanceOf(CreatePlayer.Command.class);
+        final CreatePlayer.Command result = (CreatePlayer.Command) deserialized;
         assertThat(result.requestId()).isEqualTo("req-4");
         assertThat(result.name()).isEqualTo("Bob");
         assertThat(result.uuid()).isEqualTo(uuid);
@@ -129,7 +135,7 @@ class AgentCommandSerializationTest
     }
 
     // -----------------------------------------------------------------------
-    // Round-trip: DragMenuSlotsCommand (int[] slots)
+    // Round-trip: DragMenuSlots.Command (int[] slots)
     // -----------------------------------------------------------------------
 
     @Test
@@ -138,17 +144,18 @@ class AgentCommandSerializationTest
         // setup
         final ObjectMapper mapper = new ObjectMapper();
         final UUID uuid = UUID.fromString("00000000-0000-0000-0000-000000000004");
-        final DragMenuSlotsCommand original = new DragMenuSlotsCommand(
+        final DragMenuSlots.Command original = new DragMenuSlots.Command(
             "req-5", uuid, "minecraft:diamond", new int[]{0, 4, 8}
         );
 
         // execute
         final String json = mapper.writeValueAsString(original);
+        @SuppressWarnings("rawtypes")
         final IAgentCommand deserialized = mapper.readValue(json, IAgentCommand.class);
 
         // verify
-        assertThat(deserialized).isInstanceOf(DragMenuSlotsCommand.class);
-        final DragMenuSlotsCommand result = (DragMenuSlotsCommand) deserialized;
+        assertThat(deserialized).isInstanceOf(DragMenuSlots.Command.class);
+        final DragMenuSlots.Command result = (DragMenuSlots.Command) deserialized;
         assertThat(result.requestId()).isEqualTo("req-5");
         assertThat(result.uuid()).isEqualTo(uuid);
         assertThat(result.materialKey()).isEqualTo("minecraft:diamond");
@@ -167,11 +174,12 @@ class AgentCommandSerializationTest
         final String json = "{\"action\":\"WAIT_TICKS\",\"requestId\":\"req-6\",\"ticks\":20}";
 
         // execute
+        @SuppressWarnings("rawtypes")
         final IAgentCommand deserialized = mapper.readValue(json, IAgentCommand.class);
 
         // verify
-        assertThat(deserialized).isInstanceOf(WaitTicksCommand.class);
-        final WaitTicksCommand result = (WaitTicksCommand) deserialized;
+        assertThat(deserialized).isInstanceOf(WaitTicks.Command.class);
+        final WaitTicks.Command result = (WaitTicks.Command) deserialized;
         assertThat(result.requestId()).isEqualTo("req-6");
         assertThat(result.ticks()).isEqualTo(20);
     }
@@ -189,11 +197,12 @@ class AgentCommandSerializationTest
             + "\"token\":\"secret\",\"protocolVersion\":3,\"agentSha256\":\"\"}";
 
         // execute
+        @SuppressWarnings("rawtypes")
         final IAgentCommand deserialized = mapper.readValue(json, IAgentCommand.class);
 
         // verify
-        assertThat(deserialized).isInstanceOf(HandshakeCommand.class);
-        final HandshakeCommand result = (HandshakeCommand) deserialized;
+        assertThat(deserialized).isInstanceOf(Handshake.Command.class);
+        final Handshake.Command result = (Handshake.Command) deserialized;
         assertThat(result.requestId()).isEqualTo("req-7");
         assertThat(result.token()).isEqualTo("secret");
         assertThat(result.protocolVersion()).isEqualTo(3);
@@ -212,10 +221,72 @@ class AgentCommandSerializationTest
         final String json = "{\"action\":\"GET_SERVER_PLATFORM\",\"requestId\":\"req-8\"}";
 
         // execute
+        @SuppressWarnings("rawtypes")
         final IAgentCommand deserialized = mapper.readValue(json, IAgentCommand.class);
 
         // verify
-        assertThat(deserialized).isInstanceOf(GetServerPlatformCommand.class);
+        assertThat(deserialized).isInstanceOf(GetServerPlatform.Command.class);
         assertThat(deserialized.requestId()).isEqualTo("req-8");
+    }
+
+    // -----------------------------------------------------------------------
+    // Round-trip: MainWorld.Response
+    // -----------------------------------------------------------------------
+
+    @Test
+    void serialize_mainWorldResponse_roundTrips() throws Exception
+    {
+        // setup
+        final ObjectMapper mapper = new ObjectMapper();
+        final MainWorld.Response original = new MainWorld.Response("req-9", "world");
+
+        // execute
+        final String json = mapper.writeValueAsString(original);
+        final MainWorld.Response result = mapper.readValue(json, MainWorld.Response.class);
+
+        // verify
+        assertThat(result.requestId()).isEqualTo("req-9");
+        assertThat(result.worldName()).isEqualTo("world");
+    }
+
+    // -----------------------------------------------------------------------
+    // Round-trip: DropItem.Response
+    // -----------------------------------------------------------------------
+
+    @Test
+    void serialize_dropItemResponse_roundTrips() throws Exception
+    {
+        // setup
+        final ObjectMapper mapper = new ObjectMapper();
+        final DropItem.Response original = new DropItem.Response("req-10", true);
+
+        // execute
+        final String json = mapper.writeValueAsString(original);
+        final DropItem.Response result = mapper.readValue(json, DropItem.Response.class);
+
+        // verify
+        assertThat(result.requestId()).isEqualTo("req-10");
+        assertThat(result.eventCancelled()).isTrue();
+    }
+
+    // -----------------------------------------------------------------------
+    // Round-trip: Handshake.Response
+    // -----------------------------------------------------------------------
+
+    @Test
+    void serialize_handshakeResponse_roundTrips() throws Exception
+    {
+        // setup
+        final ObjectMapper mapper = new ObjectMapper();
+        final Handshake.Response original = new Handshake.Response("req-11", 3, "1.21.11-R0.1-SNAPSHOT");
+
+        // execute
+        final String json = mapper.writeValueAsString(original);
+        final Handshake.Response result = mapper.readValue(json, Handshake.Response.class);
+
+        // verify
+        assertThat(result.requestId()).isEqualTo("req-11");
+        assertThat(result.protocolVersion()).isEqualTo(3);
+        assertThat(result.bukkitVersion()).isEqualTo("1.21.11-R0.1-SNAPSHOT");
     }
 }

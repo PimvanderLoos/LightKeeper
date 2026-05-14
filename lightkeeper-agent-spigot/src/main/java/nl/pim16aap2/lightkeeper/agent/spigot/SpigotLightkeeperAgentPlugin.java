@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import nl.pim16aap2.lightkeeper.nms.api.IBotPlayerNmsAdapter;
 import nl.pim16aap2.lightkeeper.nms.v121r7.BotPlayerNmsAdapterV1_21_R7;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
-import nl.pim16aap2.lightkeeper.protocol.AgentResponse;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jspecify.annotations.Nullable;
@@ -386,8 +385,7 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin
                 final AgentRequestDispatcher.RequestDispatchResult dispatchResult =
                     dispatcher.handleRequestLine(line, handshakeCompleted);
                 handshakeCompleted = dispatchResult.handshakeCompleted();
-                final AgentResponse response = dispatchResult.response();
-                writer.write(objectMapper.writeValueAsString(response));
+                writer.write(dispatchResult.responseJson());
                 writer.newLine();
                 writer.flush();
             }

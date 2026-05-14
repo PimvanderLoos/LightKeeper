@@ -1,45 +1,46 @@
 package nl.pim16aap2.lightkeeper.framework.internal;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import nl.pim16aap2.lightkeeper.framework.CommandSource;
 import nl.pim16aap2.lightkeeper.framework.MenuItemSnapshot;
 import nl.pim16aap2.lightkeeper.framework.MenuSnapshot;
 import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.framework.WorldSpec;
-import nl.pim16aap2.lightkeeper.protocol.IAgentCommand;
 import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
-import nl.pim16aap2.lightkeeper.protocol.AgentResponse;
-import nl.pim16aap2.lightkeeper.protocol.BlockTypeCommand;
-import nl.pim16aap2.lightkeeper.protocol.ClickMenuSlotCommand;
-import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEventsCommand;
-import nl.pim16aap2.lightkeeper.protocol.CreatePlayerCommand;
-import nl.pim16aap2.lightkeeper.protocol.DragMenuSlotsCommand;
-import nl.pim16aap2.lightkeeper.protocol.DropItemCommand;
-import nl.pim16aap2.lightkeeper.protocol.ExecuteCommandCommand;
-import nl.pim16aap2.lightkeeper.protocol.ExecutePlayerCommandCommand;
-import nl.pim16aap2.lightkeeper.protocol.GetCapturedEventsCommand;
-import nl.pim16aap2.lightkeeper.protocol.GetOpenMenuCommand;
-import nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponentsCommand;
-import nl.pim16aap2.lightkeeper.protocol.GetPlayerInventoryCommand;
-import nl.pim16aap2.lightkeeper.protocol.GetPlayerMessagesCommand;
-import nl.pim16aap2.lightkeeper.protocol.GetServerPlatformCommand;
-import nl.pim16aap2.lightkeeper.protocol.GetServerTickCommand;
-import nl.pim16aap2.lightkeeper.protocol.HandshakeCommand;
-import nl.pim16aap2.lightkeeper.protocol.IsChunkLoadedCommand;
-import nl.pim16aap2.lightkeeper.protocol.LeftClickBlockCommand;
-import nl.pim16aap2.lightkeeper.protocol.LoadChunkCommand;
-import nl.pim16aap2.lightkeeper.protocol.MainWorldCommand;
-import nl.pim16aap2.lightkeeper.protocol.NewWorldCommand;
-import nl.pim16aap2.lightkeeper.protocol.PlacePlayerBlockCommand;
-import nl.pim16aap2.lightkeeper.protocol.RegisterEventListenerCommand;
-import nl.pim16aap2.lightkeeper.protocol.RemovePlayerCommand;
-import nl.pim16aap2.lightkeeper.protocol.RightClickBlockCommand;
-import nl.pim16aap2.lightkeeper.protocol.SetBlockCommand;
-import nl.pim16aap2.lightkeeper.protocol.TeleportPlayerCommand;
-import nl.pim16aap2.lightkeeper.protocol.UnloadChunkCommand;
-import nl.pim16aap2.lightkeeper.protocol.UnregisterEventListenerCommand;
-import nl.pim16aap2.lightkeeper.protocol.WaitTicksCommand;
+import nl.pim16aap2.lightkeeper.protocol.BlockType;
+import nl.pim16aap2.lightkeeper.protocol.ClickMenuSlot;
+import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEvents;
+import nl.pim16aap2.lightkeeper.protocol.CreatePlayer;
+import nl.pim16aap2.lightkeeper.protocol.DragMenuSlots;
+import nl.pim16aap2.lightkeeper.protocol.DropItem;
+import nl.pim16aap2.lightkeeper.protocol.ExecuteCommand;
+import nl.pim16aap2.lightkeeper.protocol.ExecutePlayerCommand;
+import nl.pim16aap2.lightkeeper.protocol.GetCapturedEvents;
+import nl.pim16aap2.lightkeeper.protocol.GetOpenMenu;
+import nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponents;
+import nl.pim16aap2.lightkeeper.protocol.GetPlayerInventory;
+import nl.pim16aap2.lightkeeper.protocol.GetPlayerMessages;
+import nl.pim16aap2.lightkeeper.protocol.GetServerPlatform;
+import nl.pim16aap2.lightkeeper.protocol.GetServerTick;
+import nl.pim16aap2.lightkeeper.protocol.Handshake;
+import nl.pim16aap2.lightkeeper.protocol.IAgentCommand;
+import nl.pim16aap2.lightkeeper.protocol.IAgentResponse;
+import nl.pim16aap2.lightkeeper.protocol.IsChunkLoaded;
+import nl.pim16aap2.lightkeeper.protocol.LeftClickBlock;
+import nl.pim16aap2.lightkeeper.protocol.LoadChunk;
+import nl.pim16aap2.lightkeeper.protocol.MainWorld;
+import nl.pim16aap2.lightkeeper.protocol.NewWorld;
+import nl.pim16aap2.lightkeeper.protocol.PlacePlayerBlock;
+import nl.pim16aap2.lightkeeper.protocol.RegisterEventListener;
+import nl.pim16aap2.lightkeeper.protocol.RemovePlayer;
+import nl.pim16aap2.lightkeeper.protocol.RightClickBlock;
+import nl.pim16aap2.lightkeeper.protocol.SetBlock;
+import nl.pim16aap2.lightkeeper.protocol.TeleportPlayer;
+import nl.pim16aap2.lightkeeper.protocol.UnloadChunk;
+import nl.pim16aap2.lightkeeper.protocol.UnregisterEventListener;
+import nl.pim16aap2.lightkeeper.protocol.WaitTicks;
 import org.jspecify.annotations.Nullable;
 
 import java.io.BufferedReader;
@@ -63,6 +64,10 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Agent RPC client backed by a Unix Domain Socket.
+ *
+ * <p>Each public method serializes a typed {@link IAgentCommand} to JSON, writes it to the socket, reads back
+ * a single-line JSON response, verifies success, and deserializes the typed {@link IAgentResponse} via
+ * {@link IAgentCommand#responseType()}.
  */
 final class UdsAgentClient implements AutoCloseable
 {
@@ -85,55 +90,57 @@ final class UdsAgentClient implements AutoCloseable
 
     void handshake(String token, int protocolVersion, String agentSha256)
     {
-        send(new HandshakeCommand(nextRequestId(), token, protocolVersion, agentSha256));
+        final Handshake.Command command = new Handshake.Command(nextRequestId(), token, protocolVersion, agentSha256);
+        send(command);
     }
 
     String mainWorld()
     {
-        final AgentResponse response = send(new MainWorldCommand(nextRequestId()));
-        return getRequiredData(response, "worldName");
+        final MainWorld.Command command = new MainWorld.Command(nextRequestId());
+        return send(command).worldName();
     }
 
     String newWorld(WorldSpec worldSpec)
     {
-        final AgentResponse response = send(new NewWorldCommand(
+        final NewWorld.Command command = new NewWorld.Command(
             nextRequestId(),
             worldSpec.name(),
             worldSpec.worldType().name(),
             worldSpec.environment().name(),
             worldSpec.seed()
-        ));
-        return getRequiredData(response, "worldName");
+        );
+        return send(command).worldName();
     }
 
     boolean executeCommand(CommandSource source, String command)
     {
-        final AgentResponse response = send(new ExecuteCommandCommand(nextRequestId(), source.name(), command));
-        return Boolean.parseBoolean(getRequiredData(response, "success"));
+        final ExecuteCommand.Command cmd = new ExecuteCommand.Command(nextRequestId(), source.name(), command);
+        return send(cmd).success();
     }
 
     String blockType(String worldName, Vector3Di position)
     {
-        final AgentResponse response = send(new BlockTypeCommand(
+        final BlockType.Command command = new BlockType.Command(
             nextRequestId(),
             worldName,
             position.x(),
             position.y(),
             position.z()
-        ));
-        return getRequiredData(response, "material");
+        );
+        return send(command).material();
     }
 
     void setBlock(String worldName, Vector3Di position, String material)
     {
-        send(new SetBlockCommand(
+        final SetBlock.Command command = new SetBlock.Command(
             nextRequestId(),
             worldName,
             position.x(),
             position.y(),
             position.z(),
             material
-        ));
+        );
+        send(command);
     }
 
     AgentPlayerData createPlayer(
@@ -150,7 +157,7 @@ final class UdsAgentClient implements AutoCloseable
             ? null
             : String.join(",", permissions);
 
-        final AgentResponse response = send(new CreatePlayerCommand(
+        final CreatePlayer.Command command = new CreatePlayer.Command(
             nextRequestId(),
             name,
             uuid,
@@ -160,64 +167,66 @@ final class UdsAgentClient implements AutoCloseable
             z,
             health,
             permissionsCsv
-        ));
-        final UUID createdUuid = UUID.fromString(getRequiredData(response, "uuid"));
-        final String createdName = getRequiredData(response, "name");
-        return new AgentPlayerData(createdUuid, createdName);
+        );
+        final CreatePlayer.Response response = send(command);
+        return new AgentPlayerData(response.uuid(), response.name());
     }
 
     void removePlayer(UUID uuid)
     {
-        send(new RemovePlayerCommand(nextRequestId(), uuid));
+        final RemovePlayer.Command command = new RemovePlayer.Command(nextRequestId(), uuid);
+        send(command);
     }
 
     void executePlayerCommand(UUID uuid, String command)
     {
-        send(new ExecutePlayerCommandCommand(nextRequestId(), uuid, command));
+        final ExecutePlayerCommand.Command cmd = new ExecutePlayerCommand.Command(nextRequestId(), uuid, command);
+        send(cmd);
     }
 
     void placePlayerBlock(UUID uuid, String material, int x, int y, int z)
     {
-        send(new PlacePlayerBlockCommand(nextRequestId(), uuid, material, x, y, z));
+        final PlacePlayerBlock.Command command = new PlacePlayerBlock.Command(nextRequestId(), uuid, material, x, y, z);
+        send(command);
     }
 
     void leftClickBlock(UUID uuid, Vector3Di position, String blockFace)
     {
-        send(new LeftClickBlockCommand(
+        final LeftClickBlock.Command command = new LeftClickBlock.Command(
             nextRequestId(),
             uuid,
             position.x(),
             position.y(),
             position.z(),
             blockFace
-        ));
+        );
+        send(command);
     }
 
     void rightClickBlock(UUID uuid, Vector3Di position, String blockFace)
     {
-        send(new RightClickBlockCommand(
+        final RightClickBlock.Command command = new RightClickBlock.Command(
             nextRequestId(),
             uuid,
             position.x(),
             position.y(),
             position.z(),
             blockFace
-        ));
+        );
+        send(command);
     }
 
     MenuSnapshot menuSnapshot(UUID uuid)
     {
-        final AgentResponse response = send(new GetOpenMenuCommand(nextRequestId(), uuid));
-        final boolean open = Boolean.parseBoolean(getRequiredData(response, "open"));
-        if (!open)
+        final GetOpenMenu.Command command = new GetOpenMenu.Command(nextRequestId(), uuid);
+        final GetOpenMenu.Response response = send(command);
+        if (!response.open())
             return new MenuSnapshot(false, "", List.of());
 
-        final String title = getRequiredData(response, "title");
-        final String itemsJson = response.data().getOrDefault("itemsJson", "[]");
         try
         {
-            final MenuItemSnapshot[] items = objectMapper.readValue(itemsJson, MenuItemSnapshot[].class);
-            return new MenuSnapshot(true, title, List.of(items));
+            final MenuItemSnapshot[] items = objectMapper.readValue(response.itemsJson(), MenuItemSnapshot[].class);
+            return new MenuSnapshot(true, response.title(), List.of(items));
         }
         catch (IOException exception)
         {
@@ -227,69 +236,66 @@ final class UdsAgentClient implements AutoCloseable
 
     void clickMenuSlot(UUID uuid, int slot)
     {
-        send(new ClickMenuSlotCommand(nextRequestId(), uuid, slot, "LEFT"));
+        final ClickMenuSlot.Command command = new ClickMenuSlot.Command(nextRequestId(), uuid, slot);
+        send(command);
     }
 
     void dragMenuSlots(UUID uuid, String materialKey, int... slots)
     {
-        send(new DragMenuSlotsCommand(nextRequestId(), uuid, materialKey, slots));
+        final DragMenuSlots.Command command = new DragMenuSlots.Command(nextRequestId(), uuid, materialKey, slots);
+        send(command);
     }
 
     void waitTicks(int ticks)
     {
-        send(new WaitTicksCommand(nextRequestId(), ticks));
+        final WaitTicks.Command command = new WaitTicks.Command(nextRequestId(), ticks);
+        send(command);
     }
 
     List<String> playerMessages(UUID uuid)
     {
-        final AgentResponse response = send(new GetPlayerMessagesCommand(nextRequestId(), uuid));
-        final String messagesJson = response.data().getOrDefault("messagesJson", "[]");
-        try
-        {
-            final String[] messages = objectMapper.readValue(messagesJson, String[].class);
-            return List.of(messages);
-        }
-        catch (IOException exception)
-        {
-            throw new IllegalStateException("Failed to parse player messages JSON.", exception);
-        }
+        final GetPlayerMessages.Command command = new GetPlayerMessages.Command(nextRequestId(), uuid);
+        return send(command).messages();
     }
 
     long getServerTick()
     {
-        final AgentResponse response = send(new GetServerTickCommand(nextRequestId()));
-        return Long.parseLong(getRequiredData(response, "tick"));
+        final GetServerTick.Command command = new GetServerTick.Command(nextRequestId());
+        return send(command).tick();
     }
 
     void teleportPlayer(UUID uuid, String worldName, double x, double y, double z)
     {
-        send(new TeleportPlayerCommand(nextRequestId(), uuid, worldName, x, y, z));
+        final TeleportPlayer.Command command = new TeleportPlayer.Command(nextRequestId(), uuid, worldName, x, y, z);
+        send(command);
     }
 
     void loadChunk(String worldName, int x, int z)
     {
-        send(new LoadChunkCommand(nextRequestId(), worldName, x, z));
+        final LoadChunk.Command command = new LoadChunk.Command(nextRequestId(), worldName, x, z);
+        send(command);
     }
 
     void unloadChunk(String worldName, int x, int z)
     {
-        send(new UnloadChunkCommand(nextRequestId(), worldName, x, z));
+        final UnloadChunk.Command command = new UnloadChunk.Command(nextRequestId(), worldName, x, z);
+        send(command);
     }
 
     boolean isChunkLoaded(String worldName, int x, int z)
     {
-        final AgentResponse response = send(new IsChunkLoadedCommand(nextRequestId(), worldName, x, z));
-        return Boolean.parseBoolean(getRequiredData(response, "loaded"));
+        final IsChunkLoaded.Command command = new IsChunkLoaded.Command(nextRequestId(), worldName, x, z);
+        return send(command).loaded();
     }
 
     List<Map<String, Object>> getPlayerInventory(UUID uuid)
     {
-        final AgentResponse response = send(new GetPlayerInventoryCommand(nextRequestId(), uuid));
-        final String inventoryJson = response.data().getOrDefault("inventoryJson", "[]");
+        final GetPlayerInventory.Command command = new GetPlayerInventory.Command(nextRequestId(), uuid);
+        final GetPlayerInventory.Response response = send(command);
         try
         {
             @SuppressWarnings("unchecked")
-            final List<Map<String, Object>> items = objectMapper.readValue(inventoryJson, List.class);
+            final List<Map<String, Object>> items = objectMapper.readValue(response.inventoryJson(), List.class);
             return items;
         }
         catch (IOException exception)
@@ -300,23 +306,24 @@ final class UdsAgentClient implements AutoCloseable
 
     boolean dropItem(UUID uuid)
     {
-        final AgentResponse response = send(new DropItemCommand(nextRequestId(), uuid));
-        return Boolean.parseBoolean(getRequiredData(response, "dropped"));
+        final DropItem.Command command = new DropItem.Command(nextRequestId(), uuid);
+        return !send(command).eventCancelled();
     }
 
     void registerEventListener(String eventClassName)
     {
-        send(new RegisterEventListenerCommand(nextRequestId(), eventClassName));
+        final RegisterEventListener.Command command = new RegisterEventListener.Command(nextRequestId(), eventClassName);
+        send(command);
     }
 
     List<Map<String, String>> getCapturedEvents(String eventClassName)
     {
-        final AgentResponse response = send(new GetCapturedEventsCommand(nextRequestId(), eventClassName));
-        final String eventsJson = response.data().getOrDefault("eventsJson", "[]");
+        final GetCapturedEvents.Command command = new GetCapturedEvents.Command(nextRequestId(), eventClassName);
+        final GetCapturedEvents.Response response = send(command);
         try
         {
             @SuppressWarnings("unchecked")
-            final List<Map<String, String>> events = objectMapper.readValue(eventsJson, List.class);
+            final List<Map<String, String>> events = objectMapper.readValue(response.eventsJson(), List.class);
             return events;
         }
         catch (IOException exception)
@@ -327,36 +334,31 @@ final class UdsAgentClient implements AutoCloseable
 
     void clearCapturedEvents(String eventClassName)
     {
-        send(new ClearCapturedEventsCommand(nextRequestId(), eventClassName));
+        final ClearCapturedEvents.Command command = new ClearCapturedEvents.Command(nextRequestId(), eventClassName);
+        send(command);
     }
 
     void unregisterEventListener(String eventClassName)
     {
-        send(new UnregisterEventListenerCommand(nextRequestId(), eventClassName));
+        final UnregisterEventListener.Command command =
+            new UnregisterEventListener.Command(nextRequestId(), eventClassName);
+        send(command);
     }
 
     List<String> getPlayerChatComponents(UUID uuid)
     {
-        final AgentResponse response = send(new GetPlayerChatComponentsCommand(nextRequestId(), uuid));
-        final String componentsJson = response.data().getOrDefault("componentsJson", "[]");
-        try
-        {
-            final String[] components = objectMapper.readValue(componentsJson, String[].class);
-            return List.of(components);
-        }
-        catch (IOException exception)
-        {
-            throw new IllegalStateException("Failed to parse player chat components JSON.", exception);
-        }
+        final GetPlayerChatComponents.Command command = new GetPlayerChatComponents.Command(nextRequestId(), uuid);
+        send(command);
+        return List.of();
     }
 
     String serverPlatform()
     {
-        final AgentResponse response = send(new GetServerPlatformCommand(nextRequestId()));
-        return getRequiredData(response, "serverName");
+        final GetServerPlatform.Command command = new GetServerPlatform.Command(nextRequestId());
+        return send(command).serverName();
     }
 
-    synchronized AgentResponse send(IAgentCommand command)
+    synchronized <R extends IAgentResponse> R send(IAgentCommand<R> command)
     {
         try
         {
@@ -368,33 +370,29 @@ final class UdsAgentClient implements AutoCloseable
             if (responseLine == null)
                 throw new IllegalStateException("Agent connection closed unexpectedly.");
 
+            final JsonNode root = objectMapper.readTree(responseLine);
+            final String responseRequestId = root.path("requestId").asText("unknown");
             final String requestId = command.requestId();
-            final AgentResponse response = objectMapper.readValue(responseLine, AgentResponse.class);
-            if (!requestId.equals(response.requestId()))
+
+            if (!requestId.equals(responseRequestId))
             {
                 throw new IllegalStateException(
                     "Unexpected response id '%s' for request '%s'."
-                        .formatted(response.requestId(), requestId)
+                        .formatted(responseRequestId, requestId)
                 );
             }
 
-            if (!response.success())
+            if (!root.path("success").asBoolean())
             {
-                final AgentErrorCode errorCode = AgentErrorCode.fromWireCode(response.errorCode())
+                final AgentErrorCode errorCode = AgentErrorCode.fromWireCode(root.path("errorCode").asText())
                     .orElse(AgentErrorCode.UNKNOWN);
-                final String expectedProtocolVersion = response.data().get("expectedProtocolVersion");
-                final String actualProtocolVersion = response.data().get("actualProtocolVersion");
-                final String protocolDetail = expectedProtocolVersion != null || actualProtocolVersion != null
-                    ? " expectedProtocolVersion=%s actualProtocolVersion=%s"
-                      .formatted(expectedProtocolVersion, actualProtocolVersion)
-                    : "";
+                final String errorMessage = root.path("errorMessage").asText("");
                 throw new IllegalStateException(
-                    "Agent request failed. code=%s message=%s%s"
-                        .formatted(errorCode.wireCode(), response.errorMessage(), protocolDetail)
+                    "Agent request failed. code=%s message=%s".formatted(errorCode.wireCode(), errorMessage)
                 );
             }
 
-            return response;
+            return objectMapper.treeToValue(root, command.responseType());
         }
         catch (IOException exception)
         {
@@ -467,14 +465,6 @@ final class UdsAgentClient implements AutoCloseable
         {
             connectionException.addSuppressed(closeException);
         }
-    }
-
-    private static String getRequiredData(AgentResponse response, String key)
-    {
-        final String value = response.data().get(key);
-        if (value == null)
-            throw new IllegalStateException("Missing response field '%s' from agent.".formatted(key));
-        return value;
     }
 
     private static void sleep(long millis)

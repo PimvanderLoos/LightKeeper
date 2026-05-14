@@ -1,18 +1,18 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
 import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
-import nl.pim16aap2.lightkeeper.protocol.AgentResponse;
-import nl.pim16aap2.lightkeeper.protocol.BlockTypeCommand;
-import nl.pim16aap2.lightkeeper.protocol.ExecuteCommandCommand;
-import nl.pim16aap2.lightkeeper.protocol.GetServerPlatformCommand;
-import nl.pim16aap2.lightkeeper.protocol.GetServerTickCommand;
-import nl.pim16aap2.lightkeeper.protocol.IsChunkLoadedCommand;
-import nl.pim16aap2.lightkeeper.protocol.LoadChunkCommand;
-import nl.pim16aap2.lightkeeper.protocol.MainWorldCommand;
-import nl.pim16aap2.lightkeeper.protocol.NewWorldCommand;
-import nl.pim16aap2.lightkeeper.protocol.SetBlockCommand;
-import nl.pim16aap2.lightkeeper.protocol.UnloadChunkCommand;
-import nl.pim16aap2.lightkeeper.protocol.WaitTicksCommand;
+import nl.pim16aap2.lightkeeper.protocol.AgentProtocolException;
+import nl.pim16aap2.lightkeeper.protocol.BlockType;
+import nl.pim16aap2.lightkeeper.protocol.ExecuteCommand;
+import nl.pim16aap2.lightkeeper.protocol.GetServerPlatform;
+import nl.pim16aap2.lightkeeper.protocol.GetServerTick;
+import nl.pim16aap2.lightkeeper.protocol.IsChunkLoaded;
+import nl.pim16aap2.lightkeeper.protocol.LoadChunk;
+import nl.pim16aap2.lightkeeper.protocol.MainWorld;
+import nl.pim16aap2.lightkeeper.protocol.NewWorld;
+import nl.pim16aap2.lightkeeper.protocol.SetBlock;
+import nl.pim16aap2.lightkeeper.protocol.UnloadChunk;
+import nl.pim16aap2.lightkeeper.protocol.WaitTicks;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -21,7 +21,6 @@ import org.bukkit.WorldType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Locale;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -80,15 +79,15 @@ final class AgentWorldActions
      * @param command
      *     Typed command carrying the request identifier.
      * @return
-     *     Success response containing {@code worldName}.
+     *     Response containing {@code worldName}.
      * @throws Exception
      *     Propagates main-thread execution failures.
      */
-    AgentResponse handleMainWorld(MainWorldCommand command)
+    MainWorld.Response handleMainWorld(MainWorld.Command command)
         throws Exception
     {
         final World mainWorld = mainThreadExecutor.callOnMainThread(() -> Bukkit.getWorlds().getFirst());
-        return AgentResponses.successResponse(command.requestId(), Map.of("worldName", mainWorld.getName()));
+        return new MainWorld.Response(command.requestId(), mainWorld.getName());
     }
 
     /**
@@ -97,11 +96,11 @@ final class AgentWorldActions
      * @param command
      *     Typed command carrying world name, type, environment, and seed.
      * @return
-     *     Success response containing resolved world name.
+     *     Response containing resolved world name.
      * @throws Exception
      *     Propagates main-thread execution failures.
      */
-    AgentResponse handleNewWorld(NewWorldCommand command)
+    NewWorld.Response handleNewWorld(NewWorld.Command command)
         throws Exception
     {
         final String worldName = command.worldName();
@@ -122,7 +121,7 @@ final class AgentWorldActions
             "LK_AGENT: Created/loaded world '%s' (type=%s, environment=%s, seed=%d)."
                 .formatted(world.getName(), worldTypeValue, environmentValue, seed)
         );
-        return AgentResponses.successResponse(command.requestId(), Map.of("worldName", world.getName()));
+        return new NewWorld.Response(command.requestId(), world.getName());
     }
 
     /**
@@ -131,31 +130,25 @@ final class AgentWorldActions
      * @param command
      *     Typed command carrying command source and command string.
      * @return
-     *     Success or validation error response with command execution result.
+     *     Response with command execution result.
      * @throws Exception
      *     Propagates main-thread execution failures.
      */
-    AgentResponse handleExecuteCommand(ExecuteCommandCommand command)
+    ExecuteCommand.Response handleExecuteCommand(ExecuteCommand.Command command)
         throws Exception
     {
         final String source = command.commandSource();
         final String rawCommand = command.command();
 
         if (!source.equalsIgnoreCase("CONSOLE"))
-        {
-            return AgentResponses.errorResponse(
-                command.requestId(),
-                AgentErrorCode.UNSUPPORTED_SOURCE,
-                "Only CONSOLE command source is supported in v1."
-            );
-        }
+            throw new IllegalArgumentException("Only CONSOLE command source is supported in v1.");
 
         final String cmd = rawCommand.startsWith("/") ? rawCommand.substring(1) : rawCommand;
         final Boolean success = mainThreadExecutor.callOnMainThread(() ->
             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd)
         );
 
-        return AgentResponses.successResponse(command.requestId(), Map.of("success", success.toString()));
+        return new ExecuteCommand.Response(command.requestId(), success);
     }
 
     /**
@@ -164,11 +157,11 @@ final class AgentWorldActions
      * @param command
      *     Typed command carrying world name and block coordinates.
      * @return
-     *     Success response containing the resolved block material.
+     *     Response containing the resolved block material.
      * @throws Exception
      *     Propagates main-thread execution failures.
      */
-    AgentResponse handleBlockType(BlockTypeCommand command)
+    BlockType.Response handleBlockType(BlockType.Command command)
         throws Exception
     {
         final String worldName = command.worldName();
@@ -184,7 +177,7 @@ final class AgentWorldActions
             return world.getBlockAt(x, y, z).getType().name();
         });
 
-        return AgentResponses.successResponse(command.requestId(), Map.of("material", materialName));
+        return new BlockType.Response(command.requestId(), materialName);
     }
 
     /**
@@ -193,11 +186,11 @@ final class AgentWorldActions
      * @param command
      *     Typed command carrying world name, block coordinates, and material key.
      * @return
-     *     Success response containing resulting material name, or validation error response.
+     *     Response containing resulting material name.
      * @throws Exception
      *     Propagates validation and main-thread execution failures.
      */
-    AgentResponse handleSetBlock(SetBlockCommand command)
+    SetBlock.Response handleSetBlock(SetBlock.Command command)
         throws Exception
     {
         final String worldName = command.worldName();
@@ -208,13 +201,7 @@ final class AgentWorldActions
 
         final Material material = AgentRequestParsers.parseMaterial(materialKey);
         if (material == null)
-        {
-            return AgentResponses.errorResponse(
-                command.requestId(),
-                AgentErrorCode.INVALID_ARGUMENT,
-                "Unknown material '%s'.".formatted(materialKey)
-            );
-        }
+            throw new IllegalArgumentException("Unknown material '%s'.".formatted(materialKey));
 
         final String setMaterial = mainThreadExecutor.callOnMainThread(() ->
         {
@@ -225,7 +212,7 @@ final class AgentWorldActions
             return world.getBlockAt(x, y, z).getType().name();
         });
 
-        return AgentResponses.successResponse(command.requestId(), Map.of("material", setMaterial));
+        return new SetBlock.Response(command.requestId(), setMaterial);
     }
 
     /**
@@ -234,19 +221,18 @@ final class AgentWorldActions
      * @param command
      *     Typed command carrying the number of ticks to wait.
      * @return
-     *     Success response with start/end tick values, or timeout/interruption/validation error response.
+     *     Response with start/end tick values.
+     * @throws AgentProtocolException
+     *     On invalid arguments, timeout, or interruption.
      */
-    AgentResponse handleWaitTicks(WaitTicksCommand command)
+    WaitTicks.Response handleWaitTicks(WaitTicks.Command command)
     {
         final int ticks = command.ticks();
         if (ticks < 0)
-        {
-            return AgentResponses.errorResponse(
-                command.requestId(),
+            throw new AgentProtocolException(
                 AgentErrorCode.INVALID_ARGUMENT,
                 "Argument 'ticks' must be >= 0."
             );
-        }
 
         final long startTick = tickCounter.get();
         final long targetTick = startTick + ticks;
@@ -254,14 +240,11 @@ final class AgentWorldActions
         while (tickCounter.get() < targetTick)
         {
             if (System.currentTimeMillis() >= deadline)
-            {
-                return AgentResponses.errorResponse(
-                    command.requestId(),
+                throw new AgentProtocolException(
                     AgentErrorCode.TIMEOUT,
                     "Timed out waiting for %d ticks. start=%d current=%d target=%d"
                         .formatted(ticks, startTick, tickCounter.get(), targetTick)
                 );
-            }
 
             try
             {
@@ -271,18 +254,15 @@ final class AgentWorldActions
             catch (InterruptedException exception)
             {
                 Thread.currentThread().interrupt();
-                return AgentResponses.errorResponse(
-                    command.requestId(),
+                throw new AgentProtocolException(
                     AgentErrorCode.INTERRUPTED,
-                    "Interrupted while waiting for ticks."
+                    "Interrupted while waiting for ticks.",
+                    exception
                 );
             }
         }
 
-        return AgentResponses.successResponse(command.requestId(), Map.of(
-            "startTick", Long.toString(startTick),
-            "endTick", Long.toString(tickCounter.get())
-        ));
+        return new WaitTicks.Response(command.requestId(), startTick, tickCounter.get());
     }
 
     /**
@@ -291,11 +271,11 @@ final class AgentWorldActions
      * @param command
      *     Typed command carrying the request identifier.
      * @return
-     *     Success response with current tick counter value.
+     *     Response with current tick counter value.
      */
-    AgentResponse handleGetServerTick(GetServerTickCommand command)
+    GetServerTick.Response handleGetServerTick(GetServerTick.Command command)
     {
-        return AgentResponses.successResponse(command.requestId(), Map.of("tick", Long.toString(tickCounter.get())));
+        return new GetServerTick.Response(command.requestId(), tickCounter.get());
     }
 
     /**
@@ -304,27 +284,26 @@ final class AgentWorldActions
      * @param command
      *     Typed command carrying world name and chunk coordinates.
      * @return
-     *     Success response, or error if the world does not exist.
+     *     Response with whether the chunk was loaded.
      * @throws Exception
      *     Propagates main-thread execution failures.
      */
-    AgentResponse handleLoadChunk(LoadChunkCommand command)
+    LoadChunk.Response handleLoadChunk(LoadChunk.Command command)
         throws Exception
     {
         final String worldName = command.worldName();
         final int x = command.x();
         final int z = command.z();
 
-        mainThreadExecutor.callOnMainThread(() ->
+        final Boolean loaded = mainThreadExecutor.callOnMainThread(() ->
         {
             final World world = Bukkit.getWorld(worldName);
             if (world == null)
                 throw new IllegalArgumentException("World '%s' does not exist.".formatted(worldName));
-            world.loadChunk(x, z, true);
-            return Boolean.TRUE;
+            return world.loadChunk(x, z, true);
         });
 
-        return AgentResponses.successResponse(command.requestId(), Map.of("loaded", "true"));
+        return new LoadChunk.Response(command.requestId(), loaded);
     }
 
     /**
@@ -333,11 +312,11 @@ final class AgentWorldActions
      * @param command
      *     Typed command carrying world name and chunk coordinates.
      * @return
-     *     Success response, or error if the world does not exist.
+     *     Response with whether the chunk was unloaded.
      * @throws Exception
      *     Propagates main-thread execution failures.
      */
-    AgentResponse handleUnloadChunk(UnloadChunkCommand command)
+    UnloadChunk.Response handleUnloadChunk(UnloadChunk.Command command)
         throws Exception
     {
         final String worldName = command.worldName();
@@ -352,7 +331,7 @@ final class AgentWorldActions
             return world.unloadChunk(x, z);
         });
 
-        return AgentResponses.successResponse(command.requestId(), Map.of("unloaded", unloaded.toString()));
+        return new UnloadChunk.Response(command.requestId(), unloaded);
     }
 
     /**
@@ -361,11 +340,11 @@ final class AgentWorldActions
      * @param command
      *     Typed command carrying world name and chunk coordinates.
      * @return
-     *     Success response with {@code loaded} boolean, or error if the world does not exist.
+     *     Response with {@code loaded} boolean.
      * @throws Exception
      *     Propagates main-thread execution failures.
      */
-    AgentResponse handleIsChunkLoaded(IsChunkLoadedCommand command)
+    IsChunkLoaded.Response handleIsChunkLoaded(IsChunkLoaded.Command command)
         throws Exception
     {
         final String worldName = command.worldName();
@@ -380,7 +359,7 @@ final class AgentWorldActions
             return world.isChunkLoaded(x, z);
         });
 
-        return AgentResponses.successResponse(command.requestId(), Map.of("loaded", loaded.toString()));
+        return new IsChunkLoaded.Response(command.requestId(), loaded);
     }
 
     /**
@@ -389,13 +368,10 @@ final class AgentWorldActions
      * @param command
      *     Typed command carrying the request identifier.
      * @return
-     *     Success response containing {@code serverName} and {@code serverVersion}.
+     *     Response containing {@code serverName} and {@code serverVersion}.
      */
-    AgentResponse handleGetServerPlatform(GetServerPlatformCommand command)
+    GetServerPlatform.Response handleGetServerPlatform(GetServerPlatform.Command command)
     {
-        return AgentResponses.successResponse(command.requestId(), Map.of(
-            "serverName", Bukkit.getName(),
-            "serverVersion", Bukkit.getVersion()
-        ));
+        return new GetServerPlatform.Response(command.requestId(), Bukkit.getName(), Bukkit.getVersion());
     }
 }

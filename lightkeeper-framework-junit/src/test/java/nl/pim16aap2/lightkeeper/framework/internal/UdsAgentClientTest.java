@@ -1,8 +1,7 @@
 package nl.pim16aap2.lightkeeper.framework.internal;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import nl.pim16aap2.lightkeeper.protocol.AgentResponse;
-import nl.pim16aap2.lightkeeper.protocol.WaitTicksCommand;
+import nl.pim16aap2.lightkeeper.protocol.WaitTicks;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -18,7 +17,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -33,18 +31,15 @@ class UdsAgentClientTest
     {
         // setup
         final Path socketPath = tempDirectory.resolve("agent-mismatch.sock");
-        try (AgentSocketServer server = AgentSocketServer.start(socketPath, new AgentResponse(
-            "unexpected-request-id",
-            true,
-            null,
-            null,
-            Map.of()
-        )))
+        // Return a success response but with the wrong requestId
+        final String responseJson = "{\"requestId\":\"unexpected-request-id\",\"success\":true,"
+            + "\"startTick\":0,\"endTick\":0}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson))
         {
             final UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3));
 
             // execute + verify
-            assertThatThrownBy(() -> client.send(new WaitTicksCommand("1", 1)))
+            assertThatThrownBy(() -> client.send(new WaitTicks.Command("1", 1)))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Unexpected response id");
             client.close();
@@ -52,65 +47,54 @@ class UdsAgentClientTest
     }
 
     @Test
-    void send_shouldIncludeProtocolVersionDetailsWhenAgentReportsFailure(@TempDir Path tempDirectory)
+    void send_shouldThrowWhenAgentReportsFailure(@TempDir Path tempDirectory)
         throws Exception
     {
         // setup
         final Path socketPath = tempDirectory.resolve("agent-failure.sock");
-        try (AgentSocketServer server = AgentSocketServer.start(socketPath, new AgentResponse(
-            "1",
-            false,
-            "PROTOCOL_MISMATCH",
-            "Protocol mismatch.",
-            Map.of(
-                "expectedProtocolVersion", "7",
-                "actualProtocolVersion", "6"
-            )
-        )))
+        final String responseJson = "{\"requestId\":\"1\",\"success\":false,"
+            + "\"errorCode\":\"PROTOCOL_MISMATCH\",\"errorMessage\":\"Protocol mismatch.\"}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson))
         {
             final UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3));
 
             // execute + verify
-            assertThatThrownBy(() -> client.send(new WaitTicksCommand("1", 1)))
+            assertThatThrownBy(() -> client.send(new WaitTicks.Command("1", 1)))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("code=PROTOCOL_MISMATCH")
-                .hasMessageContaining("expectedProtocolVersion=7")
-                .hasMessageContaining("actualProtocolVersion=6");
+                .hasMessageContaining("code=PROTOCOL_MISMATCH");
             client.close();
         }
     }
 
     private static final class AgentSocketServer implements AutoCloseable
     {
-        private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
         private final ServerSocketChannel serverChannel;
         private final Thread workerThread;
         private final CountDownLatch started = new CountDownLatch(1);
         private final AtomicReference<Throwable> workerFailure = new AtomicReference<>();
         private final Path socketPath;
 
-        private AgentSocketServer(Path socketPath, AgentResponse response)
+        private AgentSocketServer(Path socketPath, String responseJson)
             throws IOException
         {
             this.socketPath = socketPath;
             this.serverChannel = ServerSocketChannel.open(StandardProtocolFamily.UNIX);
             serverChannel.bind(UnixDomainSocketAddress.of(socketPath));
-            this.workerThread = new Thread(() -> serveSingleResponse(response), "uds-agent-client-test-server");
+            this.workerThread = new Thread(() -> serveSingleResponse(responseJson), "uds-agent-client-test-server");
             started.countDown();
             this.workerThread.start();
         }
 
-        private static AgentSocketServer start(Path socketPath, AgentResponse response)
+        private static AgentSocketServer start(Path socketPath, String responseJson)
             throws IOException, InterruptedException
         {
-            final AgentSocketServer server = new AgentSocketServer(socketPath, response);
+            final AgentSocketServer server = new AgentSocketServer(socketPath, responseJson);
             if (!server.started.await(3, TimeUnit.SECONDS))
                 throw new IllegalStateException("Timed out while waiting for test socket server startup.");
             return server;
         }
 
-        private void serveSingleResponse(AgentResponse response)
+        private void serveSingleResponse(String responseJson)
         {
             try (SocketChannel clientChannel = serverChannel.accept();
                  BufferedReader reader = new BufferedReader(
@@ -121,7 +105,7 @@ class UdsAgentClientTest
                 final String requestLine = reader.readLine();
                 if (requestLine == null)
                     return;
-                writer.write(OBJECT_MAPPER.writeValueAsString(response));
+                writer.write(responseJson);
                 writer.newLine();
                 writer.flush();
             }

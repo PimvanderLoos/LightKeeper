@@ -2,10 +2,9 @@ package nl.pim16aap2.lightkeeper.agent.spigot;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import nl.pim16aap2.lightkeeper.nms.api.IBotPlayerNmsAdapter;
-import nl.pim16aap2.lightkeeper.protocol.AgentResponse;
-import nl.pim16aap2.lightkeeper.protocol.ExecutePlayerCommandCommand;
-import nl.pim16aap2.lightkeeper.protocol.LeftClickBlockCommand;
-import nl.pim16aap2.lightkeeper.protocol.RightClickBlockCommand;
+import nl.pim16aap2.lightkeeper.protocol.ExecutePlayerCommand;
+import nl.pim16aap2.lightkeeper.protocol.LeftClickBlock;
+import nl.pim16aap2.lightkeeper.protocol.RightClickBlock;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -39,11 +38,11 @@ class AgentPlayerActionsTest
         final Player player = mock();
         when(player.performCommand("gamemode creative")).thenReturn(true);
         fixture.playerStore().registerSyntheticPlayer(uuid, player);
-        final ExecutePlayerCommandCommand command =
-            new ExecutePlayerCommandCommand("request-cmd", uuid, "/gamemode creative");
+        final ExecutePlayerCommand.Command command =
+            new ExecutePlayerCommand.Command("request-cmd", uuid, "/gamemode creative");
 
         // execute
-        final AgentResponse response;
+        final ExecutePlayerCommand.Response response;
         try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
         {
             bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
@@ -51,6 +50,7 @@ class AgentPlayerActionsTest
         }
 
         // verify
+        assertThat(response.requestId()).isEqualTo("request-cmd");
         assertThat(response.success()).isTrue();
     }
 
@@ -65,11 +65,11 @@ class AgentPlayerActionsTest
         final PluginManager pluginManager = mock();
         final ArgumentCaptor<PlayerInteractEvent> eventCaptor = ArgumentCaptor.forClass(PlayerInteractEvent.class);
         fixture.playerStore().registerSyntheticPlayer(uuid, player);
-        final LeftClickBlockCommand command =
-            new LeftClickBlockCommand("request-click", uuid, 1, 64, 2, "NORTH");
+        final LeftClickBlock.Command command =
+            new LeftClickBlock.Command("request-click", uuid, 1, 64, 2, "NORTH");
 
         // execute
-        final AgentResponse response;
+        final LeftClickBlock.Response response;
         try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
         {
             bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
@@ -78,8 +78,8 @@ class AgentPlayerActionsTest
         }
 
         // verify
-        assertThat(response.success()).isTrue();
-        assertThat(response.data()).containsEntry("cancelled", "false");
+        assertThat(response.requestId()).isEqualTo("request-click");
+        assertThat(response.cancelled()).isFalse();
         verify(pluginManager).callEvent(eventCaptor.capture());
         assertThat(eventCaptor.getValue().getAction()).isEqualTo(Action.LEFT_CLICK_BLOCK);
         assertThat(eventCaptor.getValue().getBlockFace()).isEqualTo(BlockFace.NORTH);
@@ -87,21 +87,18 @@ class AgentPlayerActionsTest
     }
 
     @Test
-    void handleRightClickBlock_shouldReturnErrorWhenBlockFaceIsUnknown()
+    void handleRightClickBlock_shouldThrowWhenBlockFaceIsUnknown()
         throws Exception
     {
         // setup
         final AgentPlayerActions playerActions = createPlayerActions();
-        final RightClickBlockCommand command =
-            new RightClickBlockCommand("request-click", UUID.randomUUID(), 1, 64, 2, "not-a-face");
+        final RightClickBlock.Command command =
+            new RightClickBlock.Command("request-click", UUID.randomUUID(), 1, 64, 2, "not-a-face");
 
-        // execute
-        final AgentResponse response = playerActions.handleRightClickBlock(command);
-
-        // verify
-        assertThat(response.success()).isFalse();
-        assertThat(response.errorCode()).isEqualTo("INVALID_ARGUMENT");
-        assertThat(response.errorMessage()).contains("block face");
+        // execute + verify
+        assertThatThrownBy(() -> playerActions.handleRightClickBlock(command))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("block face");
     }
 
     private static AgentPlayerActions createPlayerActions()

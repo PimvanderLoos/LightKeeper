@@ -1,8 +1,7 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import nl.pim16aap2.lightkeeper.protocol.AgentResponse;
-import nl.pim16aap2.lightkeeper.protocol.ClickMenuSlotCommand;
+import nl.pim16aap2.lightkeeper.protocol.ClickMenuSlot;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.junit.jupiter.api.Test;
 
@@ -14,21 +13,18 @@ import static org.mockito.Mockito.*;
 class AgentMenuActionsTest
 {
     @Test
-    void handleClickMenuSlot_shouldReturnErrorWhenSlotIsNegative()
+    void handleClickMenuSlot_shouldThrowWhenSlotIsNegative()
         throws Exception
     {
         // setup
         final AgentMenuActions menuActions = createMenuActions();
-        final ClickMenuSlotCommand command =
-            new ClickMenuSlotCommand("request-1", UUID.randomUUID(), -1, "LEFT");
+        final ClickMenuSlot.Command command =
+            new ClickMenuSlot.Command("request-1", UUID.randomUUID(), -1);
 
-        // execute
-        final AgentResponse response = menuActions.handleClickMenuSlot(command);
-
-        // verify
-        assertThat(response.success()).isFalse();
-        assertThat(response.errorCode()).isEqualTo("INVALID_ARGUMENT");
-        assertThat(response.errorMessage()).contains("slot");
+        // execute + verify
+        assertThatThrownBy(() -> menuActions.handleClickMenuSlot(command))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("slot");
     }
 
     private static AgentMenuActions createMenuActions()
