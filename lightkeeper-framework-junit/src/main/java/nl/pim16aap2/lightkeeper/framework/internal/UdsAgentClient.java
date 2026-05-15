@@ -352,9 +352,10 @@ final class UdsAgentClient implements AutoCloseable
 
     List<String> getPlayerChatComponents(UUID uuid)
     {
-        final GetPlayerChatComponents.Command command = new GetPlayerChatComponents.Command(nextRequestId(), uuid);
-        send(command);
-        return List.of();
+        throw new UnsupportedOperationException(
+            "getPlayerChatComponents is not implemented because GetPlayerChatComponents.Response does not "
+                + "currently expose any chat component payload."
+        );
     }
 
     String serverPlatform()
