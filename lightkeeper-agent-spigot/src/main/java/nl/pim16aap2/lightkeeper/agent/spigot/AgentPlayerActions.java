@@ -195,10 +195,7 @@ final class AgentPlayerActions
         final Boolean dispatched = mainThreadExecutor.callOnMainThread(() ->
         {
             final Player player = playerStore.getRequiredPlayer(uuid);
-            boolean result = player.performCommand(command);
-            if (!result)
-                result = Bukkit.dispatchCommand(player, command);
-            return result;
+            return player.performCommand(command);
         });
 
         return new ExecutePlayerCommand.Response(req.requestId(), dispatched);
