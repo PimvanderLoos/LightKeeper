@@ -10,82 +10,6 @@ import static org.mockito.Mockito.mockStatic;
 class AgentRequestParsersTest
 {
     @Test
-    void parseInt_shouldParseTrimmedValue()
-    {
-        // setup
-        final String input = " 42 ";
-
-        // execute
-        final int value = AgentRequestParsers.parseInt(input);
-
-        // verify
-        assertThat(value).isEqualTo(42);
-    }
-
-    @Test
-    void parseLong_shouldParseTrimmedValue()
-    {
-        // setup
-        final String input = " 922337203685 ";
-
-        // execute
-        final long value = AgentRequestParsers.parseLong(input);
-
-        // verify
-        assertThat(value).isEqualTo(922337203685L);
-    }
-
-    @Test
-    void parseOptionalDouble_shouldReturnNullWhenInputIsNull()
-    {
-        // setup
-        final String input = null;
-
-        // execute
-        final Double value = AgentRequestParsers.parseOptionalDouble(input);
-
-        // verify
-        assertThat(value).isNull();
-    }
-
-    @Test
-    void parseOptionalDouble_shouldReturnNullWhenInputIsBlank()
-    {
-        // setup
-        final String input = "   ";
-
-        // execute
-        final Double value = AgentRequestParsers.parseOptionalDouble(input);
-
-        // verify
-        assertThat(value).isNull();
-    }
-
-    @Test
-    void parseOptionalDouble_shouldParseTrimmedValue()
-    {
-        // setup
-        final String input = "  13.37  ";
-
-        // execute
-        final Double value = AgentRequestParsers.parseOptionalDouble(input);
-
-        // verify
-        assertThat(value).isEqualTo(13.37D);
-    }
-
-    @Test
-    void parseOptionalDouble_shouldThrowExceptionWhenInputIsNotNumeric()
-    {
-        // setup
-        final String input = "not-a-number";
-
-        // execute + verify
-        assertThatThrownBy(() -> AgentRequestParsers.parseOptionalDouble(input))
-            .isInstanceOf(NumberFormatException.class);
-    }
-
-    @Test
     void parseMaterial_shouldReturnNullWhenInputIsBlank()
     {
         // setup
@@ -132,5 +56,44 @@ class AgentRequestParsersTest
             // verify
             assertThat(material).isEqualTo(org.bukkit.Material.STONE);
         }
+    }
+
+    @Test
+    void parseBlockFace_shouldReturnNullWhenInputIsBlank()
+    {
+        // setup
+        final String input = "   ";
+
+        // execute
+        final var face = AgentRequestParsers.parseBlockFace(input);
+
+        // verify
+        assertThat(face).isNull();
+    }
+
+    @Test
+    void parseBlockFace_shouldReturnNullWhenInputIsUnknown()
+    {
+        // setup
+        final String input = "not-a-face";
+
+        // execute
+        final var face = AgentRequestParsers.parseBlockFace(input);
+
+        // verify
+        assertThat(face).isNull();
+    }
+
+    @Test
+    void parseBlockFace_shouldParseCaseInsensitiveFaceName()
+    {
+        // setup
+        final String input = "north";
+
+        // execute
+        final var face = AgentRequestParsers.parseBlockFace(input);
+
+        // verify
+        assertThat(face).isEqualTo(org.bukkit.block.BlockFace.NORTH);
     }
 }

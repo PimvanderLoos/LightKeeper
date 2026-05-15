@@ -1,4 +1,4 @@
-package nl.pim16aap2.lightkeeper.runtime.agent;
+package nl.pim16aap2.lightkeeper.protocol;
 
 import org.jspecify.annotations.Nullable;
 

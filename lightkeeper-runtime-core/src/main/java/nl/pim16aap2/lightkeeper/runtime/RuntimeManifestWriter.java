@@ -1,6 +1,6 @@
 package nl.pim16aap2.lightkeeper.runtime;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.nio.file.Path;

@@ -1,10 +1,11 @@
 package nl.pim16aap2.lightkeeper.maven;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
@@ -56,8 +57,9 @@ public final class PaperDownloadsClient
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .connectTimeout(Duration.ofSeconds(15))
                 .build(),
-            new ObjectMapper()
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            JsonMapper.builder()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build()
         );
     }
 
@@ -172,11 +174,11 @@ public final class PaperDownloadsClient
     {
         try
         {
-            return objectMapper.readValue(root.traverse(), new TypeReference<>()
+            return objectMapper.treeToValue(root, new TypeReference<>()
             {
             });
         }
-        catch (IOException exception)
+        catch (JacksonException exception)
         {
             throw new MojoExecutionException("Failed to parse Fill builds response.", exception);
         }
@@ -218,11 +220,11 @@ public final class PaperDownloadsClient
             final JsonNode root = objectMapper.readTree(response.body());
             if (root.isObject() && root.has("ok") && !root.path("ok").asBoolean(true))
                 throw new MojoExecutionException(
-                    "Fill API request to '%s' failed: %s".formatted(uri, root.path("message").asText("unknown error"))
+                    "Fill API request to '%s' failed: %s".formatted(uri, root.path("message").asString("unknown error"))
                 );
             return root;
         }
-        catch (JsonProcessingException exception)
+        catch (JacksonException exception)
         {
             throw new MojoExecutionException("Failed to parse Fill API response from '%s'.".formatted(uri), exception);
         }

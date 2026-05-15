@@ -1,10 +1,10 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
-import nl.pim16aap2.lightkeeper.runtime.agent.AgentResponse;
+import nl.pim16aap2.lightkeeper.protocol.GetServerTick;
+import nl.pim16aap2.lightkeeper.protocol.WaitTicks;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.junit.jupiter.api.Test;
 
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.*;
@@ -34,27 +34,20 @@ class AgentWorldActionsTest
         final AgentWorldActions worldActions = createWorldActions(tickCounter);
 
         // execute
-        final AgentResponse response = worldActions.handleGetServerTick("request-1");
+        final GetServerTick.Response response = worldActions.handleGetServerTick(new GetServerTick.Command("request-1"));
 
         // verify
-        assertThat(response.success()).isTrue();
-        assertThat(response.data()).containsEntry("tick", "17");
+        assertThat(response.requestId()).isEqualTo("request-1");
+        assertThat(response.tick()).isEqualTo(17L);
     }
 
     @Test
-    void handleWaitTicks_shouldReturnErrorWhenTicksAreNegative()
+    void handleWaitTicks_shouldThrowWhenTicksAreNegative()
     {
-        // setup
-        final AtomicLong tickCounter = new AtomicLong(3L);
-        final AgentWorldActions worldActions = createWorldActions(tickCounter);
-        final Map<String, String> arguments = Map.of("ticks", "-1");
-
-        // execute
-        final AgentResponse response = worldActions.handleWaitTicks("request-2", arguments);
-
-        // verify
-        assertThat(response.success()).isFalse();
-        assertThat(response.errorCode()).isEqualTo("INVALID_ARGUMENT");
+        // setup + execute + verify
+        assertThatThrownBy(() -> new WaitTicks.Command("request-2", -1))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("ticks");
     }
 
     @Test
@@ -63,15 +56,14 @@ class AgentWorldActionsTest
         // setup
         final AtomicLong tickCounter = new AtomicLong(9L);
         final AgentWorldActions worldActions = createWorldActions(tickCounter);
-        final Map<String, String> arguments = Map.of("ticks", "0");
 
         // execute
-        final AgentResponse response = worldActions.handleWaitTicks("request-3", arguments);
+        final WaitTicks.Response response = worldActions.handleWaitTicks(new WaitTicks.Command("request-3", 0));
 
         // verify
-        assertThat(response.success()).isTrue();
-        assertThat(response.data()).containsEntry("startTick", "9");
-        assertThat(response.data()).containsEntry("endTick", "9");
+        assertThat(response.requestId()).isEqualTo("request-3");
+        assertThat(response.startTick()).isEqualTo(9L);
+        assertThat(response.endTick()).isEqualTo(9L);
     }
 
     private static AgentWorldActions createWorldActions(AtomicLong tickCounter)
