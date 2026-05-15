@@ -1,19 +1,14 @@
 package nl.pim16aap2.lightkeeper.framework.internal;
 
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.DeserializationFeature;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.json.JsonMapper;
 import nl.pim16aap2.lightkeeper.framework.MenuItemSnapshot;
 import nl.pim16aap2.lightkeeper.framework.MenuSnapshot;
 import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.framework.WorldSpec;
 import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
 import nl.pim16aap2.lightkeeper.protocol.BlockType;
-import nl.pim16aap2.lightkeeper.protocol.CommandSource;
-import nl.pim16aap2.lightkeeper.protocol.ClickMenuSlot;
 import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEvents;
+import nl.pim16aap2.lightkeeper.protocol.ClickMenuSlot;
+import nl.pim16aap2.lightkeeper.protocol.CommandSource;
 import nl.pim16aap2.lightkeeper.protocol.CreatePlayer;
 import nl.pim16aap2.lightkeeper.protocol.DragMenuSlots;
 import nl.pim16aap2.lightkeeper.protocol.DropItem;
@@ -21,7 +16,6 @@ import nl.pim16aap2.lightkeeper.protocol.ExecuteCommand;
 import nl.pim16aap2.lightkeeper.protocol.ExecutePlayerCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetCapturedEvents;
 import nl.pim16aap2.lightkeeper.protocol.GetOpenMenu;
-import nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponents;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerInventory;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerMessages;
 import nl.pim16aap2.lightkeeper.protocol.GetServerPlatform;
@@ -44,6 +38,11 @@ import nl.pim16aap2.lightkeeper.protocol.UnloadChunk;
 import nl.pim16aap2.lightkeeper.protocol.UnregisterEventListener;
 import nl.pim16aap2.lightkeeper.protocol.WaitTicks;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -81,7 +80,8 @@ final class UdsAgentClient implements AutoCloseable
 
     private final Path socketPath;
     private final AtomicLong requestCounter = new AtomicLong(0L);
-    private SocketChannel socketChannel;
+
+    private @Nullable SocketChannel socketChannel;
     private BufferedReader reader;
     private BufferedWriter writer;
 
@@ -298,9 +298,8 @@ final class UdsAgentClient implements AutoCloseable
         final GetPlayerInventory.Response response = send(command);
         try
         {
-            @SuppressWarnings("unchecked")
-            final List<Map<String, Object>> items = objectMapper.readValue(response.inventoryJson(), List.class);
-            return items;
+            //noinspection unchecked
+            return objectMapper.readValue(response.inventoryJson(), List.class);
         }
         catch (JacksonException exception)
         {
@@ -327,9 +326,8 @@ final class UdsAgentClient implements AutoCloseable
         final GetCapturedEvents.Response response = send(command);
         try
         {
-            @SuppressWarnings("unchecked")
-            final List<Map<String, String>> events = objectMapper.readValue(response.eventsJson(), List.class);
-            return events;
+            //noinspection unchecked
+            return objectMapper.readValue(response.eventsJson(), List.class);
         }
         catch (JacksonException exception)
         {

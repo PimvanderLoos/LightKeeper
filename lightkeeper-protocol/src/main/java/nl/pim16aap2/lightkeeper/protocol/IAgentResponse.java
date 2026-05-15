@@ -7,7 +7,7 @@ package nl.pim16aap2.lightkeeper.protocol;
  * serializes a successful response by writing the domain record as JSON and injecting a {@code "success": true} field;
  * error responses are written as {@code {"requestId":"...","success":false,"errorCode":"...","errorMessage":"..."}}.
  *
- * <p>Client side: read the response {@link com.fasterxml.jackson.databind.JsonNode}, check {@code success}, then
+ * <p>Client side: read the response {@link tools.jackson.databind.JsonNode}, check {@code success}, then
  * deserialize via {@code objectMapper.treeToValue(root, command.responseType())}.
  */
 public sealed interface IAgentResponse
