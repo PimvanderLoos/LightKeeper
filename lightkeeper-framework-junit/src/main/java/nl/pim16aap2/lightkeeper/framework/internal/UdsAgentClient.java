@@ -1,7 +1,9 @@
 package nl.pim16aap2.lightkeeper.framework.internal;
 
+import nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot;
 import nl.pim16aap2.lightkeeper.framework.MenuItemSnapshot;
 import nl.pim16aap2.lightkeeper.framework.MenuSnapshot;
+import nl.pim16aap2.lightkeeper.framework.Platform;
 import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.framework.WorldSpec;
 import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
@@ -16,6 +18,7 @@ import nl.pim16aap2.lightkeeper.protocol.ExecuteCommand;
 import nl.pim16aap2.lightkeeper.protocol.ExecutePlayerCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetCapturedEvents;
 import nl.pim16aap2.lightkeeper.protocol.GetOpenMenu;
+import nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponents;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerInventory;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerMessages;
 import nl.pim16aap2.lightkeeper.protocol.GetServerPlatform;
@@ -39,6 +42,7 @@ import nl.pim16aap2.lightkeeper.protocol.UnregisterEventListener;
 import nl.pim16aap2.lightkeeper.protocol.WaitTicks;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -51,6 +55,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.StandardProtocolFamily;
 import java.net.UnixDomainSocketAddress;
+import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.Channels;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
@@ -61,6 +66,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -74,9 +83,32 @@ final class UdsAgentClient implements AutoCloseable
 {
     private static final System.Logger LOG = System.getLogger(UdsAgentClient.class.getName());
 
+    private static final TypeReference<List<Map<String, String>>> TYPE_EVENT_DATA_LIST =
+        new TypeReference<>() {};
+    private static final TypeReference<List<Map<String, Object>>> TYPE_INVENTORY_ITEM_LIST =
+        new TypeReference<>() {};
+
+    /**
+     * Maximum time to wait for a single agent response. Matches the agent-side WAIT_TICKS_TIMEOUT_MILLIS
+     * so WAIT_TICKS is the longest action that can legitimately take close to this limit.
+     *
+     * <p>Unix Domain Sockets do not support SO_TIMEOUT, so the timeout is enforced by a watchdog that
+     * closes the channel directly; this causes {@link AsynchronousCloseException} on the blocked read.
+     */
+    private static final int SEND_TIMEOUT_MS = 120_000;
+
     private final ObjectMapper objectMapper = JsonMapper.builder()
         .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
         .build();
+
+    /**
+     * Single-thread watchdog executor that closes the socket channel when a read takes longer than
+     * {@link #SEND_TIMEOUT_MS}. Closing the channel directly (not via {@link #close()}) avoids deadlock
+     * with the {@code synchronized} monitor held by {@link #send}.
+     */
+    private final ScheduledExecutorService readTimeoutWatchdog = Executors.newSingleThreadScheduledExecutor(
+        Thread.ofPlatform().name("lk-read-timeout-watchdog").daemon(true).factory()
+    );
 
     private final Path socketPath;
     private final AtomicLong requestCounter = new AtomicLong(0L);
@@ -261,28 +293,45 @@ final class UdsAgentClient implements AutoCloseable
         return send(command).messages();
     }
 
+    List<ChatComponentSnapshot> playerChatComponents(UUID uuid)
+    {
+        final GetPlayerChatComponents.Command command =
+            new GetPlayerChatComponents.Command(nextRequestId(), uuid);
+        final GetPlayerChatComponents.Response response = send(command);
+        try
+        {
+            return java.util.Arrays.stream(objectMapper.readValue(response.componentsJson(), String[].class))
+                .map(ChatComponentSnapshot::new)
+                .toList();
+        }
+        catch (JacksonException exception)
+        {
+            throw new IllegalStateException("Failed to parse player chat components JSON.", exception);
+        }
+    }
+
     long getServerTick()
     {
         final GetServerTick.Command command = new GetServerTick.Command(nextRequestId());
         return send(command).tick();
     }
 
-    void teleportPlayer(UUID uuid, String worldName, double x, double y, double z)
+    boolean teleportPlayer(UUID uuid, String worldName, double x, double y, double z)
     {
         final TeleportPlayer.Command command = new TeleportPlayer.Command(nextRequestId(), uuid, worldName, x, y, z);
-        send(command);
+        return send(command).teleported();
     }
 
-    void loadChunk(String worldName, int x, int z)
+    boolean loadChunk(String worldName, int x, int z)
     {
         final LoadChunk.Command command = new LoadChunk.Command(nextRequestId(), worldName, x, z);
-        send(command);
+        return send(command).loaded();
     }
 
-    void unloadChunk(String worldName, int x, int z)
+    boolean unloadChunk(String worldName, int x, int z)
     {
         final UnloadChunk.Command command = new UnloadChunk.Command(nextRequestId(), worldName, x, z);
-        send(command);
+        return send(command).unloaded();
     }
 
     boolean isChunkLoaded(String worldName, int x, int z)
@@ -295,15 +344,7 @@ final class UdsAgentClient implements AutoCloseable
     {
         final GetPlayerInventory.Command command = new GetPlayerInventory.Command(nextRequestId(), uuid);
         final GetPlayerInventory.Response response = send(command);
-        try
-        {
-            //noinspection unchecked
-            return objectMapper.readValue(response.inventoryJson(), List.class);
-        }
-        catch (JacksonException exception)
-        {
-            throw new IllegalStateException("Failed to parse player inventory JSON.", exception);
-        }
+        return parseJson(response.inventoryJson(), "inventoryJson", TYPE_INVENTORY_ITEM_LIST);
     }
 
     boolean dropItem(UUID uuid)
@@ -323,15 +364,7 @@ final class UdsAgentClient implements AutoCloseable
     {
         final GetCapturedEvents.Command command = new GetCapturedEvents.Command(nextRequestId(), eventClassName);
         final GetCapturedEvents.Response response = send(command);
-        try
-        {
-            //noinspection unchecked
-            return objectMapper.readValue(response.eventsJson(), List.class);
-        }
-        catch (JacksonException exception)
-        {
-            throw new IllegalStateException("Failed to parse captured events JSON.", exception);
-        }
+        return parseJson(response.eventsJson(), "eventsJson", TYPE_EVENT_DATA_LIST);
     }
 
     void clearCapturedEvents(String eventClassName)
@@ -347,18 +380,17 @@ final class UdsAgentClient implements AutoCloseable
         send(command);
     }
 
-    List<String> getPlayerChatComponents(UUID uuid)
-    {
-        throw new UnsupportedOperationException(
-            "getPlayerChatComponents is not implemented because GetPlayerChatComponents.Response does not "
-                + "currently expose any chat component payload."
-        );
-    }
-
-    String serverPlatform()
+    Platform serverPlatform()
     {
         final GetServerPlatform.Command command = new GetServerPlatform.Command(nextRequestId());
-        return send(command).serverName();
+        final GetServerPlatform.Response response = send(command);
+        final String platformName = (response.serverName() + " " + response.serverVersion())
+            .toLowerCase(java.util.Locale.ROOT);
+        if (platformName.contains("paper"))
+            return Platform.PAPER;
+        if (platformName.contains("spigot") || platformName.contains("craftbukkit"))
+            return Platform.SPIGOT;
+        return Platform.UNKNOWN;
     }
 
     synchronized <R extends IAgentResponse> R send(IAgentCommand<R> command)
@@ -367,6 +399,25 @@ final class UdsAgentClient implements AutoCloseable
             throw new IllegalArgumentException("'requestId' must be non-blank.");
         final BufferedWriter out = Objects.requireNonNull(writer, "Client is not connected.");
         final BufferedReader in = Objects.requireNonNull(reader, "Client is not connected.");
+
+        // Capture the channel reference before the read; the watchdog closes it directly to avoid
+        // deadlocking on this synchronized method's monitor.
+        final SocketChannel channelSnapshot = this.socketChannel;
+        final ScheduledFuture<?> watchdog = readTimeoutWatchdog.schedule(() ->
+        {
+            if (channelSnapshot != null)
+            {
+                try
+                {
+                    channelSnapshot.close();
+                }
+                catch (IOException ignored)
+                {
+                    // Best-effort: the channel may already be closed.
+                }
+            }
+        }, SEND_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+
         try
         {
             out.write(objectMapper.writeValueAsString(command));
@@ -401,12 +452,24 @@ final class UdsAgentClient implements AutoCloseable
 
             return objectMapper.treeToValue(root, command.responseType());
         }
+        catch (AsynchronousCloseException exception)
+        {
+            throw new IllegalStateException(
+                "Agent did not respond within %d ms for action '%s' via socket '%s'."
+                    .formatted(SEND_TIMEOUT_MS, command.getClass().getSimpleName(), socketPath),
+                exception
+            );
+        }
         catch (IOException exception)
         {
             throw new IllegalStateException(
                 "Failed to communicate with agent via socket '%s'.".formatted(socketPath),
                 exception
             );
+        }
+        finally
+        {
+            watchdog.cancel(false);
         }
     }
 
@@ -486,6 +549,34 @@ final class UdsAgentClient implements AutoCloseable
         catch (IOException closeException)
         {
             connectionException.addSuppressed(closeException);
+        }
+    }
+
+    /**
+     * Deserializes a protocol response's JSON field using the supplied type reference.
+     *
+     * @param json
+     *     JSON value to deserialize.
+     * @param key
+     *     Response field name used in failure diagnostics.
+     * @param typeRef
+     *     Jackson type reference for deserialization.
+     * @param <T>
+     *     Expected return type.
+     * @return
+     *     Deserialized value.
+     * @throws IllegalStateException
+     *     When deserialization fails.
+     */
+    private <T> T parseJson(String json, String key, TypeReference<T> typeRef)
+    {
+        try
+        {
+            return objectMapper.readValue(json, typeRef);
+        }
+        catch (JacksonException exception)
+        {
+            throw new IllegalStateException("Failed to parse '%s' JSON from agent response.".formatted(key), exception);
         }
     }
 

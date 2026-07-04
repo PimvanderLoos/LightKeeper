@@ -135,7 +135,7 @@ class LightkeeperBotIT
         final MenuHandle noLongerOpenMenu = builtPlayer.getMenu();
         explicitPlayer.placeBlock("STONE", 2, 100, 0);
         framework.waitUntil(
-            () -> "STONE".equals(buildWorldResult.blockTypeAt(new Vector3Di(2, 100, 0))),
+            () -> "minecraft:stone".equals(buildWorldResult.blockTypeAt(new Vector3Di(2, 100, 0))),
             Duration.ofSeconds(20)
         );
 

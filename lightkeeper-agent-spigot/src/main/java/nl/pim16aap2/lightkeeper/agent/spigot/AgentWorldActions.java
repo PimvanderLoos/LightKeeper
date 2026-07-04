@@ -109,6 +109,9 @@ final class AgentWorldActions
         final String environmentValue = command.environment();
         final long seed = command.seed();
 
+        if (worldName.isBlank())
+            throw new IllegalArgumentException("Argument 'worldName' must not be blank.");
+
         final World world = mainThreadExecutor.callOnMainThread(() ->
         {
             final WorldCreator worldCreator = new WorldCreator(worldName);
@@ -142,6 +145,9 @@ final class AgentWorldActions
             throw new IllegalArgumentException("Only CONSOLE command source is supported in v1.");
 
         final String rawCommand = req.command();
+        if (rawCommand.isBlank())
+            throw new IllegalArgumentException("Argument 'command' must not be blank.");
+
         final String command = rawCommand.startsWith("/") ? rawCommand.substring(1) : rawCommand;
         final Boolean dispatched = mainThreadExecutor.callOnMainThread(() ->
             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command)
@@ -173,7 +179,7 @@ final class AgentWorldActions
             final World world = Bukkit.getWorld(worldName);
             if (world == null)
                 throw new IllegalArgumentException("World '%s' does not exist.".formatted(worldName));
-            return world.getBlockAt(x, y, z).getType().name();
+            return world.getBlockAt(x, y, z).getType().getKey().toString();
         });
 
         return new BlockType.Response(command.requestId(), materialName);
@@ -272,7 +278,7 @@ final class AgentWorldActions
     }
 
     /**
-     * Handles {@code LOAD_CHUNK} by force-loading the chunk at the given chunk coordinates.
+     * Handles {@code LOAD_CHUNK} by loading (and generating if absent) the chunk at the given chunk coordinates.
      *
      * @param command
      *     Typed command carrying world name and chunk coordinates.
@@ -356,7 +362,7 @@ final class AgentWorldActions
     }
 
     /**
-     * Handles {@code GET_SERVER_PLATFORM} by returning the server implementation name and version.
+     * Handles {@code GET_SERVER_PLATFORM} by classifying the running server as PAPER, SPIGOT, or UNKNOWN.
      *
      * @param command
      *     Typed command carrying the request identifier.

@@ -37,7 +37,7 @@
  *       {@code CLICK_MENU_SLOT}.</li>
  *   <li>Dispatcher calls the appropriate action handler, which executes server mutations on the Bukkit main thread.
  *   </li>
- *   <li>Handler returns an {@code AgentResponse} containing success/error status and response data.</li>
+ *   <li>Handler returns the command's typed response record.</li>
  * </ol>
  *
  * <p>The package is intentionally self-contained: all protocol handling, validation, dispatch, execution, and

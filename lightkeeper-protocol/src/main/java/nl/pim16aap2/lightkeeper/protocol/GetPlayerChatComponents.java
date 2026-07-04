@@ -36,8 +36,13 @@ public final class GetPlayerChatComponents
      *
      * @param requestId
      *     Correlated request id.
+     * @param componentsJson
+     *     JSON array containing the accumulated chat component payloads.
      */
-    public record Response(String requestId) implements IAgentResponse
+    public record Response(
+        String requestId,
+        String componentsJson
+    ) implements IAgentResponse
     {
     }
 }

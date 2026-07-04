@@ -1,5 +1,7 @@
 package nl.pim16aap2.lightkeeper.framework.internal;
 
+import nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot;
+import nl.pim16aap2.lightkeeper.framework.Platform;
 import nl.pim16aap2.lightkeeper.protocol.CommandSource;
 import nl.pim16aap2.lightkeeper.protocol.WaitTicks;
 import org.junit.jupiter.api.Test;
@@ -30,6 +32,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class UdsAgentClientTest
 {
+    private static final UUID PLAYER_ID =
+        UUID.fromString("6efa93e0-6b5f-45b7-8af8-2453c9c7ef0c");
+
     @Test
     void send_shouldThrowExceptionWhenResponseIdDoesNotMatch(@TempDir Path tempDirectory)
         throws Exception
@@ -204,7 +209,7 @@ class UdsAgentClientTest
     }
 
     @Test
-    void serverPlatform_shouldReturnServerNameFromResponse(@TempDir Path tempDirectory)
+    void serverPlatform_shouldMapPaperServerNameToPaper(@TempDir Path tempDirectory)
         throws Exception
     {
         // setup
@@ -215,10 +220,10 @@ class UdsAgentClientTest
              UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
         {
             // execute
-            final String platform = client.serverPlatform();
+            final Platform platform = client.serverPlatform();
 
             // verify
-            assertThat(platform).isEqualTo("Paper");
+            assertThat(platform).isEqualTo(Platform.PAPER);
             assertThat(server.capturedRequest()).contains("\"action\":\"GET_SERVER_PLATFORM\"");
         }
     }
@@ -274,9 +279,10 @@ class UdsAgentClientTest
              UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
         {
             // execute
-            client.teleportPlayer(UUID.randomUUID(), "world", 1.0, 64.0, 1.0);
+            final boolean teleported = client.teleportPlayer(UUID.randomUUID(), "world", 1.0, 64.0, 1.0);
 
             // verify
+            assertThat(teleported).isTrue();
             assertThat(server.capturedRequest()).contains("\"action\":\"TELEPORT_PLAYER\"");
         }
     }
@@ -292,9 +298,10 @@ class UdsAgentClientTest
              UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
         {
             // execute
-            client.loadChunk("world", 0, 0);
+            final boolean loaded = client.loadChunk("world", 0, 0);
 
             // verify
+            assertThat(loaded).isTrue();
             assertThat(server.capturedRequest()).contains("\"action\":\"LOAD_CHUNK\"");
         }
     }
@@ -310,9 +317,10 @@ class UdsAgentClientTest
              UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
         {
             // execute
-            client.unloadChunk("world", 0, 0);
+            final boolean unloaded = client.unloadChunk("world", 0, 0);
 
             // verify
+            assertThat(unloaded).isTrue();
             assertThat(server.capturedRequest()).contains("\"action\":\"UNLOAD_CHUNK\"");
         }
     }
@@ -400,6 +408,28 @@ class UdsAgentClientTest
         }
     }
 
+    @Test
+    void playerChatComponents_shouldParseComponentSnapshots(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("agent-components.sock");
+        final String responseJson =
+            "{\"requestId\":\"1\",\"success\":true,"
+                + "\"componentsJson\":\"[\\\"{\\\\\\\"text\\\\\\\":\\\\\\\"Hi\\\\\\\"}\\\"]\"}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            final List<ChatComponentSnapshot> result = client.playerChatComponents(PLAYER_ID);
+
+            // verify
+            assertThat(result).extracting(ChatComponentSnapshot::json)
+                .containsExactly("{\"text\":\"Hi\"}");
+            assertThat(server.capturedRequest()).contains("\"action\":\"GET_PLAYER_CHAT_COMPONENTS\"");
+        }
+    }
+
     private static final class AgentSocketServer implements AutoCloseable
     {
         private final ServerSocketChannel serverChannel;
@@ -467,5 +497,6 @@ class UdsAgentClientTest
                 throw new IllegalStateException("Socket server worker failed.", failure);
             Files.deleteIfExists(socketPath);
         }
+
     }
 }

@@ -1,23 +1,17 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
 import nl.pim16aap2.lightkeeper.nms.api.IBotPlayerNmsAdapter;
-import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
-import nl.pim16aap2.lightkeeper.protocol.AgentProtocolException;
-import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEvents;
 import nl.pim16aap2.lightkeeper.protocol.CreatePlayer;
 import nl.pim16aap2.lightkeeper.protocol.DropItem;
 import nl.pim16aap2.lightkeeper.protocol.ExecutePlayerCommand;
-import nl.pim16aap2.lightkeeper.protocol.GetCapturedEvents;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponents;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerInventory;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerMessages;
 import nl.pim16aap2.lightkeeper.protocol.LeftClickBlock;
 import nl.pim16aap2.lightkeeper.protocol.PlacePlayerBlock;
-import nl.pim16aap2.lightkeeper.protocol.RegisterEventListener;
 import nl.pim16aap2.lightkeeper.protocol.RemovePlayer;
 import nl.pim16aap2.lightkeeper.protocol.RightClickBlock;
 import nl.pim16aap2.lightkeeper.protocol.TeleportPlayer;
-import nl.pim16aap2.lightkeeper.protocol.UnregisterEventListener;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -297,21 +291,26 @@ final class AgentPlayerActions
     }
 
     /**
-     * Handles {@code GET_PLAYER_CHAT_COMPONENTS} — not yet implemented in this build.
+     * Handles {@code GET_PLAYER_CHAT_COMPONENTS} by returning accumulated component JSON payloads.
      *
      * @param command
      *     Typed command carrying the player UUID.
-     * @return Never returns normally; always throws.
-     *
-     * @throws AgentProtocolException
-     *     Always, since this action is not yet implemented.
+     * @return Response containing the serialized chat components.
+     * @throws Exception
+     *     Propagates main-thread execution and serialization failures.
      */
     GetPlayerChatComponents.Response handleGetPlayerChatComponents(GetPlayerChatComponents.Command command)
+        throws Exception
     {
-        throw new AgentProtocolException(
-            AgentErrorCode.REQUEST_FAILED,
-            "GET_PLAYER_CHAT_COMPONENTS is not yet implemented in this build."
-        );
+        final UUID uuid = command.uuid();
+        final String componentsJson = mainThreadExecutor.callOnMainThread(() ->
+        {
+            playerStore.getRequiredPlayer(uuid);
+            playerStore.capturePlayerChatComponents(botPlayerNmsAdapter, uuid);
+            return objectMapper.writeValueAsString(playerStore.getPlayerChatComponents(uuid));
+        });
+
+        return new GetPlayerChatComponents.Response(command.requestId(), componentsJson);
     }
 
     /**
@@ -337,6 +336,31 @@ final class AgentPlayerActions
         return new GetPlayerInventory.Response(command.requestId(), inventoryJson);
     }
 
+    private static List<Map<String, Object>> buildInventoryItems(ItemStack... contents)
+    {
+        final List<Map<String, Object>> items = new ArrayList<>();
+        for (int i = 0; i < contents.length; i++)
+        {
+            final ItemStack item = contents[i];
+            if (item == null || AgentMaterials.isAir(item.getType()))
+                continue;
+
+            final Map<String, Object> itemData = new HashMap<>();
+            itemData.put("slot", i);
+            itemData.put("materialKey", item.getType().getKey().toString());
+            final String displayName = item.getItemMeta() == null ? null : item.getItemMeta().getDisplayName();
+            itemData.put("displayName", displayName);
+            itemData.put(
+                "lore",
+                item.getItemMeta() == null
+                    ? List.of()
+                    : Objects.requireNonNullElse(item.getItemMeta().getLore(), List.of())
+            );
+            items.add(itemData);
+        }
+        return items;
+    }
+
     /**
      * Handles {@code DROP_ITEM} by dropping the player's main-hand item into the world.
      *
@@ -358,7 +382,7 @@ final class AgentPlayerActions
         {
             final Player player = playerStore.getRequiredPlayer(uuid);
             final ItemStack item = player.getInventory().getItemInMainHand();
-            if (item.getType().isAir())
+            if (item == null || AgentMaterials.isAir(item.getType()))
                 return Boolean.FALSE;
 
             final ItemStack singleItem = item.clone();
@@ -410,6 +434,9 @@ final class AgentPlayerActions
         final double y = command.y();
         final double z = command.z();
 
+        if (worldName.isBlank())
+            throw new IllegalArgumentException("Argument 'worldName' must not be blank.");
+
         final Boolean teleported = mainThreadExecutor.callOnMainThread(() ->
         {
             final Player player = playerStore.getRequiredPlayer(uuid);
@@ -420,78 +447,6 @@ final class AgentPlayerActions
         });
 
         return new TeleportPlayer.Response(command.requestId(), teleported);
-    }
-
-    /**
-     * Handles {@code REGISTER_EVENT_LISTENER} — not yet implemented in this build.
-     *
-     * @param command
-     *     Typed command carrying the event class name.
-     * @return Never returns normally; always throws.
-     *
-     * @throws AgentProtocolException
-     *     Always, since this action is not yet implemented.
-     */
-    RegisterEventListener.Response handleRegisterEventListener(RegisterEventListener.Command command)
-    {
-        throw new AgentProtocolException(
-            AgentErrorCode.REQUEST_FAILED,
-            "REGISTER_EVENT_LISTENER is not yet implemented in this build."
-        );
-    }
-
-    /**
-     * Handles {@code GET_CAPTURED_EVENTS} — not yet implemented in this build.
-     *
-     * @param command
-     *     Typed command carrying the event class name.
-     * @return Never returns normally; always throws.
-     *
-     * @throws AgentProtocolException
-     *     Always, since this action is not yet implemented.
-     */
-    GetCapturedEvents.Response handleGetCapturedEvents(GetCapturedEvents.Command command)
-    {
-        throw new AgentProtocolException(
-            AgentErrorCode.REQUEST_FAILED,
-            "GET_CAPTURED_EVENTS is not yet implemented in this build."
-        );
-    }
-
-    /**
-     * Handles {@code CLEAR_CAPTURED_EVENTS} — not yet implemented in this build.
-     *
-     * @param command
-     *     Typed command carrying the event class name.
-     * @return Never returns normally; always throws.
-     *
-     * @throws AgentProtocolException
-     *     Always, since this action is not yet implemented.
-     */
-    ClearCapturedEvents.Response handleClearCapturedEvents(ClearCapturedEvents.Command command)
-    {
-        throw new AgentProtocolException(
-            AgentErrorCode.REQUEST_FAILED,
-            "CLEAR_CAPTURED_EVENTS is not yet implemented in this build."
-        );
-    }
-
-    /**
-     * Handles {@code UNREGISTER_EVENT_LISTENER} — not yet implemented in this build.
-     *
-     * @param command
-     *     Typed command carrying the event class name.
-     * @return Never returns normally; always throws.
-     *
-     * @throws AgentProtocolException
-     *     Always, since this action is not yet implemented.
-     */
-    UnregisterEventListener.Response handleUnregisterEventListener(UnregisterEventListener.Command command)
-    {
-        throw new AgentProtocolException(
-            AgentErrorCode.REQUEST_FAILED,
-            "UNREGISTER_EVENT_LISTENER is not yet implemented in this build."
-        );
     }
 
     /**
@@ -566,30 +521,5 @@ final class AgentPlayerActions
             Bukkit.getPluginManager().callEvent(event);
             return event.isCancelled();
         });
-    }
-
-    private static List<Map<String, Object>> buildInventoryItems(ItemStack... contents)
-    {
-        final List<Map<String, Object>> items = new ArrayList<>();
-        for (int i = 0; i < contents.length; i++)
-        {
-            final ItemStack item = contents[i];
-            if (item == null || item.getType().isAir())
-                continue;
-
-            final Map<String, Object> itemData = new HashMap<>();
-            itemData.put("slot", i);
-            itemData.put("materialKey", item.getType().getKey().toString());
-            final String displayName = item.getItemMeta() == null ? null : item.getItemMeta().getDisplayName();
-            itemData.put("displayName", displayName);
-            itemData.put(
-                "lore",
-                item.getItemMeta() == null
-                    ? List.of()
-                    : Objects.requireNonNullElse(item.getItemMeta().getLore(), List.of())
-            );
-            items.add(itemData);
-        }
-        return items;
     }
 }

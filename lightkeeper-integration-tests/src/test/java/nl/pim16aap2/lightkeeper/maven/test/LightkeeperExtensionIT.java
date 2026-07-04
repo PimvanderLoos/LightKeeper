@@ -33,7 +33,7 @@ class LightkeeperExtensionIT
         // execute
         final var world = framework.newWorld();
         world.setBlockAt(position, "STONE");
-        framework.waitUntil(() -> "STONE".equals(world.blockTypeAt(position)), Duration.ofSeconds(20));
+        framework.waitUntil(() -> "minecraft:stone".equals(world.blockTypeAt(position)), Duration.ofSeconds(20));
 
         // verify
         assertThat(world.name())

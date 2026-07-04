@@ -67,6 +67,11 @@ final class AgentRequestDispatcher
      */
     private final AgentMenuActions menuActions;
     /**
+     * Handler for dynamic Bukkit event capture.
+     */
+    private final AgentEventActions eventActions;
+
+    /**
      * Plugin logger used for operational diagnostics.
      */
     private final java.util.logging.Logger logger;
@@ -93,33 +98,29 @@ final class AgentRequestDispatcher
      *     Player action handler.
      * @param menuActions
      *     Menu action handler.
-     * @param logger
-     *     Logger for request and error diagnostics.
-     * @param authToken
-     *     Expected handshake token.
-     * @param protocolVersion
-     *     Expected protocol version.
-     * @param expectedAgentSha256
-     *     Optional expected agent artifact hash.
+     * @param eventActions
+     *     Event capture action handler.
+     * @param config
+     *     Immutable dispatcher configuration (auth, protocol, SHA, logger).
      */
     AgentRequestDispatcher(
         ObjectMapper objectMapper,
         AgentWorldActions worldActions,
         AgentPlayerActions playerActions,
         AgentMenuActions menuActions,
-        java.util.logging.Logger logger,
-        String authToken,
-        int protocolVersion,
-        String expectedAgentSha256)
+        AgentEventActions eventActions,
+        Config config)
     {
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper");
         this.worldActions = Objects.requireNonNull(worldActions, "worldActions");
         this.playerActions = Objects.requireNonNull(playerActions, "playerActions");
         this.menuActions = Objects.requireNonNull(menuActions, "menuActions");
-        this.logger = Objects.requireNonNull(logger, "logger");
-        this.authToken = Objects.requireNonNull(authToken, "authToken");
-        this.protocolVersion = protocolVersion;
-        this.expectedAgentSha256 = Objects.requireNonNull(expectedAgentSha256, "expectedAgentSha256");
+        this.eventActions = Objects.requireNonNull(eventActions, "eventActions");
+        Objects.requireNonNull(config, "config");
+        this.logger = config.logger();
+        this.authToken = config.authToken();
+        this.protocolVersion = config.protocolVersion();
+        this.expectedAgentSha256 = config.expectedAgentSha256();
     }
 
     /**
@@ -225,10 +226,10 @@ final class AgentRequestDispatcher
                 case IsChunkLoaded.Command c -> worldActions.handleIsChunkLoaded(c);
                 case GetPlayerInventory.Command c -> playerActions.handleGetPlayerInventory(c);
                 case DropItem.Command c -> playerActions.handleDropItem(c);
-                case RegisterEventListener.Command c -> playerActions.handleRegisterEventListener(c);
-                case GetCapturedEvents.Command c -> playerActions.handleGetCapturedEvents(c);
-                case ClearCapturedEvents.Command c -> playerActions.handleClearCapturedEvents(c);
-                case UnregisterEventListener.Command c -> playerActions.handleUnregisterEventListener(c);
+                case RegisterEventListener.Command c -> eventActions.handleRegisterEventListener(c);
+                case GetCapturedEvents.Command c -> eventActions.handleGetCapturedEvents(c);
+                case ClearCapturedEvents.Command c -> eventActions.handleClearCapturedEvents(c);
+                case UnregisterEventListener.Command c -> eventActions.handleUnregisterEventListener(c);
                 case GetPlayerChatComponents.Command c -> playerActions.handleGetPlayerChatComponents(c);
                 case GetServerPlatform.Command c -> worldActions.handleGetServerPlatform(c);
                 case Handshake.Command ignored ->
@@ -244,6 +245,15 @@ final class AgentRequestDispatcher
                 exception.errorCode(),
                 Objects.requireNonNullElse(exception.getMessage(), exception.getClass().getName()),
                 handshakeCompleted);
+        }
+        catch (IllegalArgumentException exception)
+        {
+            return buildErrorResult(
+                requestId,
+                AgentErrorCode.INVALID_ARGUMENT,
+                Objects.requireNonNullElse(exception.getMessage(), exception.getClass().getName()),
+                handshakeCompleted
+            );
         }
         catch (Exception exception)
         {
@@ -379,5 +389,27 @@ final class AgentRequestDispatcher
      */
     record RequestDispatchResult(String responseJson, boolean handshakeCompleted)
     {
+    }
+
+    /**
+     * Immutable configuration block for the dispatcher.
+     *
+     * @param authToken
+     *     Expected handshake token.
+     * @param protocolVersion
+     *     Expected runtime protocol version.
+     * @param expectedAgentSha256
+     *     Optional expected agent artifact SHA-256 hash; blank disables the check.
+     * @param logger
+     *     Logger for request and error diagnostics.
+     */
+    record Config(String authToken, int protocolVersion, String expectedAgentSha256, java.util.logging.Logger logger)
+    {
+        Config
+        {
+            Objects.requireNonNull(authToken, "authToken");
+            Objects.requireNonNull(expectedAgentSha256, "expectedAgentSha256");
+            Objects.requireNonNull(logger, "logger");
+        }
     }
 }
