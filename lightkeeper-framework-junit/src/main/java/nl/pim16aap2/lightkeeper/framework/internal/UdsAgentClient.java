@@ -44,6 +44,8 @@ import nl.pim16aap2.lightkeeper.protocol.UnregisterEventListenerCommand;
 import nl.pim16aap2.lightkeeper.protocol.WaitTicksCommand;
 import org.jspecify.annotations.Nullable;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -51,6 +53,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.StandardProtocolFamily;
 import java.net.UnixDomainSocketAddress;
+import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.Channels;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
@@ -61,6 +64,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -70,8 +77,38 @@ final class UdsAgentClient implements AutoCloseable
 {
     private static final System.Logger LOG = System.getLogger(UdsAgentClient.class.getName());
 
+    // Reusable TypeReference constants. Jackson captures the generic type at runtime via
+    // getGenericSuperclass(), which is preserved even when using the diamond operator on these
+    // explicit-target-type field declarations (Java 9+ behaviour).
+    private static final TypeReference<MenuItemSnapshot[]> TYPE_MENU_ITEM_ARRAY =
+        new TypeReference<>() {};
+    private static final TypeReference<String[]> TYPE_STRING_ARRAY =
+        new TypeReference<>() {};
+    private static final TypeReference<List<Map<String, String>>> TYPE_EVENT_DATA_LIST =
+        new TypeReference<>() {};
+    private static final TypeReference<List<Map<String, Object>>> TYPE_INVENTORY_ITEM_LIST =
+        new TypeReference<>() {};
+
+    /**
+     * Maximum time to wait for a single agent response. Matches the agent-side WAIT_TICKS_TIMEOUT_MILLIS
+     * so WAIT_TICKS is the longest action that can legitimately take close to this limit.
+     *
+     * <p>Unix Domain Sockets do not support SO_TIMEOUT, so the timeout is enforced by a watchdog that
+     * closes the channel directly; this causes {@link AsynchronousCloseException} on the blocked read.
+     */
+    private static final int SEND_TIMEOUT_MS = 120_000;
+
     private final ObjectMapper objectMapper = new ObjectMapper()
         .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+    /**
+     * Single-thread watchdog executor that closes the socket channel when a read takes longer than
+     * {@link #SEND_TIMEOUT_MS}. Closing the channel directly (not via {@link #close()}) avoids deadlock
+     * with the {@code synchronized} monitor held by {@link #send}.
+     */
+    private final ScheduledExecutorService readTimeoutWatchdog = Executors.newSingleThreadScheduledExecutor(
+        Thread.ofPlatform().name("lk-read-timeout-watchdog").daemon(true).factory()
+    );
 
     private final Path socketPath;
     private final AtomicLong requestCounter = new AtomicLong(0L);
@@ -215,16 +252,8 @@ final class UdsAgentClient implements AutoCloseable
             return new MenuSnapshot(false, "", List.of());
 
         final String title = getRequiredData(response, "title");
-        final String itemsJson = response.data().getOrDefault("itemsJson", "[]");
-        try
-        {
-            final MenuItemSnapshot[] items = objectMapper.readValue(itemsJson, MenuItemSnapshot[].class);
-            return new MenuSnapshot(true, title, List.of(items));
-        }
-        catch (IOException exception)
-        {
-            throw new IllegalStateException("Failed to parse menu snapshot JSON.", exception);
-        }
+        final MenuItemSnapshot[] items = parseJsonField(response, "itemsJson", TYPE_MENU_ITEM_ARRAY);
+        return new MenuSnapshot(true, title, List.of(items));
     }
 
     void clickMenuSlot(UUID uuid, int slot)
@@ -245,33 +274,15 @@ final class UdsAgentClient implements AutoCloseable
     List<String> playerMessages(UUID uuid)
     {
         final AgentResponse response = send(new GetPlayerMessagesCommand(nextRequestId(), uuid));
-        final String messagesJson = response.data().getOrDefault("messagesJson", "[]");
-        try
-        {
-            final String[] messages = objectMapper.readValue(messagesJson, String[].class);
-            return List.of(messages);
-        }
-        catch (IOException exception)
-        {
-            throw new IllegalStateException("Failed to parse player messages JSON.", exception);
-        }
+        return List.of(parseJsonField(response, "messagesJson", TYPE_STRING_ARRAY));
     }
 
     List<ChatComponentSnapshot> playerChatComponents(UUID uuid)
     {
         final AgentResponse response = send(new GetPlayerChatComponentsCommand(nextRequestId(), uuid));
-        final String componentsJson = response.data().getOrDefault("componentsJson", "[]");
-        try
-        {
-            final String[] components = objectMapper.readValue(componentsJson, String[].class);
-            return java.util.Arrays.stream(components)
-                .map(ChatComponentSnapshot::new)
-                .toList();
-        }
-        catch (IOException exception)
-        {
-            throw new IllegalStateException("Failed to parse player chat components JSON.", exception);
-        }
+        return java.util.Arrays.stream(parseJsonField(response, "componentsJson", TYPE_STRING_ARRAY))
+            .map(ChatComponentSnapshot::new)
+            .toList();
     }
 
     long getServerTick()
@@ -305,17 +316,7 @@ final class UdsAgentClient implements AutoCloseable
     List<Map<String, Object>> getPlayerInventory(UUID uuid)
     {
         final AgentResponse response = send(new GetPlayerInventoryCommand(nextRequestId(), uuid));
-        final String inventoryJson = response.data().getOrDefault("inventoryJson", "[]");
-        try
-        {
-            @SuppressWarnings("unchecked")
-            final List<Map<String, Object>> items = objectMapper.readValue(inventoryJson, List.class);
-            return items;
-        }
-        catch (IOException exception)
-        {
-            throw new IllegalStateException("Failed to parse player inventory JSON.", exception);
-        }
+        return parseJsonField(response, "inventoryJson", TYPE_INVENTORY_ITEM_LIST);
     }
 
     boolean dropItem(UUID uuid)
@@ -332,17 +333,7 @@ final class UdsAgentClient implements AutoCloseable
     List<Map<String, String>> getCapturedEvents(String eventClassName)
     {
         final AgentResponse response = send(new GetCapturedEventsCommand(nextRequestId(), eventClassName));
-        final String eventsJson = response.data().getOrDefault("eventsJson", "[]");
-        try
-        {
-            @SuppressWarnings("unchecked")
-            final List<Map<String, String>> events = objectMapper.readValue(eventsJson, List.class);
-            return events;
-        }
-        catch (IOException exception)
-        {
-            throw new IllegalStateException("Failed to parse captured events JSON.", exception);
-        }
+        return parseJsonField(response, "eventsJson", TYPE_EVENT_DATA_LIST);
     }
 
     void clearCapturedEvents(String eventClassName)
@@ -370,6 +361,25 @@ final class UdsAgentClient implements AutoCloseable
     {
         final BufferedWriter out = Objects.requireNonNull(writer, "Client is not connected.");
         final BufferedReader in = Objects.requireNonNull(reader, "Client is not connected.");
+
+        // Capture the channel reference before the read; the watchdog closes it directly to avoid
+        // deadlocking on this synchronized method's monitor.
+        final SocketChannel channelSnapshot = this.socketChannel;
+        final ScheduledFuture<?> watchdog = readTimeoutWatchdog.schedule(() ->
+        {
+            if (channelSnapshot != null)
+            {
+                try
+                {
+                    channelSnapshot.close();
+                }
+                catch (IOException ignored)
+                {
+                    // Best-effort: the channel may already be closed.
+                }
+            }
+        }, SEND_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+
         try
         {
             out.write(objectMapper.writeValueAsString(command));
@@ -408,12 +418,24 @@ final class UdsAgentClient implements AutoCloseable
 
             return response;
         }
+        catch (AsynchronousCloseException exception)
+        {
+            throw new IllegalStateException(
+                "Agent did not respond within %d ms for action '%s' via socket '%s'."
+                    .formatted(SEND_TIMEOUT_MS, command.getClass().getSimpleName(), socketPath),
+                exception
+            );
+        }
         catch (IOException exception)
         {
             throw new IllegalStateException(
                 "Failed to communicate with agent via socket '%s'.".formatted(socketPath),
                 exception
             );
+        }
+        finally
+        {
+            watchdog.cancel(false);
         }
     }
 
@@ -502,6 +524,35 @@ final class UdsAgentClient implements AutoCloseable
         if (value == null)
             throw new IllegalStateException("Missing response field '%s' from agent.".formatted(key));
         return value;
+    }
+
+    /**
+     * Reads a JSON string from a response data field and deserializes it using the supplied type reference.
+     *
+     * @param response
+     *     Agent response whose data map is searched.
+     * @param key
+     *     Data field key; defaults to {@code "[]"} when absent.
+     * @param typeRef
+     *     Jackson type reference for deserialization.
+     * @param <T>
+     *     Expected return type.
+     * @return
+     *     Deserialized value.
+     * @throws IllegalStateException
+     *     When deserialization fails.
+     */
+    private <T> T parseJsonField(AgentResponse response, String key, TypeReference<T> typeRef)
+    {
+        final String json = response.data().getOrDefault(key, "[]");
+        try
+        {
+            return objectMapper.readValue(json, typeRef);
+        }
+        catch (IOException exception)
+        {
+            throw new IllegalStateException("Failed to parse '%s' JSON from agent response.".formatted(key), exception);
+        }
     }
 
     private static void sleep(long millis)
