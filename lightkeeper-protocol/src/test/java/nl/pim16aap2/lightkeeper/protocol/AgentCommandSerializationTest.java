@@ -1,9 +1,13 @@
 package nl.pim16aap2.lightkeeper.protocol;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
 import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -288,5 +292,28 @@ class AgentCommandSerializationTest
         assertThat(result.requestId()).isEqualTo("req-11");
         assertThat(result.protocolVersion()).isEqualTo(3);
         assertThat(result.bukkitVersion()).isEqualTo("1.21.11-R0.1-SNAPSHOT");
+    }
+
+    // -----------------------------------------------------------------------
+    // Guard: @JsonSubTypes registration matches the sealed permits clause
+    // -----------------------------------------------------------------------
+
+    @Test
+    void jsonSubTypes_registerEveryPermittedCommandSubtype()
+    {
+        // setup
+        final Set<Class<?>> permittedSubtypes = Set.of(IAgentCommand.class.getPermittedSubclasses());
+        final JsonSubTypes jsonSubTypes = IAgentCommand.class.getAnnotation(JsonSubTypes.class);
+
+        // execute
+        final Set<Class<?>> registeredSubtypes = Arrays.stream(jsonSubTypes.value())
+            .map(JsonSubTypes.Type::value)
+            .collect(Collectors.toSet());
+
+        // verify
+        // A command that is registered in the permits clause and the dispatcher switch (both compiler-checked)
+        // but omitted from @JsonSubTypes compiles and passes per-type tests, yet fails polymorphic
+        // deserialization at runtime. Asserting set-equality here turns that drift into a test failure.
+        assertThat(registeredSubtypes).isEqualTo(permittedSubtypes);
     }
 }

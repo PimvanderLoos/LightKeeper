@@ -26,6 +26,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /**
  * Manages the Minecraft server process lifecycle.
@@ -36,6 +39,13 @@ final class MinecraftServerProcess
 
     private static final int MAX_CAPTURED_OUTPUT_LINES = 10_000;
     private static final Duration SESSION_LOCK_RELEASE_TIMEOUT = Duration.ofSeconds(10);
+
+    /**
+     * Matches a single JVM argument token: a run of unquoted non-space characters and/or {@code "quoted"}
+     * segments. Matching whole tokens (rather than splitting on whitespace) keeps an embedded quoted value
+     * such as {@code -Dfoo="hello world"} in one piece; the surrounding quotes are stripped afterwards.
+     */
+    private static final Pattern EXTRA_JVM_ARG_TOKEN = Pattern.compile("(?:[^\\s\"]+|\"[^\"]*\")+");
 
     private final RuntimeManifest runtimeManifest;
     private final Path diagnosticsDirectory;
@@ -144,12 +154,9 @@ final class MinecraftServerProcess
         if (extraJvmArgs == null || extraJvmArgs.isBlank())
             return;
 
-        // Split on whitespace that is not inside double-quoted tokens so arguments like
-        // -Dfoo="hello world" are not broken into multiple invalid args.
-        final java.util.regex.Matcher matcher =
-            java.util.regex.Pattern.compile("\"([^\"]*)\"|\\S+").matcher(extraJvmArgs.trim());
+        final Matcher matcher = EXTRA_JVM_ARG_TOKEN.matcher(extraJvmArgs.trim());
         while (matcher.find())
-            command.add(matcher.group(1) != null ? matcher.group(1) : matcher.group());
+            command.add(matcher.group().replace("\"", ""));
     }
 
     void kill()
@@ -303,14 +310,55 @@ final class MinecraftServerProcess
 
         if (!isWorldSessionLockAvailable(serverDirectory))
             throw new IllegalStateException(
-                "Minecraft world session lock was not released within %d ms: %s"
-                    .formatted(timeout.toMillis(), serverDirectory.resolve("world/session.lock"))
+                "Minecraft world session lock(s) were not released within %d ms under: %s"
+                    .formatted(timeout.toMillis(), serverDirectory)
             );
     }
 
+    /**
+     * Reports whether every world's {@code session.lock} under the server directory is free.
+     *
+     * <p>A restarting server re-validates the overworld, the nether ({@code <level>_nether}), the end
+     * ({@code <level>_the_end}), and any preloaded or test-created world, each of which keeps its own
+     * {@code session.lock}. Checking only the default {@code world} lock would let a restart race the
+     * others, so this scans for all of them.
+     *
+     * @param serverDirectory
+     *     Root server working directory containing the world folders.
+     * @return
+     *     {@code true} when no world session lock is currently held.
+     */
     static boolean isWorldSessionLockAvailable(Path serverDirectory)
     {
-        final Path sessionLock = serverDirectory.resolve("world/session.lock");
+        for (final Path sessionLock : findWorldSessionLocks(serverDirectory))
+            if (!isSessionLockAvailable(sessionLock))
+                return false;
+        return true;
+    }
+
+    private static List<Path> findWorldSessionLocks(Path serverDirectory)
+    {
+        if (!Files.isDirectory(serverDirectory))
+            return List.of();
+
+        // World folders sit directly under the server directory, so their session.lock files are at depth 2
+        // (serverDirectory -> worldFolder -> session.lock). Region data lives deeper and is not traversed.
+        try (Stream<Path> entries = Files.walk(serverDirectory, 2))
+        {
+            return entries
+                .filter(path -> path.getFileName() != null
+                    && "session.lock".equals(path.getFileName().toString()))
+                .toList();
+        }
+        catch (IOException exception)
+        {
+            final Path defaultLock = serverDirectory.resolve("world/session.lock");
+            return Files.exists(defaultLock) ? List.of(defaultLock) : List.of();
+        }
+    }
+
+    private static boolean isSessionLockAvailable(Path sessionLock)
+    {
         if (!Files.exists(sessionLock))
             return true;
 

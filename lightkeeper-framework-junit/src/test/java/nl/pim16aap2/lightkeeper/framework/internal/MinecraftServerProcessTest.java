@@ -126,6 +126,42 @@ class MinecraftServerProcessTest
     }
 
     @Test
+    void isWorldSessionLockAvailable_shouldReturnFalseWhenNonDefaultWorldLockIsHeld(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup - only the nether world lock exists and is held; the default 'world' lock is absent
+        final Path netherLock = tempDirectory.resolve("world_nether/session.lock");
+        Files.createDirectories(netherLock.getParent());
+        Files.createFile(netherLock);
+
+        // execute + verify
+        try (
+            FileChannel channel = FileChannel.open(netherLock, StandardOpenOption.WRITE);
+            FileLock ignored = channel.lock())
+        {
+            assertThat(MinecraftServerProcess.isWorldSessionLockAvailable(tempDirectory)).isFalse();
+        }
+        assertThat(MinecraftServerProcess.isWorldSessionLockAvailable(tempDirectory)).isTrue();
+    }
+
+    @Test
+    void appendExtraJvmArgs_shouldKeepQuotedValueContainingSpacesAsSingleToken()
+        throws Exception
+    {
+        // setup
+        final java.lang.reflect.Method appendExtraJvmArgs =
+            MinecraftServerProcess.class.getDeclaredMethod("appendExtraJvmArgs", List.class, String.class);
+        appendExtraJvmArgs.setAccessible(true);
+        final List<String> command = new java.util.ArrayList<>();
+
+        // execute
+        appendExtraJvmArgs.invoke(null, command, "-Xmx1G -Dfoo=\"hello world\" -Dbar=baz");
+
+        // verify
+        assertThat(command).containsExactly("-Xmx1G", "-Dfoo=hello world", "-Dbar=baz");
+    }
+
+    @Test
     void snapshotOutputLines_shouldReturnCapturedLinesInOrder(@TempDir Path tempDirectory)
         throws Exception
     {

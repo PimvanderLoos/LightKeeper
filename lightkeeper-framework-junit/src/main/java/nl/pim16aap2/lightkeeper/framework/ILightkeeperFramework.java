@@ -101,12 +101,24 @@ public interface ILightkeeperFramework extends AutoCloseable
     List<String> serverOutput();
 
     /**
-     * Crashes the Minecraft server immediately.
+     * Crashes the Minecraft server immediately by force-killing the process.
+     *
+     * <p>All fixtures created before the crash are invalidated: player and world handles obtained earlier no
+     * longer refer to live server state. In shared-server mode the server must be restarted via
+     * {@link #restartServer()} before the next test method runs, otherwise that method fails fast; annotate the
+     * test with {@code @FreshServer} to receive a new server per method instead.
      */
     void crashServer();
 
     /**
-     * Restarts the Minecraft server after a crash.
+     * Restarts the Minecraft server after a {@link #crashServer()} call.
+     *
+     * <p>Only worlds configured in the runtime manifest are preloaded again. Players and worlds created at
+     * runtime before the crash are <strong>not</strong> recreated; tests must re-establish their own fixtures
+     * after restarting.
+     *
+     * @throws IllegalStateException
+     *     If the server is still running, since a restart is only valid after a crash.
      */
     void restartServer();
 

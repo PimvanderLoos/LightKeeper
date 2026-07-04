@@ -9,6 +9,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -133,6 +134,53 @@ class DefaultLightkeeperFrameworkLifecycleTest
             runtimeManifest.runtimeProtocolVersion(),
             java.util.Objects.requireNonNull(runtimeManifest.agentJarSha256())
         );
+    }
+
+    @Test
+    void beginMethodScope_shouldThrowAfterCrashWithoutRestart()
+    {
+        // setup
+        final MinecraftServerProcess minecraftServerProcess = mock(MinecraftServerProcess.class);
+        final UdsAgentClient agentClient = mock(UdsAgentClient.class);
+        final PlayerScopeRegistry playerScopeRegistry = mock(PlayerScopeRegistry.class);
+        final DefaultLightkeeperFramework framework = new DefaultLightkeeperFramework(
+            runtimeManifest(),
+            minecraftServerProcess,
+            agentClient,
+            playerScopeRegistry
+        );
+        framework.crashServer();
+
+        // execute + verify
+        assertThatThrownBy(() -> framework.beginMethodScope("method-2"))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("crashServer")
+            .hasMessageContaining("restartServer");
+        verify(playerScopeRegistry, never()).beginMethodScope("method-2");
+    }
+
+    @Test
+    void beginMethodScope_shouldSucceedAfterCrashAndRestart()
+    {
+        // setup
+        final MinecraftServerProcess minecraftServerProcess = mock(MinecraftServerProcess.class);
+        when(minecraftServerProcess.isRunning()).thenReturn(false);
+        final UdsAgentClient agentClient = mock(UdsAgentClient.class);
+        final PlayerScopeRegistry playerScopeRegistry = mock(PlayerScopeRegistry.class);
+        final DefaultLightkeeperFramework framework = new DefaultLightkeeperFramework(
+            runtimeManifest(),
+            minecraftServerProcess,
+            agentClient,
+            playerScopeRegistry
+        );
+        framework.crashServer();
+        framework.restartServer();
+
+        // execute
+        framework.beginMethodScope("method-2");
+
+        // verify
+        verify(playerScopeRegistry, times(1)).beginMethodScope("method-2");
     }
 
     private static RuntimeManifest runtimeManifest()

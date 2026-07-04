@@ -47,6 +47,7 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     private final UdsAgentClient agentClient;
     private final PlayerScopeRegistry playerScopeRegistry;
     private final AtomicBoolean closed = new AtomicBoolean(false);
+    private final AtomicBoolean serverCrashed = new AtomicBoolean(false);
 
     @Inject
     DefaultLightkeeperFramework(
@@ -373,6 +374,7 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
         playerScopeRegistry.invalidateAll();
         agentClient.close();
         minecraftServerProcess.kill();
+        serverCrashed.set(true);
     }
 
     @Override
@@ -391,6 +393,7 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
             Objects.requireNonNullElse(runtimeManifest.agentJarSha256(), "")
         );
         preloadConfiguredWorlds();
+        serverCrashed.set(false);
     }
 
     private void clickBlock(UUID playerId, Vector3Di position, String blockFace, BlockClickOperation operation)
@@ -438,6 +441,11 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     public void beginMethodScope(String methodExecutionId)
     {
         ensureOpen();
+        if (serverCrashed.get())
+            throw new IllegalStateException(
+                "A previous test crashed the shared Minecraft server via crashServer() without calling "
+                    + "restartServer(). Restart the server after crashing it, or annotate the crashing test "
+                    + "with @FreshServer so each method receives a fresh server.");
         playerScopeRegistry.beginMethodScope(methodExecutionId);
     }
 
