@@ -59,13 +59,16 @@ class WorldHandleTest
     }
 
     @Test
-    void loadChunk_shouldDelegateToGatewayAndReturnSelf()
+    void loadChunk_shouldDelegateToGateway()
     {
+        // setup
+        when(frameworkGateway.loadChunk("world", 1, 2)).thenReturn(true);
+
         // execute
-        final WorldHandle result = worldHandle.loadChunk(1, 2);
+        final boolean result = worldHandle.loadChunk(1, 2);
 
         // verify
-        assertThat(result).isSameAs(worldHandle);
+        assertThat(result).isTrue();
         verify(frameworkGateway).loadChunk("world", 1, 2);
     }
 

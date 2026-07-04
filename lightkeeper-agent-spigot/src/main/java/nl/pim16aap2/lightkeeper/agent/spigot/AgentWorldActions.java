@@ -299,12 +299,12 @@ final class AgentWorldActions
     }
 
     /**
-     * Handles {@code LOAD_CHUNK} by force-loading the chunk at the given chunk coordinates.
+     * Handles {@code LOAD_CHUNK} by loading (and generating if absent) the chunk at the given chunk coordinates.
      *
      * @param command
      *     Typed command carrying world name and chunk coordinates.
      * @return
-     *     Success response, or error if the world does not exist.
+     *     Success response with {@code loaded} boolean, or error if the world does not exist.
      * @throws Exception
      *     Propagates main-thread execution failures.
      */
@@ -315,16 +315,15 @@ final class AgentWorldActions
         final int x = command.x();
         final int z = command.z();
 
-        mainThreadExecutor.callOnMainThread(() ->
+        final Boolean loaded = mainThreadExecutor.callOnMainThread(() ->
         {
             final World world = Bukkit.getWorld(worldName);
             if (world == null)
                 throw new IllegalArgumentException("World '%s' does not exist.".formatted(worldName));
-            world.loadChunk(x, z, true);
-            return Boolean.TRUE;
+            return world.loadChunk(x, z, true);
         });
 
-        return AgentResponses.successResponse(command.requestId(), Map.of("loaded", "true"));
+        return AgentResponses.successResponse(command.requestId(), Map.of("loaded", loaded.toString()));
     }
 
     /**

@@ -57,18 +57,17 @@ public final class WorldHandle
     }
 
     /**
-     * Loads a chunk.
+     * Loads a chunk, generating it if it does not exist yet.
      *
      * @param chunkX
      *     Chunk X coordinate.
      * @param chunkZ
      *     Chunk Z coordinate.
-     * @return This handle for fluent chaining.
+     * @return True if the chunk was loaded successfully.
      */
-    public WorldHandle loadChunk(int chunkX, int chunkZ)
+    public boolean loadChunk(int chunkX, int chunkZ)
     {
-        frameworkGateway.loadChunk(name, chunkX, chunkZ);
-        return this;
+        return frameworkGateway.loadChunk(name, chunkX, chunkZ);
     }
 
     /**

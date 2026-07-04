@@ -266,9 +266,10 @@ final class UdsAgentClient implements AutoCloseable
         send(new TeleportPlayerCommand(nextRequestId(), uuid, worldName, x, y, z));
     }
 
-    void loadChunk(String worldName, int x, int z)
+    boolean loadChunk(String worldName, int x, int z)
     {
-        send(new LoadChunkCommand(nextRequestId(), worldName, x, z));
+        final AgentResponse response = send(new LoadChunkCommand(nextRequestId(), worldName, x, z));
+        return Boolean.parseBoolean(getRequiredData(response, "loaded"));
     }
 
     boolean unloadChunk(String worldName, int x, int z)

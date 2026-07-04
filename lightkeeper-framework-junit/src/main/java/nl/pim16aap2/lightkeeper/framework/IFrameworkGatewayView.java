@@ -39,8 +39,10 @@ public interface IFrameworkGatewayView
 
     /**
      * Loads a chunk.
+     *
+     * @return True if the chunk was loaded successfully.
      */
-    void loadChunk(String worldName, int x, int z);
+    boolean loadChunk(String worldName, int x, int z);
 
     /**
      * Unloads a chunk.

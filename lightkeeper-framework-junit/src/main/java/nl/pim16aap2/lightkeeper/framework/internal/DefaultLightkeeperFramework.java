@@ -287,11 +287,11 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     }
 
     @Override
-    public void loadChunk(String worldName, int x, int z)
+    public boolean loadChunk(String worldName, int x, int z)
     {
         ensureOpen();
         Objects.requireNonNull(worldName, "worldName may not be null.");
-        agentClient.loadChunk(worldName, x, z);
+        return agentClient.loadChunk(worldName, x, z);
     }
 
     @Override
