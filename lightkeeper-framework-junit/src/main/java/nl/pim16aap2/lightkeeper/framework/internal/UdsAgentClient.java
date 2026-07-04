@@ -384,13 +384,14 @@ final class UdsAgentClient implements AutoCloseable
     {
         final GetServerPlatform.Command command = new GetServerPlatform.Command(nextRequestId());
         final GetServerPlatform.Response response = send(command);
-        final String platformName = (response.serverName() + " " + response.serverVersion())
-            .toLowerCase(java.util.Locale.ROOT);
-        if (platformName.contains("paper"))
-            return Platform.PAPER;
-        if (platformName.contains("spigot") || platformName.contains("craftbukkit"))
-            return Platform.SPIGOT;
-        return Platform.UNKNOWN;
+        try
+        {
+            return Platform.valueOf(response.platform());
+        }
+        catch (IllegalArgumentException | NullPointerException ignored)
+        {
+            return Platform.UNKNOWN;
+        }
     }
 
     synchronized <R extends IAgentResponse> R send(IAgentCommand<R> command)

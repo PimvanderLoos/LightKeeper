@@ -35,19 +35,40 @@ public record InventorySnapshot(
      * @return
      *     Inventory snapshot.
      */
-    @SuppressWarnings("unchecked")
     public static InventorySnapshot fromItemMaps(List<Map<String, Object>> itemMaps)
     {
         Objects.requireNonNull(itemMaps, "itemMaps may not be null.");
-        final List<MenuItemSnapshot> items = itemMaps.stream().map(m ->
-        {
-            final int slot = ((Number) m.get("slot")).intValue();
-            final String materialKey = (String) m.getOrDefault("materialKey", "");
-            final String displayName = (String) m.getOrDefault("displayName", "");
-            final List<String> lore = (List<String>) m.getOrDefault("lore", List.of());
-            return new MenuItemSnapshot(slot, materialKey, displayName == null ? "" : displayName, lore);
-        }).toList();
+        final List<MenuItemSnapshot> items = itemMaps.stream()
+            .map(InventorySnapshot::fromItemMap)
+            .toList();
         return new InventorySnapshot(items);
+    }
+
+    private static MenuItemSnapshot fromItemMap(Map<String, Object> itemMap)
+    {
+        Objects.requireNonNull(itemMap, "item map may not be null.");
+
+        final Object slotValue = itemMap.get("slot");
+        if (!(slotValue instanceof Number slot))
+            throw new IllegalArgumentException("Inventory item field 'slot' must be a number.");
+
+        final Object materialKeyValue = itemMap.get("materialKey");
+        if (!(materialKeyValue instanceof String materialKey) || materialKey.isBlank())
+            throw new IllegalArgumentException("Inventory item field 'materialKey' must be a non-blank string.");
+
+        final Object displayNameValue = itemMap.get("displayName");
+        if (displayNameValue != null && !(displayNameValue instanceof String))
+            throw new IllegalArgumentException("Inventory item field 'displayName' must be a string or null.");
+        final String displayName = Objects.requireNonNullElse((String) displayNameValue, "");
+
+        final Object loreValue = itemMap.get("lore");
+        if (loreValue != null && !(loreValue instanceof List<?>))
+            throw new IllegalArgumentException("Inventory item field 'lore' must be a list or null.");
+        final List<String> lore = loreValue == null
+            ? List.of()
+            : ((List<?>) loreValue).stream().map(String::valueOf).toList();
+
+        return new MenuItemSnapshot(slot.intValue(), materialKey, displayName, lore);
     }
 
     /**

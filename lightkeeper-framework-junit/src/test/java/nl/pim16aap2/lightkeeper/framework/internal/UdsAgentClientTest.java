@@ -209,13 +209,13 @@ class UdsAgentClientTest
     }
 
     @Test
-    void serverPlatform_shouldMapPaperServerNameToPaper(@TempDir Path tempDirectory)
+    void serverPlatform_shouldMapPaperResponseToPaper(@TempDir Path tempDirectory)
         throws Exception
     {
         // setup
         final Path socketPath = tempDirectory.resolve("platform.sock");
         final String responseJson =
-            "{\"requestId\":\"1\",\"success\":true,\"serverName\":\"Paper\",\"serverVersion\":\"1.21.11\"}";
+            "{\"requestId\":\"1\",\"success\":true,\"platform\":\"PAPER\"}";
         try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
              UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
         {
@@ -224,6 +224,26 @@ class UdsAgentClientTest
 
             // verify
             assertThat(platform).isEqualTo(Platform.PAPER);
+            assertThat(server.capturedRequest()).contains("\"action\":\"GET_SERVER_PLATFORM\"");
+        }
+    }
+
+    @Test
+    void serverPlatform_shouldMapUnrecognizedResponseToUnknown(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("platform-unknown.sock");
+        final String responseJson =
+            "{\"requestId\":\"1\",\"success\":true,\"platform\":\"FOLIA\"}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            final Platform platform = client.serverPlatform();
+
+            // verify
+            assertThat(platform).isEqualTo(Platform.UNKNOWN);
             assertThat(server.capturedRequest()).contains("\"action\":\"GET_SERVER_PLATFORM\"");
         }
     }

@@ -168,7 +168,6 @@ class AgentRequestDispatcherTest
         // setup
         final DispatcherFixture fixture = createDispatcherFixture();
         final UUID uuid = UUID.randomUUID();
-        final String eventClass = "org.bukkit.event.Event";
 
         when(fixture.worldActions().handleNewWorld(any(NewWorld.Command.class)))
             .thenReturn(new NewWorld.Response("request-1", "w"));
@@ -225,7 +224,7 @@ class AgentRequestDispatcherTest
         when(fixture.playerActions().handleGetPlayerChatComponents(any(GetPlayerChatComponents.Command.class)))
             .thenReturn(new GetPlayerChatComponents.Response("request-27", "[]"));
         when(fixture.worldActions().handleGetServerPlatform(any(GetServerPlatform.Command.class)))
-            .thenReturn(new GetServerPlatform.Response("request-28", "CraftBukkit", "1.21"));
+            .thenReturn(new GetServerPlatform.Response("request-28", "SPIGOT"));
 
         // execute
         fixture.dispatcher().handleRequestLine(toJson(new NewWorld.Command("request-1", "w", "NORMAL", "NORMAL", 0L)), true);

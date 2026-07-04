@@ -29,15 +29,12 @@ public final class GetServerPlatform
      *
      * @param requestId
      *     Correlated request id.
-     * @param serverName
-     *     Server implementation name (e.g. {@code CraftBukkit}, {@code Paper}).
-     * @param serverVersion
-     *     Full server version string.
+     * @param platform
+     *     Canonical platform identifier ({@code PAPER}, {@code SPIGOT}, or {@code UNKNOWN}).
      */
     public record Response(
         String requestId,
-        String serverName,
-        String serverVersion
+        String platform
     ) implements IAgentResponse
     {
     }

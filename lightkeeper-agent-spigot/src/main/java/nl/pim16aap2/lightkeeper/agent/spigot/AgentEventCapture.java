@@ -207,6 +207,8 @@ final class AgentEventCapture
     }
 
     /**
+     * Returns a snapshot of captured event payloads.
+     *
      * @param eventClassName
      *     Fully qualified event class whose captured events should be returned.
      * @return

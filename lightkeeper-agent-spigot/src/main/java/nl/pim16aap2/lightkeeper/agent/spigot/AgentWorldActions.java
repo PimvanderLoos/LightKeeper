@@ -138,22 +138,22 @@ final class AgentWorldActions
      * @throws Exception
      *     Propagates main-thread execution failures.
      */
-    ExecuteCommand.Response handleExecuteCommand(ExecuteCommand.Command req)
+    ExecuteCommand.Response handleExecuteCommand(ExecuteCommand.Command command)
         throws Exception
     {
-        if (req.commandSource() != CommandSource.CONSOLE)
+        if (command.commandSource() != CommandSource.CONSOLE)
             throw new IllegalArgumentException("Only CONSOLE command source is supported in v1.");
 
-        final String rawCommand = req.command();
+        final String rawCommand = command.command();
         if (rawCommand.isBlank())
             throw new IllegalArgumentException("Argument 'command' must not be blank.");
 
-        final String command = rawCommand.startsWith("/") ? rawCommand.substring(1) : rawCommand;
+        final String normalizedCommand = rawCommand.startsWith("/") ? rawCommand.substring(1) : rawCommand;
         final Boolean dispatched = mainThreadExecutor.callOnMainThread(() ->
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command)
+            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), normalizedCommand)
         );
 
-        return new ExecuteCommand.Response(req.requestId(), dispatched);
+        return new ExecuteCommand.Response(command.requestId(), dispatched);
     }
 
     /**
@@ -367,10 +367,10 @@ final class AgentWorldActions
      * @param command
      *     Typed command carrying the request identifier.
      * @return
-     *     Response containing {@code serverName} and {@code serverVersion}.
+     *     Response containing the canonical platform identifier.
      */
     GetServerPlatform.Response handleGetServerPlatform(GetServerPlatform.Command command)
     {
-        return new GetServerPlatform.Response(command.requestId(), Bukkit.getName(), Bukkit.getVersion());
+        return new GetServerPlatform.Response(command.requestId(), AgentPlatformDetector.detect());
     }
 }

@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -37,6 +38,18 @@ class InventorySnapshotTest
 
         // verify
         assertThat(result).isSameAs(item);
+    }
+
+    @Test
+    void fromItemMaps_shouldThrowExceptionWhenSlotIsMissing()
+    {
+        // setup
+        final List<Map<String, Object>> items = List.of(Map.of("materialKey", "minecraft:stone"));
+
+        // execute + verify
+        assertThatThrownBy(() -> InventorySnapshot.fromItemMaps(items))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("slot");
     }
 
     @Test
