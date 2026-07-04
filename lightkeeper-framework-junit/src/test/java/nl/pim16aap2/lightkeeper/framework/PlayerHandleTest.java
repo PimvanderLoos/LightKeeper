@@ -63,17 +63,18 @@ class PlayerHandleTest
     }
 
     @Test
-    void teleport_shouldDelegateToGatewayAndReturnSelf()
+    void teleport_shouldDelegateToGatewayAndReturnResult()
     {
         // setup
         final WorldHandle world = mock(WorldHandle.class);
         when(world.name()).thenReturn("world_nether");
+        when(frameworkGateway.teleportPlayer(PLAYER_UUID, "world_nether", 10.5, 64.0, 20.5)).thenReturn(true);
 
         // execute
-        final PlayerHandle result = playerHandle.teleport(world, 10.5, 64.0, 20.5);
+        final boolean result = playerHandle.teleport(world, 10.5, 64.0, 20.5);
 
         // verify
-        assertThat(result).isSameAs(playerHandle);
+        assertThat(result).isTrue();
         verify(frameworkGateway).teleportPlayer(PLAYER_UUID, "world_nether", 10.5, 64.0, 20.5);
     }
 

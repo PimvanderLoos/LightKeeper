@@ -29,8 +29,10 @@ public interface IFrameworkGatewayView
 
     /**
      * Teleports a synthetic player.
+     *
+     * @return True if the teleport succeeded, false if it was blocked (e.g. a cancelled teleport event).
      */
-    void teleportPlayer(UUID uuid, String worldName, double x, double y, double z);
+    boolean teleportPlayer(UUID uuid, String worldName, double x, double y, double z);
 
     /**
      * Places a block as a synthetic player.
