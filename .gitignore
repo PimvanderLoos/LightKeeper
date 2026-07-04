@@ -36,7 +36,8 @@ hs_err_pid*
 .classpath
 .externalToolBuilders/*
 .project
-.settings/*
+.factorypath
+.settings/
 move.xml
 random
 tests
