@@ -84,11 +84,16 @@ public final class PlayerHandle
      * @param z
      *     Z coordinate.
      * @return This handle for fluent chaining.
+     * @throws IllegalStateException
+     *     If the server rejected the teleport (e.g. a plugin cancelled the teleport event).
      */
     public PlayerHandle teleport(WorldHandle world, double x, double y, double z)
     {
         Objects.requireNonNull(world, "world may not be null.");
-        frameworkGateway.teleportPlayer(uniqueId, world.name(), x, y, z);
+        if (!frameworkGateway.teleportPlayer(uniqueId, world.name(), x, y, z))
+            throw new IllegalStateException(
+                "Teleport of player '%s' to [%.2f, %.2f, %.2f] in world '%s' was rejected by the server.".formatted(
+                    name, x, y, z, world.name()));
         return this;
     }
 

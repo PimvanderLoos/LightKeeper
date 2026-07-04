@@ -272,12 +272,12 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     }
 
     @Override
-    public void teleportPlayer(UUID uuid, String worldName, double x, double y, double z)
+    public boolean teleportPlayer(UUID uuid, String worldName, double x, double y, double z)
     {
         ensureOpen();
         Objects.requireNonNull(uuid, "uuid may not be null.");
         Objects.requireNonNull(worldName, "worldName may not be null.");
-        agentClient.teleportPlayer(uuid, worldName, x, y, z);
+        return agentClient.teleportPlayer(uuid, worldName, x, y, z);
     }
 
     @Override
@@ -292,11 +292,11 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     }
 
     @Override
-    public void loadChunk(String worldName, int x, int z)
+    public boolean loadChunk(String worldName, int x, int z)
     {
         ensureOpen();
         Objects.requireNonNull(worldName, "worldName may not be null.");
-        agentClient.loadChunk(worldName, x, z);
+        return agentClient.loadChunk(worldName, x, z);
     }
 
     @Override

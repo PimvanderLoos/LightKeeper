@@ -10,6 +10,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -68,6 +69,7 @@ class PlayerHandleTest
         // setup
         final WorldHandle world = mock(WorldHandle.class);
         when(world.name()).thenReturn("world_nether");
+        when(frameworkGateway.teleportPlayer(PLAYER_UUID, "world_nether", 10.5, 64.0, 20.5)).thenReturn(true);
 
         // execute
         final PlayerHandle result = playerHandle.teleport(world, 10.5, 64.0, 20.5);
@@ -106,6 +108,20 @@ class PlayerHandleTest
         // verify
         assertThat(result).isTrue();
         verify(frameworkGateway).dropItem(PLAYER_UUID);
+    }
+
+    @Test
+    void teleport_shouldThrowWhenTeleportIsRejected()
+    {
+        // setup
+        final WorldHandle world = mock(WorldHandle.class);
+        when(world.name()).thenReturn("world_nether");
+        when(frameworkGateway.teleportPlayer(PLAYER_UUID, "world_nether", 10.5, 64.0, 20.5)).thenReturn(false);
+
+        // execute + verify
+        assertThatThrownBy(() -> playerHandle.teleport(world, 10.5, 64.0, 20.5))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("was rejected by the server");
     }
 
     @Test

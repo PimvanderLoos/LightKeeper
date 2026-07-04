@@ -206,91 +206,6 @@ final class AgentWorldActions
     }
 
     /**
-     * Handles {@code LOAD_CHUNK} by force-loading the chunk at the given chunk coordinates.
-     *
-     * @param command
-     *     Typed command carrying world name and chunk coordinates.
-     * @return
-     *     Success response, or error if the world does not exist.
-     * @throws Exception
-     *     Propagates main-thread execution failures.
-     */
-    AgentResponse handleLoadChunk(LoadChunkCommand command)
-        throws Exception
-    {
-        final String worldName = command.worldName();
-        final int x = command.x();
-        final int z = command.z();
-
-        mainThreadExecutor.callOnMainThread(() ->
-        {
-            final World world = Bukkit.getWorld(worldName);
-            if (world == null)
-                throw new IllegalArgumentException("World '%s' does not exist.".formatted(worldName));
-            world.loadChunk(x, z, true);
-            return Boolean.TRUE;
-        });
-
-        return AgentResponses.successResponse(command.requestId(), Map.of("loaded", "true"));
-    }
-
-    /**
-     * Handles {@code UNLOAD_CHUNK} by unloading the chunk at the given chunk coordinates.
-     *
-     * @param command
-     *     Typed command carrying world name and chunk coordinates.
-     * @return
-     *     Success response, or error if the world does not exist.
-     * @throws Exception
-     *     Propagates main-thread execution failures.
-     */
-    AgentResponse handleUnloadChunk(UnloadChunkCommand command)
-        throws Exception
-    {
-        final String worldName = command.worldName();
-        final int x = command.x();
-        final int z = command.z();
-
-        final Boolean unloaded = mainThreadExecutor.callOnMainThread(() ->
-        {
-            final World world = Bukkit.getWorld(worldName);
-            if (world == null)
-                throw new IllegalArgumentException("World '%s' does not exist.".formatted(worldName));
-            return world.unloadChunk(x, z);
-        });
-
-        return AgentResponses.successResponse(command.requestId(), Map.of("unloaded", unloaded.toString()));
-    }
-
-    /**
-     * Handles {@code IS_CHUNK_LOADED} by querying whether the chunk is currently loaded.
-     *
-     * @param command
-     *     Typed command carrying world name and chunk coordinates.
-     * @return
-     *     Success response with {@code loaded} boolean, or error if the world does not exist.
-     * @throws Exception
-     *     Propagates main-thread execution failures.
-     */
-    AgentResponse handleIsChunkLoaded(IsChunkLoadedCommand command)
-        throws Exception
-    {
-        final String worldName = command.worldName();
-        final int x = command.x();
-        final int z = command.z();
-
-        final Boolean loaded = mainThreadExecutor.callOnMainThread(() ->
-        {
-            final World world = Bukkit.getWorld(worldName);
-            if (world == null)
-                throw new IllegalArgumentException("World '%s' does not exist.".formatted(worldName));
-            return world.isChunkLoaded(x, z);
-        });
-
-        return AgentResponses.successResponse(command.requestId(), Map.of("loaded", loaded.toString()));
-    }
-
-    /**
      * Handles {@code SET_BLOCK} by setting a block to the requested material.
      *
      * @param command
@@ -399,6 +314,90 @@ final class AgentWorldActions
     AgentResponse handleGetServerTick(GetServerTickCommand command)
     {
         return AgentResponses.successResponse(command.requestId(), Map.of("tick", Long.toString(tickCounter.get())));
+    }
+
+    /**
+     * Handles {@code LOAD_CHUNK} by loading (and generating if absent) the chunk at the given chunk coordinates.
+     *
+     * @param command
+     *     Typed command carrying world name and chunk coordinates.
+     * @return
+     *     Success response with {@code loaded} boolean, or error if the world does not exist.
+     * @throws Exception
+     *     Propagates main-thread execution failures.
+     */
+    AgentResponse handleLoadChunk(LoadChunkCommand command)
+        throws Exception
+    {
+        final String worldName = command.worldName();
+        final int x = command.x();
+        final int z = command.z();
+
+        final Boolean loaded = mainThreadExecutor.callOnMainThread(() ->
+        {
+            final World world = Bukkit.getWorld(worldName);
+            if (world == null)
+                throw new IllegalArgumentException("World '%s' does not exist.".formatted(worldName));
+            return world.loadChunk(x, z, true);
+        });
+
+        return AgentResponses.successResponse(command.requestId(), Map.of("loaded", loaded.toString()));
+    }
+
+    /**
+     * Handles {@code UNLOAD_CHUNK} by unloading the chunk at the given chunk coordinates.
+     *
+     * @param command
+     *     Typed command carrying world name and chunk coordinates.
+     * @return
+     *     Success response, or error if the world does not exist.
+     * @throws Exception
+     *     Propagates main-thread execution failures.
+     */
+    AgentResponse handleUnloadChunk(UnloadChunkCommand command)
+        throws Exception
+    {
+        final String worldName = command.worldName();
+        final int x = command.x();
+        final int z = command.z();
+
+        final Boolean unloaded = mainThreadExecutor.callOnMainThread(() ->
+        {
+            final World world = Bukkit.getWorld(worldName);
+            if (world == null)
+                throw new IllegalArgumentException("World '%s' does not exist.".formatted(worldName));
+            return world.unloadChunk(x, z);
+        });
+
+        return AgentResponses.successResponse(command.requestId(), Map.of("unloaded", unloaded.toString()));
+    }
+
+    /**
+     * Handles {@code IS_CHUNK_LOADED} by querying whether the chunk is currently loaded.
+     *
+     * @param command
+     *     Typed command carrying world name and chunk coordinates.
+     * @return
+     *     Success response with {@code loaded} boolean, or error if the world does not exist.
+     * @throws Exception
+     *     Propagates main-thread execution failures.
+     */
+    AgentResponse handleIsChunkLoaded(IsChunkLoadedCommand command)
+        throws Exception
+    {
+        final String worldName = command.worldName();
+        final int x = command.x();
+        final int z = command.z();
+
+        final Boolean loaded = mainThreadExecutor.callOnMainThread(() ->
+        {
+            final World world = Bukkit.getWorld(worldName);
+            if (world == null)
+                throw new IllegalArgumentException("World '%s' does not exist.".formatted(worldName));
+            return world.isChunkLoaded(x, z);
+        });
+
+        return AgentResponses.successResponse(command.requestId(), Map.of("loaded", loaded.toString()));
     }
 
     /**

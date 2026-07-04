@@ -153,13 +153,17 @@ class UdsAgentClientTest
     {
         // setup
         final Path socketPath = tempDirectory.resolve("agent-load-chunk.sock");
-        try (AgentSocketServer server = AgentSocketServer.start(socketPath, successResponse(Map.of()));
+        try (AgentSocketServer server = AgentSocketServer.start(
+            socketPath,
+            successResponse(Map.of("loaded", "true"))
+        );
              UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
         {
             // execute
-            client.loadChunk("world", 3, -4);
+            final boolean result = client.loadChunk("world", 3, -4);
 
             // verify
+            assertThat(result).isTrue();
             final JsonNode request = REQUEST_MAPPER.readTree(server.requestLine());
             assertThat(request.get("action").asText()).isEqualTo("LOAD_CHUNK");
             assertThat(request.get("worldName").asText()).isEqualTo("world");

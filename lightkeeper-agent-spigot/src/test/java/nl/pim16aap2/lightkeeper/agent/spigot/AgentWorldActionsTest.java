@@ -122,12 +122,13 @@ class AgentWorldActionsTest
     }
 
     @Test
-    void handleLoadChunk_shouldLoadRequestedChunk()
+    void handleLoadChunk_shouldReturnWorldLoadResult()
         throws Exception
     {
         // setup
         final AgentWorldActions worldActions = createWorldActions(new AtomicLong());
         final World world = mock();
+        when(world.loadChunk(2, 3, true)).thenReturn(true);
 
         // execute
         final AgentResponse response;
@@ -142,6 +143,29 @@ class AgentWorldActionsTest
         assertThat(response.success()).isTrue();
         assertThat(response.data()).containsEntry("loaded", "true");
         verify(world).loadChunk(2, 3, true);
+    }
+
+    @Test
+    void handleLoadChunk_shouldReturnFalseWhenLoadFails()
+        throws Exception
+    {
+        // setup
+        final AgentWorldActions worldActions = createWorldActions(new AtomicLong());
+        final World world = mock();
+        when(world.loadChunk(2, 3, true)).thenReturn(false);
+
+        // execute
+        final AgentResponse response;
+        try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
+        {
+            bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
+            bukkitMockedStatic.when(() -> Bukkit.getWorld("world")).thenReturn(world);
+            response = worldActions.handleLoadChunk(new LoadChunkCommand("request-load", "world", 2, 3));
+        }
+
+        // verify
+        assertThat(response.success()).isTrue();
+        assertThat(response.data()).containsEntry("loaded", "false");
     }
 
     @Test
