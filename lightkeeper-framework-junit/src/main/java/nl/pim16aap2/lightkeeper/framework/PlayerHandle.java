@@ -211,6 +211,28 @@ public final class PlayerHandle
     }
 
     /**
+     * Gets a snapshot of this player's inventory.
+     *
+     * @return Inventory snapshot.
+     */
+    public InventorySnapshot inventory()
+    {
+        return frameworkGateway.playerInventory(uniqueId);
+    }
+
+    /**
+     * Simulates the player dropping their main hand item.
+     *
+     * @return {@code true} when no plugin cancelled the drop event (i.e., the item would have been dropped
+     *     in production). Note: the item entity is always created and removed to satisfy the Bukkit API
+     *     constraint; this return value reflects whether a plugin would have allowed the drop.
+     */
+    public boolean dropMainHandItem()
+    {
+        return frameworkGateway.dropItem(uniqueId);
+    }
+
+    /**
      * Waits for at least the requested number of server ticks.
      *
      * @param ticks
@@ -274,6 +296,16 @@ public final class PlayerHandle
     public List<String> receivedMessages()
     {
         return frameworkGateway.playerMessages(uniqueId);
+    }
+
+    /**
+     * Gets a list of captured chat components for this player.
+     *
+     * @return Captured chat components.
+     */
+    public List<ChatComponentSnapshot> chatComponents()
+    {
+        return frameworkGateway.playerChatComponents(uniqueId);
     }
 
     /**

@@ -54,6 +54,7 @@ class AgentSyntheticPlayerStoreTest
         final PermissionAttachment attachment = mock();
         final UUID uuid = UUID.randomUUID();
         when(player.addAttachment(plugin)).thenReturn(attachment);
+        store.registerSyntheticPlayer(uuid, player);
 
         // execute
         store.setPermissions(plugin, uuid, player, "perm.one, perm.two, ,perm.three");
@@ -75,6 +76,7 @@ class AgentSyntheticPlayerStoreTest
         final PermissionAttachment attachment = mock();
         final UUID uuid = UUID.randomUUID();
         when(player.addAttachment(plugin)).thenReturn(attachment);
+        store.registerSyntheticPlayer(uuid, player);
         store.setPermissions(plugin, uuid, player, "perm.one");
 
         // execute
@@ -92,6 +94,7 @@ class AgentSyntheticPlayerStoreTest
         final Player player = mock();
         final UUID uuid = UUID.randomUUID();
         when(player.getUniqueId()).thenReturn(uuid);
+        store.registerSyntheticPlayer(uuid, player);
 
         // execute
         store.sendTrackedMessage(player, "hello");
@@ -111,6 +114,7 @@ class AgentSyntheticPlayerStoreTest
         when(adapter.drainReceivedMessages(uuid)).thenReturn(List.of("first", "second"));
         final Player player = mock();
         when(player.getUniqueId()).thenReturn(uuid);
+        store.registerSyntheticPlayer(uuid, player);
         store.sendTrackedMessage(player, "existing");
 
         // execute
@@ -118,6 +122,45 @@ class AgentSyntheticPlayerStoreTest
 
         // verify
         assertThat(store.getPlayerMessages(uuid)).containsExactly("existing", "first", "second");
+    }
+
+    @Test
+    void capturePlayerChatComponents_shouldAppendDrainedComponents()
+    {
+        // setup
+        final AgentSyntheticPlayerStore store = new AgentSyntheticPlayerStore();
+        final IBotPlayerNmsAdapter adapter = mock();
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mock();
+        when(adapter.drainChatComponents(uuid)).thenReturn(List.of("{\"text\":\"hello\"}"));
+        store.registerSyntheticPlayer(uuid, player);
+
+        // execute
+        store.capturePlayerChatComponents(adapter, uuid);
+
+        // verify
+        assertThat(store.getPlayerChatComponents(uuid)).containsExactly("{\"text\":\"hello\"}");
+    }
+
+    @Test
+    void capturePlayerChatComponents_shouldKeepHistoryWhenNoComponentsWereDrained()
+    {
+        // setup
+        final AgentSyntheticPlayerStore store = new AgentSyntheticPlayerStore();
+        final IBotPlayerNmsAdapter adapter = mock();
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mock();
+        when(adapter.drainChatComponents(uuid))
+            .thenReturn(List.of("{\"text\":\"hello\"}"))
+            .thenReturn(List.of());
+        store.registerSyntheticPlayer(uuid, player);
+        store.capturePlayerChatComponents(adapter, uuid);
+
+        // execute
+        store.capturePlayerChatComponents(adapter, uuid);
+
+        // verify
+        assertThat(store.getPlayerChatComponents(uuid)).containsExactly("{\"text\":\"hello\"}");
     }
 
     @Test
@@ -137,5 +180,51 @@ class AgentSyntheticPlayerStoreTest
         assertThat(store.getPlayerMessages(uuid)).isEmpty();
         assertThatThrownBy(() -> store.getRequiredPlayer(uuid))
             .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void capturePlayerMessages_shouldNotAppendWhenDrainReturnsEmpty()
+    {
+        // setup
+        final AgentSyntheticPlayerStore store = new AgentSyntheticPlayerStore();
+        final IBotPlayerNmsAdapter adapter = mock();
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mock();
+        when(player.getUniqueId()).thenReturn(uuid);
+        when(adapter.drainReceivedMessages(uuid)).thenReturn(List.of());
+        store.registerSyntheticPlayer(uuid, player);
+        store.sendTrackedMessage(player, "existing");
+
+        // execute
+        store.capturePlayerMessages(adapter, uuid);
+
+        // verify - history unchanged when drain is empty
+        assertThat(store.getPlayerMessages(uuid)).containsExactly("existing");
+    }
+
+    @Test
+    void removePermissionAttachment_shouldBeNoOpWhenNoAttachmentWasSet()
+    {
+        // setup
+        final AgentSyntheticPlayerStore store = new AgentSyntheticPlayerStore();
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mock();
+
+        // execute + verify - should not throw
+        store.removePermissionAttachment(uuid, player);
+        verifyNoInteractions(player);
+    }
+
+    @Test
+    void getPlayerChatComponents_shouldReturnEmptyListForUnknownPlayer()
+    {
+        // setup
+        final AgentSyntheticPlayerStore store = new AgentSyntheticPlayerStore();
+
+        // execute
+        final List<String> components = store.getPlayerChatComponents(UUID.randomUUID());
+
+        // verify
+        assertThat(components).isEmpty();
     }
 }

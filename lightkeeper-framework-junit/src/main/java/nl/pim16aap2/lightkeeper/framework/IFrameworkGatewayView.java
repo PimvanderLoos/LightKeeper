@@ -100,4 +100,39 @@ public interface IFrameworkGatewayView
      * Gets received message history for a player.
      */
     List<String> playerMessages(UUID playerId);
+
+    /**
+     * Gets captured chat components for a player.
+     */
+    List<ChatComponentSnapshot> playerChatComponents(UUID playerId);
+
+    /**
+     * Gets player inventory snapshot.
+     */
+    InventorySnapshot playerInventory(UUID playerId);
+
+    /**
+     * Drops item from player's main hand.
+     */
+    boolean dropItem(UUID playerId);
+
+    /**
+     * Registers an event listener.
+     */
+    void registerEventListener(String eventClassName);
+
+    /**
+     * Gets captured events for a class.
+     */
+    List<CapturedEventSnapshot> getCapturedEvents(String eventClassName);
+
+    /**
+     * Clears captured events for a class.
+     */
+    void clearCapturedEvents(String eventClassName);
+
+    /**
+     * Unregisters an event listener.
+     */
+    void unregisterEventListener(String eventClassName);
 }
