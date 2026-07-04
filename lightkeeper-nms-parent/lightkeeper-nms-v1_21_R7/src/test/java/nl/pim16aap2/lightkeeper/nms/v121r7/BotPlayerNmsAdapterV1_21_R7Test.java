@@ -11,10 +11,8 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -29,7 +27,7 @@ class BotPlayerNmsAdapterV1_21_R7Test
         throws Exception
     {
         // execute
-        final Class<?> resolvedClass = (Class<?>) invokeStaticOnUtils(
+        final Class<?> resolvedClass = (Class<?>) invokeStatic(
             "resolveClass",
             new Class<?>[]{String.class, ClassLoader.class},
             "java.lang.String",
@@ -45,7 +43,7 @@ class BotPlayerNmsAdapterV1_21_R7Test
         throws Exception
     {
         // execute
-        final Class<?> resolvedClass = (Class<?>) invokeStaticOnUtils(
+        final Class<?> resolvedClass = (Class<?>) invokeStatic(
             "resolveFirstClass",
             new Class<?>[]{ClassLoader.class, String[].class},
             getClass().getClassLoader(),
@@ -60,7 +58,7 @@ class BotPlayerNmsAdapterV1_21_R7Test
     void resolveFirstClass_shouldThrowExceptionWhenNoCandidateExists()
     {
         // execute + verify
-        assertThatThrownBy(() -> invokeStaticOnUtils(
+        assertThatThrownBy(() -> invokeStatic(
             "resolveFirstClass",
             new Class<?>[]{ClassLoader.class, String[].class},
             getClass().getClassLoader(),
@@ -133,26 +131,26 @@ class BotPlayerNmsAdapterV1_21_R7Test
         throws Exception
     {
         // execute
-        final Method namedNoArg = (Method) invokeStaticOnUtils(
+        final Method namedNoArg = (Method) invokeStatic(
             "findNamedNoArgMethod",
             new Class<?>[]{Class.class, String.class},
             MethodFixture.class,
             "getValue"
         );
-        final Method byReturnType = (Method) invokeStaticOnUtils(
+        final Method byReturnType = (Method) invokeStatic(
             "findNoArgMethodByReturnType",
             new Class<?>[]{Class.class, Class.class},
             MethodFixture.class,
             CharSequence.class
         );
-        final Method namedMethod = (Method) invokeStaticOnUtils(
+        final Method namedMethod = (Method) invokeStatic(
             "findNamedMethod",
             new Class<?>[]{Class.class, String.class, Class[].class},
             MethodFixture.class,
             "setValue",
             new Class<?>[]{String.class}
         );
-        final Method compatibleMethod = (Method) invokeStaticOnUtils(
+        final Method compatibleMethod = (Method) invokeStatic(
             "findCompatibleMethod",
             new Class<?>[]{Class.class, Class[].class},
             MethodFixture.class,
@@ -171,20 +169,20 @@ class BotPlayerNmsAdapterV1_21_R7Test
         throws Exception
     {
         // execute
-        final Field byType = (Field) invokeStaticOnUtils(
+        final Field byType = (Field) invokeStatic(
             "findFieldByType",
             new Class<?>[]{Class.class, Class.class},
             FieldFixture.class,
             CharSequence.class
         );
-        final Field byNameOrType = (Field) invokeStaticOnUtils(
+        final Field byNameOrType = (Field) invokeStatic(
             "resolveFieldByNameOrType",
             new Class<?>[]{Class.class, String.class, Class.class},
             FieldFixture.class,
             "missing",
             CharSequence.class
         );
-        final Field byAcceptedType = (Field) invokeStaticOnUtils(
+        final Field byAcceptedType = (Field) invokeStatic(
             "resolveFieldByNameOrAcceptedType",
             new Class<?>[]{Class.class, String.class, Class.class},
             FieldFixture.class,
@@ -215,7 +213,7 @@ class BotPlayerNmsAdapterV1_21_R7Test
             4,
             new IdentityHashMap<>()
         );
-        final String stringFromMissingMethod = (String) invokeStaticOnUtils(
+        final String stringFromMissingMethod = (String) invokeStatic(
             "invokeStringMethod",
             new Class<?>[]{Object.class, String.class},
             new Object(),
@@ -244,7 +242,7 @@ class BotPlayerNmsAdapterV1_21_R7Test
     void helperMethods_shouldThrowExceptionWhenLookupCannotResolveMember()
     {
         // execute + verify
-        assertThatThrownBy(() -> invokeStaticOnUtils(
+        assertThatThrownBy(() -> invokeStatic(
             "findCompatibleMethod",
             new Class<?>[]{Class.class, Class[].class},
             NoCompatibleMethodFixture.class,
@@ -252,7 +250,7 @@ class BotPlayerNmsAdapterV1_21_R7Test
         ))
             .isInstanceOf(NoSuchMethodException.class);
 
-        assertThatThrownBy(() -> invokeStaticOnUtils(
+        assertThatThrownBy(() -> invokeStatic(
             "resolveFieldByNameOrType",
             new Class<?>[]{Class.class, String.class, Class.class},
             NoMatchingFieldFixture.class,
@@ -271,8 +269,6 @@ class BotPlayerNmsAdapterV1_21_R7Test
         final TestChannel channel = new TestChannel("first", " ", "second");
         final BotPlayerNmsAdapterV1_21_R7 adapter = allocateAdapter();
         setField(adapter, "playerChannels", new ConcurrentHashMap<>(Map.of(playerId, channel)));
-        setField(adapter, "playerMessageQueues", new ConcurrentHashMap<UUID, Queue<String>>());
-        setField(adapter, "playerChatComponentQueues", new ConcurrentHashMap<UUID, Queue<String>>());
         setField(adapter, "embeddedChannelReadOutboundMethod", TestChannel.class.getMethod("readOutbound"));
 
         // execute
@@ -280,159 +276,6 @@ class BotPlayerNmsAdapterV1_21_R7Test
 
         // verify
         assertThat(messages).containsExactly("first", "second");
-    }
-
-    @Test
-    void drains_shouldReturnEmptyListsWhenPlayerHasNoChannel()
-        throws Exception
-    {
-        // setup
-        final UUID playerId = UUID.randomUUID();
-        final BotPlayerNmsAdapterV1_21_R7 adapter = allocateAdapter();
-        setField(adapter, "playerChannels", new ConcurrentHashMap<UUID, Object>());
-
-        // execute
-        final List<String> messages = adapter.drainReceivedMessages(playerId);
-        final List<String> components = adapter.drainChatComponents(playerId);
-
-        // verify
-        assertThat(messages).isEmpty();
-        assertThat(components).isEmpty();
-    }
-
-    @Test
-    @SuppressWarnings("NullAway")
-    void drains_shouldRejectNullPlayerId()
-        throws Exception
-    {
-        // setup
-        final BotPlayerNmsAdapterV1_21_R7 adapter = allocateAdapter();
-
-        // execute + verify
-        assertThatThrownBy(() -> adapter.drainReceivedMessages(null))
-            .isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("playerId");
-        assertThatThrownBy(() -> adapter.drainChatComponents(null))
-            .isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("playerId");
-    }
-
-    @Test
-    void drainReceivedMessages_shouldWrapChannelReadFailures()
-        throws Exception
-    {
-        // setup
-        final UUID playerId = UUID.randomUUID();
-        final BotPlayerNmsAdapterV1_21_R7 adapter = allocateAdapter();
-        setField(adapter, "playerChannels", new ConcurrentHashMap<>(Map.of(playerId, new FailingChannel())));
-        setField(adapter, "playerMessageQueues", new ConcurrentHashMap<UUID, Queue<String>>());
-        setField(adapter, "playerChatComponentQueues", new ConcurrentHashMap<UUID, Queue<String>>());
-        setField(adapter, "embeddedChannelReadOutboundMethod", FailingChannel.class.getMethod("readOutbound"));
-
-        // execute + verify
-        assertThatThrownBy(() -> adapter.drainReceivedMessages(playerId))
-            .isInstanceOf(IllegalStateException.class)
-            .hasMessageContaining("Failed to drain outbound packets");
-    }
-
-    @Test
-    void drains_shouldKeepMessageAndComponentQueuesIndependent()
-        throws Exception
-    {
-        // setup
-        final UUID playerId = UUID.randomUUID();
-        final TestChannel channel = new TestChannel(new ComponentPacket(new FakeComponent("hello")));
-        final BotPlayerNmsAdapterV1_21_R7 adapter = allocateAdapter();
-        setField(adapter, "playerChannels", new ConcurrentHashMap<>(Map.of(playerId, channel)));
-        setField(adapter, "playerMessageQueues", new ConcurrentHashMap<UUID, Queue<String>>());
-        setField(adapter, "playerChatComponentQueues", new ConcurrentHashMap<UUID, Queue<String>>());
-        setField(adapter, "embeddedChannelReadOutboundMethod", TestChannel.class.getMethod("readOutbound"));
-        setField(adapter, "componentJsonCodec", new FakeCodec());
-        setField(adapter, "componentJsonOps", new Object());
-        setField(adapter, "componentCodecEncodeStartMethod", FakeCodec.class.getMethod(
-            "encodeStart",
-            Object.class,
-            Object.class
-        ));
-        setField(adapter, "dataResultResultMethod", FakeDataResult.class.getMethod("result"));
-
-        // execute
-        final List<String> messages = adapter.drainReceivedMessages(playerId);
-        final List<String> components = adapter.drainChatComponents(playerId);
-
-        // verify
-        assertThat(messages).containsExactly("hello");
-        assertThat(components).containsExactly("{\"text\":\"hello\"}");
-    }
-
-    @Test
-    void extractComponentJson_shouldInspectOnlySafeAccessors()
-        throws Exception
-    {
-        // setup
-        final BotPlayerNmsAdapterV1_21_R7 adapter = allocateAdapter();
-        setField(adapter, "componentJsonCodec", new FakeCodec());
-        setField(adapter, "componentJsonOps", new Object());
-        setField(adapter, "componentCodecEncodeStartMethod", FakeCodec.class.getMethod(
-            "encodeStart",
-            Object.class,
-            Object.class
-        ));
-        setField(adapter, "dataResultResultMethod", FakeDataResult.class.getMethod("result"));
-        final boolean safeComponentAccessor = (boolean) invokeStatic(
-            "isSafeComponentAccessor",
-            new Class<?>[]{Method.class},
-            ComponentPacket.class.getMethod("getComponent")
-        );
-        final boolean unsafeComponentAccessor = (boolean) invokeStatic(
-            "isSafeComponentAccessor",
-            new Class<?>[]{Method.class},
-            UnsafeComponentPacket.class.getMethod("value")
-        );
-
-        // execute
-        final String extracted = (String) invokeInstance(
-            adapter,
-            "extractComponentJson",
-            new Class<?>[]{Object.class, int.class, IdentityHashMap.class},
-            new ComponentPacket(new FakeComponent("hello")),
-            4,
-            new IdentityHashMap<>()
-        );
-
-        // verify
-        assertThat(extracted).isEqualTo("{\"text\":\"hello\"}");
-        assertThat(safeComponentAccessor).isTrue();
-        assertThat(unsafeComponentAccessor).isFalse();
-    }
-
-    @Test
-    void extractComponentJson_shouldReturnNullWhenComponentSerializationFails()
-        throws Exception
-    {
-        // setup
-        final BotPlayerNmsAdapterV1_21_R7 adapter = allocateAdapter();
-        setField(adapter, "componentJsonCodec", new ThrowingCodec());
-        setField(adapter, "componentJsonOps", new Object());
-        setField(adapter, "componentCodecEncodeStartMethod", ThrowingCodec.class.getMethod(
-            "encodeStart",
-            Object.class,
-            Object.class
-        ));
-        setField(adapter, "dataResultResultMethod", FakeDataResult.class.getMethod("result"));
-
-        // execute
-        final String extracted = (String) invokeInstance(
-            adapter,
-            "extractComponentJson",
-            new Class<?>[]{Object.class, int.class, IdentityHashMap.class},
-            new FakeComponent("hello"),
-            4,
-            new IdentityHashMap<>()
-        );
-
-        // verify
-        assertThat(extracted).isNull();
     }
 
     @Test
@@ -452,12 +295,6 @@ class BotPlayerNmsAdapterV1_21_R7Test
         when(craftPlayer.getName()).thenReturn("bot");
         final FakePlayerList playerList = new FakePlayerList();
         final Map<UUID, Object> channels = new ConcurrentHashMap<>(Map.of(playerId, new Object()));
-        final Map<UUID, Queue<String>> messageQueues = new ConcurrentHashMap<>(
-            Map.of(playerId, new ConcurrentLinkedQueue<>(List.of("message")))
-        );
-        final Map<UUID, Queue<String>> componentQueues = new ConcurrentHashMap<>(
-            Map.of(playerId, new ConcurrentLinkedQueue<>(List.of("{}")))
-        );
 
         final BotPlayerNmsAdapterV1_21_R7 adapter = allocateAdapter();
         StaticAccessors.serverPlayerHandle = serverPlayer;
@@ -465,16 +302,12 @@ class BotPlayerNmsAdapterV1_21_R7Test
         setField(adapter, "playerListRemoveMethod", FakePlayerList.class.getMethod("remove", FakeServerPlayer.class));
         setField(adapter, "playerList", playerList);
         setField(adapter, "playerChannels", channels);
-        setField(adapter, "playerMessageQueues", messageQueues);
-        setField(adapter, "playerChatComponentQueues", componentQueues);
 
         // execute
         adapter.removePlayer(craftPlayer);
 
         // verify
         assertThat(channels).isEmpty();
-        assertThat(messageQueues).isEmpty();
-        assertThat(componentQueues).isEmpty();
         assertThat(playerList.removedPlayer).isSameAs(serverPlayer);
     }
 
@@ -495,8 +328,6 @@ class BotPlayerNmsAdapterV1_21_R7Test
         setField(adapter, "minecraftServer", server);
         setField(adapter, "playerList", playerList);
         setField(adapter, "playerChannels", new ConcurrentHashMap<>());
-        setField(adapter, "playerMessageQueues", new ConcurrentHashMap<UUID, Queue<String>>());
-        setField(adapter, "playerChatComponentQueues", new ConcurrentHashMap<UUID, Queue<String>>());
 
         setField(adapter, "gameProfileConstructor", FakeGameProfile.class.getConstructor(UUID.class, String.class));
         setField(adapter, "connectionConstructor", FakeConnection.class.getConstructor(FakePacketFlow.class));
@@ -561,51 +392,11 @@ class BotPlayerNmsAdapterV1_21_R7Test
     private static Object invokeStatic(String methodName, Class<?>[] parameterTypes, Object... arguments)
         throws Exception
     {
-        return invokeStaticOn(BotPlayerNmsAdapterV1_21_R7.class, methodName, parameterTypes, arguments);
-    }
-
-    private static Object invokeStaticOnUtils(String methodName, Class<?>[] parameterTypes, Object... arguments)
-        throws Exception
-    {
-        return invokeStaticOn(NmsReflectionUtils.class, methodName, parameterTypes, arguments);
-    }
-
-    private static Object invokeStaticOn(
-        Class<?> targetClass,
-        String methodName,
-        Class<?>[] parameterTypes,
-        Object... arguments)
-        throws Exception
-    {
-        final Method method = targetClass.getDeclaredMethod(methodName, parameterTypes);
-        method.setAccessible(true);
-        try
-        {
-            return method.invoke(null, arguments);
-        }
-        catch (InvocationTargetException exception)
-        {
-            final Throwable cause = exception.getCause();
-            if (cause instanceof Exception wrappedException)
-                throw wrappedException;
-            if (cause instanceof Error wrappedError)
-                throw wrappedError;
-            throw exception;
-        }
-    }
-
-    private static Object invokeInstance(
-        Object target,
-        String methodName,
-        Class<?>[] parameterTypes,
-        Object... arguments)
-        throws Exception
-    {
         final Method method = BotPlayerNmsAdapterV1_21_R7.class.getDeclaredMethod(methodName, parameterTypes);
         method.setAccessible(true);
         try
         {
-            return method.invoke(target, arguments);
+            return method.invoke(null, arguments);
         }
         catch (InvocationTargetException exception)
         {
@@ -712,68 +503,6 @@ class BotPlayerNmsAdapterV1_21_R7Test
         public @Nullable Object readOutbound()
         {
             return index < values.length ? values[index++] : null;
-        }
-    }
-
-    public static final class FailingChannel
-    {
-        @SuppressWarnings("unused")
-        public @Nullable Object readOutbound()
-        {
-            if (System.nanoTime() >= 0L)
-                throw new IllegalStateException("boom");
-            return null;
-        }
-    }
-
-    public record ComponentPacket(FakeComponent component)
-    {
-        @SuppressWarnings("unused")
-        public FakeComponent getComponent()
-        {
-            return component;
-        }
-    }
-
-    public record UnsafeComponentPacket(FakeComponent value)
-    {
-    }
-
-    public record FakeComponent(String text)
-    {
-        @SuppressWarnings("unused")
-        public String getString()
-        {
-            return text;
-        }
-    }
-
-    public static final class FakeCodec
-    {
-        @SuppressWarnings("unused")
-        public FakeDataResult encodeStart(Object ops, Object component)
-        {
-            return new FakeDataResult(((FakeComponent) component).text());
-        }
-    }
-
-    public static final class ThrowingCodec
-    {
-        @SuppressWarnings("unused")
-        public FakeDataResult encodeStart(Object ops, Object component)
-        {
-            if (System.nanoTime() >= 0L)
-                throw new IllegalStateException("boom");
-            return new FakeDataResult("unreachable");
-        }
-    }
-
-    public record FakeDataResult(String text)
-    {
-        @SuppressWarnings("unused")
-        public Optional<String> result()
-        {
-            return Optional.of("{\"text\":\"%s\"}".formatted(text));
         }
     }
 

@@ -1,7 +1,6 @@
 package nl.pim16aap2.lightkeeper.framework.assertions;
 
 import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
-import nl.pim16aap2.lightkeeper.framework.Platform;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.ListAssert;
@@ -29,32 +28,6 @@ public final class LightkeeperFrameworkAssert
     public ListAssert<String> serverOutput()
     {
         return Assertions.assertThat(nonNullActual().serverOutput());
-    }
-
-    /**
-     * Asserts that the server is running on Paper.
-     *
-     * @return This assertion for fluent chaining.
-     */
-    public LightkeeperFrameworkAssert isPaper()
-    {
-        final var actual = nonNullActual();
-        if (actual.platform() != Platform.PAPER)
-            failWithMessage("Expected server platform to be PAPER but was %s.", actual.platform());
-        return this;
-    }
-
-    /**
-     * Asserts that the server is running on Spigot.
-     *
-     * @return This assertion for fluent chaining.
-     */
-    public LightkeeperFrameworkAssert isSpigot()
-    {
-        final var actual = nonNullActual();
-        if (actual.platform() != Platform.SPIGOT)
-            failWithMessage("Expected server platform to be SPIGOT but was %s.", actual.platform());
-        return this;
     }
 
     /**

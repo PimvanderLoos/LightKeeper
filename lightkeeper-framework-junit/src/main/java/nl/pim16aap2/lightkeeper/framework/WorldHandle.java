@@ -55,47 +55,4 @@ public final class WorldHandle
         Objects.requireNonNull(position, "position may not be null.");
         frameworkGateway.setBlock(name, position, material);
     }
-
-    /**
-     * Loads a chunk.
-     *
-     * @param chunkX
-     *     Chunk X coordinate.
-     * @param chunkZ
-     *     Chunk Z coordinate.
-     * @return This handle for fluent chaining.
-     */
-    public WorldHandle loadChunk(int chunkX, int chunkZ)
-    {
-        frameworkGateway.loadChunk(name, chunkX, chunkZ);
-        return this;
-    }
-
-    /**
-     * Unloads a chunk.
-     *
-     * @param chunkX
-     *     Chunk X coordinate.
-     * @param chunkZ
-     *     Chunk Z coordinate.
-     * @return True if the chunk was successfully unloaded.
-     */
-    public boolean unloadChunk(int chunkX, int chunkZ)
-    {
-        return frameworkGateway.unloadChunk(name, chunkX, chunkZ);
-    }
-
-    /**
-     * Checks if a chunk is loaded.
-     *
-     * @param chunkX
-     *     Chunk X coordinate.
-     * @param chunkZ
-     *     Chunk Z coordinate.
-     * @return True if the chunk is loaded.
-     */
-    public boolean isChunkLoaded(int chunkX, int chunkZ)
-    {
-        return frameworkGateway.isChunkLoaded(name, chunkX, chunkZ);
-    }
 }

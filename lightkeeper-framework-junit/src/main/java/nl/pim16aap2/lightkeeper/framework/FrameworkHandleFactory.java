@@ -36,12 +36,4 @@ public final class FrameworkHandleFactory
     {
         return new MenuHandle(frameworkGateway, playerHandle);
     }
-
-    /**
-     * Creates an event capture handle.
-     */
-    public static EventCaptureHandle eventCaptureHandle(IFrameworkGatewayView frameworkGateway, String eventClassName)
-    {
-        return new EventCaptureHandle(frameworkGateway, eventClassName);
-    }
 }

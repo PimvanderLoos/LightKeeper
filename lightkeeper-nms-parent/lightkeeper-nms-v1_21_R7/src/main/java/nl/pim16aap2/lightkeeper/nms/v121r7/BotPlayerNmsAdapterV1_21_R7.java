@@ -7,25 +7,24 @@ import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.jspecify.annotations.Nullable;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Optional;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Queue;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Paper 1.21.11 (v1_21_R7) synthetic-player adapter.
@@ -34,13 +33,12 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
 {
     private static final System.Logger LOG = System.getLogger(BotPlayerNmsAdapterV1_21_R7.class.getName());
 
-    private static final int TEXT_EXTRACTION_MAX_DEPTH = NmsValueExtractor.MAX_DEPTH;
+    private static final int TEXT_EXTRACTION_MAX_DEPTH = 4;
+    private static final int TEXT_EXTRACTION_MAX_METHODS = 24;
 
     private final Object minecraftServer;
     private final Object playerList;
     private final Map<UUID, Object> playerChannels = new ConcurrentHashMap<>();
-    private final Map<UUID, Queue<String>> playerMessageQueues = new ConcurrentHashMap<>();
-    private final Map<UUID, Queue<String>> playerChatComponentQueues = new ConcurrentHashMap<>();
 
     private final Constructor<?> gameProfileConstructor;
     private final Constructor<?> connectionConstructor;
@@ -57,10 +55,6 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
     private final Field connectionChannelField;
     private final Field connectionAddressField;
     private final Method embeddedChannelReadOutboundMethod;
-    private final Object componentJsonCodec;
-    private final Object componentJsonOps;
-    private final Method componentCodecEncodeStartMethod;
-    private final Method dataResultResultMethod;
     private final Object serverboundPacketFlow;
 
     /**
@@ -78,61 +72,44 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
             minecraftServer = craftServerGetServerMethod.invoke(craftServer);
             playerList = resolvePlayerList(minecraftServer, serverClassLoader);
 
-            final Class<?> componentSerializationClass = NmsReflectionUtils.resolveClass(
-                "net.minecraft.network.chat.ComponentSerialization",
-                serverClassLoader
-            );
-            final Class<?> codecClass =
-                NmsReflectionUtils.resolveClass("com.mojang.serialization.Codec", serverClassLoader);
-            final Class<?> dataResultClass =
-                NmsReflectionUtils.resolveClass("com.mojang.serialization.DataResult", serverClassLoader);
-            final Class<?> dynamicOpsClass =
-                NmsReflectionUtils.resolveClass("com.mojang.serialization.DynamicOps", serverClassLoader);
-            final Class<?> jsonOpsClass =
-                NmsReflectionUtils.resolveClass("com.mojang.serialization.JsonOps", serverClassLoader);
-            componentJsonCodec = resolveComponentJsonCodec(componentSerializationClass, codecClass);
-            componentJsonOps = jsonOpsClass.getField("INSTANCE").get(null);
-            componentCodecEncodeStartMethod = codecClass.getMethod("encodeStart", dynamicOpsClass, Object.class);
-            dataResultResultMethod = dataResultClass.getMethod("result");
-
-            final Class<?> gameProfileClass = NmsReflectionUtils.resolveClass(
+            final Class<?> gameProfileClass = resolveClass(
                 "com.mojang.authlib.GameProfile",
                 serverClassLoader
             );
-            final Class<?> packetFlowClass = NmsReflectionUtils.resolveFirstClass(
+            final Class<?> packetFlowClass = resolveFirstClass(
                 serverClassLoader,
                 "net.minecraft.network.protocol.PacketFlow",
                 "net.minecraft.network.protocol.EnumProtocolDirection"
             );
-            final Class<?> connectionClass = NmsReflectionUtils.resolveFirstClass(
+            final Class<?> connectionClass = resolveFirstClass(
                 serverClassLoader,
                 "net.minecraft.network.Connection",
                 "net.minecraft.network.NetworkManager"
             );
-            final Class<?> serverPlayerClass = NmsReflectionUtils.resolveFirstClass(
+            final Class<?> serverPlayerClass = resolveFirstClass(
                 serverClassLoader,
                 "net.minecraft.server.level.ServerPlayer",
                 "net.minecraft.server.level.EntityPlayer"
             );
-            final Class<?> commonListenerCookieClass = NmsReflectionUtils.resolveClass(
+            final Class<?> commonListenerCookieClass = resolveClass(
                 "net.minecraft.server.network.CommonListenerCookie",
                 serverClassLoader
             );
 
-            final Class<?> minecraftServerClass = NmsReflectionUtils.resolveClass(
+            final Class<?> minecraftServerClass = resolveClass(
                 "net.minecraft.server.MinecraftServer",
                 serverClassLoader
             );
-            final Class<?> serverLevelClass = NmsReflectionUtils.resolveFirstClass(
+            final Class<?> serverLevelClass = resolveFirstClass(
                 serverClassLoader,
                 "net.minecraft.server.level.ServerLevel",
                 "net.minecraft.server.level.WorldServer"
             );
-            final Class<?> clientInformationClass = NmsReflectionUtils.resolveClass(
+            final Class<?> clientInformationClass = resolveClass(
                 "net.minecraft.server.level.ClientInformation",
                 serverClassLoader
             );
-            final Class<?> embeddedChannelClass = NmsReflectionUtils.resolveClass(
+            final Class<?> embeddedChannelClass = resolveClass(
                 "io.netty.channel.embedded.EmbeddedChannel",
                 serverClassLoader
             );
@@ -148,19 +125,19 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
                 clientInformationClass
             );
 
-            final Class<?> craftWorldClass = NmsReflectionUtils.resolveClass(
+            final Class<?> craftWorldClass = resolveClass(
                 craftBukkitPackage + ".CraftWorld",
                 serverClassLoader
             );
             craftWorldGetHandleMethod = craftWorldClass.getMethod("getHandle");
 
-            commonListenerCreateInitialMethod = NmsReflectionUtils.resolveStaticFactoryMethod(
+            commonListenerCreateInitialMethod = resolveStaticFactoryMethod(
                 commonListenerCookieClass,
                 commonListenerCookieClass,
                 gameProfileClass,
                 boolean.class
             );
-            clientInformationCreateDefaultMethod = NmsReflectionUtils.resolveStaticNoArgFactoryMethod(
+            clientInformationCreateDefaultMethod = resolveStaticNoArgFactoryMethod(
                 clientInformationClass,
                 clientInformationClass
             );
@@ -173,48 +150,53 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
             playerListRemoveMethod = resolvePlayerListRemoveMethod(playerList.getClass(), serverPlayerClass);
             serverPlayerGetBukkitEntityMethod = serverPlayerClass.getMethod("getBukkitEntity");
 
-            final Class<?> craftPlayerClass = NmsReflectionUtils.resolveClass(
+            final Class<?> craftPlayerClass = resolveClass(
                 craftBukkitPackage + ".entity.CraftPlayer",
                 serverClassLoader
             );
             craftPlayerGetHandleMethod = craftPlayerClass.getMethod("getHandle");
-            connectionChannelField = NmsReflectionUtils.resolveFieldByNameOrAcceptedType(
-                connectionClass, "channel", embeddedChannelClass);
-            connectionAddressField = NmsReflectionUtils.resolveFieldByNameOrType(
-                connectionClass, "address", SocketAddress.class);
+            connectionChannelField = resolveFieldByNameOrAcceptedType(connectionClass, "channel", embeddedChannelClass);
+            connectionAddressField = resolveFieldByNameOrType(connectionClass, "address", SocketAddress.class);
             embeddedChannelReadOutboundMethod = embeddedChannelClass.getMethod("readOutbound");
         }
         catch (Exception exception)
         {
-            throw new IllegalStateException(
-                "Failed to initialize v1_21_R7 NMS adapter. Cause: %s: %s"
-                    .formatted(exception.getClass().getName(), exception.getMessage()),
-                exception
-            );
+            throw new IllegalStateException("Failed to initialize v1_21_R7 NMS adapter.", exception);
         }
     }
 
-    private static Object resolveComponentJsonCodec(Class<?> componentSerializationClass, Class<?> codecClass)
-        throws ReflectiveOperationException
+    private static Class<?> resolveClass(String className, ClassLoader classLoader)
+        throws ClassNotFoundException
     {
         try
         {
-            return componentSerializationClass.getField("CODEC").get(null);
+            return Class.forName(className, false, classLoader);
         }
-        catch (NoSuchFieldException ignored)
+        catch (ClassNotFoundException ignored)
         {
-            for (final Field field : componentSerializationClass.getFields())
-            {
-                if (!Modifier.isStatic(field.getModifiers()) || !codecClass.isAssignableFrom(field.getType()))
-                    continue;
-
-                field.setAccessible(true);
-                return field.get(null);
-            }
-            throw new NoSuchFieldException(
-                "Failed to resolve component JSON codec field on " + componentSerializationClass.getName()
-            );
+            return Class.forName(className);
         }
+    }
+
+    private static Class<?> resolveFirstClass(ClassLoader classLoader, String... classNames)
+        throws ClassNotFoundException
+    {
+        ClassNotFoundException lastException = null;
+        for (final String className : classNames)
+        {
+            try
+            {
+                return resolveClass(className, classLoader);
+            }
+            catch (ClassNotFoundException exception)
+            {
+                lastException = exception;
+            }
+        }
+        throw Objects.requireNonNullElseGet(
+            lastException,
+            () -> new ClassNotFoundException("No candidate class names were provided.")
+        );
     }
 
     private static Object resolveServerboundPacketFlow(Class<?> packetFlowEnumClass)
@@ -233,7 +215,7 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
             }
         }
 
-        final Method stringMethod = NmsReflectionUtils.findNamedNoArgMethod(packetFlowEnumClass, "b");
+        final Method stringMethod = findNamedNoArgMethod(packetFlowEnumClass, "b");
         if (stringMethod != null)
         {
             for (final Object enumConstant : enumConstants)
@@ -261,24 +243,21 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
     private static Object resolvePlayerList(Object minecraftServer, ClassLoader serverClassLoader)
         throws ReflectiveOperationException
     {
-        final Method namedMethod =
-            NmsReflectionUtils.findNamedNoArgMethod(minecraftServer.getClass(), "getPlayerList");
+        final Method namedMethod = findNamedNoArgMethod(minecraftServer.getClass(), "getPlayerList");
         if (namedMethod != null)
         {
             return namedMethod.invoke(minecraftServer);
         }
 
-        final Class<?> playerListClass =
-            NmsReflectionUtils.resolveClass("net.minecraft.server.players.PlayerList", serverClassLoader);
+        final Class<?> playerListClass = resolveClass("net.minecraft.server.players.PlayerList", serverClassLoader);
 
-        final Method typedMethod =
-            NmsReflectionUtils.findNoArgMethodByReturnType(minecraftServer.getClass(), playerListClass);
+        final Method typedMethod = findNoArgMethodByReturnType(minecraftServer.getClass(), playerListClass);
         if (typedMethod != null)
         {
             return typedMethod.invoke(minecraftServer);
         }
 
-        final Field typedField = NmsReflectionUtils.findFieldByType(minecraftServer.getClass(), playerListClass);
+        final Field typedField = findFieldByType(minecraftServer.getClass(), playerListClass);
         if (typedField != null)
         {
             return typedField.get(minecraftServer);
@@ -297,7 +276,7 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
     )
         throws NoSuchMethodException
     {
-        final Method namedMethod = NmsReflectionUtils.findNamedMethod(
+        final Method namedMethod = findNamedMethod(
             playerListClass,
             "placeNewPlayer",
             connectionClass,
@@ -308,19 +287,239 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
         {
             return namedMethod;
         }
-        return NmsReflectionUtils.findCompatibleMethod(
-            playerListClass, connectionClass, serverPlayerClass, commonListenerCookieClass);
+        return findCompatibleMethod(playerListClass, connectionClass, serverPlayerClass, commonListenerCookieClass);
     }
 
     private static Method resolvePlayerListRemoveMethod(Class<?> playerListClass, Class<?> serverPlayerClass)
         throws NoSuchMethodException
     {
-        final Method namedMethod = NmsReflectionUtils.findNamedMethod(playerListClass, "remove", serverPlayerClass);
+        final Method namedMethod = findNamedMethod(playerListClass, "remove", serverPlayerClass);
         if (namedMethod != null)
         {
             return namedMethod;
         }
-        return NmsReflectionUtils.findCompatibleMethod(playerListClass, serverPlayerClass);
+        return findCompatibleMethod(playerListClass, serverPlayerClass);
+    }
+
+    private static Method resolveStaticFactoryMethod(
+        Class<?> ownerClass,
+        Class<?> returnTypeClass,
+        Class<?>... parameterTypes
+    )
+        throws NoSuchMethodException
+    {
+        for (Class<?> cursor = ownerClass; cursor != null; cursor = cursor.getSuperclass())
+        {
+            for (final Method method : cursor.getDeclaredMethods())
+            {
+                if (!java.lang.reflect.Modifier.isStatic(method.getModifiers()))
+                {
+                    continue;
+                }
+                if (!returnTypeClass.isAssignableFrom(method.getReturnType()))
+                {
+                    continue;
+                }
+                final Class<?>[] methodParameterTypes = method.getParameterTypes();
+                if (methodParameterTypes.length != parameterTypes.length)
+                {
+                    continue;
+                }
+                boolean compatible = true;
+                for (int idx = 0; idx < methodParameterTypes.length; ++idx)
+                {
+                    if (!methodParameterTypes[idx].isAssignableFrom(parameterTypes[idx]))
+                    {
+                        compatible = false;
+                        break;
+                    }
+                }
+                if (!compatible)
+                {
+                    continue;
+                }
+                method.setAccessible(true);
+                return method;
+            }
+        }
+        throw new NoSuchMethodException(
+            "Failed to resolve static factory method on "
+                + ownerClass.getName()
+                + " for return type "
+                + returnTypeClass.getName()
+        );
+    }
+
+    private static Method resolveStaticNoArgFactoryMethod(Class<?> ownerClass, Class<?> returnTypeClass)
+        throws NoSuchMethodException
+    {
+        return resolveStaticFactoryMethod(ownerClass, returnTypeClass);
+    }
+
+    private static Field resolveFieldByNameOrType(Class<?> ownerClass, String preferredName, Class<?> fieldType)
+        throws NoSuchFieldException
+    {
+        try
+        {
+            final Field field = ownerClass.getField(preferredName);
+            field.setAccessible(true);
+            return field;
+        }
+        catch (NoSuchFieldException ignored)
+        {
+            final Field typedField = findFieldByType(ownerClass, fieldType);
+            if (typedField != null)
+            {
+                return typedField;
+            }
+            throw new NoSuchFieldException(
+                "Failed to resolve field '" + preferredName + "' on " + ownerClass.getName()
+            );
+        }
+    }
+
+    private static Field resolveFieldByNameOrAcceptedType(
+        Class<?> ownerClass,
+        String preferredName,
+        Class<?> acceptedType
+    )
+        throws NoSuchFieldException
+    {
+        try
+        {
+            final Field field = ownerClass.getField(preferredName);
+            field.setAccessible(true);
+            return field;
+        }
+        catch (NoSuchFieldException ignored)
+        {
+            for (Class<?> cursor = ownerClass; cursor != null; cursor = cursor.getSuperclass())
+            {
+                for (final Field field : cursor.getDeclaredFields())
+                {
+                    if (!field.getType().isAssignableFrom(acceptedType))
+                    {
+                        continue;
+                    }
+                    field.setAccessible(true);
+                    return field;
+                }
+            }
+            throw new NoSuchFieldException(
+                "Failed to resolve field '" + preferredName + "' on " + ownerClass.getName()
+            );
+        }
+    }
+
+    private static @Nullable Method findNamedNoArgMethod(Class<?> type, String methodName)
+    {
+        for (Class<?> cursor = type; cursor != null; cursor = cursor.getSuperclass())
+        {
+            try
+            {
+                final Method method = cursor.getDeclaredMethod(methodName);
+                method.setAccessible(true);
+                return method;
+            }
+            catch (NoSuchMethodException ignored)
+            {
+                // Continue searching in super class.
+            }
+        }
+        return null;
+    }
+
+    private static @Nullable Method findNoArgMethodByReturnType(Class<?> type, Class<?> returnType)
+    {
+        for (Class<?> cursor = type; cursor != null; cursor = cursor.getSuperclass())
+        {
+            for (final Method method : cursor.getDeclaredMethods())
+            {
+                if (method.getParameterCount() != 0 || !returnType.isAssignableFrom(method.getReturnType()))
+                {
+                    continue;
+                }
+                method.setAccessible(true);
+                return method;
+            }
+        }
+        return null;
+    }
+
+    private static @Nullable Field findFieldByType(Class<?> type, Class<?> fieldType)
+    {
+        for (Class<?> cursor = type; cursor != null; cursor = cursor.getSuperclass())
+        {
+            for (final Field field : cursor.getDeclaredFields())
+            {
+                if (!fieldType.isAssignableFrom(field.getType()))
+                {
+                    continue;
+                }
+                field.setAccessible(true);
+                return field;
+            }
+        }
+        return null;
+    }
+
+    private static @Nullable Method findNamedMethod(Class<?> type, String methodName, Class<?>... parameterTypes)
+    {
+        for (Class<?> cursor = type; cursor != null; cursor = cursor.getSuperclass())
+        {
+            try
+            {
+                final Method method = cursor.getDeclaredMethod(methodName, parameterTypes);
+                method.setAccessible(true);
+                return method;
+            }
+            catch (NoSuchMethodException ignored)
+            {
+                // Continue searching in super class.
+            }
+        }
+        return null;
+    }
+
+    private static Method findCompatibleMethod(Class<?> type, Class<?>... argumentTypes)
+        throws NoSuchMethodException
+    {
+        for (Class<?> cursor = type; cursor != null; cursor = cursor.getSuperclass())
+        {
+            for (final Method method : cursor.getDeclaredMethods())
+            {
+                final Class<?>[] parameterTypes = method.getParameterTypes();
+                if (parameterTypes.length != argumentTypes.length)
+                {
+                    continue;
+                }
+
+                boolean compatible = true;
+                for (int idx = 0; idx < parameterTypes.length; ++idx)
+                {
+                    if (!parameterTypes[idx].isAssignableFrom(argumentTypes[idx]))
+                    {
+                        compatible = false;
+                        break;
+                    }
+                }
+
+                if (!compatible)
+                {
+                    continue;
+                }
+
+                method.setAccessible(true);
+                return method;
+            }
+        }
+
+        throw new NoSuchMethodException(
+            "Failed to locate compatible method on "
+                + type.getName()
+                + " with parameter types "
+                + List.of(argumentTypes)
+        );
     }
 
     /**
@@ -369,8 +568,6 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
             final Player bukkitPlayer = (Player) serverPlayerGetBukkitEntityMethod.invoke(serverPlayer);
             bukkitPlayer.teleport(spawnLocation);
             playerChannels.put(uuid, embeddedChannel);
-            playerMessageQueues.put(uuid, new ConcurrentLinkedQueue<>());
-            playerChatComponentQueues.put(uuid, new ConcurrentLinkedQueue<>());
             return bukkitPlayer;
         }
         catch (InvocationTargetException exception)
@@ -406,10 +603,7 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
         {
             final Object serverPlayer = craftPlayerGetHandleMethod.invoke(player);
             playerListRemoveMethod.invoke(playerList, serverPlayer);
-            final UUID playerId = player.getUniqueId();
-            playerChannels.remove(playerId);
-            playerMessageQueues.remove(playerId);
-            playerChatComponentQueues.remove(playerId);
+            playerChannels.remove(player.getUniqueId());
         }
         catch (InvocationTargetException exception)
         {
@@ -455,38 +649,7 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
         if (embeddedChannel == null)
             return List.of();
 
-        drainOutboundPackets(playerId, embeddedChannel);
-        return NmsReflectionUtils.drainQueue(
-            playerMessageQueues.computeIfAbsent(playerId, ignored -> new ConcurrentLinkedQueue<>()));
-    }
-
-    /**
-     * Drains newly received chat components (JSON format) for a synthetic player.
-     *
-     * @param playerId
-     *     Synthetic player UUID.
-     * @return Newly captured chat components since the previous drain.
-     */
-    @Override
-    public List<String> drainChatComponents(UUID playerId)
-    {
-        Objects.requireNonNull(playerId, "playerId may not be null.");
-        final Object embeddedChannel = playerChannels.get(playerId);
-        if (embeddedChannel == null)
-            return List.of();
-
-        drainOutboundPackets(playerId, embeddedChannel);
-        final Queue<String> componentQueue =
-            playerChatComponentQueues.computeIfAbsent(playerId, ignored -> new ConcurrentLinkedQueue<>());
-        return NmsReflectionUtils.drainQueue(componentQueue);
-    }
-
-    private void drainOutboundPackets(UUID playerId, Object embeddedChannel)
-    {
-        final Queue<String> messageQueue =
-            playerMessageQueues.computeIfAbsent(playerId, ignored -> new ConcurrentLinkedQueue<>());
-        final Queue<String> componentQueue =
-            playerChatComponentQueues.computeIfAbsent(playerId, ignored -> new ConcurrentLinkedQueue<>());
+        final List<String> messages = new ArrayList<>();
         try
         {
             Object outboundPacket;
@@ -494,104 +657,18 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
             {
                 final String message = extractText(outboundPacket, TEXT_EXTRACTION_MAX_DEPTH, new IdentityHashMap<>());
                 if (message != null && !message.isBlank())
-                    messageQueue.add(message);
-
-                final String json =
-                    extractComponentJson(outboundPacket, TEXT_EXTRACTION_MAX_DEPTH, new IdentityHashMap<>());
-                if (json != null)
-                    componentQueue.add(json);
+                    messages.add(message);
             }
         }
         catch (Exception exception)
         {
             throw new IllegalStateException(
-                "Failed to drain outbound packets for synthetic player '%s'."
+                "Failed to drain received messages for synthetic player '%s'."
                     .formatted(playerId),
                 exception
             );
         }
-    }
-
-    private @Nullable String extractComponentJson(
-        @Nullable Object value,
-        int depth,
-        IdentityHashMap<Object, Boolean> seen)
-    {
-        return NmsValueExtractor.extract(
-            value, depth, seen,
-            this::trySerializeComponentToJson,
-            BotPlayerNmsAdapterV1_21_R7::isSafeComponentAccessor,
-            false
-        );
-    }
-
-    /**
-     * Detects NMS chat component objects and serialises them to JSON.
-     * Returns {@code null} when {@code value} is not a component or serialisation fails.
-     */
-    private @Nullable String trySerializeComponentToJson(Object value)
-    {
-        if (!value.getClass().getSimpleName().endsWith("Component") &&
-            !value.getClass().getName().startsWith("net.minecraft.network.chat."))
-        {
-            return null;
-        }
-        try
-        {
-            final Object dataResult = componentCodecEncodeStartMethod.invoke(
-                componentJsonCodec,
-                componentJsonOps,
-                value
-            );
-            final Optional<?> serializedJson = (Optional<?>) dataResultResultMethod.invoke(dataResult);
-            return serializedJson.map(Object::toString).orElse(null);
-        }
-        catch (Exception exception)
-        {
-            LOG.log(
-                System.Logger.Level.TRACE,
-                "Ignoring component serialization failure while extracting packet component.",
-                exception
-            );
-            return null;
-        }
-    }
-
-    private static boolean isSafeComponentAccessor(Method method)
-    {
-        if (method.getParameterCount() != 0)
-            return false;
-        if (method.getDeclaringClass() == Object.class)
-            return false;
-
-        final String methodName = method.getName();
-        if (methodName.equals("getClass") || methodName.equals("hashCode") || methodName.equals("toString"))
-            return false;
-
-        final Class<?> returnType = method.getReturnType();
-        if (returnType == Void.TYPE || returnType.isPrimitive())
-            return false;
-
-        final String lowerMethodName = methodName.toLowerCase(Locale.ROOT);
-        final boolean safeName = methodName.startsWith("get") ||
-            methodName.startsWith("is") ||
-            lowerMethodName.contains("component") ||
-            lowerMethodName.contains("message") ||
-            lowerMethodName.contains("content") ||
-            lowerMethodName.contains("title");
-        if (!safeName)
-            return false;
-
-        if (Optional.class.isAssignableFrom(returnType))
-            return true;
-        if (Collection.class.isAssignableFrom(returnType))
-            return true;
-        if (returnType.isArray())
-            return true;
-
-        final String returnTypeName = returnType.getName();
-        return returnTypeName.startsWith("net.minecraft.network.chat.") ||
-            returnTypeName.endsWith("Component");
+        return List.copyOf(messages);
     }
 
     private static @Nullable String extractText(
@@ -599,20 +676,76 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
         int depth,
         IdentityHashMap<Object, Boolean> seen)
     {
-        // Try getString() directly first (net.minecraft.network.chat.Component has this method).
-        // NmsValueExtractor.extract handles containers first, so we pre-check for String leaves here.
-        return NmsValueExtractor.extract(
-            value, depth, seen,
-            v ->
+        if (value == null || depth < 0 || seen.put(value, Boolean.TRUE) != null)
+            return null;
+
+        switch (value)
+        {
+            case String stringValue ->
             {
-                if (v instanceof String s)
-                    return s.isBlank() ? null : s;
-                final String direct = NmsReflectionUtils.invokeStringMethod(v, "getString");
-                return (direct != null && !direct.isBlank()) ? direct : null;
-            },
-            BotPlayerNmsAdapterV1_21_R7::isSafeTextAccessor,
-            true
-        );
+                return stringValue;
+            }
+            case Optional<?> optional ->
+            {
+                return optional.map(inner -> extractText(inner, depth - 1, seen)).orElse(null);
+            }
+            case Collection<?> collection ->
+            {
+                for (final Object element : collection)
+                {
+                    final String extracted = extractText(element, depth - 1, seen);
+                    if (extracted != null && !extracted.isBlank())
+                        return extracted;
+                }
+                return null;
+            }
+            default ->
+            {
+            }
+        }
+        if (value.getClass().isArray())
+        {
+            final int arrayLength = Array.getLength(value);
+            for (int index = 0; index < arrayLength; ++index)
+            {
+                final String extracted = extractText(Array.get(value, index), depth - 1, seen);
+                if (extracted != null && !extracted.isBlank())
+                    return extracted;
+            }
+            return null;
+        }
+
+        // net.minecraft.network.chat.Component has getString().
+        final String directText = invokeStringMethod(value, "getString");
+        if (directText != null && !directText.isBlank())
+            return directText;
+
+        int inspectedMethodCount = 0;
+        for (final Method method : value.getClass().getMethods())
+        {
+            if (!isSafeTextAccessor(method))
+                continue;
+            if (inspectedMethodCount >= TEXT_EXTRACTION_MAX_METHODS)
+                break;
+            ++inspectedMethodCount;
+
+            try
+            {
+                final Object nestedValue = method.invoke(value);
+                final String extracted = extractText(nestedValue, depth - 1, seen);
+                if (extracted != null && !extracted.isBlank())
+                    return extracted;
+            }
+            catch (Exception exception)
+            {
+                LOG.log(
+                    System.Logger.Level.TRACE,
+                    "Ignoring reflective accessor failure while extracting packet text.",
+                    exception
+                );
+            }
+        }
+        return null;
     }
 
     private static boolean isSafeTextAccessor(Method method)
@@ -652,4 +785,18 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
             lowerMethodName.contains("title");
     }
 
+    private static @Nullable String invokeStringMethod(Object target, String methodName)
+    {
+        try
+        {
+            final Method method = target.getClass().getMethod(methodName);
+            if (method.getReturnType() != String.class)
+                return null;
+            return (String) method.invoke(target);
+        }
+        catch (Exception ignored)
+        {
+            return null;
+        }
+    }
 }

@@ -47,19 +47,6 @@ final class AgentRequestParsers
     }
 
     /**
-     * Parses a trimmed decimal value.
-     *
-     * @param value
-     *     Input string.
-     * @return
-     *     Parsed decimal.
-     */
-    static double parseDouble(String value)
-    {
-        return Double.parseDouble(value.trim());
-    }
-
-    /**
      * Parses a nullable/blankable decimal argument.
      *
      * @param value

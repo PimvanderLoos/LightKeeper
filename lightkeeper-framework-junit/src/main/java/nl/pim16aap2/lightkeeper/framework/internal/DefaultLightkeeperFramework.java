@@ -1,18 +1,13 @@
 package nl.pim16aap2.lightkeeper.framework.internal;
 
-import nl.pim16aap2.lightkeeper.framework.CapturedEventSnapshot;
-import nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot;
 import nl.pim16aap2.lightkeeper.framework.CommandResult;
 import nl.pim16aap2.lightkeeper.framework.CommandSource;
 import nl.pim16aap2.lightkeeper.framework.Condition;
-import nl.pim16aap2.lightkeeper.framework.EventCaptureHandle;
 import nl.pim16aap2.lightkeeper.framework.FrameworkHandleFactory;
 import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.IPlayerBuilder;
 import nl.pim16aap2.lightkeeper.framework.IWorldBuilder;
-import nl.pim16aap2.lightkeeper.framework.InventorySnapshot;
 import nl.pim16aap2.lightkeeper.framework.MenuSnapshot;
-import nl.pim16aap2.lightkeeper.framework.Platform;
 import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
 import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
@@ -272,15 +267,6 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     }
 
     @Override
-    public void teleportPlayer(UUID uuid, String worldName, double x, double y, double z)
-    {
-        ensureOpen();
-        Objects.requireNonNull(uuid, "uuid may not be null.");
-        Objects.requireNonNull(worldName, "worldName may not be null.");
-        agentClient.teleportPlayer(uuid, worldName, x, y, z);
-    }
-
-    @Override
     public void placePlayerBlock(UUID playerId, String material, int x, int y, int z)
     {
         ensureOpen();
@@ -289,30 +275,6 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
         if (trimmedMaterial.isEmpty())
             throw new IllegalArgumentException("material may not be blank.");
         agentClient.placePlayerBlock(playerId, trimmedMaterial, x, y, z);
-    }
-
-    @Override
-    public void loadChunk(String worldName, int x, int z)
-    {
-        ensureOpen();
-        Objects.requireNonNull(worldName, "worldName may not be null.");
-        agentClient.loadChunk(worldName, x, z);
-    }
-
-    @Override
-    public boolean unloadChunk(String worldName, int x, int z)
-    {
-        ensureOpen();
-        Objects.requireNonNull(worldName, "worldName may not be null.");
-        return agentClient.unloadChunk(worldName, x, z);
-    }
-
-    @Override
-    public boolean isChunkLoaded(String worldName, int x, int z)
-    {
-        ensureOpen();
-        Objects.requireNonNull(worldName, "worldName may not be null.");
-        return agentClient.isChunkLoaded(worldName, x, z);
     }
 
     @Override
@@ -397,106 +359,10 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     }
 
     @Override
-    public List<ChatComponentSnapshot> playerChatComponents(UUID playerId)
-    {
-        ensureOpen();
-        Objects.requireNonNull(playerId, "playerId may not be null.");
-        return agentClient.playerChatComponents(playerId);
-    }
-
-    @Override
-    public EventCaptureHandle captureEvents(String eventClassName)
-    {
-        ensureOpen();
-        Objects.requireNonNull(eventClassName, "eventClassName may not be null.");
-        agentClient.registerEventListener(eventClassName);
-        return FrameworkHandleFactory.eventCaptureHandle(this, eventClassName);
-    }
-
-    @Override
-    public InventorySnapshot playerInventory(UUID playerId)
-    {
-        ensureOpen();
-        Objects.requireNonNull(playerId, "playerId may not be null.");
-        return agentClient.playerInventory(playerId);
-    }
-
-    @Override
-    public boolean dropItem(UUID playerId)
-    {
-        ensureOpen();
-        Objects.requireNonNull(playerId, "playerId may not be null.");
-        return agentClient.dropItem(playerId);
-    }
-
-    @Override
-    public void registerEventListener(String eventClassName)
-    {
-        ensureOpen();
-        agentClient.registerEventListener(eventClassName);
-    }
-
-    @Override
-    public List<CapturedEventSnapshot> getCapturedEvents(String eventClassName)
-    {
-        ensureOpen();
-        return agentClient.getCapturedEvents(eventClassName);
-    }
-
-    @Override
-    public void clearCapturedEvents(String eventClassName)
-    {
-        ensureOpen();
-        agentClient.clearCapturedEvents(eventClassName);
-    }
-
-    @Override
-    public void unregisterEventListener(String eventClassName)
-    {
-        ensureOpen();
-        agentClient.unregisterEventListener(eventClassName);
-    }
-
-    @Override
     public List<String> serverOutput()
     {
         ensureOpen();
         return minecraftServerProcess.snapshotOutputLines();
-    }
-
-    @Override
-    public Platform platform()
-    {
-        ensureOpen();
-        return agentClient.serverPlatform();
-    }
-
-    @Override
-    public void crashServer()
-    {
-        ensureOpen();
-        LOG.log(System.Logger.Level.INFO, "LK_FRAMEWORK: Crashing Minecraft server.");
-        playerScopeRegistry.invalidateAll();
-        agentClient.close();
-        minecraftServerProcess.kill();
-    }
-
-    @Override
-    public void restartServer()
-    {
-        ensureOpen();
-        if (minecraftServerProcess.isRunning())
-            throw new IllegalStateException("Cannot restart server while it is still running.");
-
-        LOG.log(System.Logger.Level.INFO, "LK_FRAMEWORK: Restarting Minecraft server.");
-        minecraftServerProcess.start(STARTUP_TIMEOUT);
-        agentClient.rehandshake(
-            AGENT_CONNECT_TIMEOUT,
-            runtimeManifest.agentAuthToken(),
-            runtimeManifest.runtimeProtocolVersion(),
-            Objects.requireNonNullElse(runtimeManifest.agentJarSha256(), "")
-        );
-        preloadConfiguredWorlds();
     }
 
     private void clickBlock(UUID playerId, Vector3Di position, String blockFace, BlockClickOperation operation)

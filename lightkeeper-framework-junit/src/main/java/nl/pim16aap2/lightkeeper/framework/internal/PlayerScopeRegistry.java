@@ -59,11 +59,6 @@ final class PlayerScopeRegistry
         cleanupPlayersByScope(scopeBinding -> true, playerRemover);
     }
 
-    void invalidateAll()
-    {
-        createdPlayers.clear();
-    }
-
     private void cleanupPlayersByScope(Predicate<ScopeBinding> scopeSelector, Consumer<UUID> playerRemover)
     {
         final Map<UUID, ScopeBinding> playerSnapshot = Map.copyOf(createdPlayers);

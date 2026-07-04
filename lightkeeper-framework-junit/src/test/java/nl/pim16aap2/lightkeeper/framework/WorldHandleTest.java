@@ -58,43 +58,4 @@ class WorldHandleTest
         verify(frameworkGateway).setBlock("world", position, "STONE");
     }
 
-    @Test
-    void loadChunk_shouldDelegateToGatewayAndReturnSelf()
-    {
-        // execute
-        final WorldHandle result = worldHandle.loadChunk(1, 2);
-
-        // verify
-        assertThat(result).isSameAs(worldHandle);
-        verify(frameworkGateway).loadChunk("world", 1, 2);
-    }
-
-    @Test
-    void unloadChunk_shouldDelegateToGateway()
-    {
-        // setup
-        when(frameworkGateway.unloadChunk("world", 1, 2)).thenReturn(true);
-
-        // execute
-        final boolean result = worldHandle.unloadChunk(1, 2);
-
-        // verify
-        assertThat(result).isTrue();
-        verify(frameworkGateway).unloadChunk("world", 1, 2);
-    }
-
-    @Test
-    void isChunkLoaded_shouldDelegateToGateway()
-    {
-        // setup
-        when(frameworkGateway.isChunkLoaded("world", 1, 2)).thenReturn(true);
-
-        // execute
-        final boolean result = worldHandle.isChunkLoaded(1, 2);
-
-        // verify
-        assertThat(result).isTrue();
-        verify(frameworkGateway).isChunkLoaded("world", 1, 2);
-    }
-
 }

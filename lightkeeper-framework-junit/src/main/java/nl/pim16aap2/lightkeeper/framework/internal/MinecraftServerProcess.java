@@ -11,17 +11,14 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
-import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
@@ -35,7 +32,6 @@ final class MinecraftServerProcess
     private static final System.Logger LOG = System.getLogger(MinecraftServerProcess.class.getName());
 
     private static final int MAX_CAPTURED_OUTPUT_LINES = 10_000;
-    private static final Duration SESSION_LOCK_RELEASE_TIMEOUT = Duration.ofSeconds(10);
 
     private final RuntimeManifest runtimeManifest;
     private final Path diagnosticsDirectory;
@@ -44,6 +40,7 @@ final class MinecraftServerProcess
     private final ArrayDeque<String> outputLines = new ArrayDeque<>(MAX_CAPTURED_OUTPUT_LINES);
     @GuardedBy("outputLinesLock")
     private long discardedOutputLineCount = 0L;
+    private final CountDownLatch startedLatch = new CountDownLatch(1);
     private @Nullable Process process;
     private @Nullable Thread outputThread;
 
@@ -56,26 +53,15 @@ final class MinecraftServerProcess
 
     void start(Duration timeout)
     {
-        if (isRunning())
-            throw new IllegalStateException("Minecraft server is already running.");
-
-        clearStoppedProcessState();
-        if (outputThread != null && outputThread.isAlive())
-            throw new IllegalStateException("Previous Minecraft server output reader is still stopping.");
-        waitForWorldSessionLockRelease(SESSION_LOCK_RELEASE_TIMEOUT);
-
         final Path javaExecutable = Path.of(System.getProperty("java.home"), "bin", "java");
         final ProcessBuilder processBuilder = getProcessBuilder(javaExecutable);
-        final CountDownLatch startLatch = new CountDownLatch(1);
 
         try
         {
-            final Process startedProcess = processBuilder.start();
-            final Thread startedOutputThread = createOutputReaderThread(startedProcess, startLatch);
-            process = startedProcess;
-            outputThread = startedOutputThread;
-            startedOutputThread.start();
-            awaitStartupOrFail(startedProcess, startLatch, timeout);
+            process = processBuilder.start();
+            outputThread = createOutputReaderThread(process);
+            outputThread.start();
+            awaitStartupOrFail(timeout);
         }
         catch (Exception exception)
         {
@@ -85,20 +71,16 @@ final class MinecraftServerProcess
         }
     }
 
-    boolean isRunning()
-    {
-        return process != null && process.isAlive();
-    }
-
-    private void awaitStartupOrFail(Process runningProcess, CountDownLatch startLatch, Duration timeout)
+    private void awaitStartupOrFail(Duration timeout)
         throws InterruptedException
     {
         final long startupDeadlineNanos = System.nanoTime() + timeout.toNanos();
         while (System.nanoTime() < startupDeadlineNanos)
         {
-            if (startLatch.await(200L, TimeUnit.MILLISECONDS))
+            if (startedLatch.await(200L, TimeUnit.MILLISECONDS))
                 return;
 
+            final Process runningProcess = Objects.requireNonNull(process, "process may not be null.");
             if (!runningProcess.isAlive())
             {
                 throw new IllegalStateException(
@@ -128,7 +110,6 @@ final class MinecraftServerProcess
         command.add("-D" + RuntimeProtocol.PROPERTY_PROTOCOL_VERSION + "=" + runtimeManifest.runtimeProtocolVersion());
         command.add("-D" + RuntimeProtocol.PROPERTY_EXPECTED_AGENT_SHA256 + "=" +
             Objects.requireNonNullElse(runtimeManifest.agentJarSha256(), ""));
-        // Suppresses Spigot's stale-build warning so non-latest Spigot builds don't hang on startup.
         command.add("-DIReallyKnowWhatIAmDoingISwear=true");
         command.add("-jar");
         command.add(serverJar.toString());
@@ -143,186 +124,49 @@ final class MinecraftServerProcess
     {
         if (extraJvmArgs == null || extraJvmArgs.isBlank())
             return;
-
-        // Split on whitespace that is not inside double-quoted tokens so arguments like
-        // -Dfoo="hello world" are not broken into multiple invalid args.
-        final java.util.regex.Matcher matcher =
-            java.util.regex.Pattern.compile("\"([^\"]*)\"|\\S+").matcher(extraJvmArgs.trim());
-        while (matcher.find())
-            command.add(matcher.group(1) != null ? matcher.group(1) : matcher.group());
-    }
-
-    void kill()
-    {
-        final Process currentProcess = process;
-        if (currentProcess == null)
-            return;
-
-        try
-        {
-            if (currentProcess.isAlive())
-            {
-                forceProcessExit(currentProcess, "Minecraft server process did not exit after forced kill.");
-            }
-        }
-        finally
-        {
-            joinOutputThread(Duration.ofSeconds(5));
-            try
-            {
-                waitForWorldSessionLockRelease(SESSION_LOCK_RELEASE_TIMEOUT);
-            }
-            finally
-            {
-                clearProcessState(currentProcess);
-            }
-        }
+        command.addAll(Arrays.asList(extraJvmArgs.split("\\s+")));
     }
 
     void stop(Duration timeout)
     {
-        final Process currentProcess = process;
-        if (currentProcess == null)
+        if (process == null)
             return;
 
         try
         {
-            if (currentProcess.isAlive())
+            if (process.isAlive())
             {
                 try (
                     BufferedWriter writer = new BufferedWriter(
-                        new OutputStreamWriter(currentProcess.getOutputStream(), StandardCharsets.UTF_8)))
+                        new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8)))
                 {
                     writer.write("stop");
                     writer.newLine();
                     writer.flush();
                 }
 
-                final boolean stopped = currentProcess.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS);
-                if (!stopped && currentProcess.isAlive())
-                    forceProcessExit(currentProcess, "Minecraft server process did not exit after forced stop.");
+                final boolean stopped = process.waitFor(timeout.toSeconds(), TimeUnit.SECONDS);
+                if (!stopped && process.isAlive())
+                    process.destroyForcibly();
             }
         }
         catch (Exception exception)
         {
-            if (currentProcess.isAlive())
-            {
-                currentProcess.destroyForcibly();
-                waitForProcessExit(currentProcess, Duration.ofSeconds(5));
-            }
+            if (process.isAlive())
+                process.destroyForcibly();
             writeDiagnostics("shutdown-failure");
         }
-        finally
-        {
-            joinOutputThread(Duration.ofSeconds(5));
-            try
-            {
-                waitForWorldSessionLockRelease(SESSION_LOCK_RELEASE_TIMEOUT);
-            }
-            finally
-            {
-                clearProcessState(currentProcess);
-            }
-        }
-    }
 
-    private static void forceProcessExit(Process process, String failureMessage)
-    {
-        process.destroyForcibly();
-        if (!waitForProcessExit(process, Duration.ofSeconds(5)) && process.isAlive())
-            throw new IllegalStateException(failureMessage);
-    }
-
-    private static boolean waitForProcessExit(Process process, Duration timeout)
-    {
-        try
-        {
-            return process.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS);
-        }
-        catch (InterruptedException exception)
-        {
-            Thread.currentThread().interrupt();
-            return false;
-        }
-    }
-
-    private void joinOutputThread(Duration timeout)
-    {
         if (outputThread != null)
         {
             try
             {
-                outputThread.join(timeout.toMillis());
+                outputThread.join(TimeUnit.SECONDS.toMillis(5));
             }
             catch (InterruptedException exception)
             {
                 Thread.currentThread().interrupt();
             }
-            if (!outputThread.isAlive())
-                outputThread = null;
-        }
-    }
-
-    private void clearProcessState(Process completedProcess)
-    {
-        if (Objects.equals(process, completedProcess) && !completedProcess.isAlive())
-            process = null;
-        if (outputThread != null && !outputThread.isAlive())
-            outputThread = null;
-    }
-
-    private void clearStoppedProcessState()
-    {
-        final Process currentProcess = process;
-        if (currentProcess != null && !currentProcess.isAlive())
-        {
-            joinOutputThread(Duration.ofSeconds(5));
-            clearProcessState(currentProcess);
-        }
-    }
-
-    private void waitForWorldSessionLockRelease(Duration timeout)
-    {
-        final Path serverDirectory = Path.of(runtimeManifest.serverDirectory());
-        final Instant deadline = Instant.now().plus(timeout);
-        while (Instant.now().isBefore(deadline))
-        {
-            if (isWorldSessionLockAvailable(serverDirectory))
-                return;
-
-            try
-            {
-                TimeUnit.MILLISECONDS.sleep(100L);
-            }
-            catch (InterruptedException exception)
-            {
-                Thread.currentThread().interrupt();
-                return;
-            }
-        }
-
-        if (!isWorldSessionLockAvailable(serverDirectory))
-            throw new IllegalStateException(
-                "Minecraft world session lock was not released within %d ms: %s"
-                    .formatted(timeout.toMillis(), serverDirectory.resolve("world/session.lock"))
-            );
-    }
-
-    static boolean isWorldSessionLockAvailable(Path serverDirectory)
-    {
-        final Path sessionLock = serverDirectory.resolve("world/session.lock");
-        if (!Files.exists(sessionLock))
-            return true;
-
-        try (
-            FileChannel channel = FileChannel.open(sessionLock, StandardOpenOption.WRITE);
-            FileLock ignored = channel.tryLock())
-        {
-            return ignored != null;
-        }
-        catch (IOException | OverlappingFileLockException exception)
-        {
-            return false;
         }
     }
 
@@ -395,7 +239,7 @@ final class MinecraftServerProcess
         }
     }
 
-    private Thread createOutputReaderThread(Process process, CountDownLatch startLatch)
+    private Thread createOutputReaderThread(Process process)
     {
         return Thread.ofPlatform()
             .name("lightkeeper-minecraft-output-reader")
@@ -413,7 +257,7 @@ final class MinecraftServerProcess
                         appendOutputLine(line);
 
                         if (line.contains("Done (") && line.endsWith(")! For help, type \"help\""))
-                            startLatch.countDown();
+                            startedLatch.countDown();
                     }
                 }
                 catch (IOException exception)

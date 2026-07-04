@@ -75,46 +75,6 @@ public final class WorldHandleAssert extends AbstractAssert<WorldHandleAssert, @
         return this;
     }
 
-    /**
-     * Asserts that a chunk is loaded at the target coordinates.
-     *
-     * @param chunkX
-     *     Chunk X coordinate.
-     * @param chunkZ
-     *     Chunk Z coordinate.
-     * @return This assertion for fluent chaining.
-     */
-    public WorldHandleAssert hasLoadedChunkAt(int chunkX, int chunkZ)
-    {
-        final var actual = nonNullActual();
-        if (!actual.isChunkLoaded(chunkX, chunkZ))
-        {
-            failWithMessage("Expected chunk [%d, %d] in world '%s' to be loaded, but it was not.",
-                chunkX, chunkZ, actual.name());
-        }
-        return this;
-    }
-
-    /**
-     * Asserts that a chunk is not loaded at the target coordinates.
-     *
-     * @param chunkX
-     *     Chunk X coordinate.
-     * @param chunkZ
-     *     Chunk Z coordinate.
-     * @return This assertion for fluent chaining.
-     */
-    public WorldHandleAssert doesNotHaveLoadedChunkAt(int chunkX, int chunkZ)
-    {
-        final var actual = nonNullActual();
-        if (actual.isChunkLoaded(chunkX, chunkZ))
-        {
-            failWithMessage("Expected chunk [%d, %d] in world '%s' to be unloaded, but it was loaded.",
-                chunkX, chunkZ, actual.name());
-        }
-        return this;
-    }
-
     @SuppressWarnings({"NullAway", "DataFlowIssue"}) // we call isNotNull() first, so actual is not null after that
     private WorldHandle nonNullActual()
     {

@@ -62,7 +62,7 @@ class LightkeeperFrameworkIT
             final WorldHandle worldHandle = framework.newWorld(worldSpec);
             worldHandle.setBlockAt(position, "STONE");
             framework.waitUntil(
-                () -> "minecraft:stone".equals(worldHandle.blockTypeAt(position)),
+                () -> "STONE".equals(worldHandle.blockTypeAt(position)),
                 Duration.ofSeconds(20)
             );
 

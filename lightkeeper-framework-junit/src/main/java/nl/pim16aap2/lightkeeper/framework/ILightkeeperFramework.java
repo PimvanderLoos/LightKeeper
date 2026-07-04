@@ -98,32 +98,6 @@ public interface ILightkeeperFramework extends AutoCloseable
      */
     List<String> serverOutput();
 
-    /**
-     * Gets the server platform (e.g. PAPER, SPIGOT).
-     *
-     * @return Server platform.
-     */
-    Platform platform();
-
-    /**
-     * Crashes the Minecraft server immediately.
-     */
-    void crashServer();
-
-    /**
-     * Restarts the Minecraft server after a crash.
-     */
-    void restartServer();
-
-    /**
-     * Starts capturing Bukkit events of the specified type.
-     *
-     * @param eventClassName
-     *     The full class name of the event to capture (e.g. "org.bukkit.event.player.PlayerMoveEvent").
-     * @return A handle to manage the capture session.
-     */
-    EventCaptureHandle captureEvents(String eventClassName);
-
     @Override
     void close();
 }
