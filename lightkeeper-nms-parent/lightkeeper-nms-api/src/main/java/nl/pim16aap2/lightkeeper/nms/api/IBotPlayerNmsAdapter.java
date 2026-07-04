@@ -43,4 +43,13 @@ public interface IBotPlayerNmsAdapter
      * @return Newly captured messages since the previous drain.
      */
     List<String> drainReceivedMessages(UUID playerId);
+
+    /**
+     * Drains newly received chat components (JSON format) for a synthetic player.
+     *
+     * @param playerId
+     *     Synthetic player UUID.
+     * @return Newly captured chat components since the previous drain.
+     */
+    List<String> drainChatComponents(UUID playerId);
 }
