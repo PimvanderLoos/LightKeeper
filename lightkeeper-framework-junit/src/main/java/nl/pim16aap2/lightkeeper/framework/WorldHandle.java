@@ -63,11 +63,16 @@ public final class WorldHandle
      *     Chunk X coordinate.
      * @param chunkZ
      *     Chunk Z coordinate.
-     * @return True if the chunk was loaded successfully.
+     * @return This handle for fluent chaining.
+     * @throws IllegalStateException
+     *     If the server failed to load the chunk.
      */
-    public boolean loadChunk(int chunkX, int chunkZ)
+    public WorldHandle loadChunk(int chunkX, int chunkZ)
     {
-        return frameworkGateway.loadChunk(name, chunkX, chunkZ);
+        if (!frameworkGateway.loadChunk(name, chunkX, chunkZ))
+            throw new IllegalStateException(
+                "Failed to load chunk [%d, %d] in world '%s'.".formatted(chunkX, chunkZ, name));
+        return this;
     }
 
     /**
@@ -77,11 +82,17 @@ public final class WorldHandle
      *     Chunk X coordinate.
      * @param chunkZ
      *     Chunk Z coordinate.
-     * @return True if the chunk was successfully unloaded.
+     * @return This handle for fluent chaining.
+     * @throws IllegalStateException
+     *     If the server refused to unload the chunk (e.g. because it is still in use).
      */
-    public boolean unloadChunk(int chunkX, int chunkZ)
+    public WorldHandle unloadChunk(int chunkX, int chunkZ)
     {
-        return frameworkGateway.unloadChunk(name, chunkX, chunkZ);
+        if (!frameworkGateway.unloadChunk(name, chunkX, chunkZ))
+            throw new IllegalStateException(
+                "Failed to unload chunk [%d, %d] in world '%s'; the chunk may still be in use.".formatted(
+                    chunkX, chunkZ, name));
+        return this;
     }
 
     /**
