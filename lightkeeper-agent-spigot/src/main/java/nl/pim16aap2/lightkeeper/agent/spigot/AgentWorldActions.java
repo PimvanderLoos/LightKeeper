@@ -109,6 +109,15 @@ final class AgentWorldActions
         final String environmentValue = command.environment();
         final long seed = command.seed();
 
+        if (worldName.isBlank())
+        {
+            return AgentResponses.errorResponse(
+                command.requestId(),
+                AgentErrorCode.INVALID_ARGUMENT,
+                "Argument 'worldName' must not be blank."
+            );
+        }
+
         final World world = mainThreadExecutor.callOnMainThread(() ->
         {
             final WorldCreator worldCreator = new WorldCreator(worldName);
@@ -140,6 +149,15 @@ final class AgentWorldActions
     {
         final String source = command.commandSource();
         final String rawCommand = command.command();
+
+        if (rawCommand.isBlank())
+        {
+            return AgentResponses.errorResponse(
+                command.requestId(),
+                AgentErrorCode.INVALID_ARGUMENT,
+                "Argument 'command' must not be blank."
+            );
+        }
 
         if (!source.equalsIgnoreCase("CONSOLE"))
         {
@@ -181,7 +199,7 @@ final class AgentWorldActions
             final World world = Bukkit.getWorld(worldName);
             if (world == null)
                 throw new IllegalArgumentException("World '%s' does not exist.".formatted(worldName));
-            return world.getBlockAt(x, y, z).getType().name();
+            return world.getBlockAt(x, y, z).getType().getKey().toString();
         });
 
         return AgentResponses.successResponse(command.requestId(), Map.of("material", materialName));
@@ -384,18 +402,15 @@ final class AgentWorldActions
     }
 
     /**
-     * Handles {@code GET_SERVER_PLATFORM} by returning the server implementation name and version.
+     * Handles {@code GET_SERVER_PLATFORM} by classifying the running server as PAPER, SPIGOT, or UNKNOWN.
      *
      * @param command
      *     Typed command carrying the request identifier.
      * @return
-     *     Success response containing {@code serverName} and {@code serverVersion}.
+     *     Success response containing {@code platform} (e.g. "PAPER", "SPIGOT", "UNKNOWN").
      */
     AgentResponse handleGetServerPlatform(GetServerPlatformCommand command)
     {
-        return AgentResponses.successResponse(command.requestId(), Map.of(
-            "serverName", Bukkit.getName(),
-            "serverVersion", Bukkit.getVersion()
-        ));
+        return AgentResponses.successResponse(command.requestId(), Map.of("platform", AgentPlatformDetector.detect()));
     }
 }

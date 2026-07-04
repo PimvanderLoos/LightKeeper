@@ -18,6 +18,7 @@ import nl.pim16aap2.lightkeeper.protocol.GetOpenMenuCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponentsCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerInventoryCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerMessagesCommand;
+import nl.pim16aap2.lightkeeper.protocol.GetServerPlatformCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetServerTickCommand;
 import nl.pim16aap2.lightkeeper.protocol.HandshakeCommand;
 import nl.pim16aap2.lightkeeper.protocol.IsChunkLoadedCommand;
@@ -39,7 +40,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
@@ -212,11 +212,19 @@ class AgentRequestDispatcherTest
             .thenReturn(AgentResponses.successResponse("request-21", Map.of("inventoryJson", "[]")));
         when(fixture.playerActions().handleDropItem(any(DropItemCommand.class)))
             .thenReturn(AgentResponses.successResponse("request-22", Map.of("dropped", "false")));
-        when(fixture.eventCapture().getCapturedEvents(eq(eventClass)))
-            .thenReturn(List.of(Map.of("getEventName", "Event")));
+        when(fixture.eventActions().handleRegisterEventListener(any(RegisterEventListenerCommand.class)))
+            .thenReturn(AgentResponses.successResponse("request-23", Map.of()));
+        when(fixture.eventActions().handleGetCapturedEvents(any(GetCapturedEventsCommand.class)))
+            .thenReturn(AgentResponses.successResponse("request-24", Map.of("eventsJson", "[{\"getEventName\":\"Event\"}]")));
+        when(fixture.eventActions().handleClearCapturedEvents(any(ClearCapturedEventsCommand.class)))
+            .thenReturn(AgentResponses.successResponse("request-25", Map.of()));
+        when(fixture.eventActions().handleUnregisterEventListener(any(UnregisterEventListenerCommand.class)))
+            .thenReturn(AgentResponses.successResponse("request-26", Map.of()));
         when(fixture.playerActions().handleGetPlayerChatComponents(
             any(GetPlayerChatComponentsCommand.class)))
             .thenReturn(AgentResponses.successResponse("request-27", Map.of()));
+        when(fixture.worldActions().handleGetServerPlatform(any(GetServerPlatformCommand.class)))
+            .thenReturn(AgentResponses.successResponse("request-28", Map.of()));
 
         // execute
         fixture.dispatcher().handleRequestLine(toJson(new NewWorldCommand("request-1", "w", "NORMAL", "NORMAL", 0L)), true);
@@ -256,6 +264,7 @@ class AgentRequestDispatcherTest
             toJson(new UnregisterEventListenerCommand("request-26", eventClass)), true);
         fixture.dispatcher().handleRequestLine(
             toJson(new GetPlayerChatComponentsCommand("request-27", uuid)), true);
+        fixture.dispatcher().handleRequestLine(toJson(new GetServerPlatformCommand("request-28")), true);
 
         // verify
         verify(fixture.worldActions()).handleNewWorld(any(NewWorldCommand.class));
@@ -280,12 +289,12 @@ class AgentRequestDispatcherTest
         verify(fixture.worldActions()).handleIsChunkLoaded(any(IsChunkLoadedCommand.class));
         verify(fixture.playerActions()).handleGetPlayerInventory(any(GetPlayerInventoryCommand.class));
         verify(fixture.playerActions()).handleDropItem(any(DropItemCommand.class));
-        verify(fixture.eventCapture()).registerListener(eventClass);
-        verify(fixture.eventCapture()).getCapturedEvents(eventClass);
-        verify(fixture.eventCapture()).clearCapturedEvents(eventClass);
-        verify(fixture.eventCapture()).unregisterListener(eventClass);
-        verify(fixture.playerActions()).handleGetPlayerChatComponents(
-            any(GetPlayerChatComponentsCommand.class));
+        verify(fixture.eventActions()).handleRegisterEventListener(any(RegisterEventListenerCommand.class));
+        verify(fixture.eventActions()).handleGetCapturedEvents(any(GetCapturedEventsCommand.class));
+        verify(fixture.eventActions()).handleClearCapturedEvents(any(ClearCapturedEventsCommand.class));
+        verify(fixture.eventActions()).handleUnregisterEventListener(any(UnregisterEventListenerCommand.class));
+        verify(fixture.playerActions()).handleGetPlayerChatComponents(any(GetPlayerChatComponentsCommand.class));
+        verify(fixture.worldActions()).handleGetServerPlatform(any(GetServerPlatformCommand.class));
     }
 
     @Test
@@ -294,8 +303,12 @@ class AgentRequestDispatcherTest
     {
         // setup
         final DispatcherFixture fixture = createDispatcherFixture();
-        doThrow(new IllegalArgumentException("Class 'java.lang.String' is not a Bukkit Event."))
-            .when(fixture.eventCapture()).registerListener("java.lang.String");
+        when(fixture.eventActions().handleRegisterEventListener(any(RegisterEventListenerCommand.class)))
+            .thenReturn(AgentResponses.errorResponse(
+                "request-event",
+                nl.pim16aap2.lightkeeper.protocol.AgentErrorCode.INVALID_ARGUMENT,
+                "Class 'java.lang.String' is not a Bukkit Event."
+            ));
         final String requestLine = toJson(new RegisterEventListenerCommand("request-event", "java.lang.String"));
 
         // execute
@@ -414,74 +427,6 @@ class AgentRequestDispatcherTest
         assertThat(result.response().errorCode()).isEqualTo("AGENT_SHA_MISMATCH");
     }
 
-    @Test
-    void handleRequestLine_shouldReturnInvalidArgumentWhenRegisterEventListenerClassIsBlank()
-        throws Exception
-    {
-        // setup
-        final DispatcherFixture fixture = createDispatcherFixture();
-        final String requestLine = toJson(new RegisterEventListenerCommand("request-blank-class", ""));
-
-        // execute
-        final AgentRequestDispatcher.RequestDispatchResult result =
-            fixture.dispatcher().handleRequestLine(requestLine, true);
-
-        // verify
-        assertThat(result.response().success()).isFalse();
-        assertThat(result.response().errorCode()).isEqualTo("INVALID_ARGUMENT");
-        assertThat(result.response().errorMessage()).contains("eventClassName");
-    }
-
-    @Test
-    void handleRequestLine_shouldReturnInvalidArgumentWhenGetCapturedEventsClassIsBlank()
-        throws Exception
-    {
-        // setup
-        final DispatcherFixture fixture = createDispatcherFixture();
-        final String requestLine = toJson(new GetCapturedEventsCommand("request-blank-events", ""));
-
-        // execute
-        final AgentRequestDispatcher.RequestDispatchResult result =
-            fixture.dispatcher().handleRequestLine(requestLine, true);
-
-        // verify
-        assertThat(result.response().success()).isFalse();
-        assertThat(result.response().errorCode()).isEqualTo("INVALID_ARGUMENT");
-        assertThat(result.response().errorMessage()).contains("eventClassName");
-    }
-
-    @Test
-    void handleRequestLine_shouldSucceedClearCapturedEventsWithBlankClassName()
-        throws Exception
-    {
-        // setup
-        final DispatcherFixture fixture = createDispatcherFixture();
-        final String requestLine = toJson(new ClearCapturedEventsCommand("request-clear-blank", ""));
-
-        // execute
-        final AgentRequestDispatcher.RequestDispatchResult result =
-            fixture.dispatcher().handleRequestLine(requestLine, true);
-
-        // verify - blank is silently ignored, operation succeeds
-        assertThat(result.response().success()).isTrue();
-    }
-
-    @Test
-    void handleRequestLine_shouldSucceedUnregisterEventListenerWithBlankClassName()
-        throws Exception
-    {
-        // setup
-        final DispatcherFixture fixture = createDispatcherFixture();
-        final String requestLine = toJson(new UnregisterEventListenerCommand("request-unregister-blank", ""));
-
-        // execute
-        final AgentRequestDispatcher.RequestDispatchResult result =
-            fixture.dispatcher().handleRequestLine(requestLine, true);
-
-        // verify - blank is silently ignored, operation succeeds
-        assertThat(result.response().success()).isTrue();
-    }
-
     private static AgentRequestDispatcher createDispatcher(String authToken, int protocolVersion, String expectedSha)
     {
         final ObjectMapper objectMapper = new ObjectMapper()
@@ -508,17 +453,20 @@ class AgentRequestDispatcherTest
             nmsAdapter
         );
         final AgentEventCapture eventCapture = mock();
+        final AgentEventActions eventActions = new AgentEventActions(eventCapture, objectMapper);
 
         return new AgentRequestDispatcher(
             objectMapper,
             worldActions,
             playerActions,
             menuActions,
-            eventCapture,
-            Logger.getLogger(AgentRequestDispatcherTest.class.getName()),
-            authToken,
-            protocolVersion,
-            expectedSha
+            eventActions,
+            new AgentRequestDispatcher.Config(
+                authToken,
+                protocolVersion,
+                expectedSha,
+                Logger.getLogger(AgentRequestDispatcherTest.class.getName())
+            )
         );
     }
 
@@ -529,19 +477,21 @@ class AgentRequestDispatcherTest
         final AgentWorldActions worldActions = mock();
         final AgentPlayerActions playerActions = mock();
         final AgentMenuActions menuActions = mock();
-        final AgentEventCapture eventCapture = mock();
+        final AgentEventActions eventActions = mock();
         final AgentRequestDispatcher dispatcher = new AgentRequestDispatcher(
             objectMapper,
             worldActions,
             playerActions,
             menuActions,
-            eventCapture,
-            Logger.getLogger(AgentRequestDispatcherTest.class.getName()),
-            "token",
-            1,
-            ""
+            eventActions,
+            new AgentRequestDispatcher.Config(
+                "token",
+                1,
+                "",
+                Logger.getLogger(AgentRequestDispatcherTest.class.getName())
+            )
         );
-        return new DispatcherFixture(dispatcher, worldActions, playerActions, menuActions, eventCapture);
+        return new DispatcherFixture(dispatcher, worldActions, playerActions, menuActions, eventActions);
     }
 
     private record DispatcherFixture(
@@ -549,7 +499,7 @@ class AgentRequestDispatcherTest
         AgentWorldActions worldActions,
         AgentPlayerActions playerActions,
         AgentMenuActions menuActions,
-        AgentEventCapture eventCapture)
+        AgentEventActions eventActions)
     {
     }
 

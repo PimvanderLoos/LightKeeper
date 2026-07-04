@@ -4,6 +4,7 @@ import nl.pim16aap2.lightkeeper.nms.api.IBotPlayerNmsAdapter;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.List;
@@ -15,31 +16,17 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /**
  * Thread-safe registry for synthetic players and related per-player state.
  *
- * <p>The store tracks:
- * <ul>
- *   <li>Registered synthetic player instances by UUID.</li>
- *   <li>Permission attachments created for those players.</li>
- *   <li>Message history merged from direct sends and NMS adapter drains.</li>
- * </ul>
+ * <p>All per-player state (player instance, permission attachment, message history, chat component
+ * history) is colocated in a single {@link SyntheticPlayerState} entry so lifecycle operations always
+ * touch a consistent, atomic view. There is no risk of one of several parallel maps being updated
+ * while another is not.
  */
 final class AgentSyntheticPlayerStore
 {
     /**
-     * Synthetic players registered by protocol UUID.
+     * All per-player state keyed by protocol UUID.
      */
-    private final ConcurrentHashMap<UUID, Player> syntheticPlayers = new ConcurrentHashMap<>();
-    /**
-     * Permission attachments associated with synthetic players.
-     */
-    private final ConcurrentHashMap<UUID, PermissionAttachment> permissionAttachments = new ConcurrentHashMap<>();
-    /**
-     * Aggregated player message history by synthetic player UUID.
-     */
-    private final ConcurrentHashMap<UUID, List<String>> playerMessageHistory = new ConcurrentHashMap<>();
-    /**
-     * Aggregated player chat component history by synthetic player UUID.
-     */
-    private final ConcurrentHashMap<UUID, List<String>> playerChatComponentHistory = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, SyntheticPlayerState> players = new ConcurrentHashMap<>();
 
     /**
      * Resolves a registered synthetic player.
@@ -53,10 +40,10 @@ final class AgentSyntheticPlayerStore
      */
     Player getRequiredPlayer(UUID uuid)
     {
-        final Player player = syntheticPlayers.get(uuid);
-        if (player == null)
+        final SyntheticPlayerState state = players.get(uuid);
+        if (state == null)
             throw new IllegalArgumentException("Synthetic player '%s' is not registered.".formatted(uuid));
-        return player;
+        return state.player;
     }
 
     /**
@@ -69,9 +56,7 @@ final class AgentSyntheticPlayerStore
      */
     void registerSyntheticPlayer(UUID uuid, Player player)
     {
-        syntheticPlayers.put(uuid, player);
-        playerMessageHistory.put(uuid, new CopyOnWriteArrayList<>());
-        playerChatComponentHistory.put(uuid, new CopyOnWriteArrayList<>());
+        players.put(uuid, new SyntheticPlayerState(player));
     }
 
     /**
@@ -93,7 +78,10 @@ final class AgentSyntheticPlayerStore
             .map(String::trim)
             .filter(permission -> !permission.isEmpty())
             .forEach(permission -> attachment.setPermission(permission, true));
-        permissionAttachments.put(uuid, attachment);
+
+        final SyntheticPlayerState state = players.get(uuid);
+        if (state != null)
+            state.permissionAttachment = attachment;
     }
 
     /**
@@ -106,22 +94,26 @@ final class AgentSyntheticPlayerStore
      */
     void removePermissionAttachment(UUID uuid, Player player)
     {
-        final PermissionAttachment attachment = permissionAttachments.remove(uuid);
+        final SyntheticPlayerState state = players.get(uuid);
+        if (state == null)
+            return;
+        final PermissionAttachment attachment = state.permissionAttachment;
         if (attachment != null)
+        {
             player.removeAttachment(attachment);
+            state.permissionAttachment = null;
+        }
     }
 
     /**
-     * Removes a synthetic player and all associated message tracking state.
+     * Removes a synthetic player and all associated state.
      *
      * @param uuid
      *     Synthetic player UUID.
      */
     void removeSyntheticPlayer(UUID uuid)
     {
-        playerMessageHistory.remove(uuid);
-        playerChatComponentHistory.remove(uuid);
-        syntheticPlayers.remove(uuid);
+        players.remove(uuid);
     }
 
     /**
@@ -132,7 +124,7 @@ final class AgentSyntheticPlayerStore
      */
     Set<UUID> syntheticPlayerIds()
     {
-        return Set.copyOf(syntheticPlayers.keySet());
+        return Set.copyOf(players.keySet());
     }
 
     /**
@@ -146,9 +138,9 @@ final class AgentSyntheticPlayerStore
     void sendTrackedMessage(Player player, String message)
     {
         player.sendMessage(message);
-        playerMessageHistory
-            .computeIfAbsent(player.getUniqueId(), ignored -> new CopyOnWriteArrayList<>())
-            .add(message);
+        final SyntheticPlayerState state = players.get(player.getUniqueId());
+        if (state != null)
+            state.messageHistory.add(message);
     }
 
     /**
@@ -165,9 +157,9 @@ final class AgentSyntheticPlayerStore
         if (drainedMessages.isEmpty())
             return;
 
-        playerMessageHistory
-            .computeIfAbsent(uuid, ignored -> new CopyOnWriteArrayList<>())
-            .addAll(drainedMessages);
+        final SyntheticPlayerState state = players.get(uuid);
+        if (state != null)
+            state.messageHistory.addAll(drainedMessages);
     }
 
     /**
@@ -184,9 +176,9 @@ final class AgentSyntheticPlayerStore
         if (drainedComponents.isEmpty())
             return;
 
-        playerChatComponentHistory
-            .computeIfAbsent(uuid, ignored -> new CopyOnWriteArrayList<>())
-            .addAll(drainedComponents);
+        final SyntheticPlayerState state = players.get(uuid);
+        if (state != null)
+            state.componentHistory.addAll(drainedComponents);
     }
 
     /**
@@ -195,11 +187,12 @@ final class AgentSyntheticPlayerStore
      * @param uuid
      *     Synthetic player UUID.
      * @return
-     *     Immutable empty list when unknown; otherwise tracked history list.
+     *     Immutable empty list when unknown; otherwise the tracked history list.
      */
     List<String> getPlayerMessages(UUID uuid)
     {
-        return playerMessageHistory.getOrDefault(uuid, List.of());
+        final SyntheticPlayerState state = players.get(uuid);
+        return state != null ? state.messageHistory : List.of();
     }
 
     /**
@@ -208,10 +201,40 @@ final class AgentSyntheticPlayerStore
      * @param uuid
      *     Synthetic player UUID.
      * @return
-     *     Immutable empty list when unknown; otherwise tracked history list.
+     *     Immutable empty list when unknown; otherwise the tracked history list.
      */
     List<String> getPlayerChatComponents(UUID uuid)
     {
-        return playerChatComponentHistory.getOrDefault(uuid, List.of());
+        final SyntheticPlayerState state = players.get(uuid);
+        return state != null ? state.componentHistory : List.of();
+    }
+
+    /**
+     * Per-player state colocating all mutable fields so lifecycle operations always touch a consistent
+     * view.
+     */
+    private static final class SyntheticPlayerState
+    {
+        /**
+         * Live Bukkit player instance.
+         */
+        private final Player player;
+        /**
+         * Permission attachment, or {@code null} when no permissions have been assigned.
+         */
+        @Nullable private PermissionAttachment permissionAttachment;
+        /**
+         * Accumulated plain-text message history (direct sends + NMS adapter drains).
+         */
+        private final List<String> messageHistory = new CopyOnWriteArrayList<>();
+        /**
+         * Accumulated chat-component JSON history.
+         */
+        private final List<String> componentHistory = new CopyOnWriteArrayList<>();
+
+        private SyntheticPlayerState(Player player)
+        {
+            this.player = player;
+        }
     }
 }
