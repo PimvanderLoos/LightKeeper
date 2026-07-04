@@ -315,7 +315,8 @@ final class AgentPlayerActions
         final String componentsJson = mainThreadExecutor.callOnMainThread(() ->
         {
             playerStore.getRequiredPlayer(uuid);
-            return objectMapper.writeValueAsString(List.of());
+            playerStore.capturePlayerChatComponents(botPlayerNmsAdapter, uuid);
+            return objectMapper.writeValueAsString(playerStore.getPlayerChatComponents(uuid));
         });
 
         return AgentResponses.successResponse(command.requestId(), Map.of("componentsJson", componentsJson));
@@ -344,6 +345,31 @@ final class AgentPlayerActions
         return AgentResponses.successResponse(command.requestId(), Map.of("inventoryJson", inventoryJson));
     }
 
+    private static List<Map<String, Object>> buildInventoryItems(ItemStack... contents)
+    {
+        final List<Map<String, Object>> items = new ArrayList<>();
+        for (int i = 0; i < contents.length; i++)
+        {
+            final ItemStack item = contents[i];
+            if (item == null || AgentMaterials.isAir(item.getType()))
+                continue;
+
+            final Map<String, Object> itemData = new HashMap<>();
+            itemData.put("slot", i);
+            itemData.put("materialKey", item.getType().getKey().toString());
+            final String displayName = item.getItemMeta() == null ? null : item.getItemMeta().getDisplayName();
+            itemData.put("displayName", displayName);
+            itemData.put(
+                "lore",
+                item.getItemMeta() == null
+                    ? List.of()
+                    : Objects.requireNonNullElse(item.getItemMeta().getLore(), List.of())
+            );
+            items.add(itemData);
+        }
+        return items;
+    }
+
     /**
      * Handles {@code DROP_ITEM} by simulating the player dropping their main hand item.
      *
@@ -365,6 +391,9 @@ final class AgentPlayerActions
             if (item == null || AgentMaterials.isAir(item.getType()))
                 return Boolean.FALSE;
 
+            // Bukkit's PlayerDropItemEvent requires a pre-existing Item entity, so the entity is created
+            // unconditionally and removed afterwards. The response reflects whether a plugin *would* have
+            // allowed the drop (i.e., the event was not cancelled).
             final org.bukkit.entity.Item droppedItem =
                 player.getWorld().dropItemNaturally(player.getLocation(), item.clone());
             final org.bukkit.event.player.PlayerDropItemEvent event =
@@ -486,30 +515,5 @@ final class AgentPlayerActions
         });
 
         return AgentResponses.successResponse(requestId, Map.of("cancelled", cancelled.toString()));
-    }
-
-    private static List<Map<String, Object>> buildInventoryItems(ItemStack... contents)
-    {
-        final List<Map<String, Object>> items = new ArrayList<>();
-        for (int i = 0; i < contents.length; i++)
-        {
-            final ItemStack item = contents[i];
-            if (item == null || AgentMaterials.isAir(item.getType()))
-                continue;
-
-            final Map<String, Object> itemData = new HashMap<>();
-            itemData.put("slot", i);
-            itemData.put("materialKey", item.getType().getKey().toString());
-            final String displayName = item.getItemMeta() == null ? null : item.getItemMeta().getDisplayName();
-            itemData.put("displayName", displayName);
-            itemData.put(
-                "lore",
-                item.getItemMeta() == null
-                    ? List.of()
-                    : Objects.requireNonNullElse(item.getItemMeta().getLore(), List.of())
-            );
-            items.add(itemData);
-        }
-        return items;
     }
 }

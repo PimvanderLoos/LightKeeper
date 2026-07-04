@@ -1,7 +1,10 @@
 package nl.pim16aap2.lightkeeper.framework.assertions;
 
 import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
+import nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot;
+import nl.pim16aap2.lightkeeper.framework.InventorySnapshot;
 import nl.pim16aap2.lightkeeper.framework.MenuHandle;
+import nl.pim16aap2.lightkeeper.framework.MenuItemSnapshot;
 import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
 import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
@@ -44,6 +47,57 @@ class HandleAssertionsTest
         assertThatThrownBy(() -> LightkeeperAssertions.assertThat(handle).hasName("other"))
             .isInstanceOf(AssertionError.class)
             .hasMessageContaining("Expected player name");
+    }
+
+    @Test
+    void playerHandleAssert_shouldValidateInventoryAndClickableChatText()
+    {
+        // setup
+        final PlayerHandle handle = mock(PlayerHandle.class);
+        when(handle.name()).thenReturn("bot");
+        when(handle.inventory()).thenReturn(new InventorySnapshot(List.of(
+            new MenuItemSnapshot(3, "minecraft:stone", "Stone", List.of())
+        )));
+        when(handle.chatComponents()).thenReturn(List.of(
+            new ChatComponentSnapshot("{\"text\":\"Open\",\"clickEvent\":{\"action\":\"run_command\"}}")
+        ));
+
+        // execute + verify
+        LightkeeperAssertions.assertThat(handle)
+            .hasItemInInventory("minecraft:stone")
+            .doesNotHaveItemInInventory("minecraft:diamond")
+            .hasClickableChatText("Open");
+    }
+
+    @Test
+    void playerHandleAssert_shouldFailWhenUnexpectedItemExists()
+    {
+        // setup
+        final PlayerHandle handle = mock(PlayerHandle.class);
+        when(handle.name()).thenReturn("bot");
+        when(handle.inventory()).thenReturn(new InventorySnapshot(List.of(
+            new MenuItemSnapshot(2, "minecraft:stone", "Stone", List.of())
+        )));
+
+        // execute + verify
+        assertThatThrownBy(() ->
+            LightkeeperAssertions.assertThat(handle).doesNotHaveItemInInventory("minecraft:stone"))
+            .isInstanceOf(AssertionError.class)
+            .hasMessageContaining("slot 2");
+    }
+
+    @Test
+    void playerHandleAssert_shouldFailWhenClickableChatTextMissing()
+    {
+        // setup
+        final PlayerHandle handle = mock(PlayerHandle.class);
+        when(handle.name()).thenReturn("bot");
+        when(handle.chatComponents()).thenReturn(List.of(new ChatComponentSnapshot("{\"text\":\"Open\"}")));
+
+        // execute + verify
+        assertThatThrownBy(() -> LightkeeperAssertions.assertThat(handle).hasClickableChatText("Open"))
+            .isInstanceOf(AssertionError.class)
+            .hasMessageContaining("clickable chat text");
     }
 
     @Test
