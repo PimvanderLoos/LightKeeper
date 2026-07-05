@@ -283,10 +283,15 @@ final class UdsAgentClient implements AutoCloseable
         if (!response.open())
             return new MenuSnapshot(false, "", List.of());
 
+        // The agent always sends non-null itemsJson for an open menu, so a null here is a wire-contract
+        // violation. Fabricating an empty menu would make "menu has no items" pass wrongly, so fail instead.
+        final String itemsJson = response.itemsJson();
+        if (itemsJson == null)
+            throw new IllegalStateException(
+                "Agent reported an open menu but returned no items JSON; this is a protocol violation.");
         try
         {
-            final MenuItemSnapshot[] items = objectMapper.readValue(
-                Objects.requireNonNullElse(response.itemsJson(), "[]"), MenuItemSnapshot[].class);
+            final MenuItemSnapshot[] items = objectMapper.readValue(itemsJson, MenuItemSnapshot[].class);
             return new MenuSnapshot(true, Objects.requireNonNullElse(response.title(), ""), List.of(items));
         }
         catch (JacksonException exception)
@@ -416,6 +421,11 @@ final class UdsAgentClient implements AutoCloseable
         }
         catch (IllegalArgumentException | NullPointerException ignored)
         {
+            // The agent maps unknown platforms to the explicit "UNKNOWN" token, so any other unmappable value is
+            // a protocol bug that would otherwise silently skip platform-conditional tests. Make it visible.
+            LOG.log(
+                System.Logger.Level.WARNING,
+                () -> "Unrecognized server platform '" + response.platform() + "'; treating it as UNKNOWN.");
             return Platform.UNKNOWN;
         }
     }

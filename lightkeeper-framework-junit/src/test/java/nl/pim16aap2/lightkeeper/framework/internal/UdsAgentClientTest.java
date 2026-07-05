@@ -352,22 +352,20 @@ class UdsAgentClientTest
     }
 
     @Test
-    void menuSnapshot_shouldHandleNullItemsJsonWhenMenuIsOpen(@TempDir Path tempDirectory)
+    void menuSnapshot_shouldThrowWhenOpenMenuHasNoItemsJson(@TempDir Path tempDirectory)
         throws Exception
     {
-        // setup
+        // setup — the agent always sends non-null itemsJson for an open menu, so null here is a wire bug
         final Path socketPath = tempDirectory.resolve("menu-null-items.sock");
         final String responseJson =
             "{\"requestId\":\"1\",\"success\":true,\"open\":true,\"title\":\"Test\",\"itemsJson\":null}";
         try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
              UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
         {
-            // execute
-            final var snapshot = client.menuSnapshot(UUID.randomUUID());
-
-            // verify
-            assertThat(snapshot.open()).isTrue();
-            assertThat(snapshot.items()).isEmpty();
+            // execute + verify — fabricating an empty menu would make "menu has no items" pass wrongly
+            assertThatThrownBy(() -> client.menuSnapshot(UUID.randomUUID()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("protocol violation");
         }
     }
 

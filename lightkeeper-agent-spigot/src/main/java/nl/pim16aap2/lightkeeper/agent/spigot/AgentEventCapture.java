@@ -11,7 +11,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +61,11 @@ final class AgentEventCapture
      * throws on every event is warned about once rather than flooding the log up to the capture cap.
      */
     private final Set<String> loggedCaptureFailures = ConcurrentHashMap.newKeySet();
+    /**
+     * Event class names whose capture cap has already been warned about, so hitting the cap is reported once
+     * rather than silently discarding every subsequent event.
+     */
+    private final Set<String> cappedEventClasses = ConcurrentHashMap.newKeySet();
 
     /**
      * @param plugin
@@ -224,7 +228,12 @@ final class AgentEventCapture
     List<Map<String, String>> getCapturedEvents(String eventClassName)
     {
         final List<Map<String, String>> events = capturedEvents.get(eventClassName);
-        return events != null ? new ArrayList<>(events) : Collections.emptyList();
+        if (events == null)
+            throw new IllegalArgumentException(
+                ("No capture listener is registered for event class '%s'; register it before querying captured "
+                    + "events (a typo'd class name or a query after unregister otherwise looks like 'no events').")
+                    .formatted(eventClassName));
+        return new ArrayList<>(events);
     }
 
     /**
@@ -236,14 +245,24 @@ final class AgentEventCapture
     void clearCapturedEvents(String eventClassName)
     {
         final List<Map<String, String>> events = capturedEvents.get(eventClassName);
-        if (events != null)
-            events.clear();
+        if (events == null)
+            throw new IllegalArgumentException(
+                "No capture listener is registered for event class '%s'; register it before clearing events."
+                    .formatted(eventClassName));
+        events.clear();
     }
 
     private void captureEventForList(Event event, List<Map<String, String>> targetList)
     {
         if (targetList.size() >= MAX_CAPTURED_EVENTS_PER_CLASS)
+        {
+            if (cappedEventClasses.add(event.getClass().getName()))
+                plugin.getLogger().log(
+                    Level.WARNING,
+                    "Reached the capture cap of %d events for '%s'; further events are discarded until cleared."
+                        .formatted(MAX_CAPTURED_EVENTS_PER_CLASS, event.getClass().getName()));
             return;
+        }
 
         final Map<String, String> data = new ConcurrentHashMap<>();
         int inspectedMethodCount = 0;

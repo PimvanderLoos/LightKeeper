@@ -166,8 +166,9 @@ class AgentEventCaptureTest
             // execute
             eventCapture.unregisterListener(TestCaptureEvent.class.getName());
 
-            // verify
-            assertThat(eventCapture.getCapturedEvents(TestCaptureEvent.class.getName())).isEmpty();
+            // verify — querying after unregister is a use-after-close and must fail loudly, not return empty
+            assertThatThrownBy(() -> eventCapture.getCapturedEvents(TestCaptureEvent.class.getName()))
+                .isInstanceOf(IllegalArgumentException.class);
         }
     }
 
@@ -203,17 +204,16 @@ class AgentEventCaptureTest
     }
 
     @Test
-    void getCapturedEvents_shouldReturnEmptyListForUnregisteredClass()
+    void getCapturedEvents_shouldThrowForUnregisteredClass()
     {
         // setup
         final JavaPlugin plugin = mock();
         final AgentEventCapture eventCapture = new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin));
 
-        // execute
-        final List<Map<String, String>> events = eventCapture.getCapturedEvents("com.example.NonExistentEvent");
-
-        // verify
-        assertThat(events).isEmpty();
+        // execute + verify — a typo'd/unregistered class must fail rather than masquerade as "no events fired"
+        assertThatThrownBy(() -> eventCapture.getCapturedEvents("com.example.NonExistentEvent"))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("No capture listener is registered");
     }
 
     @Test
