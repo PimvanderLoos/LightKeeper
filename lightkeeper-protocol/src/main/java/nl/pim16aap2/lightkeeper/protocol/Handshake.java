@@ -28,6 +28,16 @@ public final class Handshake
         String agentSha256
     ) implements IAgentCommand<Response>
     {
+        /**
+         * Validates command inputs.
+         */
+        public Command
+        {
+            ProtocolPreconditions.requireNonBlank(requestId, "requestId");
+            ProtocolPreconditions.requireNonBlank(token, "token");
+            ProtocolPreconditions.requireNonNull(agentSha256, "agentSha256");
+        }
+
         @Override
         public Class<Response> responseType()
         {

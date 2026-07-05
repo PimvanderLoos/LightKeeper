@@ -22,6 +22,15 @@ public final class ClearCapturedEvents
         String eventClassName
     ) implements IAgentCommand<Response>
     {
+        /**
+         * Validates command inputs.
+         */
+        public Command
+        {
+            ProtocolPreconditions.requireNonBlank(requestId, "requestId");
+            ProtocolPreconditions.requireNonBlank(eventClassName, "eventClassName");
+        }
+
         @Override
         public Class<Response> responseType()
         {

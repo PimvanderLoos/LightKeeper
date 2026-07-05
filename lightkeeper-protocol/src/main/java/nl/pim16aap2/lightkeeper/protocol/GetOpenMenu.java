@@ -26,6 +26,15 @@ public final class GetOpenMenu
         UUID uuid
     ) implements IAgentCommand<Response>
     {
+        /**
+         * Validates command inputs.
+         */
+        public Command
+        {
+            ProtocolPreconditions.requireNonBlank(requestId, "requestId");
+            ProtocolPreconditions.requireNonNull(uuid, "uuid");
+        }
+
         @Override
         public Class<Response> responseType()
         {

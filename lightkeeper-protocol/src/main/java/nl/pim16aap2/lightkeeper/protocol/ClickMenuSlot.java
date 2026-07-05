@@ -27,6 +27,16 @@ public final class ClickMenuSlot
         int slot
     ) implements IAgentCommand<Response>
     {
+        /**
+         * Validates command inputs.
+         */
+        public Command
+        {
+            ProtocolPreconditions.requireNonBlank(requestId, "requestId");
+            ProtocolPreconditions.requireNonNull(uuid, "uuid");
+            ProtocolPreconditions.requireNonNegative(slot, "slot");
+        }
+
         @Override
         public Class<Response> responseType()
         {

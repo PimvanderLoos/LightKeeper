@@ -37,6 +37,16 @@ public final class PlacePlayerBlock
         int z
     ) implements IAgentCommand<Response>
     {
+        /**
+         * Validates command inputs.
+         */
+        public Command
+        {
+            ProtocolPreconditions.requireNonBlank(requestId, "requestId");
+            ProtocolPreconditions.requireNonNull(uuid, "uuid");
+            ProtocolPreconditions.requireNonBlank(materialKey, "materialKey");
+        }
+
         @Override
         public Class<Response> responseType()
         {

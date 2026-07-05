@@ -22,6 +22,18 @@ public final class RegisterEventListener
         String eventClassName
     ) implements IAgentCommand<Response>
     {
+        /**
+         * Validates command inputs.
+         */
+        public Command
+        {
+            ProtocolPreconditions.requireNonBlank(requestId, "requestId");
+            ProtocolPreconditions.requireNonBlank(eventClassName, "eventClassName");
+            if (!eventClassName.matches("[A-Za-z_$][A-Za-z0-9_$]*(\\.[A-Za-z_$][A-Za-z0-9_$]*)*"))
+                throw new IllegalArgumentException(
+                    "'eventClassName' must be a fully-qualified class name, got: " + eventClassName);
+        }
+
         @Override
         public Class<Response> responseType()
         {

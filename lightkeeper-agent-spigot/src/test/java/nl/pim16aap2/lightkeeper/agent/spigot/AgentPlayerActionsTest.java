@@ -313,15 +313,11 @@ class AgentPlayerActionsTest
     }
 
     @Test
-    void handleTeleportPlayer_shouldThrowWhenWorldNameIsBlank()
+    void teleportPlayerCommand_shouldRejectBlankWorldName()
     {
-        // setup
-        final AgentPlayerActions playerActions = createPlayerActions();
-        final TeleportPlayer.Command command =
-            new TeleportPlayer.Command("request-tp-blank", UUID.randomUUID(), "   ", 0, 64, 0);
-
-        // execute + verify
-        assertThatThrownBy(() -> playerActions.handleTeleportPlayer(command))
+        // setup + execute + verify — validation is enforced by the command's compact constructor
+        assertThatThrownBy(() ->
+            new TeleportPlayer.Command("request-tp-blank", UUID.randomUUID(), "   ", 0, 64, 0))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("worldName");
     }

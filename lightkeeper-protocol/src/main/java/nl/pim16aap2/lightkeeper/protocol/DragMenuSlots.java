@@ -33,6 +33,9 @@ public final class DragMenuSlots
     {
         public Command
         {
+            ProtocolPreconditions.requireNonBlank(requestId, "requestId");
+            ProtocolPreconditions.requireNonNull(uuid, "uuid");
+            ProtocolPreconditions.requireNonBlank(materialKey, "materialKey");
             if (slots == null)
                 throw new IllegalArgumentException("'slots' must not be null.");
             slots = slots.clone();

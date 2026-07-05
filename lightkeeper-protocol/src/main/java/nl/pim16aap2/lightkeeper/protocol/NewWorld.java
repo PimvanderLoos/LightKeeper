@@ -31,6 +31,17 @@ public final class NewWorld
         long seed
     ) implements IAgentCommand<Response>
     {
+        /**
+         * Validates command inputs.
+         */
+        public Command
+        {
+            ProtocolPreconditions.requireNonBlank(requestId, "requestId");
+            ProtocolPreconditions.requireNonBlank(worldName, "worldName");
+            ProtocolPreconditions.requireNonBlank(worldType, "worldType");
+            ProtocolPreconditions.requireNonBlank(environment, "environment");
+        }
+
         @Override
         public Class<Response> responseType()
         {

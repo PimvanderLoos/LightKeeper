@@ -49,6 +49,8 @@ public final class CreatePlayer
     {
         public Command
         {
+            ProtocolPreconditions.requireNonBlank(requestId, "requestId");
+            ProtocolPreconditions.requireNonNull(uuid, "uuid");
             if (name == null || name.isBlank())
                 throw new IllegalArgumentException("'name' must not be blank.");
             if (worldName == null || worldName.isBlank())

@@ -36,6 +36,16 @@ public final class RightClickBlock
         String blockFace
     ) implements IAgentCommand<Response>
     {
+        /**
+         * Validates command inputs.
+         */
+        public Command
+        {
+            ProtocolPreconditions.requireNonBlank(requestId, "requestId");
+            ProtocolPreconditions.requireNonNull(uuid, "uuid");
+            ProtocolPreconditions.requireNonBlank(blockFace, "blockFace");
+        }
+
         @Override
         public Class<Response> responseType()
         {

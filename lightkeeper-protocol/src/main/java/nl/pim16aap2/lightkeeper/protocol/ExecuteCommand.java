@@ -25,6 +25,16 @@ public final class ExecuteCommand
         String command
     ) implements IAgentCommand<Response>
     {
+        /**
+         * Validates command inputs.
+         */
+        public Command
+        {
+            ProtocolPreconditions.requireNonBlank(requestId, "requestId");
+            ProtocolPreconditions.requireNonNull(commandSource, "commandSource");
+            ProtocolPreconditions.requireNonBlank(command, "command");
+        }
+
         @Override
         public Class<Response> responseType()
         {

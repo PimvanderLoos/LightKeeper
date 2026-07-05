@@ -28,6 +28,15 @@ public final class IsChunkLoaded
         int z
     ) implements IAgentCommand<Response>
     {
+        /**
+         * Validates command inputs.
+         */
+        public Command
+        {
+            ProtocolPreconditions.requireNonBlank(requestId, "requestId");
+            ProtocolPreconditions.requireNonBlank(worldName, "worldName");
+        }
+
         @Override
         public Class<Response> responseType()
         {

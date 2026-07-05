@@ -32,6 +32,8 @@ public final class ExecutePlayerCommand
          */
         public Command
         {
+            ProtocolPreconditions.requireNonBlank(requestId, "requestId");
+            ProtocolPreconditions.requireNonNull(uuid, "uuid");
             if (command == null || command.isBlank())
                 throw new IllegalArgumentException("'command' must not be blank.");
             command = command.strip();

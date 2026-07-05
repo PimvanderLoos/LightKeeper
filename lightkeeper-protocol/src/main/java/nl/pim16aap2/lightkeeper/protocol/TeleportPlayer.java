@@ -36,6 +36,19 @@ public final class TeleportPlayer
         double z
     ) implements IAgentCommand<Response>
     {
+        /**
+         * Validates command inputs.
+         */
+        public Command
+        {
+            ProtocolPreconditions.requireNonBlank(requestId, "requestId");
+            ProtocolPreconditions.requireNonNull(uuid, "uuid");
+            ProtocolPreconditions.requireNonBlank(worldName, "worldName");
+            ProtocolPreconditions.requireFinite(x, "x");
+            ProtocolPreconditions.requireFinite(y, "y");
+            ProtocolPreconditions.requireFinite(z, "z");
+        }
+
         @Override
         public Class<Response> responseType()
         {

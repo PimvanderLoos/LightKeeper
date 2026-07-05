@@ -35,6 +35,16 @@ public final class SetBlock
         String materialKey
     ) implements IAgentCommand<Response>
     {
+        /**
+         * Validates command inputs.
+         */
+        public Command
+        {
+            ProtocolPreconditions.requireNonBlank(requestId, "requestId");
+            ProtocolPreconditions.requireNonBlank(worldName, "worldName");
+            ProtocolPreconditions.requireNonBlank(materialKey, "materialKey");
+        }
+
         @Override
         public Class<Response> responseType()
         {

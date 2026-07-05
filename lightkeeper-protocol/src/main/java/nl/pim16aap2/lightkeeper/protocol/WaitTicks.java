@@ -24,6 +24,7 @@ public final class WaitTicks
     {
         public Command
         {
+            ProtocolPreconditions.requireNonBlank(requestId, "requestId");
             if (ticks < 0)
                 throw new IllegalArgumentException("'ticks' must be >= 0, got: " + ticks);
         }

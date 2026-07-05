@@ -17,6 +17,14 @@ public final class GetServerPlatform
      */
     public record Command(String requestId) implements IAgentCommand<Response>
     {
+        /**
+         * Validates command inputs.
+         */
+        public Command
+        {
+            ProtocolPreconditions.requireNonBlank(requestId, "requestId");
+        }
+
         @Override
         public Class<Response> responseType()
         {

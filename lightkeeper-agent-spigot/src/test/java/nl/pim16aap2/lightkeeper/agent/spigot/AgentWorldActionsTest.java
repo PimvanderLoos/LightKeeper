@@ -269,41 +269,31 @@ class AgentWorldActionsTest
     }
 
     @Test
-    void handleExecuteCommand_shouldThrowWhenCommandIsBlank()
+    void executeCommandCommand_shouldRejectBlankCommand()
     {
-        // setup
-        final AgentWorldActions worldActions = createWorldActions(new AtomicLong());
-        final ExecuteCommand.Command command =
-            new ExecuteCommand.Command("request-blank", CommandSource.CONSOLE, "   ");
-
-        // execute + verify
-        assertThatThrownBy(() -> worldActions.handleExecuteCommand(command))
+        // setup + execute + verify — validation is enforced by the command's compact constructor
+        assertThatThrownBy(() ->
+            new ExecuteCommand.Command("request-blank", CommandSource.CONSOLE, "   "))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("command");
     }
 
     @Test
-    void handleNewWorld_shouldThrowWhenWorldNameIsBlank()
+    void newWorldCommand_shouldRejectBlankWorldName()
     {
-        // setup
-        final AgentWorldActions worldActions = createWorldActions(new AtomicLong());
-        final NewWorld.Command command = new NewWorld.Command("request-blank-world", "   ", "NORMAL", "NORMAL", 0L);
-
-        // execute + verify
-        assertThatThrownBy(() -> worldActions.handleNewWorld(command))
+        // setup + execute + verify — validation is enforced by the command's compact constructor
+        assertThatThrownBy(() ->
+            new NewWorld.Command("request-blank-world", "   ", "NORMAL", "NORMAL", 0L))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("worldName");
     }
 
     @Test
-    void handleSetBlock_shouldThrowWhenMaterialIsBlank()
+    void setBlockCommand_shouldRejectBlankMaterial()
     {
-        // setup
-        final AgentWorldActions worldActions = createWorldActions(new AtomicLong());
-        final SetBlock.Command command = new SetBlock.Command("request-blank-mat", "world", 0, 64, 0, "   ");
-
-        // execute + verify
-        assertThatThrownBy(() -> worldActions.handleSetBlock(command))
+        // setup + execute + verify — validation is enforced by the command's compact constructor
+        assertThatThrownBy(() ->
+            new SetBlock.Command("request-blank-mat", "world", 0, 64, 0, "   "))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("material");
     }
