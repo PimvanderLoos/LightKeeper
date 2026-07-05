@@ -4,7 +4,10 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -315,5 +318,66 @@ class AgentCommandSerializationTest
         // but omitted from @JsonSubTypes compiles and passes per-type tests, yet fails polymorphic
         // deserialization at runtime. Asserting set-equality here turns that drift into a test failure.
         assertThat(registeredSubtypes).isEqualTo(permittedSubtypes);
+    }
+
+    @Test
+    void jsonSubTypes_useUniqueDiscriminatorNames()
+    {
+        // setup
+        final JsonSubTypes jsonSubTypes = IAgentCommand.class.getAnnotation(JsonSubTypes.class);
+
+        // execute
+        final List<String> discriminatorNames = Arrays.stream(jsonSubTypes.value())
+            .map(JsonSubTypes.Type::name)
+            .toList();
+
+        // verify — a duplicated discriminator name compiles and only fails at runtime deserialization
+        assertThat(discriminatorNames).doesNotHaveDuplicates();
+    }
+
+    @Test
+    void permittedCommands_declareResponseTypeMatchingSiblingResponse()
+    {
+        // setup + execute + verify — the IAgentCommand<R> type argument must be the Response nested in the same
+        // namespace class, so a command paired with the wrong response record fails here rather than silently
+        // deserializing into the wrong shape on the client.
+        for (final Class<?> commandClass : IAgentCommand.class.getPermittedSubclasses())
+        {
+            final Type responseTypeArgument = resolveAgentCommandTypeArgument(commandClass);
+            final Class<?> enclosing = commandClass.getEnclosingClass();
+            assertThat(enclosing)
+                .as("%s must be a nested Command record", commandClass.getSimpleName())
+                .isNotNull();
+
+            final Class<?> siblingResponse = siblingResponse(enclosing);
+            assertThat(responseTypeArgument)
+                .as("IAgentCommand type argument for %s", commandClass.getName())
+                .isEqualTo(siblingResponse);
+        }
+    }
+
+    private static Type resolveAgentCommandTypeArgument(Class<?> commandClass)
+    {
+        for (final Type genericInterface : commandClass.getGenericInterfaces())
+        {
+            if (genericInterface instanceof ParameterizedType parameterized
+                && parameterized.getRawType() == IAgentCommand.class)
+            {
+                return parameterized.getActualTypeArguments()[0];
+            }
+        }
+        throw new AssertionError(commandClass.getName() + " does not implement IAgentCommand<R> directly.");
+    }
+
+    private static Class<?> siblingResponse(Class<?> enclosing)
+    {
+        try
+        {
+            return Class.forName(enclosing.getName() + "$Response", false, enclosing.getClassLoader());
+        }
+        catch (ClassNotFoundException exception)
+        {
+            throw new AssertionError("No sibling Response record for " + enclosing.getName(), exception);
+        }
     }
 }

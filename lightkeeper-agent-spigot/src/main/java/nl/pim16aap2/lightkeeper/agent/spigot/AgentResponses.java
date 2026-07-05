@@ -30,14 +30,23 @@ final class AgentResponses
      *     Jackson mapper used for serialization.
      * @param response
      *     Typed domain response record.
+     * @param expectedType
+     *     The response type the handled command declares via {@code responseType()}; a mismatch means the
+     *     command's {@code responseType()} disagrees with the record the handler actually produced, which would
+     *     silently corrupt client-side deserialization.
      * @return
      *     JSON string ready to write on the wire.
      * @throws JacksonException
      *     When serialization fails.
      */
-    static String successJson(ObjectMapper objectMapper, IAgentResponse response)
+    static String successJson(ObjectMapper objectMapper, IAgentResponse response, Class<?> expectedType)
         throws JacksonException
     {
+        if (response.getClass() != expectedType)
+            throw new IllegalStateException(
+                "Response type mismatch: handler produced %s but the command's responseType() is %s."
+                    .formatted(response.getClass().getName(), expectedType.getName()));
+
         final ObjectNode node = objectMapper.valueToTree(response);
         node.put("success", true);
         return objectMapper.writeValueAsString(node);

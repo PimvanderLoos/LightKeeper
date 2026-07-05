@@ -198,7 +198,7 @@ final class AgentRequestDispatcher
             {
                 final Handshake.Response handshakeResponse = handleHandshake(hc);
                 return new RequestDispatchResult(
-                    AgentResponses.successJson(objectMapper, handshakeResponse),
+                    AgentResponses.successJson(objectMapper, handshakeResponse, hc.responseType()),
                     true
                 );
             }
@@ -214,42 +214,46 @@ final class AgentRequestDispatcher
                 );
             }
 
+            // Each arm goes through handle(...), which forces the handler's return type to be the command's
+            // declared response type: a mispaired handler (e.g. handleSetBlock returning MainWorld.Response)
+            // fails to compile rather than silently deserializing into the wrong record on the client.
             final IAgentResponse response = switch (command)
             {
-                case MainWorld.Command c -> worldActions.handleMainWorld(c);
-                case NewWorld.Command c -> worldActions.handleNewWorld(c);
-                case ExecuteCommand.Command c -> worldActions.handleExecuteCommand(c);
-                case BlockType.Command c -> worldActions.handleBlockType(c);
-                case SetBlock.Command c -> worldActions.handleSetBlock(c);
-                case CreatePlayer.Command c -> playerActions.handleCreatePlayer(c);
-                case RemovePlayer.Command c -> playerActions.handleRemovePlayer(c);
-                case ExecutePlayerCommand.Command c -> playerActions.handleExecutePlayerCommand(c);
-                case PlacePlayerBlock.Command c -> playerActions.handlePlacePlayerBlock(c);
-                case LeftClickBlock.Command c -> playerActions.handleLeftClickBlock(c);
-                case RightClickBlock.Command c -> playerActions.handleRightClickBlock(c);
-                case GetOpenMenu.Command c -> menuActions.handleGetOpenMenu(c);
-                case ClickMenuSlot.Command c -> menuActions.handleClickMenuSlot(c);
-                case DragMenuSlots.Command c -> menuActions.handleDragMenuSlots(c);
-                case GetPlayerMessages.Command c -> playerActions.handleGetPlayerMessages(c);
-                case WaitTicks.Command c -> worldActions.handleWaitTicks(c);
-                case GetServerTick.Command c -> worldActions.handleGetServerTick(c);
-                case TeleportPlayer.Command c -> playerActions.handleTeleportPlayer(c);
-                case LoadChunk.Command c -> worldActions.handleLoadChunk(c);
-                case UnloadChunk.Command c -> worldActions.handleUnloadChunk(c);
-                case IsChunkLoaded.Command c -> worldActions.handleIsChunkLoaded(c);
-                case GetPlayerInventory.Command c -> playerActions.handleGetPlayerInventory(c);
-                case DropItem.Command c -> playerActions.handleDropItem(c);
-                case RegisterEventListener.Command c -> eventActions.handleRegisterEventListener(c);
-                case GetCapturedEvents.Command c -> eventActions.handleGetCapturedEvents(c);
-                case ClearCapturedEvents.Command c -> eventActions.handleClearCapturedEvents(c);
-                case UnregisterEventListener.Command c -> eventActions.handleUnregisterEventListener(c);
-                case GetPlayerChatComponents.Command c -> playerActions.handleGetPlayerChatComponents(c);
-                case GetServerPlatform.Command c -> worldActions.handleGetServerPlatform(c);
+                case MainWorld.Command c -> handle(c, worldActions::handleMainWorld);
+                case NewWorld.Command c -> handle(c, worldActions::handleNewWorld);
+                case ExecuteCommand.Command c -> handle(c, worldActions::handleExecuteCommand);
+                case BlockType.Command c -> handle(c, worldActions::handleBlockType);
+                case SetBlock.Command c -> handle(c, worldActions::handleSetBlock);
+                case CreatePlayer.Command c -> handle(c, playerActions::handleCreatePlayer);
+                case RemovePlayer.Command c -> handle(c, playerActions::handleRemovePlayer);
+                case ExecutePlayerCommand.Command c -> handle(c, playerActions::handleExecutePlayerCommand);
+                case PlacePlayerBlock.Command c -> handle(c, playerActions::handlePlacePlayerBlock);
+                case LeftClickBlock.Command c -> handle(c, playerActions::handleLeftClickBlock);
+                case RightClickBlock.Command c -> handle(c, playerActions::handleRightClickBlock);
+                case GetOpenMenu.Command c -> handle(c, menuActions::handleGetOpenMenu);
+                case ClickMenuSlot.Command c -> handle(c, menuActions::handleClickMenuSlot);
+                case DragMenuSlots.Command c -> handle(c, menuActions::handleDragMenuSlots);
+                case GetPlayerMessages.Command c -> handle(c, playerActions::handleGetPlayerMessages);
+                case WaitTicks.Command c -> handle(c, worldActions::handleWaitTicks);
+                case GetServerTick.Command c -> handle(c, worldActions::handleGetServerTick);
+                case TeleportPlayer.Command c -> handle(c, playerActions::handleTeleportPlayer);
+                case LoadChunk.Command c -> handle(c, worldActions::handleLoadChunk);
+                case UnloadChunk.Command c -> handle(c, worldActions::handleUnloadChunk);
+                case IsChunkLoaded.Command c -> handle(c, worldActions::handleIsChunkLoaded);
+                case GetPlayerInventory.Command c -> handle(c, playerActions::handleGetPlayerInventory);
+                case DropItem.Command c -> handle(c, playerActions::handleDropItem);
+                case RegisterEventListener.Command c -> handle(c, eventActions::handleRegisterEventListener);
+                case GetCapturedEvents.Command c -> handle(c, eventActions::handleGetCapturedEvents);
+                case ClearCapturedEvents.Command c -> handle(c, eventActions::handleClearCapturedEvents);
+                case UnregisterEventListener.Command c -> handle(c, eventActions::handleUnregisterEventListener);
+                case GetPlayerChatComponents.Command c -> handle(c, playerActions::handleGetPlayerChatComponents);
+                case GetServerPlatform.Command c -> handle(c, worldActions::handleGetServerPlatform);
                 case Handshake.Command ignored ->
                     throw new IllegalStateException("Unreachable HANDSHAKE dispatch branch.");
             };
 
-            return new RequestDispatchResult(AgentResponses.successJson(objectMapper, response), true);
+            return new RequestDispatchResult(
+                AgentResponses.successJson(objectMapper, response, command.responseType()), true);
         }
         catch (AgentProtocolException exception)
         {
@@ -288,6 +292,51 @@ final class AgentRequestDispatcher
                 handshakeCompleted
             );
         }
+    }
+
+    /**
+     * Invokes a command handler, constraining at compile time that the handler returns the response type the
+     * command declares via {@code IAgentCommand<R>}. A mispaired handler therefore fails to compile.
+     *
+     * @param command
+     *     The parsed command to handle.
+     * @param handler
+     *     The domain handler for that command.
+     * @param <C>
+     *     The command type.
+     * @param <R>
+     *     The response type the command is paired with.
+     * @return The handler's response.
+     * @throws Exception
+     *     Propagates handler failures.
+     */
+    private <C extends IAgentCommand<R>, R extends IAgentResponse> R handle(C command, CommandHandler<C, R> handler)
+        throws Exception
+    {
+        return handler.handle(command);
+    }
+
+    /**
+     * A command handler paired with its command's declared response type.
+     *
+     * @param <C>
+     *     The command type.
+     * @param <R>
+     *     The response type the command is paired with.
+     */
+    @FunctionalInterface
+    private interface CommandHandler<C extends IAgentCommand<R>, R extends IAgentResponse>
+    {
+        /**
+         * Handles the command and returns its typed response.
+         *
+         * @param command
+         *     The command to handle.
+         * @return The typed response.
+         * @throws Exception
+         *     Propagates handler failures.
+         */
+        R handle(C command) throws Exception;
     }
 
     /**
