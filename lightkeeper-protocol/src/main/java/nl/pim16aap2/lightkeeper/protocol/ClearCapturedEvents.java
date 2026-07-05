@@ -41,10 +41,8 @@ public final class ClearCapturedEvents
     /**
      * Response record for {@code CLEAR_CAPTURED_EVENTS}.
      *
-     * @param requestId
-     *     Correlated request id.
      */
-    public record Response(String requestId) implements IAgentResponse
+    public record Response() implements IAgentResponse
     {
     }
 }

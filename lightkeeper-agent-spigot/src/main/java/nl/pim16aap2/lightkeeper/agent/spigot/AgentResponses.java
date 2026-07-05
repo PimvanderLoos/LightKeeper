@@ -28,6 +28,8 @@ final class AgentResponses
      *
      * @param objectMapper
      *     Jackson mapper used for serialization.
+     * @param requestId
+     *     Identifier of the request being answered.
      * @param response
      *     Typed domain response record.
      * @param expectedType
@@ -39,7 +41,11 @@ final class AgentResponses
      * @throws JacksonException
      *     When serialization fails.
      */
-    static String successJson(ObjectMapper objectMapper, IAgentResponse response, Class<?> expectedType)
+    static String successJson(
+        ObjectMapper objectMapper,
+        String requestId,
+        IAgentResponse response,
+        Class<?> expectedType)
         throws JacksonException
     {
         if (response.getClass() != expectedType)
@@ -48,6 +54,7 @@ final class AgentResponses
                     .formatted(response.getClass().getName(), expectedType.getName()));
 
         final ObjectNode node = objectMapper.valueToTree(response);
+        node.put("requestId", requestId);
         node.put("success", true);
         return objectMapper.writeValueAsString(node);
     }

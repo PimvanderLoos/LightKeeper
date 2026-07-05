@@ -61,7 +61,6 @@ class AgentPlayerActionsTest
         }
 
         // verify
-        assertThat(response.requestId()).isEqualTo("request-cmd");
         assertThat(response.dispatched()).isTrue();
     }
 
@@ -115,7 +114,6 @@ class AgentPlayerActionsTest
         }
 
         // verify
-        assertThat(response.requestId()).isEqualTo("request-click");
         assertThat(response.cancelled()).isFalse();
         verify(pluginManager).callEvent(eventCaptor.capture());
         assertThat(eventCaptor.getValue().getAction()).isEqualTo(Action.LEFT_CLICK_BLOCK);
@@ -158,7 +156,6 @@ class AgentPlayerActionsTest
         }
 
         // verify
-        assertThat(response.requestId()).isEqualTo("req-drop");
         assertThat(response.dropped()).isTrue();
         verify(entity, never()).remove();
         verify(item).setAmount(2);
@@ -205,7 +202,6 @@ class AgentPlayerActionsTest
         }
 
         // verify
-        assertThat(response.requestId()).isEqualTo("req-drop-cancel");
         assertThat(response.dropped()).isFalse();
         verify(entity).remove();
         verify(inventory, never()).setItemInMainHand(any());

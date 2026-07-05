@@ -44,13 +44,10 @@ public final class GetPlayerMessages
     /**
      * Response record for {@code GET_PLAYER_MESSAGES}.
      *
-     * @param requestId
-     *     Correlated request id.
      * @param messages
      *     Accumulated plain-text messages received by the player.
      */
     public record Response(
-        String requestId,
         List<String> messages
     ) implements IAgentResponse
     {

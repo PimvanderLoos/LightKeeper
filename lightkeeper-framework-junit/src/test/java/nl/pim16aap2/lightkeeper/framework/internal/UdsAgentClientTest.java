@@ -153,8 +153,10 @@ class UdsAgentClientTest
             final WaitTicks.Response second = client.send(new WaitTicks.Command("2", 1));
 
             // verify — the watchdog is cancelled on the in-time first response, so the second request also succeeds
-            assertThat(first.requestId()).isEqualTo("1");
-            assertThat(second.requestId()).isEqualTo("2");
+            assertThat(first.startTick()).isZero();
+            assertThat(first.endTick()).isZero();
+            assertThat(second.startTick()).isZero();
+            assertThat(second.endTick()).isZero();
             client.close();
         }
     }

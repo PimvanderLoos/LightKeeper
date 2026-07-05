@@ -139,7 +139,7 @@ final class AgentPlayerActions
             "LK_AGENT: Created synthetic player '%s' (%s) in world '%s'."
                 .formatted(player.getName(), player.getUniqueId(), worldName)
         );
-        return new CreatePlayer.Response(command.requestId(), player.getUniqueId(), player.getName());
+        return new CreatePlayer.Response(player.getUniqueId(), player.getName());
     }
 
     /**
@@ -169,7 +169,7 @@ final class AgentPlayerActions
             return Boolean.TRUE;
         });
 
-        return new RemovePlayer.Response(command.requestId());
+        return new RemovePlayer.Response();
     }
 
     /**
@@ -198,7 +198,7 @@ final class AgentPlayerActions
             return Bukkit.dispatchCommand(player, command);
         });
 
-        return new ExecutePlayerCommand.Response(req.requestId(), dispatched);
+        return new ExecutePlayerCommand.Response(dispatched);
     }
 
     /**
@@ -231,7 +231,7 @@ final class AgentPlayerActions
             return world.getBlockAt(x, y, z).getType().getKey().toString();
         });
 
-        return new PlacePlayerBlock.Response(command.requestId(), finalMaterial);
+        return new PlacePlayerBlock.Response(finalMaterial);
     }
 
     /**
@@ -250,7 +250,7 @@ final class AgentPlayerActions
         final boolean cancelled = handleClickBlock(
             command.uuid(), command.x(), command.y(), command.z(), command.blockFace(), Action.LEFT_CLICK_BLOCK
         );
-        return new LeftClickBlock.Response(command.requestId(), cancelled);
+        return new LeftClickBlock.Response(cancelled);
     }
 
     /**
@@ -269,7 +269,7 @@ final class AgentPlayerActions
         final boolean cancelled = handleClickBlock(
             command.uuid(), command.x(), command.y(), command.z(), command.blockFace(), Action.RIGHT_CLICK_BLOCK
         );
-        return new RightClickBlock.Response(command.requestId(), cancelled);
+        return new RightClickBlock.Response(cancelled);
     }
 
     /**
@@ -293,7 +293,7 @@ final class AgentPlayerActions
             return playerStore.getPlayerMessages(uuid);
         });
 
-        return new GetPlayerMessages.Response(command.requestId(), messages);
+        return new GetPlayerMessages.Response(messages);
     }
 
     /**
@@ -316,7 +316,7 @@ final class AgentPlayerActions
             return objectMapper.writeValueAsString(playerStore.getPlayerChatComponents(uuid));
         });
 
-        return new GetPlayerChatComponents.Response(command.requestId(), componentsJson);
+        return new GetPlayerChatComponents.Response(componentsJson);
     }
 
     /**
@@ -339,7 +339,7 @@ final class AgentPlayerActions
             return buildInventoryItems(player.getInventory().getContents());
         });
 
-        return new GetPlayerInventory.Response(command.requestId(), items);
+        return new GetPlayerInventory.Response(items);
     }
 
     private static List<ItemSnapshot> buildInventoryItems(ItemStack... contents)
@@ -406,7 +406,7 @@ final class AgentPlayerActions
             return Boolean.TRUE;
         });
 
-        return new DropItem.Response(command.requestId(), dropped);
+        return new DropItem.Response(dropped);
     }
 
     /**
@@ -440,7 +440,7 @@ final class AgentPlayerActions
             return player.teleport(new Location(world, x, y, z));
         });
 
-        return new TeleportPlayer.Response(command.requestId(), teleported);
+        return new TeleportPlayer.Response(teleported);
     }
 
     /**

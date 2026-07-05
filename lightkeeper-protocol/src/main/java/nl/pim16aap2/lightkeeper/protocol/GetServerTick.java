@@ -35,13 +35,10 @@ public final class GetServerTick
     /**
      * Response record for {@code GET_SERVER_TICK}.
      *
-     * @param requestId
-     *     Correlated request id.
      * @param tick
      *     Current monotonic server tick counter value.
      */
     public record Response(
-        String requestId,
         long tick
     ) implements IAgentResponse
     {

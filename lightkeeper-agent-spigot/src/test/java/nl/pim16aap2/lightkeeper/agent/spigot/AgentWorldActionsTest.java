@@ -52,7 +52,6 @@ class AgentWorldActionsTest
         final GetServerTick.Response response = worldActions.handleGetServerTick(new GetServerTick.Command("request-1"));
 
         // verify
-        assertThat(response.requestId()).isEqualTo("request-1");
         assertThat(response.tick()).isEqualTo(17L);
     }
 
@@ -76,7 +75,6 @@ class AgentWorldActionsTest
         final WaitTicks.Response response = worldActions.handleWaitTicks(new WaitTicks.Command("request-3", 0));
 
         // verify
-        assertThat(response.requestId()).isEqualTo("request-3");
         assertThat(response.startTick()).isEqualTo(9L);
         assertThat(response.endTick()).isEqualTo(9L);
     }

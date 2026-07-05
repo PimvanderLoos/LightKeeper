@@ -218,7 +218,7 @@ final class AgentRequestDispatcher
             {
                 final Handshake.Response handshakeResponse = handleHandshake(hc);
                 return new RequestDispatchResult(
-                    AgentResponses.successJson(objectMapper, handshakeResponse, hc.responseType()),
+                    AgentResponses.successJson(objectMapper, requestId, handshakeResponse, hc.responseType()),
                     true
                 );
             }
@@ -273,7 +273,7 @@ final class AgentRequestDispatcher
             };
 
             return new RequestDispatchResult(
-                AgentResponses.successJson(objectMapper, response, command.responseType()), true);
+                AgentResponses.successJson(objectMapper, requestId, response, command.responseType()), true);
         }
         catch (AgentProtocolException exception)
         {
@@ -412,7 +412,7 @@ final class AgentRequestDispatcher
         if (!expectedAgentSha256.isBlank() && !expectedAgentSha256.equalsIgnoreCase(clientAgentSha))
             throw new AgentProtocolException(AgentErrorCode.AGENT_SHA_MISMATCH, "Agent SHA-256 mismatch.");
 
-        return new Handshake.Response(command.requestId(), protocolVersion, Bukkit.getBukkitVersion());
+        return new Handshake.Response(protocolVersion, Bukkit.getBukkitVersion());
     }
 
     /**

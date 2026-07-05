@@ -47,14 +47,11 @@ public final class DropItem
     /**
      * Response record for {@code DROP_ITEM}.
      *
-     * @param requestId
-     *     Correlated request id.
      * @param dropped
      *     {@code true} when the drop materialised (item entity created, inventory slot consumed);
      *     {@code false} when the player had nothing in hand, or the {@code PlayerDropItemEvent} was cancelled.
      */
     public record Response(
-        String requestId,
         boolean dropped
     ) implements IAgentResponse
     {

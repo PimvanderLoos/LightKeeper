@@ -35,13 +35,10 @@ public final class MainWorld
     /**
      * Response record for {@code MAIN_WORLD}.
      *
-     * @param requestId
-     *     Correlated request id.
      * @param worldName
      *     Name of the primary server world.
      */
     public record Response(
-        String requestId,
         String worldName
     ) implements IAgentResponse
     {

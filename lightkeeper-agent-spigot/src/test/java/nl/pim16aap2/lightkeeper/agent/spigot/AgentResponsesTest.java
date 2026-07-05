@@ -18,10 +18,11 @@ class AgentResponsesTest
         throws Exception
     {
         // setup
-        final MainWorld.Response response = new MainWorld.Response("request-1", "overworld");
+        final MainWorld.Response response = new MainWorld.Response("overworld");
 
         // execute
-        final String json = AgentResponses.successJson(OBJECT_MAPPER, response, MainWorld.Response.class);
+        final String json =
+            AgentResponses.successJson(OBJECT_MAPPER, "request-1", response, MainWorld.Response.class);
         final JsonNode node = OBJECT_MAPPER.readTree(json);
 
         // verify
@@ -34,10 +35,11 @@ class AgentResponsesTest
     void successJson_shouldThrowWhenResponseTypeDoesNotMatchExpected()
     {
         // setup
-        final MainWorld.Response response = new MainWorld.Response("request-1", "overworld");
+        final MainWorld.Response response = new MainWorld.Response("overworld");
 
         // execute + verify — a responseType()/handler mismatch must fail loudly, not corrupt the wire shape
-        assertThatThrownBy(() -> AgentResponses.successJson(OBJECT_MAPPER, response, NewWorld.Response.class))
+        assertThatThrownBy(() ->
+            AgentResponses.successJson(OBJECT_MAPPER, "request-1", response, NewWorld.Response.class))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("Response type mismatch");
     }

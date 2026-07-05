@@ -46,8 +46,6 @@ public final class GetOpenMenu
     /**
      * Response record for {@code GET_OPEN_MENU}.
      *
-     * @param requestId
-     *     Correlated request id.
      * @param open
      *     Whether the player has an actionable inventory open.
      * @param title
@@ -56,7 +54,6 @@ public final class GetOpenMenu
      *     Non-air slot snapshots; empty when {@code open} is {@code false}.
      */
     public record Response(
-        String requestId,
         boolean open,
         @Nullable String title,
         List<ItemSnapshot> items

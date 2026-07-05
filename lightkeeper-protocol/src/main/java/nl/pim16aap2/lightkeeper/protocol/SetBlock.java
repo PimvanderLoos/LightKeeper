@@ -55,13 +55,10 @@ public final class SetBlock
     /**
      * Response record for {@code SET_BLOCK}.
      *
-     * @param requestId
-     *     Correlated request id.
      * @param material
      *     Bukkit material name of the block that was placed.
      */
     public record Response(
-        String requestId,
         String material
     ) implements IAgentResponse
     {

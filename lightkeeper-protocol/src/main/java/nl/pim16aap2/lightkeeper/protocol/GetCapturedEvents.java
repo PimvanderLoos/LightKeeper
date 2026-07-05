@@ -44,13 +44,10 @@ public final class GetCapturedEvents
     /**
      * Response record for {@code GET_CAPTURED_EVENTS}.
      *
-     * @param requestId
-     *     Correlated request id.
      * @param events
      *     Captured event property snapshots, one map per captured event instance.
      */
     public record Response(
-        String requestId,
         List<Map<String, String>> events
     ) implements IAgentResponse
     {

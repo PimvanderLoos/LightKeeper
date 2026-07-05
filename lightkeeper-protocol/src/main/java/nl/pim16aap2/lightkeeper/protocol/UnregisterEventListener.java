@@ -41,10 +41,8 @@ public final class UnregisterEventListener
     /**
      * Response record for {@code UNREGISTER_EVENT_LISTENER}.
      *
-     * @param requestId
-     *     Correlated request id.
      */
-    public record Response(String requestId) implements IAgentResponse
+    public record Response() implements IAgentResponse
     {
     }
 }

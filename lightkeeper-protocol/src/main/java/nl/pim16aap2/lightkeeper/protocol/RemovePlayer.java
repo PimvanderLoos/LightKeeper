@@ -43,10 +43,8 @@ public final class RemovePlayer
     /**
      * Response record for {@code REMOVE_PLAYER}.
      *
-     * @param requestId
-     *     Correlated request id.
      */
-    public record Response(String requestId) implements IAgentResponse
+    public record Response() implements IAgentResponse
     {
     }
 }

@@ -44,13 +44,10 @@ public final class GetPlayerInventory
     /**
      * Response record for {@code GET_PLAYER_INVENTORY}.
      *
-     * @param requestId
-     *     Correlated request id.
      * @param items
      *     Non-air inventory slot snapshots.
      */
     public record Response(
-        String requestId,
         List<ItemSnapshot> items
     ) implements IAgentResponse
     {

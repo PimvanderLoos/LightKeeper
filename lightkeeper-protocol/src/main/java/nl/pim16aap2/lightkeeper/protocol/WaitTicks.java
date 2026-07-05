@@ -39,15 +39,12 @@ public final class WaitTicks
     /**
      * Response record for {@code WAIT_TICKS}.
      *
-     * @param requestId
-     *     Correlated request id.
      * @param startTick
      *     Server tick value at the start of the wait.
      * @param endTick
      *     Server tick value when the wait completed.
      */
     public record Response(
-        String requestId,
         long startTick,
         long endTick
     ) implements IAgentResponse

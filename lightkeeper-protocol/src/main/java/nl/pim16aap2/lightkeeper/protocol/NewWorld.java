@@ -52,13 +52,10 @@ public final class NewWorld
     /**
      * Response record for {@code NEW_WORLD}.
      *
-     * @param requestId
-     *     Correlated request id.
      * @param worldName
      *     Name of the created or loaded world.
      */
     public record Response(
-        String requestId,
         String worldName
     ) implements IAgentResponse
     {

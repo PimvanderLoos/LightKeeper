@@ -47,10 +47,8 @@ public final class ClickMenuSlot
     /**
      * Response record for {@code CLICK_MENU_SLOT}.
      *
-     * @param requestId
-     *     Correlated request id.
      */
-    public record Response(String requestId) implements IAgentResponse
+    public record Response() implements IAgentResponse
     {
     }
 }

@@ -88,7 +88,7 @@ final class AgentWorldActions
         throws Exception
     {
         final World mainWorld = mainThreadExecutor.callOnMainThread(() -> Bukkit.getWorlds().getFirst());
-        return new MainWorld.Response(command.requestId(), mainWorld.getName());
+        return new MainWorld.Response(mainWorld.getName());
     }
 
     /**
@@ -125,7 +125,7 @@ final class AgentWorldActions
             "LK_AGENT: Created/loaded world '%s' (type=%s, environment=%s, seed=%d)."
                 .formatted(world.getName(), worldTypeValue, environmentValue, seed)
         );
-        return new NewWorld.Response(command.requestId(), world.getName());
+        return new NewWorld.Response(world.getName());
     }
 
     /**
@@ -153,7 +153,7 @@ final class AgentWorldActions
             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), normalizedCommand)
         );
 
-        return new ExecuteCommand.Response(command.requestId(), dispatched);
+        return new ExecuteCommand.Response(dispatched);
     }
 
     /**
@@ -182,7 +182,7 @@ final class AgentWorldActions
             return world.getBlockAt(x, y, z).getType().getKey().toString();
         });
 
-        return new BlockType.Response(command.requestId(), materialName);
+        return new BlockType.Response(materialName);
     }
 
     /**
@@ -217,7 +217,7 @@ final class AgentWorldActions
             return world.getBlockAt(x, y, z).getType().name();
         });
 
-        return new SetBlock.Response(command.requestId(), setMaterial);
+        return new SetBlock.Response(setMaterial);
     }
 
     /**
@@ -261,7 +261,7 @@ final class AgentWorldActions
             }
         }
 
-        return new WaitTicks.Response(command.requestId(), startTick, tickCounter.get());
+        return new WaitTicks.Response(startTick, tickCounter.get());
     }
 
     /**
@@ -274,7 +274,7 @@ final class AgentWorldActions
      */
     GetServerTick.Response handleGetServerTick(GetServerTick.Command command)
     {
-        return new GetServerTick.Response(command.requestId(), tickCounter.get());
+        return new GetServerTick.Response(tickCounter.get());
     }
 
     /**
@@ -302,7 +302,7 @@ final class AgentWorldActions
             return world.loadChunk(x, z, true);
         });
 
-        return new LoadChunk.Response(command.requestId(), loaded);
+        return new LoadChunk.Response(loaded);
     }
 
     /**
@@ -330,7 +330,7 @@ final class AgentWorldActions
             return world.unloadChunk(x, z);
         });
 
-        return new UnloadChunk.Response(command.requestId(), unloaded);
+        return new UnloadChunk.Response(unloaded);
     }
 
     /**
@@ -358,7 +358,7 @@ final class AgentWorldActions
             return world.isChunkLoaded(x, z);
         });
 
-        return new IsChunkLoaded.Response(command.requestId(), loaded);
+        return new IsChunkLoaded.Response(loaded);
     }
 
     /**
@@ -371,6 +371,6 @@ final class AgentWorldActions
      */
     GetServerPlatform.Response handleGetServerPlatform(GetServerPlatform.Command command)
     {
-        return new GetServerPlatform.Response(command.requestId(), AgentPlatformDetector.detect());
+        return new GetServerPlatform.Response(AgentPlatformDetector.detect());
     }
 }

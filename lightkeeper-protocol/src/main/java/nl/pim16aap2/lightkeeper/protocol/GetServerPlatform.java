@@ -35,13 +35,10 @@ public final class GetServerPlatform
     /**
      * Response record for {@code GET_SERVER_PLATFORM}.
      *
-     * @param requestId
-     *     Correlated request id.
      * @param platform
      *     Canonical platform identifier ({@code PAPER}, {@code SPIGOT}, or {@code UNKNOWN}).
      */
     public record Response(
-        String requestId,
         String platform
     ) implements IAgentResponse
     {

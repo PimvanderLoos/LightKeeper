@@ -4,8 +4,9 @@ package nl.pim16aap2.lightkeeper.protocol;
  * Sealed response hierarchy for the LightKeeper agent protocol.
  *
  * <p>Every protocol action has a corresponding typed response record implementing this interface. The dispatcher
- * serializes a successful response by writing the domain record as JSON and injecting a {@code "success": true} field;
- * error responses are written as {@code {"requestId":"...","success":false,"errorCode":"...","errorMessage":"..."}}.
+ * serializes a successful response by writing the domain record as JSON and injecting a {@code "success": true} field
+ * and the originating command's {@code requestId}. Error responses are written as
+ * {@code {"requestId":"...","success":false,"errorCode":"...","errorMessage":"..."}}.
  *
  * <p>Client side: read the response {@link tools.jackson.databind.JsonNode}, check {@code success}, then
  * deserialize via {@code objectMapper.treeToValue(root, command.responseType())}.
@@ -43,10 +44,4 @@ public sealed interface IAgentResponse
     UnregisterEventListener.Response,
     WaitTicks.Response
 {
-    /**
-     * Correlation identifier matching the originating request's {@code requestId}.
-     *
-     * @return Non-blank request identifier.
-     */
-    String requestId();
 }

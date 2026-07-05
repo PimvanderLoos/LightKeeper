@@ -47,13 +47,10 @@ public final class UnloadChunk
     /**
      * Response record for {@code UNLOAD_CHUNK}.
      *
-     * @param requestId
-     *     Correlated request id.
      * @param unloaded
      *     Whether the chunk was unloaded.
      */
     public record Response(
-        String requestId,
         boolean unloaded
     ) implements IAgentResponse
     {

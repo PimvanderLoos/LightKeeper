@@ -74,7 +74,7 @@ final class AgentMenuActions
             final InventoryView view = player.getOpenInventory();
 
             if (!isActionableOpenInventory(view))
-                return new GetOpenMenu.Response(command.requestId(), false, null, List.of());
+                return new GetOpenMenu.Response(false, null, List.of());
 
             final List<ItemSnapshot> items = new ArrayList<>();
             for (int rawSlot = 0; rawSlot < view.countSlots(); ++rawSlot)
@@ -85,7 +85,7 @@ final class AgentMenuActions
                 items.add(AgentItemSnapshots.of(rawSlot, item));
             }
 
-            return new GetOpenMenu.Response(command.requestId(), true, view.getTitle(), items);
+            return new GetOpenMenu.Response(true, view.getTitle(), items);
         });
     }
 
@@ -125,7 +125,7 @@ final class AgentMenuActions
             return Boolean.TRUE;
         });
 
-        return new ClickMenuSlot.Response(command.requestId());
+        return new ClickMenuSlot.Response();
     }
 
     /**
@@ -179,7 +179,7 @@ final class AgentMenuActions
             return Boolean.TRUE;
         });
 
-        return new DragMenuSlots.Response(command.requestId());
+        return new DragMenuSlots.Response();
     }
 
     /**

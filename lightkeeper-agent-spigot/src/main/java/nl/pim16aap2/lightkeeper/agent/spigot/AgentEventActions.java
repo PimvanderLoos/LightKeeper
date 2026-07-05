@@ -54,7 +54,7 @@ final class AgentEventActions
                 exception
             );
         }
-        return new RegisterEventListener.Response(command.requestId());
+        return new RegisterEventListener.Response();
     }
 
     /**
@@ -70,7 +70,7 @@ final class AgentEventActions
     {
         final String eventClassName = requireEventClassName(command.eventClassName());
         final List<Map<String, String>> events = eventCapture.getCapturedEvents(eventClassName);
-        return new GetCapturedEvents.Response(command.requestId(), events);
+        return new GetCapturedEvents.Response(events);
     }
 
     /**
@@ -84,7 +84,7 @@ final class AgentEventActions
     ClearCapturedEvents.Response handleClearCapturedEvents(ClearCapturedEvents.Command command)
     {
         eventCapture.clearCapturedEvents(requireEventClassName(command.eventClassName()));
-        return new ClearCapturedEvents.Response(command.requestId());
+        return new ClearCapturedEvents.Response();
     }
 
     /**
@@ -98,7 +98,7 @@ final class AgentEventActions
     UnregisterEventListener.Response handleUnregisterEventListener(UnregisterEventListener.Command command)
     {
         eventCapture.unregisterListener(requireEventClassName(command.eventClassName()));
-        return new UnregisterEventListener.Response(command.requestId());
+        return new UnregisterEventListener.Response();
     }
 
     private static String requireEventClassName(String eventClassName)

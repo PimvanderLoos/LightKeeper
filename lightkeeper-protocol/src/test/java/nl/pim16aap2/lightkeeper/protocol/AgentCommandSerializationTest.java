@@ -245,14 +245,13 @@ class AgentCommandSerializationTest
     {
         // setup
         final ObjectMapper mapper = new ObjectMapper();
-        final MainWorld.Response original = new MainWorld.Response("req-9", "world");
+        final MainWorld.Response original = new MainWorld.Response("world");
 
         // execute
         final String json = mapper.writeValueAsString(original);
         final MainWorld.Response result = mapper.readValue(json, MainWorld.Response.class);
 
         // verify
-        assertThat(result.requestId()).isEqualTo("req-9");
         assertThat(result.worldName()).isEqualTo("world");
     }
 
@@ -265,14 +264,13 @@ class AgentCommandSerializationTest
     {
         // setup
         final ObjectMapper mapper = new ObjectMapper();
-        final DropItem.Response original = new DropItem.Response("req-10", true);
+        final DropItem.Response original = new DropItem.Response(true);
 
         // execute
         final String json = mapper.writeValueAsString(original);
         final DropItem.Response result = mapper.readValue(json, DropItem.Response.class);
 
         // verify
-        assertThat(result.requestId()).isEqualTo("req-10");
         assertThat(result.dropped()).isTrue();
     }
 
@@ -285,14 +283,13 @@ class AgentCommandSerializationTest
     {
         // setup
         final ObjectMapper mapper = new ObjectMapper();
-        final Handshake.Response original = new Handshake.Response("req-11", 3, "1.21.11-R0.1-SNAPSHOT");
+        final Handshake.Response original = new Handshake.Response(3, "1.21.11-R0.1-SNAPSHOT");
 
         // execute
         final String json = mapper.writeValueAsString(original);
         final Handshake.Response result = mapper.readValue(json, Handshake.Response.class);
 
         // verify
-        assertThat(result.requestId()).isEqualTo("req-11");
         assertThat(result.protocolVersion()).isEqualTo(3);
         assertThat(result.bukkitVersion()).isEqualTo("1.21.11-R0.1-SNAPSHOT");
     }

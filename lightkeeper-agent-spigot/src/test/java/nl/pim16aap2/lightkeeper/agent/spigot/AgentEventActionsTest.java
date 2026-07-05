@@ -82,7 +82,6 @@ class AgentEventActionsTest
             new RegisterEventListener.Command("req-3", "org.bukkit.event.Event"));
 
         // verify
-        assertThat(response.requestId()).isEqualTo("req-3");
         verify(eventCapture).registerListener("org.bukkit.event.Event");
     }
 
@@ -127,7 +126,6 @@ class AgentEventActionsTest
             new ClearCapturedEvents.Command("req-6", "org.bukkit.event.Event"));
 
         // verify
-        assertThat(response.requestId()).isEqualTo("req-6");
         verify(eventCapture).clearCapturedEvents("org.bukkit.event.Event");
     }
 
@@ -156,7 +154,6 @@ class AgentEventActionsTest
             new UnregisterEventListener.Command("req-8", "org.bukkit.event.Event"));
 
         // verify
-        assertThat(response.requestId()).isEqualTo("req-8");
         verify(eventCapture).unregisterListener("org.bukkit.event.Event");
     }
 

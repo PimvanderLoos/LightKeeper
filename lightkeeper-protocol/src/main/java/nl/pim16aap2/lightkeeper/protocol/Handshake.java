@@ -48,15 +48,12 @@ public final class Handshake
     /**
      * Response record for {@code HANDSHAKE}.
      *
-     * @param requestId
-     *     Correlated request id.
      * @param protocolVersion
      *     Protocol version confirmed by the server.
      * @param bukkitVersion
      *     Bukkit version string of the running server.
      */
     public record Response(
-        String requestId,
         int protocolVersion,
         String bukkitVersion
     ) implements IAgentResponse

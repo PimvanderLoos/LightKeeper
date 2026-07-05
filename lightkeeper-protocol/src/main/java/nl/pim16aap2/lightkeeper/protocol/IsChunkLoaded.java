@@ -47,13 +47,10 @@ public final class IsChunkLoaded
     /**
      * Response record for {@code IS_CHUNK_LOADED}.
      *
-     * @param requestId
-     *     Correlated request id.
      * @param loaded
      *     Whether the chunk is currently loaded.
      */
     public record Response(
-        String requestId,
         boolean loaded
     ) implements IAgentResponse
     {

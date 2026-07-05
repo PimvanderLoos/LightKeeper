@@ -67,15 +67,12 @@ public final class CreatePlayer
     /**
      * Response record for {@code CREATE_PLAYER}.
      *
-     * @param requestId
-     *     Correlated request id.
      * @param uuid
      *     UUID of the created synthetic player.
      * @param name
      *     Display name of the created synthetic player.
      */
     public record Response(
-        String requestId,
         UUID uuid,
         String name
     ) implements IAgentResponse

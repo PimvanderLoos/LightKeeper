@@ -85,7 +85,7 @@ class AgentRequestDispatcherTest
         // setup
         final DispatcherFixture fixture = createDispatcherFixture();
         when(fixture.worldActions().handleMainWorld(any(MainWorld.Command.class)))
-            .thenReturn(new MainWorld.Response("request-world", "world"));
+            .thenReturn(new MainWorld.Response("world"));
         final String requestLine = toJson(new MainWorld.Command("request-world"));
 
         // execute
@@ -95,6 +95,8 @@ class AgentRequestDispatcherTest
         // verify
         assertThat(result.handshakeCompleted()).isTrue();
         assertThat(isSuccess(result.responseJson())).isTrue();
+        assertThat(OBJECT_MAPPER.readTree(result.responseJson()).path("requestId").asString())
+            .isEqualTo("request-world");
         verify(fixture.worldActions()).handleMainWorld(any(MainWorld.Command.class));
     }
 
@@ -284,61 +286,61 @@ class AgentRequestDispatcherTest
         final UUID uuid = UUID.randomUUID();
 
         when(fixture.worldActions().handleNewWorld(any(NewWorld.Command.class)))
-            .thenReturn(new NewWorld.Response("request-1", "w"));
+            .thenReturn(new NewWorld.Response("w"));
         when(fixture.worldActions().handleExecuteCommand(any(ExecuteCommand.Command.class)))
-            .thenReturn(new ExecuteCommand.Response("request-2", true));
+            .thenReturn(new ExecuteCommand.Response(true));
         when(fixture.worldActions().handleBlockType(any(BlockType.Command.class)))
-            .thenReturn(new BlockType.Response("request-3", "STONE"));
+            .thenReturn(new BlockType.Response("STONE"));
         when(fixture.worldActions().handleSetBlock(any(SetBlock.Command.class)))
-            .thenReturn(new SetBlock.Response("request-4", "STONE"));
+            .thenReturn(new SetBlock.Response("STONE"));
         when(fixture.playerActions().handleCreatePlayer(any(CreatePlayer.Command.class)))
-            .thenReturn(new CreatePlayer.Response("request-5", uuid, "bot"));
+            .thenReturn(new CreatePlayer.Response(uuid, "bot"));
         when(fixture.playerActions().handleRemovePlayer(any(RemovePlayer.Command.class)))
-            .thenReturn(new RemovePlayer.Response("request-6"));
+            .thenReturn(new RemovePlayer.Response());
         when(fixture.playerActions().handleExecutePlayerCommand(any(ExecutePlayerCommand.Command.class)))
-            .thenReturn(new ExecutePlayerCommand.Response("request-7", true));
+            .thenReturn(new ExecutePlayerCommand.Response(true));
         when(fixture.playerActions().handlePlacePlayerBlock(any(PlacePlayerBlock.Command.class)))
-            .thenReturn(new PlacePlayerBlock.Response("request-8", "minecraft:stone"));
+            .thenReturn(new PlacePlayerBlock.Response("minecraft:stone"));
         when(fixture.playerActions().handleLeftClickBlock(any(LeftClickBlock.Command.class)))
-            .thenReturn(new LeftClickBlock.Response("request-9", false));
+            .thenReturn(new LeftClickBlock.Response(false));
         when(fixture.playerActions().handleRightClickBlock(any(RightClickBlock.Command.class)))
-            .thenReturn(new RightClickBlock.Response("request-10", false));
+            .thenReturn(new RightClickBlock.Response(false));
         when(fixture.menuActions().handleGetOpenMenu(any(GetOpenMenu.Command.class)))
-            .thenReturn(new GetOpenMenu.Response("request-11", false, null, java.util.List.of()));
+            .thenReturn(new GetOpenMenu.Response(false, null, java.util.List.of()));
         when(fixture.menuActions().handleClickMenuSlot(any(ClickMenuSlot.Command.class)))
-            .thenReturn(new ClickMenuSlot.Response("request-12"));
+            .thenReturn(new ClickMenuSlot.Response());
         when(fixture.menuActions().handleDragMenuSlots(any(DragMenuSlots.Command.class)))
-            .thenReturn(new DragMenuSlots.Response("request-13"));
+            .thenReturn(new DragMenuSlots.Response());
         when(fixture.playerActions().handleGetPlayerMessages(any(GetPlayerMessages.Command.class)))
-            .thenReturn(new GetPlayerMessages.Response("request-14", java.util.List.of()));
+            .thenReturn(new GetPlayerMessages.Response(java.util.List.of()));
         when(fixture.worldActions().handleWaitTicks(any(WaitTicks.Command.class)))
-            .thenReturn(new WaitTicks.Response("request-15", 0L, 0L));
+            .thenReturn(new WaitTicks.Response(0L, 0L));
         when(fixture.worldActions().handleGetServerTick(any(GetServerTick.Command.class)))
-            .thenReturn(new GetServerTick.Response("request-16", 0L));
+            .thenReturn(new GetServerTick.Response(0L));
         when(fixture.playerActions().handleTeleportPlayer(any(TeleportPlayer.Command.class)))
-            .thenReturn(new TeleportPlayer.Response("request-17", true));
+            .thenReturn(new TeleportPlayer.Response(true));
         when(fixture.worldActions().handleLoadChunk(any(LoadChunk.Command.class)))
-            .thenReturn(new LoadChunk.Response("request-18", true));
+            .thenReturn(new LoadChunk.Response(true));
         when(fixture.worldActions().handleUnloadChunk(any(UnloadChunk.Command.class)))
-            .thenReturn(new UnloadChunk.Response("request-19", true));
+            .thenReturn(new UnloadChunk.Response(true));
         when(fixture.worldActions().handleIsChunkLoaded(any(IsChunkLoaded.Command.class)))
-            .thenReturn(new IsChunkLoaded.Response("request-20", true));
+            .thenReturn(new IsChunkLoaded.Response(true));
         when(fixture.playerActions().handleGetPlayerInventory(any(GetPlayerInventory.Command.class)))
-            .thenReturn(new GetPlayerInventory.Response("request-21", java.util.List.of()));
+            .thenReturn(new GetPlayerInventory.Response(java.util.List.of()));
         when(fixture.playerActions().handleDropItem(any(DropItem.Command.class)))
-            .thenReturn(new DropItem.Response("request-22", false));
+            .thenReturn(new DropItem.Response(false));
         when(fixture.eventActions().handleRegisterEventListener(any(RegisterEventListener.Command.class)))
-            .thenReturn(new RegisterEventListener.Response("request-23"));
+            .thenReturn(new RegisterEventListener.Response());
         when(fixture.eventActions().handleGetCapturedEvents(any(GetCapturedEvents.Command.class)))
-            .thenReturn(new GetCapturedEvents.Response("request-24", java.util.List.of()));
+            .thenReturn(new GetCapturedEvents.Response(java.util.List.of()));
         when(fixture.eventActions().handleClearCapturedEvents(any(ClearCapturedEvents.Command.class)))
-            .thenReturn(new ClearCapturedEvents.Response("request-25"));
+            .thenReturn(new ClearCapturedEvents.Response());
         when(fixture.eventActions().handleUnregisterEventListener(any(UnregisterEventListener.Command.class)))
-            .thenReturn(new UnregisterEventListener.Response("request-26"));
+            .thenReturn(new UnregisterEventListener.Response());
         when(fixture.playerActions().handleGetPlayerChatComponents(any(GetPlayerChatComponents.Command.class)))
-            .thenReturn(new GetPlayerChatComponents.Response("request-27", "[]"));
+            .thenReturn(new GetPlayerChatComponents.Response("[]"));
         when(fixture.worldActions().handleGetServerPlatform(any(GetServerPlatform.Command.class)))
-            .thenReturn(new GetServerPlatform.Response("request-28", "SPIGOT"));
+            .thenReturn(new GetServerPlatform.Response("SPIGOT"));
 
         // execute
         dispatchExpectingSuccess(fixture, toJson(new NewWorld.Command("request-1", "w", "NORMAL", "NORMAL", 0L)));

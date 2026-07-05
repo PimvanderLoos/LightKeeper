@@ -59,13 +59,10 @@ public final class TeleportPlayer
     /**
      * Response record for {@code TELEPORT_PLAYER}.
      *
-     * @param requestId
-     *     Correlated request id.
      * @param teleported
      *     Whether the teleportation succeeded.
      */
     public record Response(
-        String requestId,
         boolean teleported
     ) implements IAgentResponse
     {

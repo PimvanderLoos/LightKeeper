@@ -51,10 +51,8 @@ public final class DragMenuSlots
     /**
      * Response record for {@code DRAG_MENU_SLOTS}.
      *
-     * @param requestId
-     *     Correlated request id.
      */
-    public record Response(String requestId) implements IAgentResponse
+    public record Response() implements IAgentResponse
     {
     }
 }

@@ -45,13 +45,10 @@ public final class ExecuteCommand
     /**
      * Response record for {@code EXECUTE_COMMAND}.
      *
-     * @param requestId
-     *     Correlated request id.
      * @param dispatched
      *     Whether the underlying {@code dispatchCommand} call returned {@code true}.
      */
     public record Response(
-        String requestId,
         boolean dispatched
     ) implements IAgentResponse
     {

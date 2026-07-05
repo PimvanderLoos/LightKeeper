@@ -57,13 +57,10 @@ public final class PlacePlayerBlock
     /**
      * Response record for {@code PLACE_PLAYER_BLOCK}.
      *
-     * @param requestId
-     *     Correlated request id.
      * @param material
      *     Namespaced material key of the block that was placed.
      */
     public record Response(
-        String requestId,
         String material
     ) implements IAgentResponse
     {

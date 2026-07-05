@@ -56,13 +56,10 @@ public final class LeftClickBlock
     /**
      * Response record for {@code LEFT_CLICK_BLOCK}.
      *
-     * @param requestId
-     *     Correlated request id.
      * @param cancelled
      *     Whether the interaction event was cancelled by a plugin.
      */
     public record Response(
-        String requestId,
         boolean cancelled
     ) implements IAgentResponse
     {

@@ -49,13 +49,10 @@ public final class ExecutePlayerCommand
     /**
      * Response record for {@code EXECUTE_PLAYER_COMMAND}.
      *
-     * @param requestId
-     *     Correlated request id.
      * @param dispatched
      *     Whether the underlying {@code performCommand}/{@code dispatchCommand} call returned {@code true}.
      */
     public record Response(
-        String requestId,
         boolean dispatched
     ) implements IAgentResponse
     {
