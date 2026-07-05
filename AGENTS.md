@@ -31,7 +31,7 @@ control/assert server state through a typed framework API.
 - Performs rich E2E interactions/assertions:
   - World operations (create worlds, set/query blocks, load/unload chunks)
   - Synthetic players (spawn/remove, permissions, health, commands, teleportation, inventory, item drops)
-  - GUI/menu actions (snapshot, click, drag, close)
+  - GUI/menu actions (snapshot, click, drag)
   - Dynamic event capture (listen to any Bukkit event)
   - Message/chat assertions (plain text and clickable components)
   - Fluent AssertJ helpers and platform awareness (Paper/Spigot)
@@ -42,7 +42,8 @@ control/assert server state through a typed framework API.
 - `lightkeeper-maven-plugin`: Maven goals `prepare-server` and `cleanup-server` for provisioning and lifecycle cleanup.
 - `lightkeeper-framework-junit`: Public test API (`ILightkeeperFramework`, handles/builders, JUnit extension, assertions).
 - `lightkeeper-agent-spigot`: In-server RPC agent handling handshake/auth and action dispatch.
-- `lightkeeper-runtime-core`: Shared protocol constants, manifest model, request/response DTOs.
+- `lightkeeper-protocol`: Shared typed command and response records for the versioned wire protocol.
+- `lightkeeper-runtime-core`: Shared protocol constants and runtime manifest model.
 - `lightkeeper-nms-parent`:
   - `lightkeeper-nms-api`: NMS contracts
   - `lightkeeper-nms-v1_21_R7`: Concrete adapter implementation
@@ -77,8 +78,8 @@ control/assert server state through a typed framework API.
 
 - Keep public framework API in `lightkeeper-framework-junit/.../framework`; keep implementation details in
   `lightkeeper-framework-junit/.../framework/internal`.
-- Keep runtime protocol enums/DTOs in `lightkeeper-runtime-core/.../runtime` and
-  `lightkeeper-runtime-core/.../runtime/agent`.
+- Keep runtime protocol commands/responses in `lightkeeper-protocol/.../protocol`; keep runtime manifests and
+  cross-process constants in `lightkeeper-runtime-core/.../runtime`.
 - Keep in-server action handling in `lightkeeper-agent-spigot/.../agent/spigot`.
 - Keep Maven provisioning/lifecycle logic in `lightkeeper-maven-plugin/.../maven/...`.
 - Naming conventions:
@@ -94,7 +95,7 @@ control/assert server state through a typed framework API.
 
 - Validate inputs at API boundaries and fail fast with `IllegalArgumentException` for invalid caller input.
 - Use `IllegalStateException` for runtime/protocol/lifecycle failures that represent invalid state or failed operations.
-- Keep RPC/protocol failures structured in agent responses (`success/errorCode/errorMessage/data`) and translate once at
+- Keep RPC/protocol failures structured in agent responses (`success/errorCode/errorMessage`) and translate once at
   the framework boundary.
 - Log at lifecycle boundaries (start/stop/major transitions/failures) and avoid duplicate logging at multiple layers.
 - Include actionable context in thrown exceptions and logs (action, identifiers, file/path, protocol versions).
@@ -114,13 +115,13 @@ control/assert server state through a typed framework API.
 
 ### Add a new runtime RPC action
 
-1. Add the action enum entry in `lightkeeper-runtime-core/.../runtime/agent/AgentAction`.
-2. Add or extend request/response payload shape in `lightkeeper-runtime-core` DTOs if needed.
-3. Implement agent-side parsing/validation/dispatch in `lightkeeper-agent-spigot`
-   (`AgentRequestDispatcher`, `AgentRequestParsers`, `AgentResponses`, and relevant `*Actions` class).
-4. Add framework client call in `lightkeeper-framework-junit/.../framework/internal/UdsAgentClient`.
+1. Add a namespace class in `lightkeeper-protocol` with nested `Command` and `Response` records.
+2. Register the command in `IAgentCommand` with both a `@JsonSubTypes.Type` entry and a sealed `permits` entry;
+   add the response to `IAgentResponse`'s `permits` list.
+3. Implement the relevant agent-side `*Actions` handler and add the exhaustive dispatcher switch arm.
+4. Add the typed framework client call in `lightkeeper-framework-junit/.../framework/internal/UdsAgentClient`.
 5. Expose API through `ILightkeeperFramework`, handle/builder types, and assertions if user-facing.
-6. Add unit tests for agent dispatch/parsing + framework client behavior.
+6. Add protocol serialization, agent dispatch/handler, and framework client unit tests.
 7. Add integration coverage in `lightkeeper-integration-tests` proving end-to-end behavior on Paper and Spigot.
 
 ### Add support for a new NMS/server revision
