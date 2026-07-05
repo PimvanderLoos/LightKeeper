@@ -321,7 +321,9 @@ final class MinecraftServerProcess
             catch (InterruptedException exception)
             {
                 Thread.currentThread().interrupt();
-                return;
+                throw new IllegalStateException(
+                    "Interrupted while waiting for Minecraft world session locks to be released.",
+                    exception);
             }
         }
 
@@ -370,6 +372,10 @@ final class MinecraftServerProcess
         catch (IOException exception)
         {
             final Path defaultLock = serverDirectory.resolve("world/session.lock");
+            LOG.log(
+                System.Logger.Level.WARNING,
+                "Failed to scan all Minecraft world session locks; checking only the default world lock.",
+                exception);
             return Files.exists(defaultLock) ? List.of(defaultLock) : List.of();
         }
     }
@@ -429,7 +435,7 @@ final class MinecraftServerProcess
         }
         catch (IOException exception)
         {
-            LOG.log(System.Logger.Level.TRACE, () -> "Failed to write diagnostics bundle: " + exception.getMessage());
+            LOG.log(System.Logger.Level.WARNING, "Failed to write Minecraft server diagnostics bundle.", exception);
         }
     }
 

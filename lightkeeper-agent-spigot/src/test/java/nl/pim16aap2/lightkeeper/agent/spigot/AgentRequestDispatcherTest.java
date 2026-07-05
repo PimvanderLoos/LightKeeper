@@ -1,12 +1,11 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
-import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.json.JsonMapper;
 import nl.pim16aap2.lightkeeper.nms.api.IBotPlayerNmsAdapter;
 import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
 import nl.pim16aap2.lightkeeper.protocol.AgentProtocolException;
+import nl.pim16aap2.lightkeeper.protocol.AgentProtocolMapper;
 import nl.pim16aap2.lightkeeper.protocol.BlockType;
 import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEvents;
 import nl.pim16aap2.lightkeeper.protocol.ClickMenuSlot;
@@ -53,9 +52,7 @@ import static org.mockito.Mockito.*;
 
 class AgentRequestDispatcherTest
 {
-    private static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder()
-        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-        .build();
+    private static final ObjectMapper OBJECT_MAPPER = AgentProtocolMapper.create();
 
     @Test
     void handleRequestLine_shouldCompleteHandshakeWhenTokenAndProtocolMatch()
@@ -98,6 +95,23 @@ class AgentRequestDispatcherTest
         assertThat(OBJECT_MAPPER.readTree(result.responseJson()).path("requestId").asString())
             .isEqualTo("request-world");
         verify(fixture.worldActions()).handleMainWorld(any(MainWorld.Command.class));
+    }
+
+    @Test
+    void handleRequestLine_shouldRejectUnknownAction()
+    {
+        // setup
+        final DispatcherFixture fixture = createDispatcherFixture();
+        final String requestLine = "{\"action\":\"BOGUS\",\"requestId\":\"request-unknown\"}";
+
+        // execute
+        final AgentRequestDispatcher.RequestDispatchResult result =
+            fixture.dispatcher().handleRequestLine(requestLine, true);
+
+        // verify
+        assertThat(requestId(result.responseJson())).isEqualTo("request-unknown");
+        assertThat(errorCode(result.responseJson())).isEqualTo("INVALID_REQUEST");
+        assertThat(isSuccess(result.responseJson())).isFalse();
     }
 
     @Test
@@ -528,9 +542,7 @@ class AgentRequestDispatcherTest
 
     private static AgentRequestDispatcher createDispatcher(String authToken, int protocolVersion, String expectedSha)
     {
-        final ObjectMapper objectMapper = JsonMapper.builder()
-        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-        .build();
+        final ObjectMapper objectMapper = AgentProtocolMapper.create();
         final JavaPlugin plugin = mock();
         final AgentMainThreadExecutor mainThreadExecutor = new AgentMainThreadExecutor(plugin);
         final AgentSyntheticPlayerStore playerStore = new AgentSyntheticPlayerStore();
@@ -577,9 +589,7 @@ class AgentRequestDispatcherTest
 
     private static DispatcherFixture createDispatcherFixture()
     {
-        final ObjectMapper objectMapper = JsonMapper.builder()
-        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-        .build();
+        final ObjectMapper objectMapper = AgentProtocolMapper.create();
         final AgentWorldActions worldActions = mock();
         final AgentPlayerActions playerActions = mock();
         final AgentPlayerStateActions playerStateActions = mock();

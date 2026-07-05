@@ -32,6 +32,7 @@ import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 class UdsAgentClientTest
 {
@@ -74,6 +75,29 @@ class UdsAgentClientTest
             assertThatThrownBy(() -> client.send(new WaitTicks.Command("1", 1)))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("code=PROTOCOL_MISMATCH");
+            client.close();
+        }
+    }
+
+    @Test
+    void send_shouldPreserveUnknownWireErrorCode(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("agent-unknown-error.sock");
+        final String responseJson = "{\"requestId\":\"1\",\"success\":false,"
+            + "\"errorCode\":\"FUTURE_CODE\",\"errorMessage\":\"Future failure.\"}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson))
+        {
+            final UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3));
+
+            // execute
+            final Throwable throwable = catchThrowable(() -> client.send(new WaitTicks.Command("1", 1)));
+
+            // verify
+            assertThat(throwable)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("code=UNKNOWN (wire='FUTURE_CODE')");
             client.close();
         }
     }

@@ -1,6 +1,7 @@
 package nl.pim16aap2.lightkeeper.protocol;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
@@ -13,6 +14,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 /**
  * Verifies round-trip JSON serialization and polymorphic deserialization for {@link IAgentCommand} subtypes,
@@ -28,7 +30,7 @@ class AgentCommandSerializationTest
     void serialize_mainWorldCommand_roundTrips() throws Exception
     {
         // setup
-        final ObjectMapper mapper = new ObjectMapper();
+        final ObjectMapper mapper = AgentProtocolMapper.create();
         final MainWorld.Command original = new MainWorld.Command("req-1");
 
         // execute
@@ -50,7 +52,7 @@ class AgentCommandSerializationTest
     void serialize_teleportPlayerCommand_roundTrips() throws Exception
     {
         // setup
-        final ObjectMapper mapper = new ObjectMapper();
+        final ObjectMapper mapper = AgentProtocolMapper.create();
         final UUID uuid = UUID.fromString("00000000-0000-0000-0000-000000000001");
         final TeleportPlayer.Command original =
             new TeleportPlayer.Command("req-2", uuid, "world", 1.5, 64.0, -3.25);
@@ -79,7 +81,7 @@ class AgentCommandSerializationTest
     void serialize_createPlayerCommand_withNullOptionals_roundTrips() throws Exception
     {
         // setup
-        final ObjectMapper mapper = new ObjectMapper();
+        final ObjectMapper mapper = AgentProtocolMapper.create();
         final UUID uuid = UUID.fromString("00000000-0000-0000-0000-000000000002");
         final CreatePlayer.Command original = new CreatePlayer.Command(
             "req-3", "Alice", uuid, "world",
@@ -114,7 +116,7 @@ class AgentCommandSerializationTest
     void serialize_createPlayerCommand_withAllFields_roundTrips() throws Exception
     {
         // setup
-        final ObjectMapper mapper = new ObjectMapper();
+        final ObjectMapper mapper = AgentProtocolMapper.create();
         final UUID uuid = UUID.fromString("00000000-0000-0000-0000-000000000003");
         final CreatePlayer.Command original = new CreatePlayer.Command(
             "req-4", "Bob", uuid, "nether",
@@ -149,7 +151,7 @@ class AgentCommandSerializationTest
     void serialize_dragMenuSlotsCommand_roundTrips() throws Exception
     {
         // setup
-        final ObjectMapper mapper = new ObjectMapper();
+        final ObjectMapper mapper = AgentProtocolMapper.create();
         final UUID uuid = UUID.fromString("00000000-0000-0000-0000-000000000004");
         final DragMenuSlots.Command original = new DragMenuSlots.Command(
             "req-5", uuid, "minecraft:diamond", new int[]{0, 4, 8}
@@ -177,7 +179,7 @@ class AgentCommandSerializationTest
     void deserialize_rawJson_selectsCorrectConcreteType() throws Exception
     {
         // setup
-        final ObjectMapper mapper = new ObjectMapper();
+        final ObjectMapper mapper = AgentProtocolMapper.create();
         final String json = "{\"action\":\"WAIT_TICKS\",\"requestId\":\"req-6\",\"ticks\":20}";
 
         // execute
@@ -191,6 +193,20 @@ class AgentCommandSerializationTest
         assertThat(result.ticks()).isEqualTo(20);
     }
 
+    @Test
+    void deserialize_shouldRejectNullPrimitiveCommandField()
+    {
+        // setup
+        final ObjectMapper mapper = AgentProtocolMapper.create();
+        final String json = "{\"action\":\"WAIT_TICKS\",\"requestId\":\"request-null\",\"ticks\":null}";
+
+        // execute
+        final Throwable throwable = catchThrowable(() -> mapper.readValue(json, IAgentCommand.class));
+
+        // verify
+        assertThat(throwable).isInstanceOf(JacksonException.class);
+    }
+
     // -----------------------------------------------------------------------
     // Deserialization from raw JSON: HANDSHAKE subtype
     // -----------------------------------------------------------------------
@@ -199,7 +215,7 @@ class AgentCommandSerializationTest
     void deserialize_handshakeJson_selectsHandshakeCommand() throws Exception
     {
         // setup
-        final ObjectMapper mapper = new ObjectMapper();
+        final ObjectMapper mapper = AgentProtocolMapper.create();
         final String json = "{\"action\":\"HANDSHAKE\",\"requestId\":\"req-7\","
             + "\"token\":\"secret\",\"protocolVersion\":3,\"agentSha256\":\"\"}";
 
@@ -224,7 +240,7 @@ class AgentCommandSerializationTest
     void deserialize_getServerPlatformJson_selectsGetServerPlatformCommand() throws Exception
     {
         // setup
-        final ObjectMapper mapper = new ObjectMapper();
+        final ObjectMapper mapper = AgentProtocolMapper.create();
         final String json = "{\"action\":\"GET_SERVER_PLATFORM\",\"requestId\":\"req-8\"}";
 
         // execute
@@ -244,7 +260,7 @@ class AgentCommandSerializationTest
     void serialize_mainWorldResponse_roundTrips() throws Exception
     {
         // setup
-        final ObjectMapper mapper = new ObjectMapper();
+        final ObjectMapper mapper = AgentProtocolMapper.create();
         final MainWorld.Response original = new MainWorld.Response("world");
 
         // execute
@@ -263,7 +279,7 @@ class AgentCommandSerializationTest
     void serialize_dropItemResponse_roundTrips() throws Exception
     {
         // setup
-        final ObjectMapper mapper = new ObjectMapper();
+        final ObjectMapper mapper = AgentProtocolMapper.create();
         final DropItem.Response original = new DropItem.Response(true);
 
         // execute
@@ -282,7 +298,7 @@ class AgentCommandSerializationTest
     void serialize_handshakeResponse_roundTrips() throws Exception
     {
         // setup
-        final ObjectMapper mapper = new ObjectMapper();
+        final ObjectMapper mapper = AgentProtocolMapper.create();
         final Handshake.Response original = new Handshake.Response(3, "1.21.11-R0.1-SNAPSHOT");
 
         // execute

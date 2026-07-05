@@ -12,9 +12,9 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
  * {@code RuntimeProtocol.VERSION}; clients using another version are rejected during the handshake.
  *
  * <p>Adding a new action requires: (1) a new namespace class with inner {@code Command} and {@code Response}
- * records, (2) a new {@link JsonSubTypes.Type} entry here, and (3) a new {@code permits} clause entry. The
- * pattern-matching switch in {@code AgentRequestDispatcher} will then fail to compile until the case is handled
- * — intentional.
+ * records, (2) a new {@link JsonSubTypes.Type} entry here, (3) a command {@code permits} entry here, and (4) a
+ * response {@code permits} entry in {@link IAgentResponse}. The pattern-matching switch in
+ * {@code AgentRequestDispatcher} will then fail to compile until the case is handled — intentional.
  *
  * @param <R>
  *     The typed response record returned by this command.

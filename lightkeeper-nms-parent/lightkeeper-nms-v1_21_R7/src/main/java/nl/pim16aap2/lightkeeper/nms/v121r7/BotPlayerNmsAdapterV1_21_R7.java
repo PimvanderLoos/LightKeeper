@@ -257,7 +257,13 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
         }
 
         // Spigot's EnumProtocolDirection typically uses constants "a" (clientbound) and "b" (serverbound).
-        return enumConstants[Math.max(0, enumConstants.length - 1)];
+        final Object fallback = enumConstants[Math.max(0, enumConstants.length - 1)];
+        LOG.log(
+            System.Logger.Level.WARNING,
+            () -> "Could not identify the serverbound packet-flow enum by name or behavior; using positional "
+                + "fallback '%s' from %s.".formatted(fallback, packetFlowEnumClass.getName())
+        );
+        return fallback;
     }
 
     private static Object resolvePlayerList(Object minecraftServer, ClassLoader serverClassLoader)

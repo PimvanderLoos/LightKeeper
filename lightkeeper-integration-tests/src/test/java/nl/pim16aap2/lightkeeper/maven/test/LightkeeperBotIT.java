@@ -174,4 +174,34 @@ class LightkeeperBotIT
         assertThat(playerWithoutPermission)
             .receivedMessage("You do not have permission to use /lktestgui.");
     }
+
+    @Test
+    void runtimeActions_shouldTeleportManageChunksAndCaptureEvents(ILightkeeperFramework framework)
+    {
+        // setup
+        final var world = framework.mainWorld();
+        final var player = framework.buildPlayer()
+            .withRandomName()
+            .atLocation(world, 0, 100, 0)
+            .build();
+        final int chunkX = 24;
+        final int chunkZ = 24;
+
+        // execute
+        try (var eventCapture = framework.captureEvents("org.bukkit.event.player.PlayerTeleportEvent"))
+        {
+            world.loadChunk(chunkX, chunkZ);
+            player.teleport(world, chunkX * 16.0 + 1.0, 100, chunkZ * 16.0 + 1.0);
+            player.teleport(world, 0, 100, 0);
+            framework.waitUntil(
+                () -> !eventCapture.getCapturedEvents().isEmpty(),
+                Duration.ofSeconds(10)
+            );
+            world.unloadChunk(chunkX, chunkZ);
+
+            // verify
+            assertThat(eventCapture.getCapturedEvents()).isNotEmpty();
+            assertThat(world.isChunkLoaded(chunkX, chunkZ)).isFalse();
+        }
+    }
 }

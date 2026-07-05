@@ -1,13 +1,12 @@
 package nl.pim16aap2.lightkeeper.framework.internal;
 
 import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
+import nl.pim16aap2.lightkeeper.protocol.AgentProtocolMapper;
 import nl.pim16aap2.lightkeeper.protocol.IAgentCommand;
 import nl.pim16aap2.lightkeeper.protocol.IAgentResponse;
 import org.jspecify.annotations.Nullable;
-import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.json.JsonMapper;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -38,9 +37,7 @@ final class UdsAgentTransport implements AutoCloseable
 {
     private static final System.Logger LOG = System.getLogger(UdsAgentTransport.class.getName());
 
-    private final ObjectMapper objectMapper = JsonMapper.builder()
-        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-        .build();
+    private final ObjectMapper objectMapper = AgentProtocolMapper.create();
     private final Path socketPath;
     private final long sendTimeoutMillis;
     private @Nullable ScheduledExecutorService readTimeoutWatchdog;
@@ -159,11 +156,13 @@ final class UdsAgentTransport implements AutoCloseable
         if (root.path("success").asBoolean())
             return;
 
-        final AgentErrorCode errorCode = AgentErrorCode.fromWireCode(root.path("errorCode").asString())
-            .orElse(AgentErrorCode.UNKNOWN);
+        final String wireErrorCode = root.path("errorCode").asString();
+        final String displayedErrorCode = AgentErrorCode.fromWireCode(wireErrorCode)
+            .map(AgentErrorCode::wireCode)
+            .orElseGet(() -> "UNKNOWN (wire='%s')".formatted(wireErrorCode));
         final String errorMessage = root.path("errorMessage").asString("");
         throw new IllegalStateException(
-            "Agent request failed. code=%s message=%s".formatted(errorCode.wireCode(), errorMessage));
+            "Agent request failed. code=%s message=%s".formatted(displayedErrorCode, errorMessage));
     }
 
     synchronized void reconnect(Duration timeout)
