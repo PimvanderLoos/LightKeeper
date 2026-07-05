@@ -26,6 +26,8 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -71,6 +73,66 @@ class UdsAgentClientTest
             assertThatThrownBy(() -> client.send(new WaitTicks.Command("1", 1)))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("code=PROTOCOL_MISMATCH");
+            client.close();
+        }
+    }
+
+    @Test
+    void send_shouldReportTimeoutWhenAgentNeverResponds(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("agent-silent.sock");
+        try (AgentSocketServer server = AgentSocketServer.startSilent(socketPath))
+        {
+            final UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3), 200L);
+
+            // execute + verify — the watchdog closes the channel and the timeout surfaces with the wait bound
+            assertThatThrownBy(() -> client.send(new WaitTicks.Command("1", 1)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("did not respond within 200 ms");
+            client.close();
+        }
+    }
+
+    @Test
+    void send_shouldFailFastAfterTimeout(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("agent-silent-then-broken.sock");
+        try (AgentSocketServer server = AgentSocketServer.startSilent(socketPath))
+        {
+            final UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3), 200L);
+            assertThatThrownBy(() -> client.send(new WaitTicks.Command("1", 1)))
+                .isInstanceOf(IllegalStateException.class);
+
+            // execute + verify — the client is closed after the timeout; the next send fails fast, referencing it
+            assertThatThrownBy(() -> client.send(new WaitTicks.Command("2", 1)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Client is not connected")
+                .hasMessageContaining("timed out");
+            client.close();
+        }
+    }
+
+    @Test
+    void send_shouldSucceedForSecondRequestAfterSlowButInTimeResponse(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup — responses arrive after 100 ms, comfortably within the 1000 ms client timeout
+        final Path socketPath = tempDirectory.resolve("agent-slow.sock");
+        try (AgentSocketServer server = AgentSocketServer.startEchoing(socketPath, 100L, 2))
+        {
+            final UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3), 1_000L);
+
+            // execute
+            final WaitTicks.Response first = client.send(new WaitTicks.Command("1", 1));
+            final WaitTicks.Response second = client.send(new WaitTicks.Command("2", 1));
+
+            // verify — the watchdog is cancelled on the in-time first response, so the second request also succeeds
+            assertThat(first.requestId()).isEqualTo("1");
+            assertThat(second.requestId()).isEqualTo("2");
             client.close();
         }
     }
@@ -452,6 +514,19 @@ class UdsAgentClientTest
 
     private static final class AgentSocketServer implements AutoCloseable
     {
+        private enum Mode
+        {
+            /** Answer once with a fixed canned response. */
+            FIXED,
+            /** Answer each request with a success response echoing the request's own {@code requestId}. */
+            ECHO,
+            /** Accept and read but never respond, holding the connection so the client's watchdog fires. */
+            HOLD
+        }
+
+        private static final long HOLD_MILLIS = 1_000L;
+        private static final Pattern REQUEST_ID_PATTERN = Pattern.compile("\"requestId\"\\s*:\\s*\"([^\"]+)\"");
+
         private final ServerSocketChannel serverChannel;
         private final Thread workerThread;
         private final CountDownLatch started = new CountDownLatch(1);
@@ -459,13 +534,16 @@ class UdsAgentClientTest
         private final AtomicReference<String> requestLine = new AtomicReference<>("");
         private final Path socketPath;
 
-        private AgentSocketServer(Path socketPath, String responseJson)
+        private AgentSocketServer(
+            Path socketPath, String responseJson, long responseDelayMillis, int maxRequests, Mode mode)
             throws IOException
         {
             this.socketPath = socketPath;
             this.serverChannel = ServerSocketChannel.open(StandardProtocolFamily.UNIX);
             serverChannel.bind(UnixDomainSocketAddress.of(socketPath));
-            this.workerThread = new Thread(() -> serveSingleResponse(responseJson), "uds-agent-client-test-server");
+            this.workerThread = new Thread(
+                () -> serve(responseJson, responseDelayMillis, maxRequests, mode), "uds-agent-client-test-server");
+            this.workerThread.setDaemon(true);
             started.countDown();
             this.workerThread.start();
         }
@@ -473,7 +551,24 @@ class UdsAgentClientTest
         private static AgentSocketServer start(Path socketPath, String responseJson)
             throws IOException, InterruptedException
         {
-            final AgentSocketServer server = new AgentSocketServer(socketPath, responseJson);
+            return await(new AgentSocketServer(socketPath, responseJson, 0L, 1, Mode.FIXED));
+        }
+
+        private static AgentSocketServer startSilent(Path socketPath)
+            throws IOException, InterruptedException
+        {
+            return await(new AgentSocketServer(socketPath, "", 0L, 1, Mode.HOLD));
+        }
+
+        private static AgentSocketServer startEchoing(Path socketPath, long responseDelayMillis, int maxRequests)
+            throws IOException, InterruptedException
+        {
+            return await(new AgentSocketServer(socketPath, "", responseDelayMillis, maxRequests, Mode.ECHO));
+        }
+
+        private static AgentSocketServer await(AgentSocketServer server)
+            throws InterruptedException
+        {
             if (!server.started.await(3, TimeUnit.SECONDS))
                 throw new IllegalStateException("Timed out while waiting for test socket server startup.");
             return server;
@@ -484,7 +579,7 @@ class UdsAgentClientTest
             return Objects.requireNonNullElse(requestLine.get(), "");
         }
 
-        private void serveSingleResponse(String responseJson)
+        private void serve(String responseJson, long responseDelayMillis, int maxRequests, Mode mode)
         {
             try (SocketChannel clientChannel = serverChannel.accept();
                  BufferedReader reader = new BufferedReader(
@@ -492,18 +587,40 @@ class UdsAgentClientTest
                  BufferedWriter writer = new BufferedWriter(
                      Channels.newWriter(clientChannel, StandardCharsets.UTF_8)))
             {
-                final String line = reader.readLine();
-                if (line == null)
-                    return;
-                requestLine.set(line);
-                writer.write(responseJson);
-                writer.newLine();
-                writer.flush();
+                for (int handled = 0; handled < maxRequests; handled++)
+                {
+                    final String line = reader.readLine();
+                    if (line == null)
+                        return;
+                    requestLine.set(line);
+
+                    if (mode == Mode.HOLD)
+                    {
+                        Thread.sleep(HOLD_MILLIS);
+                        return;
+                    }
+                    if (responseDelayMillis > 0)
+                        Thread.sleep(responseDelayMillis);
+
+                    final String response = mode == Mode.ECHO
+                        ? "{\"requestId\":\"%s\",\"success\":true,\"startTick\":0,\"endTick\":0}"
+                            .formatted(extractRequestId(line))
+                        : responseJson;
+                    writer.write(response);
+                    writer.newLine();
+                    writer.flush();
+                }
             }
             catch (Throwable throwable)
             {
                 workerFailure.set(throwable);
             }
+        }
+
+        private static String extractRequestId(String line)
+        {
+            final Matcher matcher = REQUEST_ID_PATTERN.matcher(line);
+            return matcher.find() ? matcher.group(1) : "unknown";
         }
 
         @Override

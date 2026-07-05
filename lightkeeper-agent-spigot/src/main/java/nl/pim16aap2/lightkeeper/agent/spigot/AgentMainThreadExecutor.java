@@ -21,9 +21,11 @@ import java.util.concurrent.TimeoutException;
 final class AgentMainThreadExecutor
 {
     /**
-     * Default maximum time to wait for a scheduled synchronous server operation.
+     * Default maximum time to wait for a scheduled synchronous server operation. Shared with the client so its
+     * response timeout stays strictly larger (see {@link RuntimeProtocol#DEFAULT_SYNC_OPERATION_TIMEOUT_SECONDS}).
      */
-    private static final long DEFAULT_SYNC_OPERATION_TIMEOUT_SECONDS = 120L;
+    private static final long DEFAULT_SYNC_OPERATION_TIMEOUT_SECONDS =
+        RuntimeProtocol.DEFAULT_SYNC_OPERATION_TIMEOUT_SECONDS;
 
     /**
      * Plugin context required by Bukkit's scheduler APIs.

@@ -40,6 +40,7 @@ import nl.pim16aap2.lightkeeper.protocol.TeleportPlayer;
 import nl.pim16aap2.lightkeeper.protocol.UnloadChunk;
 import nl.pim16aap2.lightkeeper.protocol.UnregisterEventListener;
 import nl.pim16aap2.lightkeeper.protocol.WaitTicks;
+import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
@@ -89,36 +90,61 @@ final class UdsAgentClient implements AutoCloseable
         new TypeReference<>() {};
 
     /**
-     * Maximum time to wait for a single agent response. Matches the agent-side WAIT_TICKS_TIMEOUT_MILLIS
-     * so WAIT_TICKS is the longest action that can legitimately take close to this limit.
+     * Default response timeout: the agent's own synchronous-operation timeout plus a safety margin, so the
+     * agent reports a detailed {@code TIMEOUT} error before this client-side watchdog closes the channel.
      *
      * <p>Unix Domain Sockets do not support SO_TIMEOUT, so the timeout is enforced by a watchdog that
      * closes the channel directly; this causes {@link AsynchronousCloseException} on the blocked read.
      */
-    private static final int SEND_TIMEOUT_MS = 120_000;
+    private static final long DEFAULT_SEND_TIMEOUT_MS =
+        RuntimeProtocol.DEFAULT_SYNC_OPERATION_TIMEOUT_SECONDS * 1_000L
+            + RuntimeProtocol.CLIENT_RESPONSE_TIMEOUT_MARGIN_MILLIS;
 
     private final ObjectMapper objectMapper = JsonMapper.builder()
         .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
         .build();
 
     /**
-     * Single-thread watchdog executor that closes the socket channel when a read takes longer than
-     * {@link #SEND_TIMEOUT_MS}. Closing the channel directly (not via {@link #close()}) avoids deadlock
-     * with the {@code synchronized} monitor held by {@link #send}.
+     * Single-thread watchdog executor that closes the socket channel when a read exceeds
+     * {@link #sendTimeoutMillis}. Closing the channel directly (not via {@link #close()}) avoids deadlock with
+     * the {@code synchronized} monitor held by {@link #send}. Created by {@link #connect} and shut down by
+     * {@link #close}, so a reconnect gets a fresh executor and no daemon thread is leaked.
      */
-    private final ScheduledExecutorService readTimeoutWatchdog = Executors.newSingleThreadScheduledExecutor(
-        Thread.ofPlatform().name("lk-read-timeout-watchdog").daemon(true).factory()
-    );
+    private @Nullable ScheduledExecutorService readTimeoutWatchdog;
 
     private final Path socketPath;
+    private final long sendTimeoutMillis;
     private final AtomicLong requestCounter = new AtomicLong(0L);
     private @Nullable SocketChannel socketChannel;
     private @Nullable BufferedReader reader;
     private @Nullable BufferedWriter writer;
+    /**
+     * Set when the client was closed because a request timed out, so subsequent sends fail fast with a message
+     * pointing at the original timeout rather than a generic "not connected" error.
+     */
+    private @Nullable String closedReason;
 
     UdsAgentClient(Path socketPath, Duration connectTimeout)
     {
+        this(socketPath, connectTimeout, DEFAULT_SEND_TIMEOUT_MS);
+    }
+
+    /**
+     * Creates a client with an explicit response timeout, primarily so tests can drive the watchdog quickly.
+     *
+     * @param socketPath
+     *     Path of the Unix domain socket to connect to.
+     * @param connectTimeout
+     *     How long to keep retrying the initial connection.
+     * @param sendTimeoutMillis
+     *     Maximum time to wait for a single response before the watchdog closes the channel.
+     */
+    UdsAgentClient(Path socketPath, Duration connectTimeout, long sendTimeoutMillis)
+    {
         this.socketPath = Objects.requireNonNull(socketPath, "socketPath may not be null.");
+        if (sendTimeoutMillis <= 0L)
+            throw new IllegalArgumentException("sendTimeoutMillis must be > 0 but was " + sendTimeoutMillis + ".");
+        this.sendTimeoutMillis = sendTimeoutMillis;
         connect(Objects.requireNonNull(connectTimeout, "connectTimeout may not be null."));
     }
 
@@ -398,13 +424,14 @@ final class UdsAgentClient implements AutoCloseable
     {
         if (command.requestId() == null || command.requestId().isBlank())
             throw new IllegalArgumentException("'requestId' must be non-blank.");
-        final BufferedWriter out = Objects.requireNonNull(writer, "Client is not connected.");
-        final BufferedReader in = Objects.requireNonNull(reader, "Client is not connected.");
+        final BufferedWriter out = requireConnected(writer);
+        final BufferedReader in = requireConnected(reader);
+        final ScheduledExecutorService watchdogExecutor = requireConnected(readTimeoutWatchdog);
 
         // Capture the channel reference before the read; the watchdog closes it directly to avoid
         // deadlocking on this synchronized method's monitor.
         final SocketChannel channelSnapshot = this.socketChannel;
-        final ScheduledFuture<?> watchdog = readTimeoutWatchdog.schedule(() ->
+        final ScheduledFuture<?> watchdog = watchdogExecutor.schedule(() ->
         {
             if (channelSnapshot != null)
             {
@@ -417,7 +444,7 @@ final class UdsAgentClient implements AutoCloseable
                     // Best-effort: the channel may already be closed.
                 }
             }
-        }, SEND_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        }, sendTimeoutMillis, TimeUnit.MILLISECONDS);
 
         try
         {
@@ -455,9 +482,13 @@ final class UdsAgentClient implements AutoCloseable
         }
         catch (AsynchronousCloseException exception)
         {
+            // The watchdog closed the channel. Mark the client closed so later sends fail fast referencing this
+            // timeout instead of hanging or emitting a generic IOException on every subsequent request.
+            this.closedReason = "a previous request timed out after %d ms".formatted(sendTimeoutMillis);
+            close();
             throw new IllegalStateException(
                 "Agent did not respond within %d ms for action '%s' via socket '%s'."
-                    .formatted(SEND_TIMEOUT_MS, command.getClass().getSimpleName(), socketPath),
+                    .formatted(sendTimeoutMillis, command.getClass().getSimpleName(), socketPath),
                 exception
             );
         }
@@ -474,6 +505,24 @@ final class UdsAgentClient implements AutoCloseable
         }
     }
 
+    /**
+     * Returns the resource when the client is connected, otherwise throws a message that references the reason
+     * the client was closed (e.g. a prior timeout) when one is known.
+     *
+     * @param resource
+     *     Connection-scoped resource that is {@code null} once the client is closed.
+     * @param <T>
+     *     Resource type.
+     * @return The non-null resource.
+     */
+    private <T> T requireConnected(@Nullable T resource)
+    {
+        if (resource == null)
+            throw new IllegalStateException(
+                closedReason != null ? "Client is not connected: " + closedReason : "Client is not connected.");
+        return resource;
+    }
+
     synchronized void rehandshake(Duration timeout, String token, int protocolVersion, String agentSha256)
     {
         close();
@@ -484,6 +533,11 @@ final class UdsAgentClient implements AutoCloseable
     @Override
     public synchronized void close()
     {
+        if (readTimeoutWatchdog != null)
+        {
+            readTimeoutWatchdog.shutdownNow();
+            readTimeoutWatchdog = null;
+        }
         try
         {
             if (socketChannel != null)
@@ -505,6 +559,13 @@ final class UdsAgentClient implements AutoCloseable
 
     private void connect(Duration timeout)
     {
+        // A fresh watchdog executor per connection: close() shut down any previous one, and reusing a shut-down
+        // executor would silently drop the timeout task on a reconnect.
+        this.readTimeoutWatchdog = Executors.newSingleThreadScheduledExecutor(
+            Thread.ofPlatform().name("lk-read-timeout-watchdog").daemon(true).factory()
+        );
+        this.closedReason = null;
+
         final long deadline = System.nanoTime() + timeout.toNanos();
         Exception lastException = null;
 
@@ -532,6 +593,12 @@ final class UdsAgentClient implements AutoCloseable
             }
         }
 
+        // Connection failed within the timeout: do not leak the watchdog executor created above.
+        if (readTimeoutWatchdog != null)
+        {
+            readTimeoutWatchdog.shutdownNow();
+            readTimeoutWatchdog = null;
+        }
         throw new IllegalStateException(
             "Failed to connect to agent socket '%s' within timeout %s."
                 .formatted(socketPath, timeout),
