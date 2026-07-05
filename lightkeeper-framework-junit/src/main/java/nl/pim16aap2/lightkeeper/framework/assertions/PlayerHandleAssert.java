@@ -1,7 +1,6 @@
 package nl.pim16aap2.lightkeeper.framework.assertions;
 
 import tools.jackson.core.JacksonException;
-import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
 import org.assertj.core.api.AbstractAssert;
@@ -16,6 +15,12 @@ import java.util.Objects;
  */
 public final class PlayerHandleAssert extends AbstractAssert<PlayerHandleAssert, @Nullable PlayerHandle>
 {
+    /**
+     * Shared JSON mapper for chat-component inspection, matching the shared-mapper convention elsewhere in the
+     * framework instead of allocating a fresh mapper per assertion call.
+     */
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
     PlayerHandleAssert(@Nullable PlayerHandle actual)
     {
         super(actual, PlayerHandleAssert.class);
@@ -100,27 +105,37 @@ public final class PlayerHandleAssert extends AbstractAssert<PlayerHandleAssert,
     public PlayerHandleAssert hasClickableChatText(String expectedText)
     {
         final var actual = nonNullActual();
-        final ObjectMapper mapper = new ObjectMapper();
-        final boolean found = actual.chatComponents().stream().anyMatch(component ->
+        int parseFailures = 0;
+        boolean found = false;
+        for (final var component : actual.chatComponents())
         {
             if (!component.json().contains(expectedText))
-                return false;
+                continue;
             try
             {
-                final JsonNode root = mapper.readTree(component.json());
-                return root.has("clickEvent");
+                // findValue matches a clickEvent nested in an 'extra' child, not only the root object; NMS
+                // serializes components that carry their clickable text in extra children.
+                if (OBJECT_MAPPER.readTree(component.json()).findValue("clickEvent") != null)
+                {
+                    found = true;
+                    break;
+                }
             }
             catch (JacksonException ignored)
             {
-                return false;
+                parseFailures++;
             }
-        });
+        }
         if (!found)
         {
+            // Malformed components counted here would otherwise silently read as "not clickable" and blame the
+            // plugin under test; surface the count so the real cause is visible.
+            final String parseNote = parseFailures > 0
+                ? " (%d component(s) containing that text failed to parse as JSON)".formatted(parseFailures)
+                : "";
             failWithMessage(
-                "Expected player '%s' to have a clickable chat text matching '%s', "
-                    + "but no component with a top-level clickEvent field and that text was found.",
-                actual.name(), expectedText
+                "Expected player '%s' to have a clickable chat text matching '%s', but none was found.%s",
+                actual.name(), expectedText, parseNote
             );
         }
         return this;

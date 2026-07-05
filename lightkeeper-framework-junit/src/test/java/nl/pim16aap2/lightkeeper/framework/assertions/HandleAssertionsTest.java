@@ -101,6 +101,33 @@ class HandleAssertionsTest
     }
 
     @Test
+    void playerHandleAssert_shouldMatchClickEventNestedInExtraChild()
+    {
+        // setup — NMS serializes the clickable text inside an 'extra' child, not the root object
+        final PlayerHandle handle = mock(PlayerHandle.class);
+        when(handle.name()).thenReturn("bot");
+        when(handle.chatComponents()).thenReturn(List.of(new ChatComponentSnapshot(
+            "{\"text\":\"\",\"extra\":[{\"text\":\"Open\",\"clickEvent\":{\"action\":\"run_command\"}}]}")));
+
+        // execute + verify — a root-only check would miss this
+        LightkeeperAssertions.assertThat(handle).hasClickableChatText("Open");
+    }
+
+    @Test
+    void playerHandleAssert_shouldReportParseFailuresWhenComponentJsonIsMalformed()
+    {
+        // setup — a malformed component containing the text must not silently read as "not clickable"
+        final PlayerHandle handle = mock(PlayerHandle.class);
+        when(handle.name()).thenReturn("bot");
+        when(handle.chatComponents()).thenReturn(List.of(new ChatComponentSnapshot("{\"text\":\"Open\" BROKEN")));
+
+        // execute + verify
+        assertThatThrownBy(() -> LightkeeperAssertions.assertThat(handle).hasClickableChatText("Open"))
+            .isInstanceOf(AssertionError.class)
+            .hasMessageContaining("failed to parse");
+    }
+
+    @Test
     void lightkeeperFrameworkAssert_shouldExposeServerOutputAndValidateNoErrors()
     {
         // setup
