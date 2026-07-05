@@ -141,9 +141,6 @@ final class AgentWorldActions
     ExecuteCommand.Response handleExecuteCommand(ExecuteCommand.Command command)
         throws Exception
     {
-        if (command.commandSource() != CommandSource.CONSOLE)
-            throw new IllegalArgumentException("Only CONSOLE command source is supported in v1.");
-
         final String rawCommand = command.command();
         if (rawCommand.isBlank())
             throw new IllegalArgumentException("Argument 'command' must not be blank.");

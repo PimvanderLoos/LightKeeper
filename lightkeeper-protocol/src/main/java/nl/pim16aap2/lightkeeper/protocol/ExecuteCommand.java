@@ -1,7 +1,7 @@
 package nl.pim16aap2.lightkeeper.protocol;
 
 /**
- * Executes a server-side command as the given source (CONSOLE or PLAYER).
+ * Executes a server-side command as the console.
  */
 public final class ExecuteCommand
 {
@@ -17,7 +17,7 @@ public final class ExecuteCommand
      * @param commandSource
      *     Who issues the command.
      * @param command
-     *     Full command string without a leading slash.
+     *     Full command string, optionally beginning with a leading slash.
      */
     public record Command(
         String requestId,

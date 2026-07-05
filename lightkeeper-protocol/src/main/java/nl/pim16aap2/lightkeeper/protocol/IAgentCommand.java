@@ -7,8 +7,9 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
  * Sealed command hierarchy for the LightKeeper agent protocol.
  *
  * <p>Every protocol action is represented by exactly one record implementing this interface. Jackson uses the
- * {@code "action"} JSON property to select the correct subtype during deserialization; the value matches the
- * historical {@code AgentAction} enum name so existing wire traffic remains compatible.
+ * {@code "action"} JSON property to select the correct subtype during deserialization. Discriminators reuse the
+ * naming scheme of the former {@code AgentAction} enum for readability. The wire format is versioned through
+ * {@code RuntimeProtocol.VERSION}; clients using another version are rejected during the handshake.
  *
  * <p>Adding a new action requires: (1) a new namespace class with inner {@code Command} and {@code Response}
  * records, (2) a new {@link JsonSubTypes.Type} entry here, and (3) a new {@code permits} clause entry. The

@@ -3,7 +3,7 @@ package nl.pim16aap2.lightkeeper.protocol;
 import java.util.UUID;
 
 /**
- * Simulates the player placing a block at the given position.
+ * Sets the block at the given position in the player's current world without firing a {@code BlockPlaceEvent}.
  */
 public final class PlacePlayerBlock
 {

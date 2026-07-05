@@ -19,7 +19,7 @@ public final class ExecutePlayerCommand
      * @param uuid
      *     Unique identifier of the player who issues the command.
      * @param command
-     *     Full command string without a leading slash.
+     *     Full command string, optionally beginning with a leading slash.
      */
     public record Command(
         String requestId,

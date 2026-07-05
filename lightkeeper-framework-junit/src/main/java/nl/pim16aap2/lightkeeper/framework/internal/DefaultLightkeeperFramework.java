@@ -200,9 +200,6 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     public CommandResult executeCommand(CommandSource source, String command)
     {
         ensureOpen();
-        if (source != CommandSource.CONSOLE)
-            throw new IllegalArgumentException("Only CONSOLE command source is supported in v1.");
-
         final boolean success = agentClient.executeCommand(source, command);
         return new CommandResult(success, success ? "Command succeeded." : "Command failed.");
     }

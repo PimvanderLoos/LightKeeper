@@ -10,8 +10,7 @@ import java.util.Locale;
  * Shared parser utilities for converting typed command arguments to Bukkit domain objects.
  *
  * <p>This class centralizes material and block-face resolution so protocol handlers apply consistent
- * parsing behavior. Numeric type coercion is handled by Jackson during deserialization and no longer
- * requires helpers here.
+ * parsing behavior.
  */
 final class AgentRequestParsers
 {

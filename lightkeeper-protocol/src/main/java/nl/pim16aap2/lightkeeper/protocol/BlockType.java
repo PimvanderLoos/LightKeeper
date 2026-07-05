@@ -51,7 +51,7 @@ public final class BlockType
      * Response record for {@code BLOCK_TYPE}.
      *
      * @param material
-     *     Bukkit material name of the block at the requested position.
+     *     Namespaced material key of the block at the requested position.
      */
     public record Response(
         String material

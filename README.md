@@ -20,10 +20,12 @@ planned and reviewed by a human.
   JUnit-facing API (`ILightkeeperFramework`, `LightkeeperExtension`, handles + AssertJ assertions).
 - `lightkeeper-agent-spigot`
   In-server production runtime agent plugin that exposes LightKeeper RPC operations over UDS.
+- `lightkeeper-protocol`
+  Shared typed command and response records for the versioned agent wire protocol.
 - `lightkeeper-spigot-test-plugin`
   Standalone functional test plugin that provides the `lktestgui` InventoryGUI workflow.
 - `lightkeeper-runtime-core`
-  Shared runtime protocol + runtime manifest model.
+  Runtime manifest model and cross-process protocol constants.
 - `lightkeeper-nms-parent`
   NMS integration modules used by the agent.
 - `lightkeeper-integration-tests`
@@ -44,7 +46,7 @@ planned and reviewed by a human.
 - **World & Chunk Control**: Load/unload chunks, check chunk status, and teleport players between worlds.
 - **Inventory & Item Drops**: Inspect player inventories and simulate item drops.
 - **Dynamic Event Capture**: Capture and assert on any Bukkit event dynamically without writing custom listeners.
-- **Clickable Chat Interaction**: Verify and interact with clickable chat messages.
+- **Clickable Chat Assertions**: Verify clickable chat message text and actions.
 - **Platform Awareness**: Write tests that adapt to Paper or Spigot specifics.
 
 ## Requirements

@@ -13,7 +13,7 @@ import java.util.Locale;
  *
  * <p>Example usage in an end-to-end test:
  * <pre>{@code
- *     String platform = framework.serverPlatform().name(); // "PAPER" | "SPIGOT" | "UNKNOWN"
+ *     String platform = framework.platform().name(); // "PAPER" | "SPIGOT" | "UNKNOWN"
  * }</pre>
  */
 final class AgentPlatformDetector
