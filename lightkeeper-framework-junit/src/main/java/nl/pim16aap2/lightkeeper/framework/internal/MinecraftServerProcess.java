@@ -219,7 +219,8 @@ final class MinecraftServerProcess
             if (exception instanceof InterruptedException)
                 Thread.currentThread().interrupt();
 
-            LOG.log(System.Logger.Level.WARNING, "Graceful shutdown of the Minecraft server process failed.", exception);
+            LOG.log(
+                System.Logger.Level.WARNING, "Graceful shutdown of the Minecraft server process failed.", exception);
             writeDiagnostics("shutdown-failure", exception);
 
             if (currentProcess.isAlive())

@@ -270,9 +270,10 @@ final class AgentEventCapture
                     // Never drop a getter failure silently: an absent key would let a negative assertion
                     // ("event does not contain X") pass on broken capture. Record a visible sentinel in the
                     // payload and warn once per event-class/method so the failure surfaces in test output.
-                    final Throwable cause = exception instanceof InvocationTargetException && exception.getCause() != null
-                        ? exception.getCause()
-                        : exception;
+                    final Throwable cause =
+                        exception instanceof InvocationTargetException && exception.getCause() != null
+                            ? exception.getCause()
+                            : exception;
                     data.put(method.getName(), "<capture-failed: " + cause.getClass().getSimpleName() + ">");
                     if (loggedCaptureFailures.add(event.getClass().getName() + "#" + method.getName()))
                         plugin.getLogger().log(
