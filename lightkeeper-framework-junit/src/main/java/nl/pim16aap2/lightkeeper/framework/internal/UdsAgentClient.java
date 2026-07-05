@@ -454,7 +454,11 @@ final class UdsAgentClient implements AutoCloseable
 
             final String responseLine = in.readLine();
             if (responseLine == null)
-                throw new IllegalStateException("Agent connection closed unexpectedly.");
+                throw new IllegalStateException(
+                    "Agent connection closed unexpectedly while awaiting a response to action '%s'. The agent "
+                        .formatted(command.getClass().getSimpleName())
+                        + "process likely crashed — check the captured server output and the LightKeeper "
+                        + "diagnostics bundle under the server work directory.");
 
             final JsonNode root = objectMapper.readTree(responseLine);
             final String responseRequestId = root.path("requestId").asString("unknown");

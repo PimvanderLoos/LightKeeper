@@ -221,6 +221,40 @@ class AgentRequestDispatcherTest
     }
 
     @Test
+    void handleRequestLine_shouldReturnRequestFailedWhenHandlerThrowsError()
+        throws Exception
+    {
+        // setup — a LinkageError from the reflection-heavy NMS layer must not kill the connection thread
+        final DispatcherFixture fixture = createDispatcherFixture();
+        when(fixture.worldActions().handleMainWorld(any(MainWorld.Command.class)))
+            .thenThrow(new NoClassDefFoundError("nms/Missing"));
+        final String requestLine = toJson(new MainWorld.Command("request-error"));
+
+        // execute
+        final AgentRequestDispatcher.RequestDispatchResult result =
+            fixture.dispatcher().handleRequestLine(requestLine, true);
+
+        // verify
+        assertThat(isSuccess(result.responseJson())).isFalse();
+        assertThat(errorCode(result.responseJson())).isEqualTo("REQUEST_FAILED");
+    }
+
+    @Test
+    void handleRequestLine_shouldRethrowVirtualMachineError()
+        throws Exception
+    {
+        // setup
+        final DispatcherFixture fixture = createDispatcherFixture();
+        when(fixture.worldActions().handleMainWorld(any(MainWorld.Command.class)))
+            .thenThrow(new OutOfMemoryError("boom"));
+        final String requestLine = toJson(new MainWorld.Command("request-oom"));
+
+        // execute + verify — an unrecoverable VirtualMachineError must propagate, not be swallowed
+        assertThatThrownBy(() -> fixture.dispatcher().handleRequestLine(requestLine, true))
+            .isInstanceOf(OutOfMemoryError.class);
+    }
+
+    @Test
     void handleRequestLine_shouldDispatchSupportedActionsToTheirHandlers()
         throws Exception
     {

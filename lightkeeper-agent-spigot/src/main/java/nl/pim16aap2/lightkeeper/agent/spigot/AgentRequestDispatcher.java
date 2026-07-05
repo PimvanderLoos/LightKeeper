@@ -272,23 +272,30 @@ final class AgentRequestDispatcher
                 handshakeCompleted
             );
         }
-        catch (Exception exception)
+        catch (Throwable throwable)
         {
+            // Catch Throwable, not just Exception: the NMS layer is reflection-heavy, so a NoClassDefFoundError
+            // or LinkageError on a new server build would otherwise sail past every catch, kill the
+            // per-connection thread, and leave the client with only "connection closed unexpectedly". Return a
+            // coded response instead. A VirtualMachineError (OOM/StackOverflow) is unrecoverable — rethrow it.
+            if (throwable instanceof VirtualMachineError)
+                throw (VirtualMachineError) throwable;
+
             logger.log(
                 Level.SEVERE,
                 "Agent action '%s' failed for request '%s': %s"
                     .formatted(
                         qualifiedCommandName(command),
                         requestId,
-                        Objects.requireNonNullElse(exception.getMessage(), exception.getClass().getName())
+                        Objects.requireNonNullElse(throwable.getMessage(), throwable.getClass().getName())
                     ),
-                exception
+                throwable
             );
 
             return buildErrorResult(
                 requestId,
                 AgentErrorCode.REQUEST_FAILED,
-                Objects.requireNonNullElse(exception.getMessage(), exception.getClass().getName()),
+                Objects.requireNonNullElse(throwable.getMessage(), throwable.getClass().getName()),
                 handshakeCompleted
             );
         }
