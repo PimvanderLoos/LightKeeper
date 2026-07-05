@@ -66,6 +66,32 @@ class AgentPlayerActionsTest
     }
 
     @Test
+    void handleExecutePlayerCommand_shouldFallBackToServerDispatcherWhenPerformCommandReturnsFalse()
+        throws Exception
+    {
+        // setup
+        final PlayerActionsFixture fixture = createPlayerActionsFixture();
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mock();
+        when(player.performCommand("say hi")).thenReturn(false);
+        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        final ExecutePlayerCommand.Command command =
+            new ExecutePlayerCommand.Command("request-cmd", uuid, "say hi");
+
+        // execute
+        final ExecutePlayerCommand.Response response;
+        try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
+        {
+            bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
+            bukkitMockedStatic.when(() -> Bukkit.dispatchCommand(player, "say hi")).thenReturn(true);
+            response = fixture.playerActions().handleExecutePlayerCommand(command);
+        }
+
+        // verify — a command performCommand cannot run still executes via the server dispatcher fallback
+        assertThat(response.dispatched()).isTrue();
+    }
+
+    @Test
     void handleLeftClickBlock_shouldFirePlayerInteractEvent()
         throws Exception
     {

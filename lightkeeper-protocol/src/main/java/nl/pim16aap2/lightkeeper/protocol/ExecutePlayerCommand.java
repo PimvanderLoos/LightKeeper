@@ -27,6 +27,16 @@ public final class ExecutePlayerCommand
         String command
     ) implements IAgentCommand<Response>
     {
+        /**
+         * Validates that a command was supplied and normalizes surrounding whitespace.
+         */
+        public Command
+        {
+            if (command == null || command.isBlank())
+                throw new IllegalArgumentException("'command' must not be blank.");
+            command = command.strip();
+        }
+
         @Override
         public Class<Response> responseType()
         {

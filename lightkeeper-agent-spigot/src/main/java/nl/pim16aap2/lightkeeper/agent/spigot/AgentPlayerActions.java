@@ -192,7 +192,11 @@ final class AgentPlayerActions
         final Boolean dispatched = mainThreadExecutor.callOnMainThread(() ->
         {
             final Player player = playerStore.getRequiredPlayer(uuid);
-            return player.performCommand(command);
+            // performCommand only runs commands the player context knows; fall back to the server dispatcher so
+            // commands reachable only through Bukkit.dispatchCommand still execute (parity with the flat branch).
+            if (player.performCommand(command))
+                return Boolean.TRUE;
+            return Bukkit.dispatchCommand(player, command);
         });
 
         return new ExecutePlayerCommand.Response(req.requestId(), dispatched);
