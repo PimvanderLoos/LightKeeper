@@ -23,6 +23,7 @@ import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.junit.jupiter.api.Test;
@@ -397,7 +398,8 @@ class AgentPlayerActionsTest
         final Player player = mockPlayer(uuid);
         when(player.getName()).thenReturn("testbot");
         when(fixture.nmsAdapter().spawnPlayer(eq(uuid), eq("testbot"), eq(world), any())).thenReturn(player);
-        when(player.addAttachment(any())).thenReturn(mock());
+        final PermissionAttachment attachment = mock();
+        when(player.addAttachment(any())).thenReturn(attachment);
         final CreatePlayer.Command command = new CreatePlayer.Command(
             "request-create", "testbot", uuid, "world", 10.0, 64.0, 20.0, null, "test.perm"
         );
@@ -414,6 +416,11 @@ class AgentPlayerActionsTest
         // verify
         assertThat(response.uuid()).isEqualTo(uuid);
         assertThat(response.name()).isEqualTo("testbot");
+        // Regression (M1): the attachment must be stored on the player's state so it can be revoked later.
+        // Production registers the player before applying permissions; if that order regresses, the attachment
+        // is dropped and removePermissionAttachment finds nothing to detach.
+        fixture.playerStore().removePermissionAttachment(uuid, player);
+        verify(player).removeAttachment(attachment);
     }
 
     private static AgentPlayerActions createPlayerActions()

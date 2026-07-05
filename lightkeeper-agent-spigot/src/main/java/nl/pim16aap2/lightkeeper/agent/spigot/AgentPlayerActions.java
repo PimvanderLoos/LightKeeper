@@ -125,13 +125,16 @@ final class AgentPlayerActions
             if (health != null)
                 spawnedPlayer.setHealth(Math.min(spawnedPlayer.getMaxHealth(), health));
 
+            // Register before applying permissions so setPermissions can store the attachment on the player's
+            // state; registering afterwards leaves the attachment created-and-applied but never recorded, so it
+            // can never be revoked on removal.
+            playerStore.registerSyntheticPlayer(uuid, spawnedPlayer);
+
             if (permissionsCsv != null && !permissionsCsv.isBlank())
                 playerStore.setPermissions(plugin, uuid, spawnedPlayer, permissionsCsv);
 
             return spawnedPlayer;
         });
-
-        playerStore.registerSyntheticPlayer(uuid, player);
 
         plugin.getLogger().info(
             "LK_AGENT: Created synthetic player '%s' (%s) in world '%s'."
