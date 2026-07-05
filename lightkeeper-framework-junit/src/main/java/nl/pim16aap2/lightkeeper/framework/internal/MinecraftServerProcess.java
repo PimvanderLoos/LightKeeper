@@ -236,6 +236,20 @@ final class MinecraftServerProcess
         }
     }
 
+    private void handleShutdownFailure(Process currentProcess, Throwable failure)
+    {
+        LOG.log(System.Logger.Level.WARNING, "Graceful shutdown of the Minecraft server process failed.", failure);
+        writeDiagnostics("shutdown-failure", failure);
+        if (currentProcess.isAlive())
+        {
+            currentProcess.destroyForcibly();
+            if (!waitForProcessExit(currentProcess, Duration.ofSeconds(5)) && currentProcess.isAlive())
+                throw new IllegalStateException(
+                    "Minecraft server process is still alive after a forced kill following a shutdown failure.",
+                    failure);
+        }
+    }
+
     private static void forceProcessExit(Process process, String failureMessage)
     {
         process.destroyForcibly();
