@@ -61,6 +61,7 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
     private final Object componentJsonOps;
     private final Method componentCodecEncodeStartMethod;
     private final Method dataResultResultMethod;
+    private final Method dataResultErrorMethod;
     private final Object serverboundPacketFlow;
 
     /**
@@ -94,6 +95,7 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
             componentJsonOps = jsonOpsClass.getField("INSTANCE").get(null);
             componentCodecEncodeStartMethod = codecClass.getMethod("encodeStart", dynamicOpsClass, Object.class);
             dataResultResultMethod = dataResultClass.getMethod("result");
+            dataResultErrorMethod = dataResultClass.getMethod("error");
 
             final Class<?> gameProfileClass = NmsReflectionUtils.resolveClass(
                 "com.mojang.authlib.GameProfile",
@@ -544,16 +546,50 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
                 value
             );
             final Optional<?> serializedJson = (Optional<?>) dataResultResultMethod.invoke(dataResult);
-            return serializedJson.map(Object::toString).orElse(null);
+            if (serializedJson.isPresent())
+                return serializedJson.get().toString();
+
+            // Encoding produced a DataResult error rather than a value; the component would otherwise vanish
+            // silently from the capture. Surface Mojang's error message so the failure is diagnosable.
+            LOG.log(
+                System.Logger.Level.WARNING,
+                "Failed to serialize chat component of type '%s': %s"
+                    .formatted(value.getClass().getName(), readDataResultError(dataResult))
+            );
+            return null;
         }
         catch (Exception exception)
         {
             LOG.log(
-                System.Logger.Level.TRACE,
-                "Ignoring component serialization failure while extracting packet component.",
+                System.Logger.Level.WARNING,
+                "Failed to serialize chat component of type '" + value.getClass().getName() + "'.",
                 exception
             );
             return null;
+        }
+    }
+
+    /**
+     * Reads the message from a Mojang {@code DataResult}'s error branch via reflection.
+     *
+     * @param dataResult
+     *     The {@code DataResult} whose {@code error()} branch should be read.
+     * @return
+     *     The error message, or a diagnostic placeholder when no message is available.
+     */
+    private String readDataResultError(Object dataResult)
+    {
+        try
+        {
+            final Optional<?> error = (Optional<?>) dataResultErrorMethod.invoke(dataResult);
+            if (error.isEmpty())
+                return "<no error detail>";
+            final Object errorValue = error.get();
+            return String.valueOf(errorValue.getClass().getMethod("message").invoke(errorValue));
+        }
+        catch (Exception exception)
+        {
+            return "<error detail unavailable: " + exception.getClass().getSimpleName() + ">";
         }
     }
 
