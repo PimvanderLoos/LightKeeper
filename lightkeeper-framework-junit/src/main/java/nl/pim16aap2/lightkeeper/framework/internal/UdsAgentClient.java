@@ -466,6 +466,17 @@ final class UdsAgentClient implements AutoCloseable
 
             if (!requestId.equals(responseRequestId))
             {
+                // A parse failure replies with requestId "unknown" and success=false; surfacing only the id
+                // mismatch would hide the server's actual errorCode/errorMessage, so include it here.
+                if (!root.path("success").asBoolean())
+                    throw new IllegalStateException(
+                        "Agent rejected request '%s' before correlation (response id '%s'): code=%s message=%s"
+                            .formatted(
+                                requestId,
+                                responseRequestId,
+                                root.path("errorCode").asString("UNKNOWN"),
+                                root.path("errorMessage").asString("")));
+
                 throw new IllegalStateException(
                     "Unexpected response id '%s' for request '%s'."
                         .formatted(responseRequestId, requestId)

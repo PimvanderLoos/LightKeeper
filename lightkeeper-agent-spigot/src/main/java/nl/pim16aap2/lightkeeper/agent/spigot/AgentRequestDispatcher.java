@@ -257,11 +257,26 @@ final class AgentRequestDispatcher
         }
         catch (AgentProtocolException exception)
         {
+            final Throwable cause = exception.getCause();
+            final String baseMessage =
+                Objects.requireNonNullElse(exception.getMessage(), exception.getClass().getName());
+            if (cause == null)
+                return buildErrorResult(requestId, exception.errorCode(), baseMessage, handshakeCompleted);
+
+            // A structured failure that wraps a cause (e.g. INTERRUPTED/TIMEOUT) otherwise loses the cause's
+            // message and stack entirely: log it and append it to the wire message so it is not invisible.
+            logger.log(
+                Level.WARNING,
+                "Agent action '%s' failed for request '%s' with code %s."
+                    .formatted(qualifiedCommandName(command), requestId, exception.errorCode()),
+                exception
+            );
             return buildErrorResult(
                 requestId,
                 exception.errorCode(),
-                Objects.requireNonNullElse(exception.getMessage(), exception.getClass().getName()),
-                handshakeCompleted);
+                baseMessage + " (cause: " + cause + ")",
+                handshakeCompleted
+            );
         }
         catch (IllegalArgumentException exception)
         {

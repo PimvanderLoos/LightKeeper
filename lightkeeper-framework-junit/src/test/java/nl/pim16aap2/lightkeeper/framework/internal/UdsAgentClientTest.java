@@ -78,6 +78,27 @@ class UdsAgentClientTest
     }
 
     @Test
+    void send_shouldSurfaceServerErrorWhenResponseIsUncorrelated(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup — a parse failure replies with the "unknown" id and success=false, as the server does
+        final Path socketPath = tempDirectory.resolve("agent-parse-error.sock");
+        final String responseJson = "{\"requestId\":\"unknown\",\"success\":false,"
+            + "\"errorCode\":\"INVALID_REQUEST\",\"errorMessage\":\"Failed to parse request: boom\"}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson))
+        {
+            final UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3));
+
+            // execute + verify — the id mismatch must not mask the server's real error code and message
+            assertThatThrownBy(() -> client.send(new WaitTicks.Command("42", 1)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("INVALID_REQUEST")
+                .hasMessageContaining("Failed to parse request");
+            client.close();
+        }
+    }
+
+    @Test
     void send_shouldReportTimeoutWhenAgentNeverResponds(@TempDir Path tempDirectory)
         throws Exception
     {

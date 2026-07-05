@@ -255,6 +255,27 @@ class AgentRequestDispatcherTest
     }
 
     @Test
+    void handleRequestLine_shouldAppendCauseWhenProtocolExceptionCarriesOne()
+        throws Exception
+    {
+        // setup
+        final DispatcherFixture fixture = createDispatcherFixture();
+        when(fixture.worldActions().handleWaitTicks(any()))
+            .thenThrow(new AgentProtocolException(
+                AgentErrorCode.INTERRUPTED, "Interrupted while waiting.",
+                new InterruptedException("thread interrupted")));
+        final String requestLine = toJson(new WaitTicks.Command("request-interrupted", 5));
+
+        // execute
+        final AgentRequestDispatcher.RequestDispatchResult result =
+            fixture.dispatcher().handleRequestLine(requestLine, true);
+
+        // verify — the wrapped cause must not be invisible; it is appended to the error message
+        assertThat(errorCode(result.responseJson())).isEqualTo("INTERRUPTED");
+        assertThat(errorMessage(result.responseJson())).contains("thread interrupted");
+    }
+
+    @Test
     void handleRequestLine_shouldDispatchSupportedActionsToTheirHandlers()
         throws Exception
     {
