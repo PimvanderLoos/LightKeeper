@@ -1,9 +1,9 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
-import tools.jackson.databind.ObjectMapper;
 import nl.pim16aap2.lightkeeper.protocol.ClickMenuSlot;
 import nl.pim16aap2.lightkeeper.protocol.DragMenuSlots;
 import nl.pim16aap2.lightkeeper.protocol.GetOpenMenu;
+import nl.pim16aap2.lightkeeper.protocol.ItemSnapshot;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -14,7 +14,6 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
-import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,7 +28,7 @@ import java.util.UUID;
  * <p>This class provides the executable behavior behind generic inventory protocol calls that inspect open inventory
  * state and simulate click/drag interactions.
  */
-@SuppressWarnings({"deprecation", "UnstableApiUsage"})
+@SuppressWarnings("UnstableApiUsage")
 final class AgentMenuActions
 {
     /**
@@ -40,27 +39,19 @@ final class AgentMenuActions
      * Synthetic player lookup and tracked message persistence.
      */
     private final AgentSyntheticPlayerStore playerStore;
-    /**
-     * JSON mapper used to serialize structured inventory item payloads.
-     */
-    private final ObjectMapper objectMapper;
 
     /**
      * @param mainThreadExecutor
      *     Main-thread executor for Bukkit-safe menu interactions.
      * @param playerStore
      *     Synthetic player registry used to resolve protocol UUIDs.
-     * @param objectMapper
-     *     JSON serializer for response payloads.
      */
     AgentMenuActions(
         AgentMainThreadExecutor mainThreadExecutor,
-        AgentSyntheticPlayerStore playerStore,
-        ObjectMapper objectMapper)
+        AgentSyntheticPlayerStore playerStore)
     {
         this.mainThreadExecutor = Objects.requireNonNull(mainThreadExecutor, "mainThreadExecutor");
         this.playerStore = Objects.requireNonNull(playerStore, "playerStore");
-        this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper");
     }
 
     /**
@@ -83,30 +74,18 @@ final class AgentMenuActions
             final InventoryView view = player.getOpenInventory();
 
             if (!isActionableOpenInventory(view))
-                return new GetOpenMenu.Response(command.requestId(), false, null, null);
+                return new GetOpenMenu.Response(command.requestId(), false, null, List.of());
 
-            final List<Map<String, @Nullable Object>> items = new ArrayList<>();
+            final List<ItemSnapshot> items = new ArrayList<>();
             for (int rawSlot = 0; rawSlot < view.countSlots(); ++rawSlot)
             {
                 final ItemStack item = view.getItem(rawSlot);
                 if (item == null || AgentMaterials.isAir(item.getType()))
                     continue;
-
-                final Map<String, @Nullable Object> itemData = new HashMap<>();
-                itemData.put("slot", rawSlot);
-                itemData.put("materialKey", item.getType().getKey().toString());
-                itemData.put("displayName", item.getItemMeta() == null ? null : item.getItemMeta().getDisplayName());
-                itemData.put(
-                    "lore",
-                    item.getItemMeta() == null
-                        ? List.of()
-                        : Objects.requireNonNullElse(item.getItemMeta().getLore(), List.of())
-                );
-                items.add(itemData);
+                items.add(AgentItemSnapshots.of(rawSlot, item));
             }
 
-            final String itemsJson = objectMapper.writeValueAsString(items);
-            return new GetOpenMenu.Response(command.requestId(), true, view.getTitle(), itemsJson);
+            return new GetOpenMenu.Response(command.requestId(), true, view.getTitle(), items);
         });
     }
 

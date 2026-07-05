@@ -27,6 +27,7 @@ import nl.pim16aap2.lightkeeper.protocol.Handshake;
 import nl.pim16aap2.lightkeeper.protocol.IAgentCommand;
 import nl.pim16aap2.lightkeeper.protocol.IAgentResponse;
 import nl.pim16aap2.lightkeeper.protocol.IsChunkLoaded;
+import nl.pim16aap2.lightkeeper.protocol.ItemSnapshot;
 import nl.pim16aap2.lightkeeper.protocol.LeftClickBlock;
 import nl.pim16aap2.lightkeeper.protocol.LoadChunk;
 import nl.pim16aap2.lightkeeper.protocol.MainWorld;
@@ -43,7 +44,6 @@ import nl.pim16aap2.lightkeeper.protocol.WaitTicks;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.core.JacksonException;
-import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -83,11 +83,6 @@ import java.util.concurrent.atomic.AtomicLong;
 final class UdsAgentClient implements AutoCloseable
 {
     private static final System.Logger LOG = System.getLogger(UdsAgentClient.class.getName());
-
-    private static final TypeReference<List<Map<String, String>>> TYPE_EVENT_DATA_LIST =
-        new TypeReference<>() {};
-    private static final TypeReference<List<Map<String, Object>>> TYPE_INVENTORY_ITEM_LIST =
-        new TypeReference<>() {};
 
     /**
      * Default response timeout: the agent's own synchronous-operation timeout plus a safety margin, so the
@@ -283,21 +278,16 @@ final class UdsAgentClient implements AutoCloseable
         if (!response.open())
             return new MenuSnapshot(false, "", List.of());
 
-        // The agent always sends non-null itemsJson for an open menu, so a null here is a wire-contract
-        // violation. Fabricating an empty menu would make "menu has no items" pass wrongly, so fail instead.
-        final String itemsJson = response.itemsJson();
-        if (itemsJson == null)
-            throw new IllegalStateException(
-                "Agent reported an open menu but returned no items JSON; this is a protocol violation.");
-        try
-        {
-            final MenuItemSnapshot[] items = objectMapper.readValue(itemsJson, MenuItemSnapshot[].class);
-            return new MenuSnapshot(true, Objects.requireNonNullElse(response.title(), ""), List.of(items));
-        }
-        catch (JacksonException exception)
-        {
-            throw new IllegalStateException("Failed to parse menu snapshot JSON.", exception);
-        }
+        final List<MenuItemSnapshot> items = response.items().stream()
+            .map(UdsAgentClient::toMenuItemSnapshot)
+            .toList();
+        return new MenuSnapshot(true, Objects.requireNonNullElse(response.title(), ""), items);
+    }
+
+    private static MenuItemSnapshot toMenuItemSnapshot(ItemSnapshot item)
+    {
+        return new MenuItemSnapshot(
+            item.slot(), item.materialKey(), Objects.requireNonNullElse(item.displayName(), ""), item.lore());
     }
 
     void clickMenuSlot(UUID uuid, int slot)
@@ -371,11 +361,10 @@ final class UdsAgentClient implements AutoCloseable
         return send(command).loaded();
     }
 
-    List<Map<String, Object>> getPlayerInventory(UUID uuid)
+    List<ItemSnapshot> getPlayerInventory(UUID uuid)
     {
         final GetPlayerInventory.Command command = new GetPlayerInventory.Command(nextRequestId(), uuid);
-        final GetPlayerInventory.Response response = send(command);
-        return parseJson(response.inventoryJson(), "inventoryJson", TYPE_INVENTORY_ITEM_LIST);
+        return send(command).items();
     }
 
     boolean dropItem(UUID uuid)
@@ -394,8 +383,7 @@ final class UdsAgentClient implements AutoCloseable
     List<Map<String, String>> getCapturedEvents(String eventClassName)
     {
         final GetCapturedEvents.Command command = new GetCapturedEvents.Command(nextRequestId(), eventClassName);
-        final GetCapturedEvents.Response response = send(command);
-        return parseJson(response.eventsJson(), "eventsJson", TYPE_EVENT_DATA_LIST);
+        return send(command).events();
     }
 
     void clearCapturedEvents(String eventClassName)
@@ -642,34 +630,6 @@ final class UdsAgentClient implements AutoCloseable
         catch (IOException closeException)
         {
             connectionException.addSuppressed(closeException);
-        }
-    }
-
-    /**
-     * Deserializes a protocol response's JSON field using the supplied type reference.
-     *
-     * @param json
-     *     JSON value to deserialize.
-     * @param key
-     *     Response field name used in failure diagnostics.
-     * @param typeRef
-     *     Jackson type reference for deserialization.
-     * @param <T>
-     *     Expected return type.
-     * @return
-     *     Deserialized value.
-     * @throws IllegalStateException
-     *     When deserialization fails.
-     */
-    private <T> T parseJson(String json, String key, TypeReference<T> typeRef)
-    {
-        try
-        {
-            return objectMapper.readValue(json, typeRef);
-        }
-        catch (JacksonException exception)
-        {
-            throw new IllegalStateException("Failed to parse '%s' JSON from agent response.".formatted(key), exception);
         }
     }
 

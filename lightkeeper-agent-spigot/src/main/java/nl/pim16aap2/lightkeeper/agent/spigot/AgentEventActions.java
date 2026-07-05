@@ -1,6 +1,5 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
-import tools.jackson.databind.ObjectMapper;
 import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEvents;
 import nl.pim16aap2.lightkeeper.protocol.GetCapturedEvents;
 import nl.pim16aap2.lightkeeper.protocol.RegisterEventListener;
@@ -23,21 +22,14 @@ final class AgentEventActions
      * Dynamic event listener and payload store.
      */
     private final AgentEventCapture eventCapture;
-    /**
-     * JSON serializer for the captured event payload list.
-     */
-    private final ObjectMapper objectMapper;
 
     /**
      * @param eventCapture
      *     Dynamic event capture facade.
-     * @param objectMapper
-     *     JSON serializer for event data.
      */
-    AgentEventActions(AgentEventCapture eventCapture, ObjectMapper objectMapper)
+    AgentEventActions(AgentEventCapture eventCapture)
     {
         this.eventCapture = Objects.requireNonNull(eventCapture, "eventCapture");
-        this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper");
     }
 
     /**
@@ -72,16 +64,13 @@ final class AgentEventActions
      * @param command
      *     Typed get-captured-events command.
      * @return
-     *     Success response with {@code eventsJson}, or {@code INVALID_ARGUMENT} when the class name is blank.
-     * @throws Exception
-     *     Propagates JSON serialization failures.
+     *     Success response with the captured events, or {@code INVALID_ARGUMENT} when the class name is blank.
      */
-    GetCapturedEvents.Response handleGetCapturedEvents(GetCapturedEvents.Command command) throws Exception
+    GetCapturedEvents.Response handleGetCapturedEvents(GetCapturedEvents.Command command)
     {
         final String eventClassName = requireEventClassName(command.eventClassName());
         final List<Map<String, String>> events = eventCapture.getCapturedEvents(eventClassName);
-        final String eventsJson = objectMapper.writeValueAsString(events);
-        return new GetCapturedEvents.Response(command.requestId(), eventsJson);
+        return new GetCapturedEvents.Response(command.requestId(), events);
     }
 
     /**

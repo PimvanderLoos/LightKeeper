@@ -3,6 +3,7 @@ package nl.pim16aap2.lightkeeper.framework.internal;
 import nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot;
 import nl.pim16aap2.lightkeeper.framework.Platform;
 import nl.pim16aap2.lightkeeper.protocol.CommandSource;
+import nl.pim16aap2.lightkeeper.protocol.ItemSnapshot;
 import nl.pim16aap2.lightkeeper.protocol.WaitTicks;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -252,38 +253,43 @@ class UdsAgentClientTest
     }
 
     @Test
-    void getPlayerInventory_shouldParseInventoryJsonFromResponse(@TempDir Path tempDirectory)
+    void getPlayerInventory_shouldReturnTypedItemsFromResponse(@TempDir Path tempDirectory)
         throws Exception
     {
-        // setup
+        // setup — items are carried as a typed array on the envelope, not a re-escaped JSON string
         final Path socketPath = tempDirectory.resolve("inventory.sock");
         final String responseJson =
-            "{\"requestId\":\"1\",\"success\":true,\"inventoryJson\":\"[{\\\"slot\\\":0,\\\"materialKey\\\":\\\"minecraft:stone\\\"}]\"}";
+            "{\"requestId\":\"1\",\"success\":true,"
+                + "\"items\":[{\"slot\":0,\"materialKey\":\"minecraft:stone\",\"lore\":[]}]}";
         try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
              UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
         {
             // execute
-            final List<Map<String, Object>> inventory = client.getPlayerInventory(UUID.randomUUID());
+            final List<ItemSnapshot> inventory = client.getPlayerInventory(UUID.randomUUID());
 
             // verify
-            assertThat(inventory).hasSize(1);
-            assertThat(inventory.getFirst()).containsEntry("materialKey", "minecraft:stone");
+            assertThat(inventory).singleElement().satisfies(item ->
+            {
+                assertThat(item.slot()).isEqualTo(0);
+                assertThat(item.materialKey()).isEqualTo("minecraft:stone");
+            });
         }
     }
 
     @Test
-    void getCapturedEvents_shouldParseEventsJsonFromResponse(@TempDir Path tempDirectory)
+    void getCapturedEvents_shouldReturnEventsFromResponse(@TempDir Path tempDirectory)
         throws Exception
     {
         // setup
         final Path socketPath = tempDirectory.resolve("events.sock");
         final String responseJson =
-            "{\"requestId\":\"1\",\"success\":true,\"eventsJson\":\"[{\\\"player\\\":\\\"Steve\\\"}]\"}";
+            "{\"requestId\":\"1\",\"success\":true,\"events\":[{\"player\":\"Steve\"}]}";
         try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
              UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
         {
             // execute
-            final List<Map<String, String>> events = client.getCapturedEvents("org.bukkit.event.player.PlayerJoinEvent");
+            final List<Map<String, String>> events =
+                client.getCapturedEvents("org.bukkit.event.player.PlayerJoinEvent");
 
             // verify
             assertThat(events).hasSize(1);
@@ -352,20 +358,31 @@ class UdsAgentClientTest
     }
 
     @Test
-    void menuSnapshot_shouldThrowWhenOpenMenuHasNoItemsJson(@TempDir Path tempDirectory)
+    void menuSnapshot_shouldReturnTypedItemsForOpenMenu(@TempDir Path tempDirectory)
         throws Exception
     {
-        // setup — the agent always sends non-null itemsJson for an open menu, so null here is a wire bug
-        final Path socketPath = tempDirectory.resolve("menu-null-items.sock");
+        // setup — items are carried as a typed array on the envelope, not a re-escaped JSON string
+        final Path socketPath = tempDirectory.resolve("menu-open.sock");
         final String responseJson =
-            "{\"requestId\":\"1\",\"success\":true,\"open\":true,\"title\":\"Test\",\"itemsJson\":null}";
+            "{\"requestId\":\"1\",\"success\":true,\"open\":true,\"title\":\"Chest\","
+                + "\"items\":[{\"slot\":3,\"materialKey\":\"minecraft:stone\",\"displayName\":\"Rock\","
+                + "\"lore\":[\"line\"]}]}";
         try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
              UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
         {
-            // execute + verify — fabricating an empty menu would make "menu has no items" pass wrongly
-            assertThatThrownBy(() -> client.menuSnapshot(UUID.randomUUID()))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("protocol violation");
+            // execute
+            final var snapshot = client.menuSnapshot(UUID.randomUUID());
+
+            // verify
+            assertThat(snapshot.open()).isTrue();
+            assertThat(snapshot.title()).isEqualTo("Chest");
+            assertThat(snapshot.items()).singleElement().satisfies(item ->
+            {
+                assertThat(item.slot()).isEqualTo(3);
+                assertThat(item.materialKey()).isEqualTo("minecraft:stone");
+                assertThat(item.displayName()).isEqualTo("Rock");
+                assertThat(item.lore()).containsExactly("line");
+            });
         }
     }
 

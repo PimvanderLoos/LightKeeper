@@ -84,6 +84,7 @@ final class AgentMainThreadExecutor
             return callable.call();
 
         final Future<T> future = Bukkit.getScheduler().callSyncMethod(plugin, callable);
+        final Throwable callableFailure;
         try
         {
             return future.get(syncOperationTimeoutSeconds, TimeUnit.SECONDS);
@@ -92,12 +93,7 @@ final class AgentMainThreadExecutor
         {
             // Surface the callable's real failure (e.g. an IllegalArgumentException thrown inside a handler
             // lambda) instead of the opaque Future wrapper, so the dispatcher can map it to its domain code.
-            final Throwable cause = exception.getCause();
-            if (cause instanceof Error error)
-                throw error;
-            if (cause instanceof Exception causeException)
-                throw causeException;
-            throw exception;
+            callableFailure = exception.getCause() == null ? exception : exception.getCause();
         }
         catch (TimeoutException exception)
         {
@@ -118,6 +114,14 @@ final class AgentMainThreadExecutor
                 exception
             );
         }
+
+        // Rethrown outside the catch so the unwrapped cause keeps its own stack trace.
+        if (callableFailure instanceof Error error)
+            throw error;
+        if (callableFailure instanceof Exception exception)
+            throw exception;
+        throw new IllegalStateException("Unexpected non-exception failure from a main-thread operation.",
+            callableFailure);
     }
 
     /**

@@ -1,5 +1,6 @@
 package nl.pim16aap2.lightkeeper.protocol;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -45,13 +46,20 @@ public final class GetPlayerInventory
      *
      * @param requestId
      *     Correlated request id.
-     * @param inventoryJson
-     *     JSON array of non-air inventory slot snapshots.
+     * @param items
+     *     Non-air inventory slot snapshots.
      */
     public record Response(
         String requestId,
-        String inventoryJson
+        List<ItemSnapshot> items
     ) implements IAgentResponse
     {
+        /**
+         * Defensively copies the item list.
+         */
+        public Response
+        {
+            items = items == null ? List.of() : List.copyOf(items);
+        }
     }
 }

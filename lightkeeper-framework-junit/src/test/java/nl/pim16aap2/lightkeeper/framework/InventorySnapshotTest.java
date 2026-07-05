@@ -1,10 +1,10 @@
 package nl.pim16aap2.lightkeeper.framework;
 
+import nl.pim16aap2.lightkeeper.protocol.ItemSnapshot;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -41,15 +41,23 @@ class InventorySnapshotTest
     }
 
     @Test
-    void fromItemMaps_shouldThrowExceptionWhenSlotIsMissing()
+    void fromItems_shouldMapProtocolItemsAndDefaultNullDisplayName()
     {
         // setup
-        final List<Map<String, Object>> items = List.of(Map.of("materialKey", "minecraft:stone"));
+        final List<ItemSnapshot> protocolItems = List.of(
+            new ItemSnapshot(2, "minecraft:stone", null, List.of("lore")));
 
-        // execute + verify
-        assertThatThrownBy(() -> InventorySnapshot.fromItemMaps(items))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("slot");
+        // execute
+        final InventorySnapshot snapshot = InventorySnapshot.fromItems(protocolItems);
+
+        // verify — a null displayName maps to an empty string
+        assertThat(snapshot.items()).singleElement().satisfies(item ->
+        {
+            assertThat(item.slot()).isEqualTo(2);
+            assertThat(item.materialKey()).isEqualTo("minecraft:stone");
+            assertThat(item.displayName()).isEmpty();
+            assertThat(item.lore()).containsExactly("lore");
+        });
     }
 
     @Test

@@ -6,6 +6,7 @@ import nl.pim16aap2.lightkeeper.protocol.DropItem;
 import nl.pim16aap2.lightkeeper.protocol.ExecutePlayerCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponents;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerInventory;
+import nl.pim16aap2.lightkeeper.protocol.ItemSnapshot;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerMessages;
 import nl.pim16aap2.lightkeeper.protocol.LeftClickBlock;
 import nl.pim16aap2.lightkeeper.protocol.PlacePlayerBlock;
@@ -29,9 +30,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -334,36 +333,24 @@ final class AgentPlayerActions
         throws Exception
     {
         final UUID uuid = command.uuid();
-        final String inventoryJson = mainThreadExecutor.callOnMainThread(() ->
+        final List<ItemSnapshot> items = mainThreadExecutor.callOnMainThread(() ->
         {
             final Player player = playerStore.getRequiredPlayer(uuid);
-            return objectMapper.writeValueAsString(buildInventoryItems(player.getInventory().getContents()));
+            return buildInventoryItems(player.getInventory().getContents());
         });
 
-        return new GetPlayerInventory.Response(command.requestId(), inventoryJson);
+        return new GetPlayerInventory.Response(command.requestId(), items);
     }
 
-    private static List<Map<String, Object>> buildInventoryItems(ItemStack... contents)
+    private static List<ItemSnapshot> buildInventoryItems(ItemStack... contents)
     {
-        final List<Map<String, Object>> items = new ArrayList<>();
+        final List<ItemSnapshot> items = new ArrayList<>();
         for (int i = 0; i < contents.length; i++)
         {
             final ItemStack item = contents[i];
             if (item == null || AgentMaterials.isAir(item.getType()))
                 continue;
-
-            final Map<String, Object> itemData = new HashMap<>();
-            itemData.put("slot", i);
-            itemData.put("materialKey", item.getType().getKey().toString());
-            final String displayName = item.getItemMeta() == null ? null : item.getItemMeta().getDisplayName();
-            itemData.put("displayName", displayName);
-            itemData.put(
-                "lore",
-                item.getItemMeta() == null
-                    ? List.of()
-                    : Objects.requireNonNullElse(item.getItemMeta().getLore(), List.of())
-            );
-            items.add(itemData);
+            items.add(AgentItemSnapshots.of(i, item));
         }
         return items;
     }

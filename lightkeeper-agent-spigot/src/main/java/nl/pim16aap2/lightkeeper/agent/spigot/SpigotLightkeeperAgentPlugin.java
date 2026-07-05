@@ -113,8 +113,7 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin
             final AgentSyntheticPlayerStore playerStore = new AgentSyntheticPlayerStore();
             final AgentMenuActions menuActions = new AgentMenuActions(
                 mainThreadExecutor,
-                playerStore,
-                objectMapper
+                playerStore
             );
             final AgentWorldActions worldActions = new AgentWorldActions(
                 this,
@@ -129,7 +128,7 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin
                 botPlayerNmsAdapter
             );
             final AgentEventCapture eventCapture = new AgentEventCapture(this, mainThreadExecutor);
-            final AgentEventActions eventActions = new AgentEventActions(eventCapture, objectMapper);
+            final AgentEventActions eventActions = new AgentEventActions(eventCapture);
 
             requestDispatcher = new AgentRequestDispatcher(
                 objectMapper,

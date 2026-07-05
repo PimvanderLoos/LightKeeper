@@ -304,7 +304,7 @@ class AgentRequestDispatcherTest
         when(fixture.playerActions().handleRightClickBlock(any(RightClickBlock.Command.class)))
             .thenReturn(new RightClickBlock.Response("request-10", false));
         when(fixture.menuActions().handleGetOpenMenu(any(GetOpenMenu.Command.class)))
-            .thenReturn(new GetOpenMenu.Response("request-11", false, null, null));
+            .thenReturn(new GetOpenMenu.Response("request-11", false, null, java.util.List.of()));
         when(fixture.menuActions().handleClickMenuSlot(any(ClickMenuSlot.Command.class)))
             .thenReturn(new ClickMenuSlot.Response("request-12"));
         when(fixture.menuActions().handleDragMenuSlots(any(DragMenuSlots.Command.class)))
@@ -324,13 +324,13 @@ class AgentRequestDispatcherTest
         when(fixture.worldActions().handleIsChunkLoaded(any(IsChunkLoaded.Command.class)))
             .thenReturn(new IsChunkLoaded.Response("request-20", true));
         when(fixture.playerActions().handleGetPlayerInventory(any(GetPlayerInventory.Command.class)))
-            .thenReturn(new GetPlayerInventory.Response("request-21", "[]"));
+            .thenReturn(new GetPlayerInventory.Response("request-21", java.util.List.of()));
         when(fixture.playerActions().handleDropItem(any(DropItem.Command.class)))
             .thenReturn(new DropItem.Response("request-22", false));
         when(fixture.eventActions().handleRegisterEventListener(any(RegisterEventListener.Command.class)))
             .thenReturn(new RegisterEventListener.Response("request-23"));
         when(fixture.eventActions().handleGetCapturedEvents(any(GetCapturedEvents.Command.class)))
-            .thenReturn(new GetCapturedEvents.Response("request-24", "[]"));
+            .thenReturn(new GetCapturedEvents.Response("request-24", java.util.List.of()));
         when(fixture.eventActions().handleClearCapturedEvents(any(ClearCapturedEvents.Command.class)))
             .thenReturn(new ClearCapturedEvents.Response("request-25"));
         when(fixture.eventActions().handleUnregisterEventListener(any(UnregisterEventListener.Command.class)))
@@ -534,8 +534,7 @@ class AgentRequestDispatcherTest
         final AgentSyntheticPlayerStore playerStore = new AgentSyntheticPlayerStore();
         final AgentMenuActions menuActions = new AgentMenuActions(
             mainThreadExecutor,
-            playerStore,
-            objectMapper
+            playerStore
         );
         final AgentWorldActions worldActions = new AgentWorldActions(
             plugin,
@@ -551,7 +550,7 @@ class AgentRequestDispatcherTest
             nmsAdapter
         );
         final AgentEventCapture eventCapture = mock();
-        final AgentEventActions eventActions = new AgentEventActions(eventCapture, objectMapper);
+        final AgentEventActions eventActions = new AgentEventActions(eventCapture);
 
         return new AgentRequestDispatcher(
             objectMapper,

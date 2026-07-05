@@ -306,10 +306,12 @@ class AgentPlayerActionsTest
         }
 
         // verify
-        assertThat(response.inventoryJson())
-            .contains("\"slot\":2")
-            .contains("\"materialKey\":\"minecraft:stone\"")
-            .contains("\"lore\":[]");
+        assertThat(response.items()).singleElement().satisfies(item ->
+        {
+            assertThat(item.slot()).isEqualTo(2);
+            assertThat(item.materialKey()).isEqualTo("minecraft:stone");
+            assertThat(item.lore()).isEmpty();
+        });
     }
 
     @Test

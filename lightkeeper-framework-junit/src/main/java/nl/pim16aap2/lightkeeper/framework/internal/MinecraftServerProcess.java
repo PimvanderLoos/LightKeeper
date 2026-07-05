@@ -212,27 +212,15 @@ final class MinecraftServerProcess
                     forceProcessExit(currentProcess, "Minecraft server process did not exit after forced stop.");
             }
         }
-        catch (Exception exception)
+        catch (InterruptedException exception)
         {
-            // A broad catch here also catches the InterruptedException from waitFor; restore the flag so the
-            // interrupt is not swallowed by this cleanup path.
-            if (exception instanceof InterruptedException)
-                Thread.currentThread().interrupt();
-
-            LOG.log(
-                System.Logger.Level.WARNING, "Graceful shutdown of the Minecraft server process failed.", exception);
-            writeDiagnostics("shutdown-failure", exception);
-
-            if (currentProcess.isAlive())
-            {
-                currentProcess.destroyForcibly();
-                // Fail loudly if the process survives the forced kill: a zombie keeps holding session.lock and
-                // would otherwise surface far away as a lock-timeout in the next test class.
-                if (!waitForProcessExit(currentProcess, Duration.ofSeconds(5)) && currentProcess.isAlive())
-                    throw new IllegalStateException(
-                        "Minecraft server process is still alive after a forced kill following a shutdown failure.",
-                        exception);
-            }
+            // Restore the interrupt flag so it is not swallowed by this cleanup path.
+            Thread.currentThread().interrupt();
+            handleShutdownFailure(currentProcess, exception);
+        }
+        catch (IOException | RuntimeException exception)
+        {
+            handleShutdownFailure(currentProcess, exception);
         }
         finally
         {

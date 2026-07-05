@@ -154,27 +154,47 @@ final class AgentRequestDispatcher
             final IAgentCommand command = objectMapper.treeToValue(tree, IAgentCommand.class);
             return dispatchCommand(command, handshakeCompleted);
         }
-        catch (Exception exception)
+        catch (ValueInstantiationException exception)
         {
             // A record compact-constructor rejecting a bad field throws IllegalArgumentException during
             // deserialization; Jackson wraps it in ValueInstantiationException. Preserve the domain contract by
             // mapping that back to INVALID_ARGUMENT rather than the generic INVALID_REQUEST parse code.
             final Throwable cause = exception.getCause();
-            if (exception instanceof ValueInstantiationException && cause instanceof IllegalArgumentException)
+            if (cause instanceof IllegalArgumentException)
                 return buildErrorResult(
                     requestId,
                     AgentErrorCode.INVALID_ARGUMENT,
                     Objects.requireNonNullElse(cause.getMessage(), cause.getClass().getName()),
                     handshakeCompleted
                 );
-
-            return buildErrorResult(
-                requestId,
-                AgentErrorCode.INVALID_REQUEST,
-                "Failed to parse request: " + exception.getMessage(),
-                handshakeCompleted
-            );
+            return buildParseFailure(requestId, exception, handshakeCompleted);
         }
+        catch (Exception exception)
+        {
+            return buildParseFailure(requestId, exception, handshakeCompleted);
+        }
+    }
+
+    /**
+     * Builds an {@code INVALID_REQUEST} result for a request line that could not be parsed.
+     *
+     * @param requestId
+     *     Correlated request identifier (or {@code "unknown"} when it could not be extracted).
+     * @param exception
+     *     The parse failure.
+     * @param handshakeCompleted
+     *     Current handshake state to propagate.
+     * @return Error dispatch result.
+     */
+    private RequestDispatchResult buildParseFailure(String requestId, Exception exception, boolean handshakeCompleted)
+    {
+        return buildErrorResult(
+            requestId,
+            AgentErrorCode.INVALID_REQUEST,
+            "Failed to parse request: " + Objects.requireNonNullElse(exception.getMessage(),
+                exception.getClass().getName()),
+            handshakeCompleted
+        );
     }
 
     /**
@@ -287,15 +307,17 @@ final class AgentRequestDispatcher
                 handshakeCompleted
             );
         }
+        catch (VirtualMachineError error)
+        {
+            // Unrecoverable (OutOfMemoryError/StackOverflowError); never swallow it into a response.
+            throw error;
+        }
         catch (Throwable throwable)
         {
             // Catch Throwable, not just Exception: the NMS layer is reflection-heavy, so a NoClassDefFoundError
             // or LinkageError on a new server build would otherwise sail past every catch, kill the
             // per-connection thread, and leave the client with only "connection closed unexpectedly". Return a
-            // coded response instead. A VirtualMachineError (OOM/StackOverflow) is unrecoverable — rethrow it.
-            if (throwable instanceof VirtualMachineError)
-                throw (VirtualMachineError) throwable;
-
+            // coded response instead.
             logger.log(
                 Level.SEVERE,
                 "Agent action '%s' failed for request '%s': %s"

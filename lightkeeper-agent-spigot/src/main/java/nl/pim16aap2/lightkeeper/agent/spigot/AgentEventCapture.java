@@ -284,27 +284,44 @@ final class AgentEventCapture
                     if (isPrintable(value))
                         data.put(method.getName(), String.valueOf(value));
                 }
-                catch (Exception exception)
+                catch (InvocationTargetException exception)
                 {
-                    // Never drop a getter failure silently: an absent key would let a negative assertion
-                    // ("event does not contain X") pass on broken capture. Record a visible sentinel in the
-                    // payload and warn once per event-class/method so the failure surfaces in test output.
-                    final Throwable cause =
-                        exception instanceof InvocationTargetException && exception.getCause() != null
-                            ? exception.getCause()
-                            : exception;
-                    data.put(method.getName(), "<capture-failed: " + cause.getClass().getSimpleName() + ">");
-                    if (loggedCaptureFailures.add(event.getClass().getName() + "#" + method.getName()))
-                        plugin.getLogger().log(
-                            Level.WARNING,
-                            "Failed to capture property '%s' of event '%s'."
-                                .formatted(method.getName(), event.getClass().getName()),
-                            cause
-                        );
+                    recordCaptureFailure(
+                        data, event, method, exception.getCause() == null ? exception : exception.getCause());
+                }
+                catch (ReflectiveOperationException | RuntimeException exception)
+                {
+                    recordCaptureFailure(data, event, method, exception);
                 }
             }
         }
         targetList.add(data);
+    }
+
+    /**
+     * Records a visible sentinel for a failed event getter and warns once per event-class/method, so a getter
+     * that throws is never dropped silently (an absent key would let a negative assertion pass on broken
+     * capture).
+     *
+     * @param data
+     *     Captured property map for the current event.
+     * @param event
+     *     The event whose property failed to capture.
+     * @param method
+     *     The getter that failed.
+     * @param cause
+     *     The underlying failure (already unwrapped from any {@link InvocationTargetException}).
+     */
+    private void recordCaptureFailure(Map<String, String> data, Event event, Method method, Throwable cause)
+    {
+        data.put(method.getName(), "<capture-failed: " + cause.getClass().getSimpleName() + ">");
+        if (loggedCaptureFailures.add(event.getClass().getName() + "#" + method.getName()))
+            plugin.getLogger().log(
+                Level.WARNING,
+                "Failed to capture property '%s' of event '%s'."
+                    .formatted(method.getName(), event.getClass().getName()),
+                cause
+            );
     }
 
     private boolean isPrintable(Object value)

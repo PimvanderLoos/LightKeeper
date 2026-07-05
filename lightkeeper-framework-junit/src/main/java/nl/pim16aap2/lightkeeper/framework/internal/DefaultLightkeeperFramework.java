@@ -419,7 +419,7 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     {
         ensureOpen();
         Objects.requireNonNull(playerId, "playerId may not be null.");
-        return InventorySnapshot.fromItemMaps(agentClient.getPlayerInventory(playerId));
+        return InventorySnapshot.fromItems(agentClient.getPlayerInventory(playerId));
     }
 
     @Override

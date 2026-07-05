@@ -1,6 +1,5 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
-import tools.jackson.databind.ObjectMapper;
 import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEvents;
 import nl.pim16aap2.lightkeeper.protocol.GetCapturedEvents;
 import nl.pim16aap2.lightkeeper.protocol.RegisterEventListener;
@@ -20,7 +19,7 @@ class AgentEventActionsTest
 {
     private static AgentEventActions createEventActions(AgentEventCapture eventCapture)
     {
-        return new AgentEventActions(eventCapture, new ObjectMapper());
+        return new AgentEventActions(eventCapture);
     }
 
     @Test
@@ -100,8 +99,7 @@ class AgentEventActionsTest
     }
 
     @Test
-    void handleGetCapturedEvents_shouldReturnSerializedEventsJson()
-        throws Exception
+    void handleGetCapturedEvents_shouldReturnCapturedEvents()
     {
         // setup
         final AgentEventCapture eventCapture = mock();
@@ -114,7 +112,7 @@ class AgentEventActionsTest
             new GetCapturedEvents.Command("req-5", "org.bukkit.event.Event"));
 
         // verify
-        assertThat(response.eventsJson()).contains("isCancelled");
+        assertThat(response.events()).containsExactly(Map.of("isCancelled", "true"));
     }
 
     @Test

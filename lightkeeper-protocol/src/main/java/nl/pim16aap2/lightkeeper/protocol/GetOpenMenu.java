@@ -2,6 +2,7 @@ package nl.pim16aap2.lightkeeper.protocol;
 
 import org.jspecify.annotations.Nullable;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -51,15 +52,22 @@ public final class GetOpenMenu
      *     Whether the player has an actionable inventory open.
      * @param title
      *     Title of the open inventory, or {@code null} when {@code open} is {@code false}.
-     * @param itemsJson
-     *     JSON array of non-air slot snapshots, or {@code null} when {@code open} is {@code false}.
+     * @param items
+     *     Non-air slot snapshots; empty when {@code open} is {@code false}.
      */
     public record Response(
         String requestId,
         boolean open,
         @Nullable String title,
-        @Nullable String itemsJson
+        List<ItemSnapshot> items
     ) implements IAgentResponse
     {
+        /**
+         * Defensively copies the item list.
+         */
+        public Response
+        {
+            items = items == null ? List.of() : List.copyOf(items);
+        }
     }
 }

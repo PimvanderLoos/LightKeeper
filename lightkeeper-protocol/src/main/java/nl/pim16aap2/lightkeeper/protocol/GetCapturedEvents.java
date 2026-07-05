@@ -1,5 +1,8 @@
 package nl.pim16aap2.lightkeeper.protocol;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * Returns all captured events of the given class as property-map snapshots.
  */
@@ -43,13 +46,20 @@ public final class GetCapturedEvents
      *
      * @param requestId
      *     Correlated request id.
-     * @param eventsJson
-     *     JSON array of captured event property snapshots.
+     * @param events
+     *     Captured event property snapshots, one map per captured event instance.
      */
     public record Response(
         String requestId,
-        String eventsJson
+        List<Map<String, String>> events
     ) implements IAgentResponse
     {
+        /**
+         * Defensively copies the event list.
+         */
+        public Response
+        {
+            events = events == null ? List.of() : List.copyOf(events);
+        }
     }
 }
