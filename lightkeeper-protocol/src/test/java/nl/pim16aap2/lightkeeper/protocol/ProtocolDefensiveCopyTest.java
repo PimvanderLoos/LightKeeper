@@ -44,6 +44,7 @@ class ProtocolDefensiveCopyTest
     }
 
     @Test
+    @SuppressWarnings("NullAway") // Intentionally crosses the non-null API boundary to verify fail-fast validation.
     void response_shouldRejectNullMessages()
     {
         // setup

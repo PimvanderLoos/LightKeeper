@@ -3,7 +3,6 @@ package nl.pim16aap2.lightkeeper.agent.spigot;
 import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
 import nl.pim16aap2.lightkeeper.protocol.AgentProtocolException;
 import nl.pim16aap2.lightkeeper.protocol.BlockType;
-import nl.pim16aap2.lightkeeper.protocol.CommandSource;
 import nl.pim16aap2.lightkeeper.protocol.ExecuteCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetServerPlatform;
 import nl.pim16aap2.lightkeeper.protocol.GetServerTick;

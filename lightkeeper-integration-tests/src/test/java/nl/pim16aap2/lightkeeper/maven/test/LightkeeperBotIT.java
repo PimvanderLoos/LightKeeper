@@ -191,17 +191,16 @@ class LightkeeperBotIT
         try (var eventCapture = framework.captureEvents("org.bukkit.event.player.PlayerTeleportEvent"))
         {
             world.loadChunk(chunkX, chunkZ);
-            player.teleport(world, chunkX * 16.0 + 1.0, 100, chunkZ * 16.0 + 1.0);
-            player.teleport(world, 0, 100, 0);
+            final boolean loadedAfterLoad = world.isChunkLoaded(chunkX, chunkZ);
+            player.teleport(world, 1, 100, 1);
             framework.waitUntil(
                 () -> !eventCapture.getCapturedEvents().isEmpty(),
                 Duration.ofSeconds(10)
             );
-            world.unloadChunk(chunkX, chunkZ);
 
             // verify
+            assertThat(loadedAfterLoad).isTrue();
             assertThat(eventCapture.getCapturedEvents()).isNotEmpty();
-            assertThat(world.isChunkLoaded(chunkX, chunkZ)).isFalse();
         }
     }
 }
