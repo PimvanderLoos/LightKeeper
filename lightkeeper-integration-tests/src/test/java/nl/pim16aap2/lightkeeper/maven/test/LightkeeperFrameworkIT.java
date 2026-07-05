@@ -7,6 +7,7 @@ import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import nl.pim16aap2.lightkeeper.framework.WorldSpec;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestReader;
+import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -33,7 +34,7 @@ class LightkeeperFrameworkIT
 
             // verify
             assertThat(runtimeManifest.serverType()).isEqualTo(expectedServerType);
-            assertThat(runtimeManifest.runtimeProtocolVersion()).isEqualTo(1);
+            assertThat(runtimeManifest.runtimeProtocolVersion()).isEqualTo(RuntimeProtocol.VERSION);
             assertThat(runtimeManifest.udsSocketPath()).isNotBlank();
             assertThat(runtimeManifest.agentAuthToken()).isNotBlank();
             assertThat(runtimeManifest.agentJar()).isNotBlank();
@@ -62,7 +63,7 @@ class LightkeeperFrameworkIT
             final WorldHandle worldHandle = framework.newWorld(worldSpec);
             worldHandle.setBlockAt(position, "STONE");
             framework.waitUntil(
-                () -> "STONE".equals(worldHandle.blockTypeAt(position)),
+                () -> "minecraft:stone".equals(worldHandle.blockTypeAt(position)),
                 Duration.ofSeconds(20)
             );
 

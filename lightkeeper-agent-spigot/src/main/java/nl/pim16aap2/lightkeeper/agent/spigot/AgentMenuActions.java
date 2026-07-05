@@ -1,8 +1,9 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import nl.pim16aap2.lightkeeper.runtime.agent.AgentErrorCode;
-import nl.pim16aap2.lightkeeper.runtime.agent.AgentResponse;
+import nl.pim16aap2.lightkeeper.protocol.ClickMenuSlot;
+import nl.pim16aap2.lightkeeper.protocol.DragMenuSlots;
+import nl.pim16aap2.lightkeeper.protocol.GetOpenMenu;
+import nl.pim16aap2.lightkeeper.protocol.ItemSnapshot;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -13,10 +14,8 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
-import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +28,7 @@ import java.util.UUID;
  * <p>This class provides the executable behavior behind generic inventory protocol calls that inspect open inventory
  * state and simulate click/drag interactions.
  */
-@SuppressWarnings({"deprecation", "UnstableApiUsage"})
+@SuppressWarnings("UnstableApiUsage")
 final class AgentMenuActions
 {
     /**
@@ -40,108 +39,73 @@ final class AgentMenuActions
      * Synthetic player lookup and tracked message persistence.
      */
     private final AgentSyntheticPlayerStore playerStore;
-    /**
-     * JSON mapper used to serialize structured inventory item payloads.
-     */
-    private final ObjectMapper objectMapper;
 
     /**
      * @param mainThreadExecutor
      *     Main-thread executor for Bukkit-safe menu interactions.
      * @param playerStore
      *     Synthetic player registry used to resolve protocol UUIDs.
-     * @param objectMapper
-     *     JSON serializer for response payloads.
      */
     AgentMenuActions(
         AgentMainThreadExecutor mainThreadExecutor,
-        AgentSyntheticPlayerStore playerStore,
-        ObjectMapper objectMapper)
+        AgentSyntheticPlayerStore playerStore)
     {
         this.mainThreadExecutor = Objects.requireNonNull(mainThreadExecutor, "mainThreadExecutor");
         this.playerStore = Objects.requireNonNull(playerStore, "playerStore");
-        this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper");
     }
 
     /**
      * Handles {@code GET_OPEN_MENU} by returning title and non-air slot metadata for the active inventory.
      *
-     * @param requestId
-     *     Runtime request identifier.
-     * @param arguments
-     *     Request arguments; requires {@code uuid}.
+     * @param command
+     *     Typed command carrying the player UUID.
      * @return
-     *     Success response with menu state or {@code open=false} when no actionable menu is open.
+     *     Response with menu state or {@code open=false} when no actionable menu is open.
      * @throws Exception
-     *     Propagates parsing and Bukkit execution failures.
+     *     Propagates Bukkit execution failures.
      */
-    AgentResponse handleGetOpenMenu(String requestId, Map<String, String> arguments)
+    GetOpenMenu.Response handleGetOpenMenu(GetOpenMenu.Command command)
         throws Exception
     {
-        final UUID uuid = UUID.fromString(arguments.getOrDefault("uuid", ""));
-        final Map<String, String> data = mainThreadExecutor.callOnMainThread(() ->
+        final UUID uuid = command.uuid();
+        return mainThreadExecutor.callOnMainThread(() ->
         {
             final Player player = playerStore.getRequiredPlayer(uuid);
             final InventoryView view = player.getOpenInventory();
 
             if (!isActionableOpenInventory(view))
-                return Map.of("open", "false");
+                return new GetOpenMenu.Response(false, null, List.of());
 
-            final List<Map<String, @Nullable Object>> items = new ArrayList<>();
+            final List<ItemSnapshot> items = new ArrayList<>();
             for (int rawSlot = 0; rawSlot < view.countSlots(); ++rawSlot)
             {
                 final ItemStack item = view.getItem(rawSlot);
-                if (item == null || item.getType().isAir())
+                if (item == null || AgentMaterials.isAir(item.getType()))
                     continue;
-
-                final Map<String, @Nullable Object> itemData = new HashMap<>();
-                itemData.put("slot", rawSlot);
-                itemData.put("materialKey", item.getType().getKey().toString());
-                itemData.put("displayName", item.getItemMeta() == null ? null : item.getItemMeta().getDisplayName());
-                itemData.put(
-                    "lore",
-                    item.getItemMeta() == null
-                        ? List.of()
-                        : Objects.requireNonNullElse(item.getItemMeta().getLore(), List.of())
-                );
-                items.add(itemData);
+                items.add(AgentItemSnapshots.of(rawSlot, item));
             }
 
-            return Map.of(
-                "open", "true",
-                "title", view.getTitle(),
-                "itemsJson", objectMapper.writeValueAsString(items)
-            );
+            return new GetOpenMenu.Response(true, view.getTitle(), items);
         });
-
-        return AgentResponses.successResponse(requestId, data);
     }
 
     /**
      * Handles {@code CLICK_MENU_SLOT} by synthesizing and dispatching an inventory click event.
      *
-     * @param requestId
-     *     Runtime request identifier.
-     * @param arguments
-     *     Request arguments; requires {@code uuid} and non-negative {@code slot}.
+     * @param command
+     *     Typed command carrying the player UUID and slot index.
      * @return
-     *     Success or validation error response.
+     *     Response when the click completes.
      * @throws Exception
-     *     Propagates parsing and Bukkit execution failures.
+     *     Propagates Bukkit execution failures.
      */
-    AgentResponse handleClickMenuSlot(String requestId, Map<String, String> arguments)
+    ClickMenuSlot.Response handleClickMenuSlot(ClickMenuSlot.Command command)
         throws Exception
     {
-        final UUID uuid = UUID.fromString(arguments.getOrDefault("uuid", ""));
-        final int slot = AgentRequestParsers.parseInt(arguments.getOrDefault("slot", "-1"));
+        final UUID uuid = command.uuid();
+        final int slot = command.slot();
         if (slot < 0)
-        {
-            return AgentResponses.errorResponse(
-                requestId,
-                AgentErrorCode.INVALID_ARGUMENT,
-                "Argument 'slot' must be >= 0."
-            );
-        }
+            throw new IllegalArgumentException("Argument 'slot' must be >= 0.");
 
         mainThreadExecutor.callOnMainThread(() ->
         {
@@ -161,51 +125,31 @@ final class AgentMenuActions
             return Boolean.TRUE;
         });
 
-        return AgentResponses.successResponse(requestId, Map.of("clicked", "true"));
+        return new ClickMenuSlot.Response();
     }
 
     /**
      * Handles {@code DRAG_MENU_SLOTS} by creating and dispatching an inventory drag event.
      *
-     * @param requestId
-     *     Runtime request identifier.
-     * @param arguments
-     *     Request arguments; requires {@code uuid}, {@code material}, and comma-separated {@code slots}.
+     * @param command
+     *     Typed command carrying the player UUID, material key, and target slot indices.
      * @return
-     *     Success or validation error response.
+     *     Response when the drag completes.
      * @throws Exception
-     *     Propagates parsing and Bukkit execution failures.
+     *     Propagates Bukkit execution failures.
      */
-    AgentResponse handleDragMenuSlots(String requestId, Map<String, String> arguments)
+    DragMenuSlots.Response handleDragMenuSlots(DragMenuSlots.Command command)
         throws Exception
     {
-        final UUID uuid = UUID.fromString(arguments.getOrDefault("uuid", ""));
-        final String materialName = arguments.getOrDefault("material", "").trim();
-        final Material material = AgentRequestParsers.parseMaterial(materialName);
+        final UUID uuid = command.uuid();
+        final String materialKey = command.materialKey();
+        final Material material = AgentRequestParsers.parseMaterial(materialKey);
         if (material == null)
-        {
-            return AgentResponses.errorResponse(
-                requestId,
-                AgentErrorCode.INVALID_ARGUMENT,
-                "Unknown material '%s'.".formatted(materialName)
-            );
-        }
+            throw new IllegalArgumentException("Unknown material '%s'.".formatted(materialKey));
 
-        final String slots = arguments.getOrDefault("slots", "").trim();
-        if (slots.isBlank())
-        {
-            return AgentResponses.errorResponse(
-                requestId,
-                AgentErrorCode.INVALID_ARGUMENT,
-                "Argument 'slots' must not be blank."
-            );
-        }
-
-        final List<Integer> rawSlots = Arrays.stream(slots.split(","))
-            .map(String::trim)
-            .filter(value -> !value.isEmpty())
-            .map(Integer::parseInt)
-            .toList();
+        final int[] rawSlots = command.slots();
+        if (rawSlots.length == 0)
+            throw new IllegalArgumentException("Argument 'slots' must not be empty.");
 
         mainThreadExecutor.callOnMainThread(() ->
         {
@@ -216,7 +160,7 @@ final class AgentMenuActions
 
             final ItemStack cursorItem = new ItemStack(material);
             final Map<Integer, ItemStack> newItems = new HashMap<>();
-            for (final Integer rawSlot : rawSlots)
+            for (final int rawSlot : rawSlots)
                 newItems.put(rawSlot, cursorItem.clone());
 
             final InventoryDragEvent event = new InventoryDragEvent(
@@ -235,7 +179,7 @@ final class AgentMenuActions
             return Boolean.TRUE;
         });
 
-        return AgentResponses.successResponse(requestId, Map.of("dragged", "true"));
+        return new DragMenuSlots.Response();
     }
 
     /**

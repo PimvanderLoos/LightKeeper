@@ -1,31 +1,52 @@
 package nl.pim16aap2.lightkeeper.framework.internal;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import nl.pim16aap2.lightkeeper.framework.CommandSource;
+import nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot;
 import nl.pim16aap2.lightkeeper.framework.MenuItemSnapshot;
 import nl.pim16aap2.lightkeeper.framework.MenuSnapshot;
+import nl.pim16aap2.lightkeeper.framework.Platform;
 import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.framework.WorldSpec;
-import nl.pim16aap2.lightkeeper.runtime.agent.AgentAction;
-import nl.pim16aap2.lightkeeper.runtime.agent.AgentErrorCode;
-import nl.pim16aap2.lightkeeper.runtime.agent.AgentRequest;
-import nl.pim16aap2.lightkeeper.runtime.agent.AgentResponse;
+import nl.pim16aap2.lightkeeper.protocol.BlockType;
+import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEvents;
+import nl.pim16aap2.lightkeeper.protocol.ClickMenuSlot;
+import nl.pim16aap2.lightkeeper.protocol.CommandSource;
+import nl.pim16aap2.lightkeeper.protocol.CreatePlayer;
+import nl.pim16aap2.lightkeeper.protocol.DragMenuSlots;
+import nl.pim16aap2.lightkeeper.protocol.DropItem;
+import nl.pim16aap2.lightkeeper.protocol.ExecuteCommand;
+import nl.pim16aap2.lightkeeper.protocol.ExecutePlayerCommand;
+import nl.pim16aap2.lightkeeper.protocol.GetCapturedEvents;
+import nl.pim16aap2.lightkeeper.protocol.GetOpenMenu;
+import nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponents;
+import nl.pim16aap2.lightkeeper.protocol.GetPlayerInventory;
+import nl.pim16aap2.lightkeeper.protocol.GetPlayerMessages;
+import nl.pim16aap2.lightkeeper.protocol.GetServerPlatform;
+import nl.pim16aap2.lightkeeper.protocol.GetServerTick;
+import nl.pim16aap2.lightkeeper.protocol.Handshake;
+import nl.pim16aap2.lightkeeper.protocol.IAgentCommand;
+import nl.pim16aap2.lightkeeper.protocol.IAgentResponse;
+import nl.pim16aap2.lightkeeper.protocol.IsChunkLoaded;
+import nl.pim16aap2.lightkeeper.protocol.ItemSnapshot;
+import nl.pim16aap2.lightkeeper.protocol.LeftClickBlock;
+import nl.pim16aap2.lightkeeper.protocol.LoadChunk;
+import nl.pim16aap2.lightkeeper.protocol.MainWorld;
+import nl.pim16aap2.lightkeeper.protocol.NewWorld;
+import nl.pim16aap2.lightkeeper.protocol.PlacePlayerBlock;
+import nl.pim16aap2.lightkeeper.protocol.RegisterEventListener;
+import nl.pim16aap2.lightkeeper.protocol.RemovePlayer;
+import nl.pim16aap2.lightkeeper.protocol.RightClickBlock;
+import nl.pim16aap2.lightkeeper.protocol.SetBlock;
+import nl.pim16aap2.lightkeeper.protocol.TeleportPlayer;
+import nl.pim16aap2.lightkeeper.protocol.UnloadChunk;
+import nl.pim16aap2.lightkeeper.protocol.UnregisterEventListener;
+import nl.pim16aap2.lightkeeper.protocol.WaitTicks;
+import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.net.StandardProtocolFamily;
-import java.net.UnixDomainSocketAddress;
-import java.nio.channels.Channels;
-import java.nio.channels.SocketChannel;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -34,82 +55,102 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Agent RPC client backed by a Unix Domain Socket.
+ * Typed agent RPC client backed by a Unix Domain Socket transport.
+ *
+ * <p>Each public method serializes a typed {@link IAgentCommand} to JSON, writes it to the socket, reads back
+ * a command through {@link UdsAgentTransport} and maps the typed response into framework values.
  */
 final class UdsAgentClient implements AutoCloseable
 {
     private static final System.Logger LOG = System.getLogger(UdsAgentClient.class.getName());
 
-    private final ObjectMapper objectMapper = new ObjectMapper()
-        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    /**
+     * Default response timeout: the agent's own synchronous-operation timeout plus a safety margin, so the
+     * agent reports a detailed {@code TIMEOUT} error before this client-side watchdog closes the channel.
+     *
+     * <p>Unix Domain Sockets do not support SO_TIMEOUT, so the transport enforces this with a watchdog.
+     */
+    private static final long DEFAULT_SEND_TIMEOUT_MS =
+        RuntimeProtocol.DEFAULT_SYNC_OPERATION_TIMEOUT_SECONDS * 1_000L
+            + RuntimeProtocol.CLIENT_RESPONSE_TIMEOUT_MARGIN_MILLIS;
 
-    private final Path socketPath;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final UdsAgentTransport transport;
     private final AtomicLong requestCounter = new AtomicLong(0L);
-    private SocketChannel socketChannel;
-    private BufferedReader reader;
-    private BufferedWriter writer;
 
     UdsAgentClient(Path socketPath, Duration connectTimeout)
     {
-        this.socketPath = Objects.requireNonNull(socketPath, "socketPath may not be null.");
-        connect(Objects.requireNonNull(connectTimeout, "connectTimeout may not be null."));
+        this(socketPath, connectTimeout, DEFAULT_SEND_TIMEOUT_MS);
+    }
+
+    /**
+     * Creates a client with an explicit response timeout, primarily so tests can drive the watchdog quickly.
+     *
+     * @param socketPath
+     *     Path of the Unix domain socket to connect to.
+     * @param connectTimeout
+     *     How long to keep retrying the initial connection.
+     * @param sendTimeoutMillis
+     *     Maximum time to wait for a single response before the watchdog closes the channel.
+     */
+    UdsAgentClient(Path socketPath, Duration connectTimeout, long sendTimeoutMillis)
+    {
+        this.transport = new UdsAgentTransport(socketPath, connectTimeout, sendTimeoutMillis);
     }
 
     void handshake(String token, int protocolVersion, String agentSha256)
     {
-        send(AgentAction.HANDSHAKE, Map.of(
-            "token", token,
-            "protocolVersion", Integer.toString(protocolVersion),
-            "agentSha256", agentSha256
-        ));
+        final Handshake.Command command = new Handshake.Command(nextRequestId(), token, protocolVersion, agentSha256);
+        send(command);
     }
 
     String mainWorld()
     {
-        final AgentResponse response = send(AgentAction.MAIN_WORLD, Map.of());
-        return getRequiredData(response, "worldName");
+        final MainWorld.Command command = new MainWorld.Command(nextRequestId());
+        return send(command).worldName();
     }
 
     String newWorld(WorldSpec worldSpec)
     {
-        final AgentResponse response = send(AgentAction.NEW_WORLD, Map.of(
-            "worldName", worldSpec.name(),
-            "worldType", worldSpec.worldType().name(),
-            "environment", worldSpec.environment().name(),
-            "seed", Long.toString(worldSpec.seed())
-        ));
-        return getRequiredData(response, "worldName");
+        final NewWorld.Command command = new NewWorld.Command(
+            nextRequestId(),
+            worldSpec.name(),
+            worldSpec.worldType().name(),
+            worldSpec.environment().name(),
+            worldSpec.seed()
+        );
+        return send(command).worldName();
     }
 
     boolean executeCommand(CommandSource source, String command)
     {
-        final AgentResponse response = send(AgentAction.EXECUTE_COMMAND, Map.of(
-            "source", source.name(),
-            "command", command
-        ));
-        return Boolean.parseBoolean(getRequiredData(response, "success"));
+        final ExecuteCommand.Command cmd = new ExecuteCommand.Command(nextRequestId(), source, command);
+        return send(cmd).dispatched();
     }
 
     String blockType(String worldName, Vector3Di position)
     {
-        final AgentResponse response = send(AgentAction.BLOCK_TYPE, Map.of(
-            "worldName", worldName,
-            "x", Integer.toString(position.x()),
-            "y", Integer.toString(position.y()),
-            "z", Integer.toString(position.z())
-        ));
-        return getRequiredData(response, "material");
+        final BlockType.Command command = new BlockType.Command(
+            nextRequestId(),
+            worldName,
+            position.x(),
+            position.y(),
+            position.z()
+        );
+        return send(command).material();
     }
 
     void setBlock(String worldName, Vector3Di position, String material)
     {
-        send(AgentAction.SET_BLOCK, Map.of(
-            "worldName", worldName,
-            "x", Integer.toString(position.x()),
-            "y", Integer.toString(position.y()),
-            "z", Integer.toString(position.z()),
-            "material", material
-        ));
+        final SetBlock.Command command = new SetBlock.Command(
+            nextRequestId(),
+            worldName,
+            position.x(),
+            position.y(),
+            position.z(),
+            material
+        );
+        send(command);
     }
 
     AgentPlayerData createPlayer(
@@ -122,273 +163,235 @@ final class UdsAgentClient implements AutoCloseable
         @Nullable Double health,
         @Nullable Set<String> permissions)
     {
-        final Map<String, String> arguments = new java.util.HashMap<>();
-        arguments.put("name", name);
-        arguments.put("uuid", uuid.toString());
-        arguments.put("worldName", worldName);
-        if (x != null && y != null && z != null)
-        {
-            arguments.put("x", Double.toString(x));
-            arguments.put("y", Double.toString(y));
-            arguments.put("z", Double.toString(z));
-        }
-        if (health != null)
-            arguments.put("health", Double.toString(health));
-        if (permissions != null && !permissions.isEmpty())
-            arguments.put("permissions", String.join(",", permissions));
+        final String permissionsCsv = permissions == null || permissions.isEmpty()
+            ? null
+            : String.join(",", permissions);
 
-        final AgentResponse response = send(AgentAction.CREATE_PLAYER, arguments);
-        final UUID createdUuid = UUID.fromString(getRequiredData(response, "uuid"));
-        final String createdName = getRequiredData(response, "name");
-        return new AgentPlayerData(createdUuid, createdName);
+        final CreatePlayer.Command command = new CreatePlayer.Command(
+            nextRequestId(),
+            name,
+            uuid,
+            worldName,
+            x,
+            y,
+            z,
+            health,
+            permissionsCsv
+        );
+        final CreatePlayer.Response response = send(command);
+        return new AgentPlayerData(response.uuid(), response.name());
     }
 
     void removePlayer(UUID uuid)
     {
-        send(AgentAction.REMOVE_PLAYER, Map.of(
-            "uuid", uuid.toString()
-        ));
+        final RemovePlayer.Command command = new RemovePlayer.Command(nextRequestId(), uuid);
+        send(command);
     }
 
     void executePlayerCommand(UUID uuid, String command)
     {
-        send(AgentAction.EXECUTE_PLAYER_COMMAND, Map.of(
-            "uuid", uuid.toString(),
-            "command", command
-        ));
+        final ExecutePlayerCommand.Command cmd = new ExecutePlayerCommand.Command(nextRequestId(), uuid, command);
+        send(cmd);
     }
 
     void placePlayerBlock(UUID uuid, String material, int x, int y, int z)
     {
-        send(AgentAction.PLACE_PLAYER_BLOCK, Map.of(
-            "uuid", uuid.toString(),
-            "material", material,
-            "x", Integer.toString(x),
-            "y", Integer.toString(y),
-            "z", Integer.toString(z)
-        ));
+        final PlacePlayerBlock.Command command = new PlacePlayerBlock.Command(nextRequestId(), uuid, material, x, y, z);
+        send(command);
     }
 
     void leftClickBlock(UUID uuid, Vector3Di position, String blockFace)
     {
-        clickBlock(AgentAction.LEFT_CLICK_BLOCK, uuid, position, blockFace);
+        final LeftClickBlock.Command command = new LeftClickBlock.Command(
+            nextRequestId(),
+            uuid,
+            position.x(),
+            position.y(),
+            position.z(),
+            blockFace
+        );
+        send(command);
     }
 
     void rightClickBlock(UUID uuid, Vector3Di position, String blockFace)
     {
-        clickBlock(AgentAction.RIGHT_CLICK_BLOCK, uuid, position, blockFace);
+        final RightClickBlock.Command command = new RightClickBlock.Command(
+            nextRequestId(),
+            uuid,
+            position.x(),
+            position.y(),
+            position.z(),
+            blockFace
+        );
+        send(command);
     }
 
     MenuSnapshot menuSnapshot(UUID uuid)
     {
-        final AgentResponse response = send(AgentAction.GET_OPEN_MENU, Map.of(
-            "uuid", uuid.toString()
-        ));
-        final boolean open = Boolean.parseBoolean(getRequiredData(response, "open"));
-        if (!open)
+        final GetOpenMenu.Command command = new GetOpenMenu.Command(nextRequestId(), uuid);
+        final GetOpenMenu.Response response = send(command);
+        if (!response.open())
             return new MenuSnapshot(false, "", List.of());
 
-        final String title = getRequiredData(response, "title");
-        final String itemsJson = response.data().getOrDefault("itemsJson", "[]");
-        try
-        {
-            final MenuItemSnapshot[] items = objectMapper.readValue(itemsJson, MenuItemSnapshot[].class);
-            return new MenuSnapshot(true, title, List.of(items));
-        }
-        catch (IOException exception)
-        {
-            throw new IllegalStateException("Failed to parse menu snapshot JSON.", exception);
-        }
+        final List<MenuItemSnapshot> items = response.items().stream()
+            .map(UdsAgentClient::toMenuItemSnapshot)
+            .toList();
+        return new MenuSnapshot(true, Objects.requireNonNullElse(response.title(), ""), items);
+    }
+
+    private static MenuItemSnapshot toMenuItemSnapshot(ItemSnapshot item)
+    {
+        return new MenuItemSnapshot(
+            item.slot(), item.materialKey(), Objects.requireNonNullElse(item.displayName(), ""), item.lore());
     }
 
     void clickMenuSlot(UUID uuid, int slot)
     {
-        send(AgentAction.CLICK_MENU_SLOT, Map.of(
-            "uuid", uuid.toString(),
-            "slot", Integer.toString(slot)
-        ));
+        final ClickMenuSlot.Command command = new ClickMenuSlot.Command(nextRequestId(), uuid, slot);
+        send(command);
     }
 
     void dragMenuSlots(UUID uuid, String materialKey, int... slots)
     {
-        final String slotList = Arrays.stream(slots)
-            .mapToObj(Integer::toString)
-            .reduce((left, right) -> left + "," + right)
-            .orElse("");
-        send(AgentAction.DRAG_MENU_SLOTS, Map.of(
-            "uuid", uuid.toString(),
-            "material", materialKey,
-            "slots", slotList
-        ));
+        final DragMenuSlots.Command command = new DragMenuSlots.Command(nextRequestId(), uuid, materialKey, slots);
+        send(command);
     }
 
     void waitTicks(int ticks)
     {
-        send(AgentAction.WAIT_TICKS, Map.of(
-            "ticks", Integer.toString(ticks)
-        ));
+        final WaitTicks.Command command = new WaitTicks.Command(nextRequestId(), ticks);
+        send(command);
     }
 
     List<String> playerMessages(UUID uuid)
     {
-        final AgentResponse response = send(AgentAction.GET_PLAYER_MESSAGES, Map.of(
-            "uuid", uuid.toString()
-        ));
-        final String messagesJson = response.data().getOrDefault("messagesJson", "[]");
+        final GetPlayerMessages.Command command = new GetPlayerMessages.Command(nextRequestId(), uuid);
+        return send(command).messages();
+    }
+
+    List<ChatComponentSnapshot> playerChatComponents(UUID uuid)
+    {
+        final GetPlayerChatComponents.Command command =
+            new GetPlayerChatComponents.Command(nextRequestId(), uuid);
+        final GetPlayerChatComponents.Response response = send(command);
         try
         {
-            final String[] messages = objectMapper.readValue(messagesJson, String[].class);
-            return List.of(messages);
+            return java.util.Arrays.stream(objectMapper.readValue(response.componentsJson(), String[].class))
+                .map(ChatComponentSnapshot::new)
+                .toList();
         }
-        catch (IOException exception)
+        catch (JacksonException exception)
         {
-            throw new IllegalStateException("Failed to parse player messages JSON.", exception);
+            throw new IllegalStateException("Failed to parse player chat components JSON.", exception);
         }
     }
 
-    private void clickBlock(AgentAction action, UUID uuid, Vector3Di position, String blockFace)
+    long getServerTick()
     {
-        send(action, Map.of(
-            "uuid", uuid.toString(),
-            "x", Integer.toString(position.x()),
-            "y", Integer.toString(position.y()),
-            "z", Integer.toString(position.z()),
-            "blockFace", blockFace
-        ));
+        final GetServerTick.Command command = new GetServerTick.Command(nextRequestId());
+        return send(command).tick();
     }
 
-    synchronized AgentResponse send(AgentAction action, Map<String, String> arguments)
+    boolean teleportPlayer(UUID uuid, String worldName, double x, double y, double z)
     {
-        final String requestId = Long.toString(requestCounter.incrementAndGet());
-        final AgentRequest request = new AgentRequest(requestId, action, arguments);
+        final TeleportPlayer.Command command = new TeleportPlayer.Command(nextRequestId(), uuid, worldName, x, y, z);
+        return send(command).teleported();
+    }
+
+    boolean loadChunk(String worldName, int x, int z)
+    {
+        final LoadChunk.Command command = new LoadChunk.Command(nextRequestId(), worldName, x, z);
+        return send(command).loaded();
+    }
+
+    boolean unloadChunk(String worldName, int x, int z)
+    {
+        final UnloadChunk.Command command = new UnloadChunk.Command(nextRequestId(), worldName, x, z);
+        return send(command).unloaded();
+    }
+
+    boolean isChunkLoaded(String worldName, int x, int z)
+    {
+        final IsChunkLoaded.Command command = new IsChunkLoaded.Command(nextRequestId(), worldName, x, z);
+        return send(command).loaded();
+    }
+
+    List<ItemSnapshot> getPlayerInventory(UUID uuid)
+    {
+        final GetPlayerInventory.Command command = new GetPlayerInventory.Command(nextRequestId(), uuid);
+        return send(command).items();
+    }
+
+    boolean dropItem(UUID uuid)
+    {
+        final DropItem.Command command = new DropItem.Command(nextRequestId(), uuid);
+        return send(command).dropped();
+    }
+
+    void registerEventListener(String eventClassName)
+    {
+        final RegisterEventListener.Command command =
+            new RegisterEventListener.Command(nextRequestId(), eventClassName);
+        send(command);
+    }
+
+    List<Map<String, String>> getCapturedEvents(String eventClassName)
+    {
+        final GetCapturedEvents.Command command = new GetCapturedEvents.Command(nextRequestId(), eventClassName);
+        return send(command).events();
+    }
+
+    void clearCapturedEvents(String eventClassName)
+    {
+        final ClearCapturedEvents.Command command = new ClearCapturedEvents.Command(nextRequestId(), eventClassName);
+        send(command);
+    }
+
+    void unregisterEventListener(String eventClassName)
+    {
+        final UnregisterEventListener.Command command =
+            new UnregisterEventListener.Command(nextRequestId(), eventClassName);
+        send(command);
+    }
+
+    Platform serverPlatform()
+    {
+        final GetServerPlatform.Command command = new GetServerPlatform.Command(nextRequestId());
+        final GetServerPlatform.Response response = send(command);
         try
         {
-            writer.write(objectMapper.writeValueAsString(request));
-            writer.newLine();
-            writer.flush();
-
-            final String responseLine = reader.readLine();
-            if (responseLine == null)
-                throw new IllegalStateException("Agent connection closed unexpectedly.");
-
-            final AgentResponse response = objectMapper.readValue(responseLine, AgentResponse.class);
-            if (!requestId.equals(response.requestId()))
-            {
-                throw new IllegalStateException(
-                    "Unexpected response id '%s' for request '%s'."
-                        .formatted(response.requestId(), requestId)
-                );
-            }
-
-            if (!response.success())
-            {
-                final AgentErrorCode errorCode = AgentErrorCode.fromWireCode(response.errorCode())
-                    .orElse(AgentErrorCode.UNKNOWN);
-                final String expectedProtocolVersion = response.data().get("expectedProtocolVersion");
-                final String actualProtocolVersion = response.data().get("actualProtocolVersion");
-                final String protocolDetail = expectedProtocolVersion != null || actualProtocolVersion != null
-                    ? " expectedProtocolVersion=%s actualProtocolVersion=%s"
-                      .formatted(expectedProtocolVersion, actualProtocolVersion)
-                    : "";
-                throw new IllegalStateException(
-                    "Agent request failed. code=%s message=%s%s"
-                        .formatted(errorCode.wireCode(), response.errorMessage(), protocolDetail)
-                );
-            }
-
-            return response;
+            return Platform.valueOf(response.platform());
         }
-        catch (IOException exception)
+        catch (IllegalArgumentException | NullPointerException ignored)
         {
-            throw new IllegalStateException(
-                "Failed to communicate with agent via socket '%s'.".formatted(socketPath),
-                exception
-            );
+            // The agent maps unknown platforms to the explicit "UNKNOWN" token, so any other unmappable value is
+            // a protocol bug that would otherwise silently skip platform-conditional tests. Make it visible.
+            LOG.log(
+                System.Logger.Level.WARNING,
+                () -> "Unrecognized server platform '" + response.platform() + "'; treating it as UNKNOWN.");
+            return Platform.UNKNOWN;
         }
+    }
+
+    <R extends IAgentResponse> R send(IAgentCommand<R> command)
+    {
+        return transport.send(command);
+    }
+
+    synchronized void rehandshake(Duration timeout, String token, int protocolVersion, String agentSha256)
+    {
+        transport.reconnect(timeout);
+        handshake(token, protocolVersion, agentSha256);
     }
 
     @Override
     public synchronized void close()
     {
-        try
-        {
-            if (socketChannel != null)
-                socketChannel.close();
-        }
-        catch (IOException ignored)
-        {
-            LOG.log(System.Logger.Level.TRACE, "Failed to close agent socket channel cleanly.");
-        }
+        transport.close();
     }
 
-    private void connect(Duration timeout)
+    private String nextRequestId()
     {
-        final long deadline = System.nanoTime() + timeout.toNanos();
-        Exception lastException = null;
-
-        while (System.nanoTime() < deadline)
-        {
-            SocketChannel channel = null;
-            try
-            {
-                channel = SocketChannel.open(StandardProtocolFamily.UNIX);
-                channel.connect(UnixDomainSocketAddress.of(socketPath));
-                this.socketChannel = channel;
-                this.reader = new BufferedReader(
-                    new InputStreamReader(Channels.newInputStream(channel), StandardCharsets.UTF_8)
-                );
-                this.writer = new BufferedWriter(
-                    new OutputStreamWriter(Channels.newOutputStream(channel), StandardCharsets.UTF_8)
-                );
-                return;
-            }
-            catch (Exception exception)
-            {
-                lastException = exception;
-                closeFailedChannel(channel, exception);
-                sleep(100L);
-            }
-        }
-
-        throw new IllegalStateException(
-            "Failed to connect to agent socket '%s' within timeout %s."
-                .formatted(socketPath, timeout),
-            lastException
-        );
-    }
-
-    private static void closeFailedChannel(@Nullable SocketChannel channel, Exception connectionException)
-    {
-        if (channel == null)
-            return;
-        try
-        {
-            channel.close();
-        }
-        catch (IOException closeException)
-        {
-            connectionException.addSuppressed(closeException);
-        }
-    }
-
-    private static String getRequiredData(AgentResponse response, String key)
-    {
-        final String value = response.data().get(key);
-        if (value == null)
-            throw new IllegalStateException("Missing response field '%s' from agent.".formatted(key));
-        return value;
-    }
-
-    private static void sleep(long millis)
-    {
-        try
-        {
-            Thread.sleep(millis);
-        }
-        catch (InterruptedException exception)
-        {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("Interrupted while waiting for agent connection.", exception);
-        }
+        return Long.toString(requestCounter.incrementAndGet());
     }
 }

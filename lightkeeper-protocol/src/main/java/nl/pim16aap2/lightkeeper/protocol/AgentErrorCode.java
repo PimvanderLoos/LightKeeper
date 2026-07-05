@@ -1,4 +1,4 @@
-package nl.pim16aap2.lightkeeper.runtime.agent;
+package nl.pim16aap2.lightkeeper.protocol;
 
 import org.jspecify.annotations.Nullable;
 
@@ -20,7 +20,6 @@ public enum AgentErrorCode
     PROTOCOL_MISMATCH,
     AGENT_SHA_MISMATCH,
     INVALID_ARGUMENT,
-    UNSUPPORTED_SOURCE,
     TIMEOUT,
     INTERRUPTED,
     UNKNOWN;

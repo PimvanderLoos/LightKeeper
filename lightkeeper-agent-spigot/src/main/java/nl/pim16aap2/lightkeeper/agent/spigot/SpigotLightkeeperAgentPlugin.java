@@ -1,11 +1,10 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import nl.pim16aap2.lightkeeper.nms.api.IBotPlayerNmsAdapter;
 import nl.pim16aap2.lightkeeper.nms.v121r7.BotPlayerNmsAdapterV1_21_R7;
+import nl.pim16aap2.lightkeeper.protocol.AgentProtocolMapper;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
-import nl.pim16aap2.lightkeeper.runtime.agent.AgentResponse;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jspecify.annotations.Nullable;
@@ -26,9 +25,11 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.logging.Level;
 
 /**
  * Spigot/Paper plugin entry point for the LightKeeper runtime agent.
@@ -63,8 +64,7 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin
     /**
      * Shared object mapper for request/response serialization.
      */
-    private final ObjectMapper objectMapper = new ObjectMapper()
-        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    private final ObjectMapper objectMapper = AgentProtocolMapper.create();
 
     /**
      * Single-thread executor that accepts incoming socket connections.
@@ -112,8 +112,7 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin
             final AgentSyntheticPlayerStore playerStore = new AgentSyntheticPlayerStore();
             final AgentMenuActions menuActions = new AgentMenuActions(
                 mainThreadExecutor,
-                playerStore,
-                objectMapper
+                playerStore
             );
             final AgentWorldActions worldActions = new AgentWorldActions(
                 this,
@@ -124,19 +123,30 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin
                 this,
                 mainThreadExecutor,
                 playerStore,
+                botPlayerNmsAdapter
+            );
+            final AgentPlayerStateActions playerStateActions = new AgentPlayerStateActions(
+                mainThreadExecutor,
+                playerStore,
                 objectMapper,
                 botPlayerNmsAdapter
             );
+            final AgentEventCapture eventCapture = new AgentEventCapture(this, mainThreadExecutor);
+            final AgentEventActions eventActions = new AgentEventActions(eventCapture);
 
             requestDispatcher = new AgentRequestDispatcher(
                 objectMapper,
                 worldActions,
                 playerActions,
+                playerStateActions,
                 menuActions,
-                getLogger(),
-                configuration.authToken(),
-                configuration.protocolVersion(),
-                configuration.expectedAgentSha256()
+                eventActions,
+                new AgentRequestDispatcher.Config(
+                    configuration.authToken(),
+                    configuration.protocolVersion(),
+                    configuration.expectedAgentSha256(),
+                    getLogger()
+                )
             );
 
             startTickLoop(worldActions);
@@ -144,7 +154,7 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin
         }
         catch (Exception exception)
         {
-            getLogger().severe("Failed to start LightKeeper Spigot agent: " + exception.getMessage());
+            getLogger().log(Level.SEVERE, "Failed to start LightKeeper Spigot agent.", exception);
             getServer().getPluginManager().disablePlugin(this);
         }
     }
@@ -345,12 +355,21 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin
                 }
 
                 final SocketChannel socketChannel = localServerSocketChannel.accept();
-                requestExecutor.execute(() -> handleConnection(socketChannel));
+                try
+                {
+                    requestExecutor.execute(() -> handleConnection(socketChannel));
+                }
+                catch (RejectedExecutionException exception)
+                {
+                    closeQuietly(socketChannel);
+                    if (running)
+                        getLogger().log(Level.WARNING, "Agent request executor rejected a connection.", exception);
+                }
             }
             catch (IOException exception)
             {
                 if (running)
-                    getLogger().warning("Agent accept loop failed: " + exception.getMessage());
+                    getLogger().log(Level.WARNING, "Agent accept loop failed.", exception);
             }
         }
     }
@@ -386,8 +405,7 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin
                 final AgentRequestDispatcher.RequestDispatchResult dispatchResult =
                     dispatcher.handleRequestLine(line, handshakeCompleted);
                 handshakeCompleted = dispatchResult.handshakeCompleted();
-                final AgentResponse response = dispatchResult.response();
-                writer.write(objectMapper.writeValueAsString(response));
+                writer.write(dispatchResult.responseJson());
                 writer.newLine();
                 writer.flush();
             }
@@ -395,7 +413,7 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin
         catch (IOException exception)
         {
             if (running)
-                getLogger().warning("Agent connection failed: " + exception.getMessage());
+                getLogger().log(Level.WARNING, "Agent connection failed.", exception);
         }
     }
 

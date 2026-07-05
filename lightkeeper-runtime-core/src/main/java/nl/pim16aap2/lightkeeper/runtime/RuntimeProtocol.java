@@ -6,7 +6,7 @@ import java.io.UncheckedIOException;
 import java.util.Properties;
 
 /**
- * Shared runtime protocol constants for LightKeeper v1.
+ * Shared runtime protocol constants for LightKeeper.
  */
 public final class RuntimeProtocol
 {
@@ -15,13 +15,29 @@ public final class RuntimeProtocol
 
     /**
      * Runtime protocol version understood by the framework and in-server agent.
+     *
+     * <p>Increment this whenever the agent wire format, command set, or response semantics change
+     * in a backward-incompatible way. Both the framework and the agent must agree on this value;
+     * a mismatch causes an {@code HANDSHAKE} failure.
      */
-    public static final int VERSION = 1;
+    public static final int VERSION = 2;
 
     /**
      * Minecraft server version supported by this LightKeeper build.
      */
     public static final String SUPPORTED_MINECRAFT_VERSION = loadSupportedMinecraftVersion();
+
+    /**
+     * Default maximum time, in seconds, the agent waits for a scheduled synchronous server operation before
+     * reporting {@code TIMEOUT}. Shared so the client can derive a strictly larger response timeout.
+     */
+    public static final long DEFAULT_SYNC_OPERATION_TIMEOUT_SECONDS = 120L;
+
+    /**
+     * Safety margin, in milliseconds, added to the agent-side operation timeout to derive the client's response
+     * timeout. Guarantees the agent reports its own detailed {@code TIMEOUT} before the client watchdog gives up.
+     */
+    public static final long CLIENT_RESPONSE_TIMEOUT_MARGIN_MILLIS = 30_000L;
 
     /**
      * System property containing the Unix domain socket path used by the agent.

@@ -1,5 +1,7 @@
 package nl.pim16aap2.lightkeeper.framework;
 
+import nl.pim16aap2.lightkeeper.protocol.CommandSource;
+
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
@@ -97,6 +99,44 @@ public interface ILightkeeperFramework extends AutoCloseable
      * @return Captured server output lines ordered oldest-to-newest.
      */
     List<String> serverOutput();
+
+    /**
+     * Gets the server platform (e.g. PAPER, SPIGOT).
+     *
+     * @return Server platform.
+     */
+    Platform platform();
+
+    /**
+     * Crashes the Minecraft server immediately by force-killing the process.
+     *
+     * <p>All fixtures created before the crash are invalidated: player and world handles obtained earlier no
+     * longer refer to live server state. In shared-server mode the server must be restarted via
+     * {@link #restartServer()} before the next test method runs, otherwise that method fails fast; annotate the
+     * test with {@code @FreshServer} to receive a new server per method instead.
+     */
+    void crashServer();
+
+    /**
+     * Restarts the Minecraft server after a {@link #crashServer()} call.
+     *
+     * <p>Only worlds configured in the runtime manifest are preloaded again. Players and worlds created at
+     * runtime before the crash are <strong>not</strong> recreated; tests must re-establish their own fixtures
+     * after restarting.
+     *
+     * @throws IllegalStateException
+     *     If the server is still running, since a restart is only valid after a crash.
+     */
+    void restartServer();
+
+    /**
+     * Starts capturing Bukkit events of the specified type.
+     *
+     * @param eventClassName
+     *     The full class name of the event to capture (e.g. "org.bukkit.event.player.PlayerMoveEvent").
+     * @return A handle to manage the capture session.
+     */
+    EventCaptureHandle captureEvents(String eventClassName);
 
     @Override
     void close();

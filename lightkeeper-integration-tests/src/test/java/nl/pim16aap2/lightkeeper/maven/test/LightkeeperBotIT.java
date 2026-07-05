@@ -3,8 +3,8 @@ package nl.pim16aap2.lightkeeper.maven.test;
 import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.LightkeeperExtension;
 import nl.pim16aap2.lightkeeper.framework.MenuHandle;
-import nl.pim16aap2.lightkeeper.framework.CommandSource;
 import nl.pim16aap2.lightkeeper.framework.Vector3Di;
+import nl.pim16aap2.lightkeeper.protocol.CommandSource;
 import org.bukkit.Material;
 import org.bukkit.block.BlockFace;
 import org.bukkit.inventory.ItemStack;
@@ -135,7 +135,7 @@ class LightkeeperBotIT
         final MenuHandle noLongerOpenMenu = builtPlayer.getMenu();
         explicitPlayer.placeBlock("STONE", 2, 100, 0);
         framework.waitUntil(
-            () -> "STONE".equals(buildWorldResult.blockTypeAt(new Vector3Di(2, 100, 0))),
+            () -> "minecraft:stone".equals(buildWorldResult.blockTypeAt(new Vector3Di(2, 100, 0))),
             Duration.ofSeconds(20)
         );
 
@@ -173,5 +173,34 @@ class LightkeeperBotIT
         assertThat(menu).isNull();
         assertThat(playerWithoutPermission)
             .receivedMessage("You do not have permission to use /lktestgui.");
+    }
+
+    @Test
+    void runtimeActions_shouldTeleportManageChunksAndCaptureEvents(ILightkeeperFramework framework)
+    {
+        // setup
+        final var world = framework.mainWorld();
+        final var player = framework.buildPlayer()
+            .withRandomName()
+            .atLocation(world, 0, 100, 0)
+            .build();
+        final int chunkX = 24;
+        final int chunkZ = 24;
+
+        // execute
+        try (var eventCapture = framework.captureEvents("org.bukkit.event.player.PlayerTeleportEvent"))
+        {
+            world.loadChunk(chunkX, chunkZ);
+            final boolean loadedAfterLoad = world.isChunkLoaded(chunkX, chunkZ);
+            player.teleport(world, 1, 100, 1);
+            framework.waitUntil(
+                () -> !eventCapture.getCapturedEvents().isEmpty(),
+                Duration.ofSeconds(10)
+            );
+
+            // verify
+            assertThat(loadedAfterLoad).isTrue();
+            assertThat(eventCapture.getCapturedEvents()).isNotEmpty();
+        }
     }
 }

@@ -1,8 +1,9 @@
 package nl.pim16aap2.lightkeeper.maven;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.json.JsonMapper;
 import nl.pim16aap2.lightkeeper.maven.provisioning.PluginArtifactSpec;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.SystemStreamLog;
@@ -701,9 +702,10 @@ class ModrinthDownloadsClientTest
             new SystemStreamLog(),
             "LightKeeper/Test",
             httpClient,
-            new ObjectMapper()
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
+            JsonMapper.builder()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
+                .build()
         );
     }
 

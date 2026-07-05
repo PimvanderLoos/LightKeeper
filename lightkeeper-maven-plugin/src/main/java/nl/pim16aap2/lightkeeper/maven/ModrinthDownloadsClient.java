@@ -1,11 +1,12 @@
 package nl.pim16aap2.lightkeeper.maven;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.PropertyNamingStrategies;
 import nl.pim16aap2.lightkeeper.maven.provisioning.PluginArtifactSpec;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
@@ -54,9 +55,10 @@ public final class ModrinthDownloadsClient
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .connectTimeout(Duration.ofSeconds(15))
                 .build(),
-            new ObjectMapper()
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
+            JsonMapper.builder()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
+                .build()
         );
     }
 
@@ -66,9 +68,10 @@ public final class ModrinthDownloadsClient
             log,
             userAgent,
             httpClient,
-            new ObjectMapper()
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
+            JsonMapper.builder()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
+                .build()
         );
     }
 
@@ -161,11 +164,11 @@ public final class ModrinthDownloadsClient
     {
         try
         {
-            return objectMapper.readValue(fetchJson(uri).traverse(), new TypeReference<>()
+            return objectMapper.treeToValue(fetchJson(uri), new TypeReference<>()
             {
             });
         }
-        catch (IOException exception)
+        catch (JacksonException exception)
         {
             throw new MojoExecutionException("Failed to parse Modrinth versions response from '%s'.".formatted(uri),
                 exception);
@@ -179,7 +182,7 @@ public final class ModrinthDownloadsClient
         {
             return objectMapper.treeToValue(root, VersionResponse.class);
         }
-        catch (JsonProcessingException exception)
+        catch (JacksonException exception)
         {
             throw new MojoExecutionException("Failed to parse Modrinth version response from '%s'.".formatted(uri),
                 exception);
@@ -326,7 +329,7 @@ public final class ModrinthDownloadsClient
         {
             return objectMapper.readTree(response.body());
         }
-        catch (JsonProcessingException exception)
+        catch (JacksonException exception)
         {
             throw new MojoExecutionException("Failed to parse Modrinth API response from '%s'.".formatted(uri),
                 exception);

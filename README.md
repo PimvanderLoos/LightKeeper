@@ -20,10 +20,12 @@ planned and reviewed by a human.
   JUnit-facing API (`ILightkeeperFramework`, `LightkeeperExtension`, handles + AssertJ assertions).
 - `lightkeeper-agent-spigot`
   In-server production runtime agent plugin that exposes LightKeeper RPC operations over UDS.
+- `lightkeeper-protocol`
+  Shared typed command and response records for the versioned agent wire protocol.
 - `lightkeeper-spigot-test-plugin`
   Standalone functional test plugin that provides the `lktestgui` InventoryGUI workflow.
 - `lightkeeper-runtime-core`
-  Shared runtime protocol + runtime manifest model.
+  Runtime manifest model and cross-process protocol constants.
 - `lightkeeper-nms-parent`
   NMS integration modules used by the agent.
 - `lightkeeper-integration-tests`
@@ -37,6 +39,15 @@ planned and reviewed by a human.
    `lightkeeper-maven-plugin`.
 4. Your tests connect through `lightkeeper-framework-junit` (using the runtime manifest path).
 5. During `post-integration-test`, `lightkeeper:cleanup-server` can delete server work directories when tests pass.
+
+## Key Features
+
+- **Server Lifecycle Control**: Crash and restart the server mid-test to verify recovery logic.
+- **World & Chunk Control**: Load/unload chunks, check chunk status, and teleport players between worlds.
+- **Inventory & Item Drops**: Inspect player inventories and simulate item drops.
+- **Dynamic Event Capture**: Capture and assert on any Bukkit event dynamically without writing custom listeners.
+- **Clickable Chat Assertions**: Verify clickable chat message text and actions.
+- **Platform Awareness**: Write tests that adapt to Paper or Spigot specifics.
 
 ## Requirements
 

@@ -1,5 +1,7 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
+import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
+import nl.pim16aap2.lightkeeper.protocol.AgentProtocolException;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -10,8 +12,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeoutException;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -173,7 +175,7 @@ class AgentMainThreadExecutorTest
     }
 
     @Test
-    void callOnMainThread_shouldPropagateTimeoutExceptionWhenScheduledCallTimesOut()
+    void callOnMainThread_shouldMapTimeoutToTimeoutCodeAndCancelWhenScheduledCallTimesOut()
     {
         // setup
         final JavaPlugin plugin = mock(JavaPlugin.class);
@@ -189,7 +191,33 @@ class AgentMainThreadExecutorTest
 
             // execute + verify
             assertThatThrownBy(() -> executor.callOnMainThread(() -> "ignored"))
-                .isInstanceOf(TimeoutException.class);
+                .isInstanceOf(AgentProtocolException.class)
+                .extracting(exception -> ((AgentProtocolException) exception).errorCode())
+                .isEqualTo(AgentErrorCode.TIMEOUT);
+            assertThat(neverCompletingFuture.isCancelled()).isTrue();
+        }
+    }
+
+    @Test
+    void callOnMainThread_shouldUnwrapExecutionExceptionCauseWhenScheduledCallFails()
+    {
+        // setup
+        final JavaPlugin plugin = mock(JavaPlugin.class);
+        final AgentMainThreadExecutor executor = new AgentMainThreadExecutor(plugin, 5L);
+        final BukkitScheduler scheduler = mock(BukkitScheduler.class);
+        final CompletableFuture<Object> failedFuture =
+            CompletableFuture.failedFuture(new IllegalArgumentException("bad argument"));
+
+        try (var mockedBukkit = mockStatic(Bukkit.class))
+        {
+            mockedBukkit.when(Bukkit::isPrimaryThread).thenReturn(false);
+            mockedBukkit.when(Bukkit::getScheduler).thenReturn(scheduler);
+            when(scheduler.callSyncMethod(eq(plugin), any())).thenReturn(failedFuture);
+
+            // execute + verify
+            assertThatThrownBy(() -> executor.callOnMainThread(() -> "ignored"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("bad argument");
         }
     }
 

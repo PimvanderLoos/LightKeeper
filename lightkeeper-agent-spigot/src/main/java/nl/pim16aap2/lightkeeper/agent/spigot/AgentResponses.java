@@ -1,12 +1,18 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
-import nl.pim16aap2.lightkeeper.runtime.agent.AgentErrorCode;
-import nl.pim16aap2.lightkeeper.runtime.agent.AgentResponse;
-
-import java.util.Map;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
+import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
+import nl.pim16aap2.lightkeeper.protocol.IAgentResponse;
 
 /**
- * Factory helpers for canonical success/error protocol responses.
+ * Factory helpers for canonical success/error protocol response JSON strings.
+ *
+ * <p>Success wire format: the domain response record serialized as JSON with an additional
+ * {@code "success": true} field injected.
+ *
+ * <p>Error wire format: {@code {"requestId":"...","success":false,"errorCode":"...","errorMessage":"..."}}.
  */
 final class AgentResponses
 {
@@ -18,57 +24,65 @@ final class AgentResponses
     }
 
     /**
-     * Creates a successful response with caller-provided data payload.
+     * Serializes a typed domain response with a {@code "success": true} field injected.
      *
+     * @param objectMapper
+     *     Jackson mapper used for serialization.
      * @param requestId
      *     Identifier of the request being answered.
-     * @param data
-     *     Response payload entries.
+     * @param response
+     *     Typed domain response record.
+     * @param expectedType
+     *     The response type the handled command declares via {@code responseType()}; a mismatch means the
+     *     command's {@code responseType()} disagrees with the record the handler actually produced, which would
+     *     silently corrupt client-side deserialization.
      * @return
-     *     Successful {@link AgentResponse}.
+     *     JSON string ready to write on the wire.
+     * @throws JacksonException
+     *     When serialization fails.
      */
-    static AgentResponse successResponse(String requestId, Map<String, String> data)
-    {
-        return new AgentResponse(requestId, true, null, null, data);
-    }
-
-    /**
-     * Creates an error response with a standardized empty data payload.
-     *
-     * @param requestId
-     *     Identifier of the request being answered.
-     * @param errorCode
-     *     Stable machine-readable error identifier.
-     * @param message
-     *     Human-readable failure detail.
-     * @return
-     *     Failed {@link AgentResponse}.
-     */
-    static AgentResponse errorResponse(String requestId, AgentErrorCode errorCode, String message)
-    {
-        return new AgentResponse(requestId, false, errorCode.wireCode(), message, Map.of());
-    }
-
-    /**
-     * Creates an error response with caller-provided data payload.
-     *
-     * @param requestId
-     *     Identifier of the request being answered.
-     * @param errorCode
-     *     Stable machine-readable error identifier.
-     * @param message
-     *     Human-readable failure detail.
-     * @param data
-     *     Structured error metadata payload.
-     * @return
-     *     Failed {@link AgentResponse}.
-     */
-    static AgentResponse errorResponse(
+    static String successJson(
+        ObjectMapper objectMapper,
         String requestId,
-        AgentErrorCode errorCode,
-        String message,
-        Map<String, String> data)
+        IAgentResponse response,
+        Class<?> expectedType)
+        throws JacksonException
     {
-        return new AgentResponse(requestId, false, errorCode.wireCode(), message, data);
+        if (response.getClass() != expectedType)
+            throw new IllegalStateException(
+                "Response type mismatch: handler produced %s but the command's responseType() is %s."
+                    .formatted(response.getClass().getName(), expectedType.getName()));
+
+        final ObjectNode node = objectMapper.valueToTree(response);
+        node.put("requestId", requestId);
+        node.put("success", true);
+        return objectMapper.writeValueAsString(node);
+    }
+
+    /**
+     * Produces a structured error JSON string.
+     *
+     * @param objectMapper
+     *     Jackson mapper used for serialization.
+     * @param requestId
+     *     Identifier of the request being answered.
+     * @param errorCode
+     *     Stable machine-readable error identifier.
+     * @param message
+     *     Human-readable failure detail.
+     * @return
+     *     JSON string ready to write on the wire.
+     * @throws JacksonException
+     *     When serialization fails.
+     */
+    static String errorJson(ObjectMapper objectMapper, String requestId, AgentErrorCode errorCode, String message)
+        throws JacksonException
+    {
+        final ObjectNode node = objectMapper.createObjectNode();
+        node.put("requestId", requestId);
+        node.put("success", false);
+        node.put("errorCode", errorCode.wireCode());
+        node.put("errorMessage", message);
+        return objectMapper.writeValueAsString(node);
     }
 }

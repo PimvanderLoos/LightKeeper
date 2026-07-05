@@ -1,12 +1,17 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
+import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
+import nl.pim16aap2.lightkeeper.protocol.AgentProtocolException;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Executes callables on the Bukkit primary thread with a bounded wait time.
@@ -16,9 +21,11 @@ import java.util.concurrent.TimeUnit;
 final class AgentMainThreadExecutor
 {
     /**
-     * Default maximum time to wait for a scheduled synchronous server operation.
+     * Default maximum time to wait for a scheduled synchronous server operation. Shared with the client so its
+     * response timeout stays strictly larger (see {@link RuntimeProtocol#DEFAULT_SYNC_OPERATION_TIMEOUT_SECONDS}).
      */
-    private static final long DEFAULT_SYNC_OPERATION_TIMEOUT_SECONDS = 120L;
+    private static final long DEFAULT_SYNC_OPERATION_TIMEOUT_SECONDS =
+        RuntimeProtocol.DEFAULT_SYNC_OPERATION_TIMEOUT_SECONDS;
 
     /**
      * Plugin context required by Bukkit's scheduler APIs.
@@ -66,7 +73,9 @@ final class AgentMainThreadExecutor
      * @return
      *     Result returned by the callable.
      * @throws Exception
-     *     Propagates execution failures, interruption, and timeout errors.
+     *     Propagates the callable's own failure (unwrapped from {@link ExecutionException}); throws
+     *     {@link AgentProtocolException} with {@link AgentErrorCode#TIMEOUT} when the operation exceeds the
+     *     configured timeout, or {@link AgentErrorCode#INTERRUPTED} when the waiting thread is interrupted.
      */
     <T> T callOnMainThread(Callable<T> callable)
         throws Exception
@@ -74,9 +83,45 @@ final class AgentMainThreadExecutor
         if (Bukkit.isPrimaryThread())
             return callable.call();
 
-        return Bukkit.getScheduler()
-            .callSyncMethod(plugin, callable)
-            .get(syncOperationTimeoutSeconds, TimeUnit.SECONDS);
+        final Future<T> future = Bukkit.getScheduler().callSyncMethod(plugin, callable);
+        final Throwable callableFailure;
+        try
+        {
+            return future.get(syncOperationTimeoutSeconds, TimeUnit.SECONDS);
+        }
+        catch (ExecutionException exception)
+        {
+            // Surface the callable's real failure (e.g. an IllegalArgumentException thrown inside a handler
+            // lambda) instead of the opaque Future wrapper, so the dispatcher can map it to its domain code.
+            callableFailure = exception.getCause() == null ? exception : exception.getCause();
+        }
+        catch (TimeoutException exception)
+        {
+            // Cancel so the still-pending Bukkit task cannot execute later and mutate the next test's state.
+            future.cancel(true);
+            throw new AgentProtocolException(
+                AgentErrorCode.TIMEOUT,
+                "Server operation did not complete within %d seconds.".formatted(syncOperationTimeoutSeconds),
+                exception
+            );
+        }
+        catch (InterruptedException exception)
+        {
+            Thread.currentThread().interrupt();
+            throw new AgentProtocolException(
+                AgentErrorCode.INTERRUPTED,
+                "Interrupted while waiting for a server operation to complete.",
+                exception
+            );
+        }
+
+        // Rethrown outside the catch so the unwrapped cause keeps its own stack trace.
+        if (callableFailure instanceof Error error)
+            throw error;
+        if (callableFailure instanceof Exception exception)
+            throw exception;
+        throw new IllegalStateException("Unexpected non-exception failure from a main-thread operation.",
+            callableFailure);
     }
 
     /**

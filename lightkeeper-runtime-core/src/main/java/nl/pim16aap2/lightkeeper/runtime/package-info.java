@@ -1,5 +1,5 @@
 /**
- * Shared runtime protocol and manifest model used by Maven provisioning, framework runtime, and in-server agent.
+ * Runtime manifest model and cross-process constants used by provisioning, the framework, and the in-server agent.
  */
 @org.jspecify.annotations.NullMarked
 package nl.pim16aap2.lightkeeper.runtime;
