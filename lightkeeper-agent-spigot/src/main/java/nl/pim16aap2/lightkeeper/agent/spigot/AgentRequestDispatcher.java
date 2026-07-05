@@ -3,6 +3,7 @@ package nl.pim16aap2.lightkeeper.agent.spigot;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.exc.ValueInstantiationException;
 import nl.pim16aap2.lightkeeper.protocol.BlockType;
 import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEvents;
 import nl.pim16aap2.lightkeeper.protocol.ClickMenuSlot;
@@ -155,6 +156,18 @@ final class AgentRequestDispatcher
         }
         catch (Exception exception)
         {
+            // A record compact-constructor rejecting a bad field throws IllegalArgumentException during
+            // deserialization; Jackson wraps it in ValueInstantiationException. Preserve the domain contract by
+            // mapping that back to INVALID_ARGUMENT rather than the generic INVALID_REQUEST parse code.
+            final Throwable cause = exception.getCause();
+            if (exception instanceof ValueInstantiationException && cause instanceof IllegalArgumentException)
+                return buildErrorResult(
+                    requestId,
+                    AgentErrorCode.INVALID_ARGUMENT,
+                    Objects.requireNonNullElse(cause.getMessage(), cause.getClass().getName()),
+                    handshakeCompleted
+                );
+
             return buildErrorResult(
                 requestId,
                 AgentErrorCode.INVALID_REQUEST,

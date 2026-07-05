@@ -5,6 +5,8 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 import nl.pim16aap2.lightkeeper.nms.api.IBotPlayerNmsAdapter;
+import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
+import nl.pim16aap2.lightkeeper.protocol.AgentProtocolException;
 import nl.pim16aap2.lightkeeper.protocol.BlockType;
 import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEvents;
 import nl.pim16aap2.lightkeeper.protocol.ClickMenuSlot;
@@ -159,6 +161,63 @@ class AgentRequestDispatcherTest
         assertThat(errorCode(result.responseJson())).isEqualTo("INVALID_ARGUMENT");
         assertThat(errorMessage(result.responseJson())).contains("Invalid UUID");
         assertThat(result.handshakeCompleted()).isTrue();
+    }
+
+    @Test
+    void handleRequestLine_shouldReturnInvalidArgumentWhenCompactConstructorRejectsField()
+    {
+        // setup
+        final DispatcherFixture fixture = createDispatcherFixture();
+        // Raw JSON so the invalid field is rejected inside WaitTicks.Command's compact constructor during parsing.
+        final String requestLine =
+            "{\"action\":\"WAIT_TICKS\",\"requestId\":\"request-negative-ticks\",\"ticks\":-1}";
+
+        // execute
+        final AgentRequestDispatcher.RequestDispatchResult result =
+            fixture.dispatcher().handleRequestLine(requestLine, true);
+
+        // verify
+        assertThat(isSuccess(result.responseJson())).isFalse();
+        assertThat(errorCode(result.responseJson())).isEqualTo("INVALID_ARGUMENT");
+        assertThat(errorMessage(result.responseJson())).contains("ticks");
+    }
+
+    @Test
+    void handleRequestLine_shouldReturnInvalidRequestWhenJsonFieldHasWrongType()
+    {
+        // setup
+        final DispatcherFixture fixture = createDispatcherFixture();
+        // A non-integer protocolVersion is a malformed field (type error), not an argument-validation failure.
+        final String requestLine =
+            "{\"action\":\"HANDSHAKE\",\"requestId\":\"request-bad-version\",\"token\":\"token\","
+                + "\"protocolVersion\":\"not-an-int\",\"agentSha256\":\"\"}";
+
+        // execute
+        final AgentRequestDispatcher.RequestDispatchResult result =
+            fixture.dispatcher().handleRequestLine(requestLine, false);
+
+        // verify
+        assertThat(isSuccess(result.responseJson())).isFalse();
+        assertThat(errorCode(result.responseJson())).isEqualTo("INVALID_REQUEST");
+    }
+
+    @Test
+    void handleRequestLine_shouldReturnTimeoutWhenHandlerReportsTimeout()
+        throws Exception
+    {
+        // setup
+        final DispatcherFixture fixture = createDispatcherFixture();
+        when(fixture.worldActions().handleWaitTicks(any()))
+            .thenThrow(new AgentProtocolException(AgentErrorCode.TIMEOUT, "Server operation did not complete."));
+        final String requestLine = toJson(new WaitTicks.Command("request-timeout", 5));
+
+        // execute
+        final AgentRequestDispatcher.RequestDispatchResult result =
+            fixture.dispatcher().handleRequestLine(requestLine, true);
+
+        // verify
+        assertThat(isSuccess(result.responseJson())).isFalse();
+        assertThat(errorCode(result.responseJson())).isEqualTo("TIMEOUT");
     }
 
     @Test
@@ -330,10 +389,11 @@ class AgentRequestDispatcherTest
         final AgentRequestDispatcher.RequestDispatchResult result =
             dispatcher.handleRequestLine(requestLine, true);
 
-        // verify — requestId must be "req-123", not "unknown"
+        // verify — requestId must be "req-123", not "unknown"; a compact-constructor rejection maps to
+        // INVALID_ARGUMENT rather than the generic INVALID_REQUEST parse code
         assertThat(isSuccess(result.responseJson())).isFalse();
         assertThat(requestId(result.responseJson())).isEqualTo("req-123");
-        assertThat(errorCode(result.responseJson())).isEqualTo("INVALID_REQUEST");
+        assertThat(errorCode(result.responseJson())).isEqualTo("INVALID_ARGUMENT");
     }
 
     @Test
