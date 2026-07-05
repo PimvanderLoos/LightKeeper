@@ -77,22 +77,9 @@ final class AgentRequestDispatcher
     private final AgentEventActions eventActions;
 
     /**
-     * Plugin logger used for operational diagnostics.
+     * Immutable authentication, protocol, and diagnostics configuration.
      */
-    private final java.util.logging.Logger logger;
-
-    /**
-     * Expected handshake token.
-     */
-    private final String authToken;
-    /**
-     * Expected runtime protocol version.
-     */
-    private final int protocolVersion;
-    /**
-     * Optional expected SHA-256 hash of the running agent artifact.
-     */
-    private final String expectedAgentSha256;
+    private final Config config;
 
     /**
      * @param objectMapper
@@ -125,11 +112,7 @@ final class AgentRequestDispatcher
         this.playerStateActions = Objects.requireNonNull(playerStateActions, "playerStateActions");
         this.menuActions = Objects.requireNonNull(menuActions, "menuActions");
         this.eventActions = Objects.requireNonNull(eventActions, "eventActions");
-        Objects.requireNonNull(config, "config");
-        this.logger = config.logger();
-        this.authToken = config.authToken();
-        this.protocolVersion = config.protocolVersion();
-        this.expectedAgentSha256 = config.expectedAgentSha256();
+        this.config = Objects.requireNonNull(config, "config");
     }
 
     /**
@@ -293,7 +276,7 @@ final class AgentRequestDispatcher
 
             // A structured failure that wraps a cause (e.g. INTERRUPTED/TIMEOUT) otherwise loses the cause's
             // message and stack entirely: log it and append it to the wire message so it is not invisible.
-            logger.log(
+            config.logger().log(
                 Level.WARNING,
                 "Agent action '%s' failed for request '%s' with code %s."
                     .formatted(qualifiedCommandName(command), requestId, exception.errorCode()),
@@ -326,7 +309,7 @@ final class AgentRequestDispatcher
             // or LinkageError on a new server build would otherwise sail past every catch, kill the
             // per-connection thread, and leave the client with only "connection closed unexpectedly". Return a
             // coded response instead.
-            logger.log(
+            config.logger().log(
                 Level.SEVERE,
                 "Agent action '%s' failed for request '%s': %s"
                     .formatted(
@@ -407,20 +390,20 @@ final class AgentRequestDispatcher
         final int clientProtocolVersion = command.protocolVersion();
         final String clientAgentSha = command.agentSha256();
 
-        if (!authToken.equals(token))
+        if (!config.authToken().equals(token))
             throw new AgentProtocolException(AgentErrorCode.AUTH_FAILED, "Auth token mismatch.");
 
-        if (protocolVersion != clientProtocolVersion)
+        if (config.protocolVersion() != clientProtocolVersion)
             throw new AgentProtocolException(
                 AgentErrorCode.PROTOCOL_MISMATCH,
                 "Runtime protocol version mismatch. expected=%d actual=%d."
-                    .formatted(protocolVersion, clientProtocolVersion)
+                    .formatted(config.protocolVersion(), clientProtocolVersion)
             );
 
-        if (!expectedAgentSha256.isBlank() && !expectedAgentSha256.equalsIgnoreCase(clientAgentSha))
+        if (!config.expectedAgentSha256().isBlank() && !config.expectedAgentSha256().equalsIgnoreCase(clientAgentSha))
             throw new AgentProtocolException(AgentErrorCode.AGENT_SHA_MISMATCH, "Agent SHA-256 mismatch.");
 
-        return new Handshake.Response(protocolVersion, Bukkit.getBukkitVersion());
+        return new Handshake.Response(config.protocolVersion(), Bukkit.getBukkitVersion());
     }
 
     /**
@@ -452,7 +435,7 @@ final class AgentRequestDispatcher
         }
         catch (JacksonException serializationException)
         {
-            logger.log(Level.SEVERE, "Failed to serialize error response.", serializationException);
+            config.logger().log(Level.SEVERE, "Failed to serialize error response.", serializationException);
             final String fallback =
                 ("{\"requestId\":\"%s\",\"success\":false,\"errorCode\":\"%s\","
                     + "\"errorMessage\":\"serialization failure\"}")

@@ -42,12 +42,16 @@ final class AgentEventActions
      */
     RegisterEventListener.Response handleRegisterEventListener(RegisterEventListener.Command command)
     {
-        final String eventClassName = requireEventClassName(command.eventClassName());
+        final String eventClassName = command.eventClassName();
         try
         {
             eventCapture.registerListener(eventClassName);
         }
-        catch (ClassNotFoundException | IllegalArgumentException exception)
+        catch (ClassNotFoundException exception)
+        {
+            throw new IllegalArgumentException("Event class not found: " + eventClassName, exception);
+        }
+        catch (IllegalArgumentException exception)
         {
             throw new IllegalArgumentException(
                 Objects.requireNonNullElse(exception.getMessage(), exception.getClass().getName()),
@@ -68,7 +72,7 @@ final class AgentEventActions
      */
     GetCapturedEvents.Response handleGetCapturedEvents(GetCapturedEvents.Command command)
     {
-        final String eventClassName = requireEventClassName(command.eventClassName());
+        final String eventClassName = command.eventClassName();
         final List<Map<String, String>> events = eventCapture.getCapturedEvents(eventClassName);
         return new GetCapturedEvents.Response(events);
     }
@@ -83,7 +87,7 @@ final class AgentEventActions
      */
     ClearCapturedEvents.Response handleClearCapturedEvents(ClearCapturedEvents.Command command)
     {
-        eventCapture.clearCapturedEvents(requireEventClassName(command.eventClassName()));
+        eventCapture.clearCapturedEvents(command.eventClassName());
         return new ClearCapturedEvents.Response();
     }
 
@@ -97,14 +101,7 @@ final class AgentEventActions
      */
     UnregisterEventListener.Response handleUnregisterEventListener(UnregisterEventListener.Command command)
     {
-        eventCapture.unregisterListener(requireEventClassName(command.eventClassName()));
+        eventCapture.unregisterListener(command.eventClassName());
         return new UnregisterEventListener.Response();
-    }
-
-    private static String requireEventClassName(String eventClassName)
-    {
-        if (eventClassName == null || eventClassName.isBlank())
-            throw new IllegalArgumentException("eventClassName may not be blank.");
-        return eventClassName;
     }
 }

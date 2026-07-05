@@ -66,7 +66,7 @@ class AgentEventActionsTest
         assertThatThrownBy(() -> actions.handleRegisterEventListener(
             new RegisterEventListener.Command("req-cnf", "com.example.NonExistent")))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("com.example.NonExistent");
+            .hasMessage("Event class not found: com.example.NonExistent");
     }
 
     @Test

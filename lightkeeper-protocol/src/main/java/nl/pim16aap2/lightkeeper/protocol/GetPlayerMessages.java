@@ -1,6 +1,7 @@
 package nl.pim16aap2.lightkeeper.protocol;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -51,5 +52,12 @@ public final class GetPlayerMessages
         List<String> messages
     ) implements IAgentResponse
     {
+        /**
+         * Validates and defensively copies the message history.
+         */
+        public Response
+        {
+            messages = List.copyOf(Objects.requireNonNull(messages, "messages"));
+        }
     }
 }

@@ -42,6 +42,12 @@ public final class DragMenuSlots
         }
 
         @Override
+        public int[] slots()
+        {
+            return slots.clone();
+        }
+
+        @Override
         public Class<Response> responseType()
         {
             return Response.class;
@@ -50,7 +56,6 @@ public final class DragMenuSlots
 
     /**
      * Response record for {@code DRAG_MENU_SLOTS}.
-     *
      */
     public record Response() implements IAgentResponse
     {
