@@ -18,6 +18,7 @@ import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -55,6 +56,40 @@ class MinecraftServerProcessTest
         verify(process).waitFor(5_000L, TimeUnit.MILLISECONDS);
         assertThat(getField(serverProcess, "process")).isNull();
         assertThat(getField(serverProcess, "outputThread")).isNull();
+    }
+
+    @Test
+    void stop_shouldForceKillAndThrowWhenProcessSurvivesShutdownFailure(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path diagnosticsDirectory = tempDirectory.resolve("diagnostics");
+        final MinecraftServerProcess serverProcess = new MinecraftServerProcess(
+            runtimeManifest(tempDirectory),
+            diagnosticsDirectory
+        );
+        final Process process = mock();
+        // Trigger the shutdown-failure catch: writing the "stop" command fails, and the process never dies.
+        when(process.isAlive()).thenReturn(true);
+        when(process.getOutputStream()).thenThrow(new RuntimeException("stream unavailable"));
+        when(process.waitFor(5_000L, TimeUnit.MILLISECONDS)).thenReturn(false);
+        setField(serverProcess, "process", process);
+
+        // execute + verify — a surviving process must fail loudly rather than leave a zombie
+        assertThatThrownBy(() -> serverProcess.stop(Duration.ofSeconds(1)))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("still alive after a forced kill");
+        verify(process).destroyForcibly();
+
+        // and the diagnostics bundle must include the original failure's stack trace
+        try (Stream<Path> bundleFiles = Files.walk(diagnosticsDirectory))
+        {
+            final List<Path> failureFiles = bundleFiles
+                .filter(path -> path.getFileName().toString().equals("failure.txt"))
+                .toList();
+            assertThat(failureFiles).hasSize(1);
+            assertThat(Files.readString(failureFiles.getFirst())).contains("stream unavailable");
+        }
     }
 
     @Test

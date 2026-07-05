@@ -10,6 +10,8 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
@@ -89,7 +91,7 @@ final class MinecraftServerProcess
         }
         catch (Exception exception)
         {
-            writeDiagnostics("startup-failure");
+            writeDiagnostics("startup-failure", exception);
             stop(Duration.ofSeconds(5));
             throw new IllegalStateException("Failed to start Minecraft server.", exception);
         }
@@ -212,12 +214,24 @@ final class MinecraftServerProcess
         }
         catch (Exception exception)
         {
+            // A broad catch here also catches the InterruptedException from waitFor; restore the flag so the
+            // interrupt is not swallowed by this cleanup path.
+            if (exception instanceof InterruptedException)
+                Thread.currentThread().interrupt();
+
+            LOG.log(System.Logger.Level.WARNING, "Graceful shutdown of the Minecraft server process failed.", exception);
+            writeDiagnostics("shutdown-failure", exception);
+
             if (currentProcess.isAlive())
             {
                 currentProcess.destroyForcibly();
-                waitForProcessExit(currentProcess, Duration.ofSeconds(5));
+                // Fail loudly if the process survives the forced kill: a zombie keeps holding session.lock and
+                // would otherwise surface far away as a lock-timeout in the next test class.
+                if (!waitForProcessExit(currentProcess, Duration.ofSeconds(5)) && currentProcess.isAlive())
+                    throw new IllegalStateException(
+                        "Minecraft server process is still alive after a forced kill following a shutdown failure.",
+                        exception);
             }
-            writeDiagnostics("shutdown-failure");
         }
         finally
         {
@@ -384,7 +398,7 @@ final class MinecraftServerProcess
         );
     }
 
-    private void writeDiagnostics(String reason)
+    private void writeDiagnostics(String reason, Throwable failure)
     {
         try
         {
@@ -395,6 +409,9 @@ final class MinecraftServerProcess
             Files.createDirectories(bundleDirectory);
 
             Files.writeString(bundleDirectory.resolve("reason.txt"), reason, StandardCharsets.UTF_8);
+            final StringWriter failureTrace = new StringWriter();
+            failure.printStackTrace(new PrintWriter(failureTrace));
+            Files.writeString(bundleDirectory.resolve("failure.txt"), failureTrace.toString(), StandardCharsets.UTF_8);
             Files.writeString(bundleDirectory.resolve("manifest-server-dir.txt"),
                 runtimeManifest.serverDirectory(), StandardCharsets.UTF_8);
             Files.writeString(bundleDirectory.resolve("manifest-socket-path.txt"),
