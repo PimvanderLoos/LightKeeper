@@ -6,7 +6,6 @@ import nl.pim16aap2.lightkeeper.framework.MenuSnapshot;
 import nl.pim16aap2.lightkeeper.framework.Platform;
 import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.framework.WorldSpec;
-import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
 import nl.pim16aap2.lightkeeper.protocol.BlockType;
 import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEvents;
 import nl.pim16aap2.lightkeeper.protocol.ClickMenuSlot;
@@ -44,22 +43,8 @@ import nl.pim16aap2.lightkeeper.protocol.WaitTicks;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.core.JacksonException;
-import tools.jackson.databind.DeserializationFeature;
-import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.json.JsonMapper;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.net.StandardProtocolFamily;
-import java.net.UnixDomainSocketAddress;
-import java.nio.channels.AsynchronousCloseException;
-import java.nio.channels.Channels;
-import java.nio.channels.SocketChannel;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
@@ -67,18 +52,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Agent RPC client backed by a Unix Domain Socket.
+ * Typed agent RPC client backed by a Unix Domain Socket transport.
  *
  * <p>Each public method serializes a typed {@link IAgentCommand} to JSON, writes it to the socket, reads back
- * a single-line JSON response, verifies success, and deserializes the typed {@link IAgentResponse} via
- * {@link IAgentCommand#responseType()}.
+ * a command through {@link UdsAgentTransport} and maps the typed response into framework values.
  */
 final class UdsAgentClient implements AutoCloseable
 {
@@ -88,36 +68,15 @@ final class UdsAgentClient implements AutoCloseable
      * Default response timeout: the agent's own synchronous-operation timeout plus a safety margin, so the
      * agent reports a detailed {@code TIMEOUT} error before this client-side watchdog closes the channel.
      *
-     * <p>Unix Domain Sockets do not support SO_TIMEOUT, so the timeout is enforced by a watchdog that
-     * closes the channel directly; this causes {@link AsynchronousCloseException} on the blocked read.
+     * <p>Unix Domain Sockets do not support SO_TIMEOUT, so the transport enforces this with a watchdog.
      */
     private static final long DEFAULT_SEND_TIMEOUT_MS =
         RuntimeProtocol.DEFAULT_SYNC_OPERATION_TIMEOUT_SECONDS * 1_000L
             + RuntimeProtocol.CLIENT_RESPONSE_TIMEOUT_MARGIN_MILLIS;
 
-    private final ObjectMapper objectMapper = JsonMapper.builder()
-        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-        .build();
-
-    /**
-     * Single-thread watchdog executor that closes the socket channel when a read exceeds
-     * {@link #sendTimeoutMillis}. Closing the channel directly (not via {@link #close()}) avoids deadlock with
-     * the {@code synchronized} monitor held by {@link #send}. Created by {@link #connect} and shut down by
-     * {@link #close}, so a reconnect gets a fresh executor and no daemon thread is leaked.
-     */
-    private @Nullable ScheduledExecutorService readTimeoutWatchdog;
-
-    private final Path socketPath;
-    private final long sendTimeoutMillis;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final UdsAgentTransport transport;
     private final AtomicLong requestCounter = new AtomicLong(0L);
-    private @Nullable SocketChannel socketChannel;
-    private @Nullable BufferedReader reader;
-    private @Nullable BufferedWriter writer;
-    /**
-     * Set when the client was closed because a request timed out, so subsequent sends fail fast with a message
-     * pointing at the original timeout rather than a generic "not connected" error.
-     */
-    private @Nullable String closedReason;
 
     UdsAgentClient(Path socketPath, Duration connectTimeout)
     {
@@ -136,11 +95,7 @@ final class UdsAgentClient implements AutoCloseable
      */
     UdsAgentClient(Path socketPath, Duration connectTimeout, long sendTimeoutMillis)
     {
-        this.socketPath = Objects.requireNonNull(socketPath, "socketPath may not be null.");
-        if (sendTimeoutMillis <= 0L)
-            throw new IllegalArgumentException("sendTimeoutMillis must be > 0 but was " + sendTimeoutMillis + ".");
-        this.sendTimeoutMillis = sendTimeoutMillis;
-        connect(Objects.requireNonNull(connectTimeout, "connectTimeout may not be null."));
+        this.transport = new UdsAgentTransport(socketPath, connectTimeout, sendTimeoutMillis);
     }
 
     void handshake(String token, int protocolVersion, String agentSha256)
@@ -418,232 +373,21 @@ final class UdsAgentClient implements AutoCloseable
         }
     }
 
-    synchronized <R extends IAgentResponse> R send(IAgentCommand<R> command)
+    <R extends IAgentResponse> R send(IAgentCommand<R> command)
     {
-        if (command.requestId() == null || command.requestId().isBlank())
-            throw new IllegalArgumentException("'requestId' must be non-blank.");
-        final BufferedWriter out = requireConnected(writer);
-        final BufferedReader in = requireConnected(reader);
-        final ScheduledExecutorService watchdogExecutor = requireConnected(readTimeoutWatchdog);
-
-        // Capture the channel reference before the read; the watchdog closes it directly to avoid
-        // deadlocking on this synchronized method's monitor.
-        final SocketChannel channelSnapshot = this.socketChannel;
-        final ScheduledFuture<?> watchdog = watchdogExecutor.schedule(() ->
-        {
-            if (channelSnapshot != null)
-            {
-                try
-                {
-                    channelSnapshot.close();
-                }
-                catch (IOException ignored)
-                {
-                    // Best-effort: the channel may already be closed.
-                }
-            }
-        }, sendTimeoutMillis, TimeUnit.MILLISECONDS);
-
-        try
-        {
-            out.write(objectMapper.writeValueAsString(command));
-            out.newLine();
-            out.flush();
-
-            final String responseLine = in.readLine();
-            if (responseLine == null)
-                throw new IllegalStateException(
-                    "Agent connection closed unexpectedly while awaiting a response to action '%s'. The agent "
-                        .formatted(command.getClass().getSimpleName())
-                        + "process likely crashed — check the captured server output and the LightKeeper "
-                        + "diagnostics bundle under the server work directory.");
-
-            final JsonNode root = objectMapper.readTree(responseLine);
-            final String responseRequestId = root.path("requestId").asString("unknown");
-            final String requestId = command.requestId();
-
-            if (!requestId.equals(responseRequestId))
-            {
-                // A parse failure replies with requestId "unknown" and success=false; surfacing only the id
-                // mismatch would hide the server's actual errorCode/errorMessage, so include it here.
-                if (!root.path("success").asBoolean())
-                    throw new IllegalStateException(
-                        "Agent rejected request '%s' before correlation (response id '%s'): code=%s message=%s"
-                            .formatted(
-                                requestId,
-                                responseRequestId,
-                                root.path("errorCode").asString("UNKNOWN"),
-                                root.path("errorMessage").asString("")));
-
-                throw new IllegalStateException(
-                    "Unexpected response id '%s' for request '%s'."
-                        .formatted(responseRequestId, requestId)
-                );
-            }
-
-            if (!root.path("success").asBoolean())
-            {
-                final AgentErrorCode errorCode = AgentErrorCode.fromWireCode(root.path("errorCode").asString())
-                    .orElse(AgentErrorCode.UNKNOWN);
-                final String errorMessage = root.path("errorMessage").asString("");
-                throw new IllegalStateException(
-                    "Agent request failed. code=%s message=%s".formatted(errorCode.wireCode(), errorMessage)
-                );
-            }
-
-            return objectMapper.treeToValue(root, command.responseType());
-        }
-        catch (AsynchronousCloseException exception)
-        {
-            // The watchdog closed the channel. Mark the client closed so later sends fail fast referencing this
-            // timeout instead of hanging or emitting a generic IOException on every subsequent request.
-            this.closedReason = "a previous request timed out after %d ms".formatted(sendTimeoutMillis);
-            close();
-            throw new IllegalStateException(
-                "Agent did not respond within %d ms for action '%s' via socket '%s'."
-                    .formatted(sendTimeoutMillis, command.getClass().getSimpleName(), socketPath),
-                exception
-            );
-        }
-        catch (IOException exception)
-        {
-            throw new IllegalStateException(
-                "Failed to communicate with agent via socket '%s'.".formatted(socketPath),
-                exception
-            );
-        }
-        finally
-        {
-            watchdog.cancel(false);
-        }
-    }
-
-    /**
-     * Returns the resource when the client is connected, otherwise throws a message that references the reason
-     * the client was closed (e.g. a prior timeout) when one is known.
-     *
-     * @param resource
-     *     Connection-scoped resource that is {@code null} once the client is closed.
-     * @param <T>
-     *     Resource type.
-     * @return The non-null resource.
-     */
-    private <T> T requireConnected(@Nullable T resource)
-    {
-        if (resource == null)
-            throw new IllegalStateException(
-                closedReason != null ? "Client is not connected: " + closedReason : "Client is not connected.");
-        return resource;
+        return transport.send(command);
     }
 
     synchronized void rehandshake(Duration timeout, String token, int protocolVersion, String agentSha256)
     {
-        close();
-        connect(timeout);
+        transport.reconnect(timeout);
         handshake(token, protocolVersion, agentSha256);
     }
 
     @Override
     public synchronized void close()
     {
-        if (readTimeoutWatchdog != null)
-        {
-            readTimeoutWatchdog.shutdownNow();
-            readTimeoutWatchdog = null;
-        }
-        try
-        {
-            if (socketChannel != null)
-            {
-                socketChannel.close();
-                socketChannel = null;
-            }
-        }
-        catch (IOException ignored)
-        {
-            LOG.log(System.Logger.Level.TRACE, "Failed to close agent socket channel cleanly.");
-        }
-        finally
-        {
-            reader = null;
-            writer = null;
-        }
-    }
-
-    private void connect(Duration timeout)
-    {
-        // A fresh watchdog executor per connection: close() shut down any previous one, and reusing a shut-down
-        // executor would silently drop the timeout task on a reconnect.
-        this.readTimeoutWatchdog = Executors.newSingleThreadScheduledExecutor(
-            Thread.ofPlatform().name("lk-read-timeout-watchdog").daemon(true).factory()
-        );
-        this.closedReason = null;
-
-        final long deadline = System.nanoTime() + timeout.toNanos();
-        Exception lastException = null;
-
-        while (System.nanoTime() < deadline)
-        {
-            SocketChannel channel = null;
-            try
-            {
-                channel = SocketChannel.open(StandardProtocolFamily.UNIX);
-                channel.connect(UnixDomainSocketAddress.of(socketPath));
-                this.socketChannel = channel;
-                this.reader = new BufferedReader(
-                    new InputStreamReader(Channels.newInputStream(channel), StandardCharsets.UTF_8)
-                );
-                this.writer = new BufferedWriter(
-                    new OutputStreamWriter(Channels.newOutputStream(channel), StandardCharsets.UTF_8)
-                );
-                return;
-            }
-            catch (Exception exception)
-            {
-                lastException = exception;
-                closeFailedChannel(channel, exception);
-                sleep(100L);
-            }
-        }
-
-        // Connection failed within the timeout: do not leak the watchdog executor created above.
-        if (readTimeoutWatchdog != null)
-        {
-            readTimeoutWatchdog.shutdownNow();
-            readTimeoutWatchdog = null;
-        }
-        throw new IllegalStateException(
-            "Failed to connect to agent socket '%s' within timeout %s."
-                .formatted(socketPath, timeout),
-            lastException
-        );
-    }
-
-    private static void closeFailedChannel(@Nullable SocketChannel channel, Exception connectionException)
-    {
-        if (channel == null)
-            return;
-        try
-        {
-            channel.close();
-        }
-        catch (IOException closeException)
-        {
-            connectionException.addSuppressed(closeException);
-        }
-    }
-
-    private static void sleep(long millis)
-    {
-        try
-        {
-            Thread.sleep(millis);
-        }
-        catch (InterruptedException exception)
-        {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("Interrupted while waiting for agent connection.", exception);
-        }
+        transport.close();
     }
 
     private String nextRequestId()

@@ -64,6 +64,10 @@ final class AgentRequestDispatcher
      */
     private final AgentPlayerActions playerActions;
     /**
+     * Handler for synthetic-player messages and inventory state.
+     */
+    private final AgentPlayerStateActions playerStateActions;
+    /**
      * Handler for inventory/menu protocol actions.
      */
     private final AgentMenuActions menuActions;
@@ -97,6 +101,8 @@ final class AgentRequestDispatcher
      *     World action handler.
      * @param playerActions
      *     Player action handler.
+     * @param playerStateActions
+     *     Player message and inventory-state handler.
      * @param menuActions
      *     Menu action handler.
      * @param eventActions
@@ -108,6 +114,7 @@ final class AgentRequestDispatcher
         ObjectMapper objectMapper,
         AgentWorldActions worldActions,
         AgentPlayerActions playerActions,
+        AgentPlayerStateActions playerStateActions,
         AgentMenuActions menuActions,
         AgentEventActions eventActions,
         Config config)
@@ -115,6 +122,7 @@ final class AgentRequestDispatcher
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper");
         this.worldActions = Objects.requireNonNull(worldActions, "worldActions");
         this.playerActions = Objects.requireNonNull(playerActions, "playerActions");
+        this.playerStateActions = Objects.requireNonNull(playerStateActions, "playerStateActions");
         this.menuActions = Objects.requireNonNull(menuActions, "menuActions");
         this.eventActions = Objects.requireNonNull(eventActions, "eventActions");
         Objects.requireNonNull(config, "config");
@@ -253,20 +261,20 @@ final class AgentRequestDispatcher
                 case GetOpenMenu.Command c -> handle(c, menuActions::handleGetOpenMenu);
                 case ClickMenuSlot.Command c -> handle(c, menuActions::handleClickMenuSlot);
                 case DragMenuSlots.Command c -> handle(c, menuActions::handleDragMenuSlots);
-                case GetPlayerMessages.Command c -> handle(c, playerActions::handleGetPlayerMessages);
+                case GetPlayerMessages.Command c -> handle(c, playerStateActions::handleGetPlayerMessages);
                 case WaitTicks.Command c -> handle(c, worldActions::handleWaitTicks);
                 case GetServerTick.Command c -> handle(c, worldActions::handleGetServerTick);
                 case TeleportPlayer.Command c -> handle(c, playerActions::handleTeleportPlayer);
                 case LoadChunk.Command c -> handle(c, worldActions::handleLoadChunk);
                 case UnloadChunk.Command c -> handle(c, worldActions::handleUnloadChunk);
                 case IsChunkLoaded.Command c -> handle(c, worldActions::handleIsChunkLoaded);
-                case GetPlayerInventory.Command c -> handle(c, playerActions::handleGetPlayerInventory);
-                case DropItem.Command c -> handle(c, playerActions::handleDropItem);
+                case GetPlayerInventory.Command c -> handle(c, playerStateActions::handleGetPlayerInventory);
+                case DropItem.Command c -> handle(c, playerStateActions::handleDropItem);
                 case RegisterEventListener.Command c -> handle(c, eventActions::handleRegisterEventListener);
                 case GetCapturedEvents.Command c -> handle(c, eventActions::handleGetCapturedEvents);
                 case ClearCapturedEvents.Command c -> handle(c, eventActions::handleClearCapturedEvents);
                 case UnregisterEventListener.Command c -> handle(c, eventActions::handleUnregisterEventListener);
-                case GetPlayerChatComponents.Command c -> handle(c, playerActions::handleGetPlayerChatComponents);
+                case GetPlayerChatComponents.Command c -> handle(c, playerStateActions::handleGetPlayerChatComponents);
                 case GetServerPlatform.Command c -> handle(c, worldActions::handleGetServerPlatform);
                 case Handshake.Command ignored ->
                     throw new IllegalStateException("Unreachable HANDSHAKE dispatch branch.");

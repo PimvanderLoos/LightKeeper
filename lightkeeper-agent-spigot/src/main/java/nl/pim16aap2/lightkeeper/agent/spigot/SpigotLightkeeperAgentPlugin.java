@@ -124,6 +124,11 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin
                 this,
                 mainThreadExecutor,
                 playerStore,
+                botPlayerNmsAdapter
+            );
+            final AgentPlayerStateActions playerStateActions = new AgentPlayerStateActions(
+                mainThreadExecutor,
+                playerStore,
                 objectMapper,
                 botPlayerNmsAdapter
             );
@@ -134,6 +139,7 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin
                 objectMapper,
                 worldActions,
                 playerActions,
+                playerStateActions,
                 menuActions,
                 eventActions,
                 new AgentRequestDispatcher.Config(

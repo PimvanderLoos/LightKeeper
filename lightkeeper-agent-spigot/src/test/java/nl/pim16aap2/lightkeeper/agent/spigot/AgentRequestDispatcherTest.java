@@ -126,7 +126,7 @@ class AgentRequestDispatcherTest
     {
         // setup
         final DispatcherFixture fixture = createDispatcherFixture();
-        when(fixture.playerActions().handleGetPlayerChatComponents(any()))
+        when(fixture.playerStateActions().handleGetPlayerChatComponents(any()))
             .thenThrow(new IllegalArgumentException("Invalid UUID string: bad-uuid"));
         final String requestLine = toJson(
             new GetPlayerChatComponents.Command(
@@ -149,7 +149,7 @@ class AgentRequestDispatcherTest
     {
         // setup
         final DispatcherFixture fixture = createDispatcherFixture();
-        when(fixture.playerActions().handleGetPlayerMessages(any()))
+        when(fixture.playerStateActions().handleGetPlayerMessages(any()))
             .thenThrow(new IllegalArgumentException("Invalid UUID string: not-a-uuid"));
         final String requestLine = toJson(
             new GetPlayerMessages.Command("request-invalid-uuid", UUID.randomUUID()));
@@ -311,7 +311,7 @@ class AgentRequestDispatcherTest
             .thenReturn(new ClickMenuSlot.Response());
         when(fixture.menuActions().handleDragMenuSlots(any(DragMenuSlots.Command.class)))
             .thenReturn(new DragMenuSlots.Response());
-        when(fixture.playerActions().handleGetPlayerMessages(any(GetPlayerMessages.Command.class)))
+        when(fixture.playerStateActions().handleGetPlayerMessages(any(GetPlayerMessages.Command.class)))
             .thenReturn(new GetPlayerMessages.Response(java.util.List.of()));
         when(fixture.worldActions().handleWaitTicks(any(WaitTicks.Command.class)))
             .thenReturn(new WaitTicks.Response(0L, 0L));
@@ -325,9 +325,9 @@ class AgentRequestDispatcherTest
             .thenReturn(new UnloadChunk.Response(true));
         when(fixture.worldActions().handleIsChunkLoaded(any(IsChunkLoaded.Command.class)))
             .thenReturn(new IsChunkLoaded.Response(true));
-        when(fixture.playerActions().handleGetPlayerInventory(any(GetPlayerInventory.Command.class)))
+        when(fixture.playerStateActions().handleGetPlayerInventory(any(GetPlayerInventory.Command.class)))
             .thenReturn(new GetPlayerInventory.Response(java.util.List.of()));
-        when(fixture.playerActions().handleDropItem(any(DropItem.Command.class)))
+        when(fixture.playerStateActions().handleDropItem(any(DropItem.Command.class)))
             .thenReturn(new DropItem.Response(false));
         when(fixture.eventActions().handleRegisterEventListener(any(RegisterEventListener.Command.class)))
             .thenReturn(new RegisterEventListener.Response());
@@ -337,7 +337,7 @@ class AgentRequestDispatcherTest
             .thenReturn(new ClearCapturedEvents.Response());
         when(fixture.eventActions().handleUnregisterEventListener(any(UnregisterEventListener.Command.class)))
             .thenReturn(new UnregisterEventListener.Response());
-        when(fixture.playerActions().handleGetPlayerChatComponents(any(GetPlayerChatComponents.Command.class)))
+        when(fixture.playerStateActions().handleGetPlayerChatComponents(any(GetPlayerChatComponents.Command.class)))
             .thenReturn(new GetPlayerChatComponents.Response("[]"));
         when(fixture.worldActions().handleGetServerPlatform(any(GetServerPlatform.Command.class)))
             .thenReturn(new GetServerPlatform.Response("SPIGOT"));
@@ -386,20 +386,20 @@ class AgentRequestDispatcherTest
         verify(fixture.menuActions()).handleGetOpenMenu(any(GetOpenMenu.Command.class));
         verify(fixture.menuActions()).handleClickMenuSlot(any(ClickMenuSlot.Command.class));
         verify(fixture.menuActions()).handleDragMenuSlots(any(DragMenuSlots.Command.class));
-        verify(fixture.playerActions()).handleGetPlayerMessages(any(GetPlayerMessages.Command.class));
+        verify(fixture.playerStateActions()).handleGetPlayerMessages(any(GetPlayerMessages.Command.class));
         verify(fixture.worldActions()).handleWaitTicks(any(WaitTicks.Command.class));
         verify(fixture.worldActions()).handleGetServerTick(any(GetServerTick.Command.class));
         verify(fixture.playerActions()).handleTeleportPlayer(any(TeleportPlayer.Command.class));
         verify(fixture.worldActions()).handleLoadChunk(any(LoadChunk.Command.class));
         verify(fixture.worldActions()).handleUnloadChunk(any(UnloadChunk.Command.class));
         verify(fixture.worldActions()).handleIsChunkLoaded(any(IsChunkLoaded.Command.class));
-        verify(fixture.playerActions()).handleGetPlayerInventory(any(GetPlayerInventory.Command.class));
-        verify(fixture.playerActions()).handleDropItem(any(DropItem.Command.class));
+        verify(fixture.playerStateActions()).handleGetPlayerInventory(any(GetPlayerInventory.Command.class));
+        verify(fixture.playerStateActions()).handleDropItem(any(DropItem.Command.class));
         verify(fixture.eventActions()).handleRegisterEventListener(any(RegisterEventListener.Command.class));
         verify(fixture.eventActions()).handleGetCapturedEvents(any(GetCapturedEvents.Command.class));
         verify(fixture.eventActions()).handleClearCapturedEvents(any(ClearCapturedEvents.Command.class));
         verify(fixture.eventActions()).handleUnregisterEventListener(any(UnregisterEventListener.Command.class));
-        verify(fixture.playerActions()).handleGetPlayerChatComponents(any(GetPlayerChatComponents.Command.class));
+        verify(fixture.playerStateActions()).handleGetPlayerChatComponents(any(GetPlayerChatComponents.Command.class));
         verify(fixture.worldActions()).handleGetServerPlatform(any(GetServerPlatform.Command.class));
     }
 
@@ -548,6 +548,11 @@ class AgentRequestDispatcherTest
             plugin,
             mainThreadExecutor,
             playerStore,
+            nmsAdapter
+        );
+        final AgentPlayerStateActions playerStateActions = new AgentPlayerStateActions(
+            mainThreadExecutor,
+            playerStore,
             objectMapper,
             nmsAdapter
         );
@@ -558,6 +563,7 @@ class AgentRequestDispatcherTest
             objectMapper,
             worldActions,
             playerActions,
+            playerStateActions,
             menuActions,
             eventActions,
             new AgentRequestDispatcher.Config(
@@ -576,12 +582,14 @@ class AgentRequestDispatcherTest
         .build();
         final AgentWorldActions worldActions = mock();
         final AgentPlayerActions playerActions = mock();
+        final AgentPlayerStateActions playerStateActions = mock();
         final AgentMenuActions menuActions = mock();
         final AgentEventActions eventActions = mock();
         final AgentRequestDispatcher dispatcher = new AgentRequestDispatcher(
             objectMapper,
             worldActions,
             playerActions,
+            playerStateActions,
             menuActions,
             eventActions,
             new AgentRequestDispatcher.Config(
@@ -591,13 +599,15 @@ class AgentRequestDispatcherTest
                 Logger.getLogger(AgentRequestDispatcherTest.class.getName())
             )
         );
-        return new DispatcherFixture(dispatcher, worldActions, playerActions, menuActions, eventActions);
+        return new DispatcherFixture(
+            dispatcher, worldActions, playerActions, playerStateActions, menuActions, eventActions);
     }
 
     private record DispatcherFixture(
         AgentRequestDispatcher dispatcher,
         AgentWorldActions worldActions,
         AgentPlayerActions playerActions,
+        AgentPlayerStateActions playerStateActions,
         AgentMenuActions menuActions,
         AgentEventActions eventActions)
     {

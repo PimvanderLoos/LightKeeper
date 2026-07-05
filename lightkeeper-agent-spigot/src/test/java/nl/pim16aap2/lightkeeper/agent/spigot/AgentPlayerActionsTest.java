@@ -152,7 +152,7 @@ class AgentPlayerActionsTest
         {
             bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
             bukkit.when(Bukkit::getPluginManager).thenReturn(pluginManager);
-            response = fixture.playerActions().handleDropItem(command);
+            response = fixture.stateActions().handleDropItem(command);
         }
 
         // verify
@@ -198,7 +198,7 @@ class AgentPlayerActionsTest
                 event.setCancelled(true);
                 return null;
             }).when(pluginManager).callEvent(any(PlayerDropItemEvent.class));
-            response = fixture.playerActions().handleDropItem(command);
+            response = fixture.stateActions().handleDropItem(command);
         }
 
         // verify
@@ -239,7 +239,7 @@ class AgentPlayerActionsTest
         try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
         {
             bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
-            response = fixture.playerActions().handleGetPlayerMessages(command);
+            response = fixture.stateActions().handleGetPlayerMessages(command);
         }
 
         // verify
@@ -264,7 +264,7 @@ class AgentPlayerActionsTest
         try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
         {
             bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
-            response = fixture.playerActions().handleGetPlayerChatComponents(command);
+            response = fixture.stateActions().handleGetPlayerChatComponents(command);
         }
 
         // verify
@@ -298,7 +298,7 @@ class AgentPlayerActionsTest
         try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
         {
             bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
-            response = fixture.playerActions().handleGetPlayerInventory(command);
+            response = fixture.stateActions().handleGetPlayerInventory(command);
         }
 
         // verify
@@ -400,7 +400,7 @@ class AgentPlayerActionsTest
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class))
         {
             bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
-            response = fixture.playerActions().handleDropItem(command);
+            response = fixture.stateActions().handleDropItem(command);
         }
 
         // verify - no item to drop, so dropped=false
@@ -461,10 +461,15 @@ class AgentPlayerActionsTest
             plugin,
             mainThreadExecutor,
             playerStore,
+            nmsAdapter
+        );
+        final AgentPlayerStateActions stateActions = new AgentPlayerStateActions(
+            mainThreadExecutor,
+            playerStore,
             objectMapper,
             nmsAdapter
         );
-        return new PlayerActionsFixture(playerActions, playerStore, nmsAdapter);
+        return new PlayerActionsFixture(playerActions, stateActions, playerStore, nmsAdapter);
     }
 
     private static Player mockPlayer(UUID uuid)
@@ -485,6 +490,7 @@ class AgentPlayerActionsTest
 
     private record PlayerActionsFixture(
         AgentPlayerActions playerActions,
+        AgentPlayerStateActions stateActions,
         AgentSyntheticPlayerStore playerStore,
         IBotPlayerNmsAdapter nmsAdapter)
     {

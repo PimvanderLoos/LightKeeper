@@ -6,7 +6,7 @@ import org.bukkit.Material;
  * Material classification helpers shared by agent action handlers.
  *
  * <p>Centralises predicates that need to behave identically across handlers (e.g. {@link AgentMenuActions}
- * and {@link AgentPlayerActions}). Avoids invoking {@link Material#isAir()} directly because that delegates
+ * and {@link AgentPlayerStateActions}). Avoids invoking {@link Material#isAir()} directly because that delegates
  * through {@code Material.asBlockType()}, which forces initialisation of {@code org.bukkit.Registry} and
  * makes the call hostile to unit tests that do not boot a Bukkit server.
  */
