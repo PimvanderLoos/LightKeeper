@@ -341,34 +341,34 @@ class AgentRequestDispatcherTest
             .thenReturn(new GetServerPlatform.Response("request-28", "SPIGOT"));
 
         // execute
-        fixture.dispatcher().handleRequestLine(toJson(new NewWorld.Command("request-1", "w", "NORMAL", "NORMAL", 0L)), true);
-        fixture.dispatcher().handleRequestLine(toJson(new ExecuteCommand.Command("request-2", CommandSource.CONSOLE, "time set day")), true);
-        fixture.dispatcher().handleRequestLine(toJson(new BlockType.Command("request-3", "world", 0, 64, 0)), true);
-        fixture.dispatcher().handleRequestLine(toJson(new SetBlock.Command("request-4", "world", 0, 64, 0, "stone")), true);
-        fixture.dispatcher().handleRequestLine(toJson(new CreatePlayer.Command("request-5", "bot", uuid, "world", null, null, null, null, null)), true);
-        fixture.dispatcher().handleRequestLine(toJson(new RemovePlayer.Command("request-6", uuid)), true);
-        fixture.dispatcher().handleRequestLine(toJson(new ExecutePlayerCommand.Command("request-7", uuid, "gamemode creative")), true);
-        fixture.dispatcher().handleRequestLine(toJson(new PlacePlayerBlock.Command("request-8", uuid, "stone", 0, 64, 0)), true);
-        fixture.dispatcher().handleRequestLine(toJson(new LeftClickBlock.Command("request-9", uuid, 0, 64, 0, "UP")), true);
-        fixture.dispatcher().handleRequestLine(toJson(new RightClickBlock.Command("request-10", uuid, 0, 64, 0, "UP")), true);
-        fixture.dispatcher().handleRequestLine(toJson(new GetOpenMenu.Command("request-11", uuid)), true);
-        fixture.dispatcher().handleRequestLine(toJson(new ClickMenuSlot.Command("request-12", uuid, 0)), true);
-        fixture.dispatcher().handleRequestLine(toJson(new DragMenuSlots.Command("request-13", uuid, "stone", new int[]{0, 1})), true);
-        fixture.dispatcher().handleRequestLine(toJson(new GetPlayerMessages.Command("request-14", uuid)), true);
-        fixture.dispatcher().handleRequestLine(toJson(new WaitTicks.Command("request-15", 0)), true);
-        fixture.dispatcher().handleRequestLine(toJson(new GetServerTick.Command("request-16")), true);
-        fixture.dispatcher().handleRequestLine(toJson(new TeleportPlayer.Command("request-17", uuid, "world", 0, 64, 0)), true);
-        fixture.dispatcher().handleRequestLine(toJson(new LoadChunk.Command("request-18", "world", 0, 0)), true);
-        fixture.dispatcher().handleRequestLine(toJson(new UnloadChunk.Command("request-19", "world", 0, 0)), true);
-        fixture.dispatcher().handleRequestLine(toJson(new IsChunkLoaded.Command("request-20", "world", 0, 0)), true);
-        fixture.dispatcher().handleRequestLine(toJson(new GetPlayerInventory.Command("request-21", uuid)), true);
-        fixture.dispatcher().handleRequestLine(toJson(new DropItem.Command("request-22", uuid)), true);
-        fixture.dispatcher().handleRequestLine(toJson(new RegisterEventListener.Command("request-23", "org.bukkit.event.player.PlayerJoinEvent")), true);
-        fixture.dispatcher().handleRequestLine(toJson(new GetCapturedEvents.Command("request-24", "org.bukkit.event.player.PlayerJoinEvent")), true);
-        fixture.dispatcher().handleRequestLine(toJson(new ClearCapturedEvents.Command("request-25", "org.bukkit.event.player.PlayerJoinEvent")), true);
-        fixture.dispatcher().handleRequestLine(toJson(new UnregisterEventListener.Command("request-26", "org.bukkit.event.player.PlayerJoinEvent")), true);
-        fixture.dispatcher().handleRequestLine(toJson(new GetPlayerChatComponents.Command("request-27", uuid)), true);
-        fixture.dispatcher().handleRequestLine(toJson(new GetServerPlatform.Command("request-28")), true);
+        dispatchExpectingSuccess(fixture, toJson(new NewWorld.Command("request-1", "w", "NORMAL", "NORMAL", 0L)));
+        dispatchExpectingSuccess(fixture, toJson(new ExecuteCommand.Command("request-2", CommandSource.CONSOLE, "time set day")));
+        dispatchExpectingSuccess(fixture, toJson(new BlockType.Command("request-3", "world", 0, 64, 0)));
+        dispatchExpectingSuccess(fixture, toJson(new SetBlock.Command("request-4", "world", 0, 64, 0, "stone")));
+        dispatchExpectingSuccess(fixture, toJson(new CreatePlayer.Command("request-5", "bot", uuid, "world", null, null, null, null, null)));
+        dispatchExpectingSuccess(fixture, toJson(new RemovePlayer.Command("request-6", uuid)));
+        dispatchExpectingSuccess(fixture, toJson(new ExecutePlayerCommand.Command("request-7", uuid, "gamemode creative")));
+        dispatchExpectingSuccess(fixture, toJson(new PlacePlayerBlock.Command("request-8", uuid, "stone", 0, 64, 0)));
+        dispatchExpectingSuccess(fixture, toJson(new LeftClickBlock.Command("request-9", uuid, 0, 64, 0, "UP")));
+        dispatchExpectingSuccess(fixture, toJson(new RightClickBlock.Command("request-10", uuid, 0, 64, 0, "UP")));
+        dispatchExpectingSuccess(fixture, toJson(new GetOpenMenu.Command("request-11", uuid)));
+        dispatchExpectingSuccess(fixture, toJson(new ClickMenuSlot.Command("request-12", uuid, 0)));
+        dispatchExpectingSuccess(fixture, toJson(new DragMenuSlots.Command("request-13", uuid, "stone", new int[]{0, 1})));
+        dispatchExpectingSuccess(fixture, toJson(new GetPlayerMessages.Command("request-14", uuid)));
+        dispatchExpectingSuccess(fixture, toJson(new WaitTicks.Command("request-15", 0)));
+        dispatchExpectingSuccess(fixture, toJson(new GetServerTick.Command("request-16")));
+        dispatchExpectingSuccess(fixture, toJson(new TeleportPlayer.Command("request-17", uuid, "world", 0, 64, 0)));
+        dispatchExpectingSuccess(fixture, toJson(new LoadChunk.Command("request-18", "world", 0, 0)));
+        dispatchExpectingSuccess(fixture, toJson(new UnloadChunk.Command("request-19", "world", 0, 0)));
+        dispatchExpectingSuccess(fixture, toJson(new IsChunkLoaded.Command("request-20", "world", 0, 0)));
+        dispatchExpectingSuccess(fixture, toJson(new GetPlayerInventory.Command("request-21", uuid)));
+        dispatchExpectingSuccess(fixture, toJson(new DropItem.Command("request-22", uuid)));
+        dispatchExpectingSuccess(fixture, toJson(new RegisterEventListener.Command("request-23", "org.bukkit.event.player.PlayerJoinEvent")));
+        dispatchExpectingSuccess(fixture, toJson(new GetCapturedEvents.Command("request-24", "org.bukkit.event.player.PlayerJoinEvent")));
+        dispatchExpectingSuccess(fixture, toJson(new ClearCapturedEvents.Command("request-25", "org.bukkit.event.player.PlayerJoinEvent")));
+        dispatchExpectingSuccess(fixture, toJson(new UnregisterEventListener.Command("request-26", "org.bukkit.event.player.PlayerJoinEvent")));
+        dispatchExpectingSuccess(fixture, toJson(new GetPlayerChatComponents.Command("request-27", uuid)));
+        dispatchExpectingSuccess(fixture, toJson(new GetServerPlatform.Command("request-28")));
 
         // verify
         verify(fixture.worldActions()).handleNewWorld(any(NewWorld.Command.class));
@@ -619,6 +619,19 @@ class AgentRequestDispatcherTest
         {
             throw new IllegalArgumentException("Failed to parse response JSON: " + responseJson, exception);
         }
+    }
+
+    /**
+     * Dispatches a request line and asserts a success response, so a response record whose serialization throws
+     * (which the dispatcher would otherwise swallow into REQUEST_FAILED) is caught rather than hidden.
+     */
+    private static void dispatchExpectingSuccess(DispatcherFixture fixture, String requestLine)
+    {
+        final AgentRequestDispatcher.RequestDispatchResult result =
+            fixture.dispatcher().handleRequestLine(requestLine, true);
+        assertThat(isSuccess(result.responseJson()))
+            .as("dispatch should produce a success response for %s", requestLine)
+            .isTrue();
     }
 
     private static String errorCode(String responseJson)
