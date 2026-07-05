@@ -8,6 +8,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,6 +19,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.logging.Level;
 
 /**
  * Dynamically captures Bukkit events by registering temporary listeners.
@@ -55,6 +57,11 @@ final class AgentEventCapture
      * Active marker listeners keyed by fully qualified event class name.
      */
     private final Map<String, Listener> activeListeners = new ConcurrentHashMap<>();
+    /**
+     * {@code eventClassName#methodName} keys whose capture failure has already been logged, so a getter that
+     * throws on every event is warned about once rather than flooding the log up to the capture cap.
+     */
+    private final Set<String> loggedCaptureFailures = ConcurrentHashMap.newKeySet();
 
     /**
      * @param plugin
@@ -258,9 +265,22 @@ final class AgentEventCapture
                     if (isPrintable(value))
                         data.put(method.getName(), String.valueOf(value));
                 }
-                catch (Exception ignored)
+                catch (Exception exception)
                 {
-                    // Ignored
+                    // Never drop a getter failure silently: an absent key would let a negative assertion
+                    // ("event does not contain X") pass on broken capture. Record a visible sentinel in the
+                    // payload and warn once per event-class/method so the failure surfaces in test output.
+                    final Throwable cause = exception instanceof InvocationTargetException && exception.getCause() != null
+                        ? exception.getCause()
+                        : exception;
+                    data.put(method.getName(), "<capture-failed: " + cause.getClass().getSimpleName() + ">");
+                    if (loggedCaptureFailures.add(event.getClass().getName() + "#" + method.getName()))
+                        plugin.getLogger().log(
+                            Level.WARNING,
+                            "Failed to capture property '%s' of event '%s'."
+                                .formatted(method.getName(), event.getClass().getName()),
+                            cause
+                        );
                 }
             }
         }

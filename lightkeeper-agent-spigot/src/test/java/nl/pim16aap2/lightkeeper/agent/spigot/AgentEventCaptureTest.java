@@ -65,6 +65,45 @@ class AgentEventCaptureTest
     }
 
     @Test
+    void registerListener_shouldRecordSentinelWhenEventGetterThrows()
+        throws Exception
+    {
+        // setup
+        final JavaPlugin plugin = mock();
+        when(plugin.getLogger()).thenReturn(java.util.logging.Logger.getLogger("test"));
+        final PluginManager pluginManager = mock();
+        final AgentEventCapture eventCapture = new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin));
+        final ArgumentCaptor<EventExecutor> executorCaptor = ArgumentCaptor.forClass(EventExecutor.class);
+
+        // execute
+        try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
+        {
+            bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
+            when(pluginManager.getPlugins()).thenReturn(new Plugin[0]);
+            bukkitMockedStatic.when(Bukkit::getPluginManager).thenReturn(pluginManager);
+            eventCapture.registerListener(ThrowingGetterEvent.class.getName());
+        }
+        verify(pluginManager).registerEvent(
+            eq(ThrowingGetterEvent.class),
+            any(Listener.class),
+            eq(EventPriority.MONITOR),
+            executorCaptor.capture(),
+            eq(plugin),
+            eq(false)
+        );
+        executorCaptor.getValue().execute(mock(Listener.class), new ThrowingGetterEvent());
+
+        // verify — a throwing getter must not be dropped silently; it is recorded as a visible sentinel
+        final List<Map<String, String>> events =
+            eventCapture.getCapturedEvents(ThrowingGetterEvent.class.getName());
+        assertThat(events).hasSize(1);
+        assertThat(events.getFirst().get("getBroken"))
+            .isNotNull()
+            .contains("capture-failed")
+            .contains("IllegalStateException");
+    }
+
+    @Test
     void registerListener_shouldThrowExceptionWhenClassIsNotBukkitEvent()
     {
         // setup
@@ -305,6 +344,33 @@ class AgentEventCaptureTest
         public @org.jspecify.annotations.Nullable Object getNullValue()
         {
             return nullValue;
+        }
+
+        @Override
+        public HandlerList getHandlers()
+        {
+            return HANDLERS;
+        }
+
+        @SuppressWarnings("unused")
+        public static HandlerList getHandlerList()
+        {
+            return HANDLERS;
+        }
+    }
+
+    public static final class ThrowingGetterEvent extends Event
+    {
+        private static final HandlerList HANDLERS = new HandlerList();
+
+        private ThrowingGetterEvent()
+        {
+        }
+
+        @SuppressWarnings("unused")
+        public String getBroken()
+        {
+            throw new IllegalStateException("boom");
         }
 
         @Override
