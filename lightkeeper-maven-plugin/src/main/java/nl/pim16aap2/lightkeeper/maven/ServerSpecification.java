@@ -52,7 +52,6 @@ public record ServerSpecification(
     Path baseServerCacheDirectoryRoot,
     Path serverWorkDirectoryRoot,
     Path runtimeManifestPath,
-    Path agentSocketDirectory,
     boolean versionedCacheDirectories,
     int jarCacheExpiryDays,
     boolean forceRebuildJar,
