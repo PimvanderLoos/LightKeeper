@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Mirrors the Minecraft server's root logger level (INFO) so AgentServerErrorCaptureTest exercises WARN-level
+    capture through the real Log4j pipeline; events are sunk into a Null appender to keep test output clean.
+-->
+<Configuration status="ERROR">
+    <Appenders>
+        <Null name="DevNull"/>
+    </Appenders>
+    <Loggers>
+        <Root level="INFO">
+            <AppenderRef ref="DevNull"/>
+        </Root>
+    </Loggers>
+</Configuration>

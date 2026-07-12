@@ -6,6 +6,7 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.exc.ValueInstantiationException;
 import nl.pim16aap2.lightkeeper.protocol.BlockType;
 import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEvents;
+import nl.pim16aap2.lightkeeper.protocol.ClearServerErrors;
 import nl.pim16aap2.lightkeeper.protocol.ClickMenuSlot;
 import nl.pim16aap2.lightkeeper.protocol.CreatePlayer;
 import nl.pim16aap2.lightkeeper.protocol.DragMenuSlots;
@@ -17,6 +18,7 @@ import nl.pim16aap2.lightkeeper.protocol.GetOpenMenu;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponents;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerInventory;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerMessages;
+import nl.pim16aap2.lightkeeper.protocol.GetServerErrors;
 import nl.pim16aap2.lightkeeper.protocol.GetServerPlatform;
 import nl.pim16aap2.lightkeeper.protocol.GetServerTick;
 import nl.pim16aap2.lightkeeper.protocol.Handshake;
@@ -75,6 +77,10 @@ final class AgentRequestDispatcher
      * Handler for dynamic Bukkit event capture.
      */
     private final AgentEventActions eventActions;
+    /**
+     * Handler for structured server-error capture.
+     */
+    private final AgentServerErrorActions serverErrorActions;
 
     /**
      * Immutable authentication, protocol, and diagnostics configuration.
@@ -94,6 +100,8 @@ final class AgentRequestDispatcher
      *     Menu action handler.
      * @param eventActions
      *     Event capture action handler.
+     * @param serverErrorActions
+     *     Structured server-error capture action handler.
      * @param config
      *     Immutable dispatcher configuration (auth, protocol, SHA, logger).
      */
@@ -104,6 +112,7 @@ final class AgentRequestDispatcher
         AgentPlayerStateActions playerStateActions,
         AgentMenuActions menuActions,
         AgentEventActions eventActions,
+        AgentServerErrorActions serverErrorActions,
         Config config)
     {
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper");
@@ -112,6 +121,7 @@ final class AgentRequestDispatcher
         this.playerStateActions = Objects.requireNonNull(playerStateActions, "playerStateActions");
         this.menuActions = Objects.requireNonNull(menuActions, "menuActions");
         this.eventActions = Objects.requireNonNull(eventActions, "eventActions");
+        this.serverErrorActions = Objects.requireNonNull(serverErrorActions, "serverErrorActions");
         this.config = Objects.requireNonNull(config, "config");
     }
 
@@ -259,6 +269,8 @@ final class AgentRequestDispatcher
                 case UnregisterEventListener.Command c -> handle(c, eventActions::handleUnregisterEventListener);
                 case GetPlayerChatComponents.Command c -> handle(c, playerStateActions::handleGetPlayerChatComponents);
                 case GetServerPlatform.Command c -> handle(c, worldActions::handleGetServerPlatform);
+                case GetServerErrors.Command c -> handle(c, serverErrorActions::handleGetServerErrors);
+                case ClearServerErrors.Command c -> handle(c, serverErrorActions::handleClearServerErrors);
                 case Handshake.Command ignored ->
                     throw new IllegalStateException("Unreachable HANDSHAKE dispatch branch.");
             };
