@@ -6,6 +6,8 @@ import nl.pim16aap2.lightkeeper.framework.InventorySnapshot;
 import nl.pim16aap2.lightkeeper.framework.MenuHandle;
 import nl.pim16aap2.lightkeeper.framework.MenuItemSnapshot;
 import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
+import nl.pim16aap2.lightkeeper.framework.ServerErrorSnapshot;
+import nl.pim16aap2.lightkeeper.framework.ServerErrorsHandle;
 import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import org.bukkit.Material;
@@ -130,8 +132,12 @@ class HandleAssertionsTest
     @Test
     void lightkeeperFrameworkAssert_shouldExposeServerOutputAndValidateNoErrors()
     {
-        // setup
+        // setup — a captured WARNING must not fail hasNoServerErrors()
         final ILightkeeperFramework framework = mock(ILightkeeperFramework.class);
+        final ServerErrorsHandle serverErrorsHandle = mock(ServerErrorsHandle.class);
+        when(framework.serverErrors()).thenReturn(serverErrorsHandle);
+        when(serverErrorsHandle.getCaptured()).thenReturn(List.of(serverError(
+            ServerErrorSnapshot.Severity.WARNING, "WARN", "a warning, not an error")));
         when(framework.serverOutput()).thenReturn(List.of("Server started", "Done"));
 
         // execute + verify
@@ -142,16 +148,54 @@ class HandleAssertionsTest
     }
 
     @Test
-    void lightkeeperFrameworkAssert_shouldFailWhenServerOutputContainsErrors()
+    void lightkeeperFrameworkAssert_shouldFailWhenServerErrorsWereCaptured()
     {
         // setup
         final ILightkeeperFramework framework = mock(ILightkeeperFramework.class);
-        when(framework.serverOutput()).thenReturn(List.of("SEVERE: boom"));
+        final ServerErrorsHandle serverErrorsHandle = mock(ServerErrorsHandle.class);
+        when(framework.serverErrors()).thenReturn(serverErrorsHandle);
+        when(serverErrorsHandle.getCaptured()).thenReturn(List.of(new ServerErrorSnapshot(
+            1L,
+            ServerErrorSnapshot.Severity.ERROR,
+            "ERROR",
+            "net.example.SomePlugin",
+            "Server thread",
+            "boom",
+            "java.lang.IllegalStateException",
+            "boom",
+            List.of("java.lang.IllegalStateException: boom", "\tat net.example.SomePlugin.on(SomePlugin.java:1)")
+        )));
 
-        // execute + verify
+        // execute + verify — the failure message carries the structured context, including the stack trace
         assertThatThrownBy(() -> LightkeeperAssertions.assertThat(framework).hasNoServerErrors())
             .isInstanceOf(AssertionError.class)
-            .hasMessageContaining("SEVERE: boom");
+            .hasMessageContaining("net.example.SomePlugin")
+            .hasMessageContaining("boom")
+            .hasMessageContaining("\tat net.example.SomePlugin.on(SomePlugin.java:1)");
+    }
+
+    @Test
+    void lightkeeperFrameworkAssert_shouldIgnoreAllowlistedServerErrors()
+    {
+        // setup
+        final ILightkeeperFramework framework = mock(ILightkeeperFramework.class);
+        final ServerErrorsHandle serverErrorsHandle = mock(ServerErrorsHandle.class);
+        when(framework.serverErrors()).thenReturn(serverErrorsHandle);
+        when(serverErrorsHandle.getCaptured()).thenReturn(List.of(serverError(
+            ServerErrorSnapshot.Severity.ERROR, "ERROR", "known moving_piston complaint")));
+
+        // execute + verify
+        LightkeeperAssertions.assertThat(framework)
+            .hasNoServerErrors(error -> error.message().contains("moving_piston"));
+    }
+
+    private static ServerErrorSnapshot serverError(
+        ServerErrorSnapshot.Severity severity,
+        String levelName,
+        String message)
+    {
+        return new ServerErrorSnapshot(
+            1L, severity, levelName, "net.example.SomePlugin", "Server thread", message, null, null, List.of());
     }
 
     @Test

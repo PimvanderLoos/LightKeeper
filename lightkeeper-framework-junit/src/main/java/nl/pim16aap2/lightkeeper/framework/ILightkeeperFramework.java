@@ -138,6 +138,23 @@ public interface ILightkeeperFramework extends AutoCloseable
      */
     EventCaptureHandle captureEvents(String eventClassName);
 
+    /**
+     * Gets a handle over the always-on server-error capture.
+     *
+     * <p>The agent captures every WARN-or-worse log event inside the server as a structured snapshot — with the
+     * real throwable class, message, and cause chain — from the moment the agent plugin loads (before any
+     * plugin's {@code onEnable}). Failures inside the logging system itself (reported via Log4j's status
+     * logger) and stack traces written to the server process's raw stderr file descriptor are captured as well.
+     *
+     * <p>In shared-server mode the capture buffer is cleared automatically at the end of every test method, so
+     * each test observes only the errors of its own window; the first test's window also covers server boot.
+     * Known gaps: exceptions that are caught and never logged are invisible, as are log events emitted before
+     * the agent plugin loads (use {@link #serverOutput()} for pre-boot inspection).
+     *
+     * @return A handle exposing the captured server errors.
+     */
+    ServerErrorsHandle serverErrors();
+
     @Override
     void close();
 }

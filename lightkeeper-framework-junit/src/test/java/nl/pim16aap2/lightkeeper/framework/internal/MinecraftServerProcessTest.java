@@ -205,16 +205,13 @@ class MinecraftServerProcessTest
             runtimeManifest(tempDirectory),
             tempDirectory.resolve("diagnostics")
         );
-        final java.lang.reflect.Method appendOutputLine =
-            MinecraftServerProcess.class.getDeclaredMethod("appendOutputLine", String.class);
-        appendOutputLine.setAccessible(true);
-        appendOutputLine.invoke(serverProcess, "line one");
-        appendOutputLine.invoke(serverProcess, "line two");
+        appendOutputLine(serverProcess, "line one", false);
+        appendOutputLine(serverProcess, "line two", true);
 
         // execute
         final List<String> lines = serverProcess.snapshotOutputLines();
 
-        // verify
+        // verify — snapshotOutputLines merges both pipes in arrival order
         assertThat(lines).containsExactly("line one", "line two");
     }
 
@@ -232,10 +229,7 @@ class MinecraftServerProcessTest
         discardedField.setAccessible(true);
         discardedField.set(serverProcess, 5L);
 
-        final java.lang.reflect.Method appendOutputLine =
-            MinecraftServerProcess.class.getDeclaredMethod("appendOutputLine", String.class);
-        appendOutputLine.setAccessible(true);
-        appendOutputLine.invoke(serverProcess, "survivor line");
+        appendOutputLine(serverProcess, "survivor line", false);
 
         // execute
         final List<String> lines = serverProcess.snapshotOutputLines();
@@ -244,6 +238,68 @@ class MinecraftServerProcessTest
         assertThat(lines).hasSize(2);
         assertThat(lines.getFirst()).contains("Discarded").contains("5");
         assertThat(lines.get(1)).isEqualTo("survivor line");
+    }
+
+    @Test
+    void totalOutputLineCount_shouldIncludeDiscardedLines(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final MinecraftServerProcess serverProcess = new MinecraftServerProcess(
+            runtimeManifest(tempDirectory),
+            tempDirectory.resolve("diagnostics")
+        );
+        final java.lang.reflect.Field discardedField =
+            MinecraftServerProcess.class.getDeclaredField("discardedOutputLineCount");
+        discardedField.setAccessible(true);
+        discardedField.set(serverProcess, 7L);
+        appendOutputLine(serverProcess, "line one", false);
+        appendOutputLine(serverProcess, "line two", true);
+
+        // execute
+        final long totalLineCount = serverProcess.totalOutputLineCount();
+
+        // verify
+        assertThat(totalLineCount).isEqualTo(9L);
+    }
+
+    @Test
+    void snapshotStderrLinesFrom_shouldFilterByProvenanceAndWatermark(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final MinecraftServerProcess serverProcess = new MinecraftServerProcess(
+            runtimeManifest(tempDirectory),
+            tempDirectory.resolve("diagnostics")
+        );
+        appendOutputLine(serverProcess, "stdout before", false);
+        appendOutputLine(serverProcess, "stderr before", true);
+        final long watermark = serverProcess.totalOutputLineCount();
+        appendOutputLine(serverProcess, "stdout after", false);
+        appendOutputLine(serverProcess, "stderr after", true);
+
+        // execute
+        final List<MinecraftServerProcess.OutputLine> stderrLines =
+            serverProcess.snapshotStderrLinesFrom(watermark);
+
+        // verify — only stderr lines at or past the watermark are returned
+        assertThat(stderrLines)
+            .singleElement()
+            .satisfies(line ->
+            {
+                assertThat(line.text()).isEqualTo("stderr after");
+                assertThat(line.fromStderr()).isTrue();
+                assertThat(line.timestampMillis()).isPositive();
+            });
+    }
+
+    private static void appendOutputLine(MinecraftServerProcess serverProcess, String line, boolean fromStderr)
+        throws ReflectiveOperationException
+    {
+        final java.lang.reflect.Method appendOutputLine =
+            MinecraftServerProcess.class.getDeclaredMethod("appendOutputLine", String.class, boolean.class);
+        appendOutputLine.setAccessible(true);
+        appendOutputLine.invoke(serverProcess, line, fromStderr);
     }
 
     private static RuntimeManifest runtimeManifest(Path tempDirectory)

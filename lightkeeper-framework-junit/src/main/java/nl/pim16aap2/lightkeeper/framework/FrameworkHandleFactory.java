@@ -44,4 +44,12 @@ public final class FrameworkHandleFactory
     {
         return new EventCaptureHandle(frameworkGateway, eventClassName);
     }
+
+    /**
+     * Creates a server errors handle.
+     */
+    public static ServerErrorsHandle serverErrorsHandle(IFrameworkGatewayView frameworkGateway)
+    {
+        return new ServerErrorsHandle(frameworkGateway);
+    }
 }

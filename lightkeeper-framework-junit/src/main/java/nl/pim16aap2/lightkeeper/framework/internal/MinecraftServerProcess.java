@@ -8,6 +8,7 @@ import org.jspecify.annotations.Nullable;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -53,11 +55,31 @@ final class MinecraftServerProcess
     private final Path diagnosticsDirectory;
     private final Object outputLinesLock = new Object();
     @GuardedBy("outputLinesLock")
-    private final ArrayDeque<String> outputLines = new ArrayDeque<>(MAX_CAPTURED_OUTPUT_LINES);
+    private final ArrayDeque<OutputLine> outputLines = new ArrayDeque<>(MAX_CAPTURED_OUTPUT_LINES);
     @GuardedBy("outputLinesLock")
     private long discardedOutputLineCount = 0L;
     private @Nullable Process process;
     private @Nullable Thread outputThread;
+    private @Nullable Thread errorThread;
+
+    /**
+     * A single captured server output line with its file-descriptor provenance.
+     *
+     * <p>The stdout pipe carries the server's console appender output (formatted log lines). The stderr pipe
+     * carries only writers that bypass the logging system — the server redirects {@code System.err} into Log4j
+     * during startup, so post-boot stderr content is limited to raw file-descriptor writers such as Log4j's
+     * status logger or JVM-native output. That makes stderr provenance a reliable "bypassed logging" signal.
+     *
+     * @param text
+     *     The captured line.
+     * @param fromStderr
+     *     Whether the line arrived on the process's stderr pipe rather than stdout.
+     * @param timestampMillis
+     *     Epoch milliseconds at which the line was captured.
+     */
+    record OutputLine(String text, boolean fromStderr, long timestampMillis)
+    {
+    }
 
     MinecraftServerProcess(RuntimeManifest runtimeManifest, Path diagnosticsDirectory)
     {
@@ -72,7 +94,7 @@ final class MinecraftServerProcess
             throw new IllegalStateException("Minecraft server is already running.");
 
         clearStoppedProcessState();
-        if (outputThread != null && outputThread.isAlive())
+        if ((outputThread != null && outputThread.isAlive()) || (errorThread != null && errorThread.isAlive()))
             throw new IllegalStateException("Previous Minecraft server output reader is still stopping.");
         waitForWorldSessionLockRelease(SESSION_LOCK_RELEASE_TIMEOUT);
 
@@ -84,9 +106,12 @@ final class MinecraftServerProcess
         {
             final Process startedProcess = processBuilder.start();
             final Thread startedOutputThread = createOutputReaderThread(startedProcess, startLatch);
+            final Thread startedErrorThread = createErrorReaderThread(startedProcess);
             process = startedProcess;
             outputThread = startedOutputThread;
+            errorThread = startedErrorThread;
             startedOutputThread.start();
+            startedErrorThread.start();
             awaitStartupOrFail(startedProcess, startLatch, timeout);
         }
         catch (Exception exception)
@@ -147,7 +172,8 @@ final class MinecraftServerProcess
         command.add("--nogui");
         final ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.directory(serverDirectory.toFile());
-        processBuilder.redirectErrorStream(true);
+        // stdout and stderr are read through separate pipes so each captured line keeps its file-descriptor
+        // provenance; stderr content bypassed the server's logging system by definition (see OutputLine).
         return processBuilder;
     }
 
@@ -272,19 +298,24 @@ final class MinecraftServerProcess
 
     private void joinOutputThread(Duration timeout)
     {
-        if (outputThread != null)
+        outputThread = joinReaderThread(outputThread, timeout);
+        errorThread = joinReaderThread(errorThread, timeout);
+    }
+
+    private static @Nullable Thread joinReaderThread(@Nullable Thread readerThread, Duration timeout)
+    {
+        if (readerThread == null)
+            return null;
+
+        try
         {
-            try
-            {
-                outputThread.join(timeout.toMillis());
-            }
-            catch (InterruptedException exception)
-            {
-                Thread.currentThread().interrupt();
-            }
-            if (!outputThread.isAlive())
-                outputThread = null;
+            readerThread.join(timeout.toMillis());
         }
+        catch (InterruptedException exception)
+        {
+            Thread.currentThread().interrupt();
+        }
+        return readerThread.isAlive() ? readerThread : null;
     }
 
     private void clearProcessState(Process completedProcess)
@@ -293,6 +324,8 @@ final class MinecraftServerProcess
             process = null;
         if (outputThread != null && !outputThread.isAlive())
             outputThread = null;
+        if (errorThread != null && !errorThread.isAlive())
+            errorThread = null;
     }
 
     private void clearStoppedProcessState()
@@ -443,20 +476,58 @@ final class MinecraftServerProcess
     {
         synchronized (outputLinesLock)
         {
-            if (discardedOutputLineCount == 0L)
-                return List.copyOf(outputLines);
-
             final List<String> snapshot = new ArrayList<>(outputLines.size() + 1);
-            snapshot.add(
-                "[lightkeeper] Discarded %d older server log lines before this captured tail."
-                    .formatted(discardedOutputLineCount)
-            );
-            snapshot.addAll(outputLines);
+            if (discardedOutputLineCount > 0L)
+                snapshot.add(
+                    "[lightkeeper] Discarded %d older server log lines before this captured tail."
+                        .formatted(discardedOutputLineCount)
+                );
+            for (final OutputLine outputLine : outputLines)
+                snapshot.add(outputLine.text());
             return List.copyOf(snapshot);
         }
     }
 
-    private void appendOutputLine(String line)
+    /**
+     * Returns the total number of lines ever captured, including lines already discarded from the bounded
+     * buffer. Stable across evictions, so it can serve as a watermark for windowed scans.
+     *
+     * @return
+     *     Total captured line count since process start.
+     */
+    long totalOutputLineCount()
+    {
+        synchronized (outputLinesLock)
+        {
+            return discardedOutputLineCount + outputLines.size();
+        }
+    }
+
+    /**
+     * Returns the still-buffered stderr lines whose total line index is at or past the given watermark.
+     *
+     * @param fromTotalLineIndex
+     *     Watermark obtained from an earlier {@link #totalOutputLineCount()} call.
+     * @return
+     *     Captured stderr lines in arrival order.
+     */
+    List<OutputLine> snapshotStderrLinesFrom(long fromTotalLineIndex)
+    {
+        synchronized (outputLinesLock)
+        {
+            final List<OutputLine> stderrLines = new ArrayList<>();
+            long totalLineIndex = discardedOutputLineCount;
+            for (final OutputLine outputLine : outputLines)
+            {
+                if (totalLineIndex >= fromTotalLineIndex && outputLine.fromStderr())
+                    stderrLines.add(outputLine);
+                totalLineIndex++;
+            }
+            return List.copyOf(stderrLines);
+        }
+    }
+
+    private void appendOutputLine(String line, boolean fromStderr)
     {
         synchronized (outputLinesLock)
         {
@@ -465,36 +536,63 @@ final class MinecraftServerProcess
                 outputLines.removeFirst();
                 discardedOutputLineCount++;
             }
-            outputLines.addLast(line);
+            outputLines.addLast(new OutputLine(line, fromStderr, System.currentTimeMillis()));
         }
     }
 
     private Thread createOutputReaderThread(Process process, CountDownLatch startLatch)
     {
+        return createReaderThread(
+            "lightkeeper-minecraft-output-reader",
+            process.getInputStream(),
+            false,
+            line ->
+            {
+                if (line.contains("Done (") && line.endsWith(")! For help, type \"help\""))
+                    startLatch.countDown();
+            }
+        );
+    }
+
+    private Thread createErrorReaderThread(Process process)
+    {
+        return createReaderThread(
+            "lightkeeper-minecraft-stderr-reader",
+            process.getErrorStream(),
+            true,
+            line ->
+            {
+            }
+        );
+    }
+
+    private Thread createReaderThread(
+        String threadName,
+        InputStream stream,
+        boolean fromStderr,
+        Consumer<String> lineObserver)
+    {
         return Thread.ofPlatform()
-            .name("lightkeeper-minecraft-output-reader")
+            .name(threadName)
             .daemon(true)
             .unstarted(() ->
             {
                 try (
                     BufferedReader reader =
-                        new BufferedReader(
-                            new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8)))
+                        new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8)))
                 {
                     String line;
                     while ((line = reader.readLine()) != null)
                     {
-                        appendOutputLine(line);
-
-                        if (line.contains("Done (") && line.endsWith(")! For help, type \"help\""))
-                            startLatch.countDown();
+                        appendOutputLine(line, fromStderr);
+                        lineObserver.accept(line);
                     }
                 }
                 catch (IOException exception)
                 {
                     LOG.log(
                         System.Logger.Level.TRACE,
-                        () -> "Minecraft output reader stopped: " + exception.getMessage()
+                        () -> "Minecraft reader '" + threadName + "' stopped: " + exception.getMessage()
                     );
                 }
             });

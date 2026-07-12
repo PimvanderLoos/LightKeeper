@@ -324,6 +324,56 @@ class UdsAgentClientTest
     }
 
     @Test
+    void getServerErrors_shouldReturnTypedEntriesFromResponse(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("server-errors.sock");
+        final String responseJson =
+            "{\"requestId\":\"1\",\"success\":true,\"droppedCount\":2,\"captureActive\":true,\"errors\":["
+                + "{\"timestampMillis\":123,\"severity\":\"ERROR\",\"levelName\":\"ERROR\","
+                + "\"loggerName\":\"net.example\",\"threadName\":\"Server thread\",\"message\":\"boom\","
+                + "\"throwableClass\":\"java.lang.IllegalStateException\",\"throwableMessage\":\"boom\","
+                + "\"stackTrace\":[\"java.lang.IllegalStateException: boom\"]}]}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            final nl.pim16aap2.lightkeeper.protocol.GetServerErrors.Response response = client.getServerErrors();
+
+            // verify
+            assertThat(server.capturedRequest()).contains("\"action\":\"GET_SERVER_ERRORS\"");
+            assertThat(response.droppedCount()).isEqualTo(2L);
+            assertThat(response.captureActive()).isTrue();
+            assertThat(response.errors()).singleElement().satisfies(entry ->
+            {
+                assertThat(entry.severity()).isEqualTo("ERROR");
+                assertThat(entry.message()).isEqualTo("boom");
+                assertThat(entry.throwableClass()).isEqualTo("java.lang.IllegalStateException");
+                assertThat(entry.stackTrace()).hasSize(1);
+            });
+        }
+    }
+
+    @Test
+    void clearServerErrors_shouldSendClearRequest(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("clear-server-errors.sock");
+        final String responseJson = "{\"requestId\":\"1\",\"success\":true}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            client.clearServerErrors();
+
+            // verify
+            assertThat(server.capturedRequest()).contains("\"action\":\"CLEAR_SERVER_ERRORS\"");
+        }
+    }
+
+    @Test
     void serverPlatform_shouldMapPaperResponseToPaper(@TempDir Path tempDirectory)
         throws Exception
     {

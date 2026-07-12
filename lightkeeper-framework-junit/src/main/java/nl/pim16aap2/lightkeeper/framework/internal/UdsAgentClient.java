@@ -8,6 +8,7 @@ import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.framework.WorldSpec;
 import nl.pim16aap2.lightkeeper.protocol.BlockType;
 import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEvents;
+import nl.pim16aap2.lightkeeper.protocol.ClearServerErrors;
 import nl.pim16aap2.lightkeeper.protocol.ClickMenuSlot;
 import nl.pim16aap2.lightkeeper.protocol.CommandSource;
 import nl.pim16aap2.lightkeeper.protocol.CreatePlayer;
@@ -20,6 +21,7 @@ import nl.pim16aap2.lightkeeper.protocol.GetOpenMenu;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponents;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerInventory;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerMessages;
+import nl.pim16aap2.lightkeeper.protocol.GetServerErrors;
 import nl.pim16aap2.lightkeeper.protocol.GetServerPlatform;
 import nl.pim16aap2.lightkeeper.protocol.GetServerTick;
 import nl.pim16aap2.lightkeeper.protocol.Handshake;
@@ -351,6 +353,18 @@ final class UdsAgentClient implements AutoCloseable
     {
         final UnregisterEventListener.Command command =
             new UnregisterEventListener.Command(nextRequestId(), eventClassName);
+        send(command);
+    }
+
+    GetServerErrors.Response getServerErrors()
+    {
+        final GetServerErrors.Command command = new GetServerErrors.Command(nextRequestId());
+        return send(command);
+    }
+
+    void clearServerErrors()
+    {
+        final ClearServerErrors.Command command = new ClearServerErrors.Command(nextRequestId());
         send(command);
     }
 
