@@ -44,6 +44,41 @@ class ProtocolDefensiveCopyTest
     }
 
     @Test
+    void stackTrace_shouldNotExposeServerErrorEntryState()
+    {
+        // setup
+        final List<String> source = new ArrayList<>(List.of("java.lang.IllegalStateException: boom"));
+        final ServerErrorEntry entry = new ServerErrorEntry(
+            0L, "ERROR", "ERROR", "logger", "thread", "message", null, null, source);
+
+        // execute
+        source.add("\tat net.example.SomePlugin.onEvent(SomePlugin.java:1)");
+
+        // verify
+        assertThat(entry.stackTrace()).containsExactly("java.lang.IllegalStateException: boom");
+        assertThatThrownBy(() -> entry.stackTrace().add("extra"))
+            .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    void errors_shouldNotExposeGetServerErrorsResponseState()
+    {
+        // setup
+        final ServerErrorEntry entry = new ServerErrorEntry(
+            0L, "ERROR", "ERROR", "logger", "thread", "message", null, null, List.of());
+        final List<ServerErrorEntry> source = new ArrayList<>(List.of(entry));
+        final GetServerErrors.Response response = new GetServerErrors.Response(source, 0L, true);
+
+        // execute
+        source.clear();
+
+        // verify
+        assertThat(response.errors()).containsExactly(entry);
+        assertThatThrownBy(() -> response.errors().add(entry))
+            .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
     @SuppressWarnings("NullAway") // Intentionally crosses the non-null API boundary to verify fail-fast validation.
     void response_shouldRejectNullMessages()
     {

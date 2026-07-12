@@ -15,6 +15,7 @@ public sealed interface IAgentResponse
     permits
     BlockType.Response,
     ClearCapturedEvents.Response,
+    ClearServerErrors.Response,
     ClickMenuSlot.Response,
     CreatePlayer.Response,
     DragMenuSlots.Response,
@@ -26,6 +27,7 @@ public sealed interface IAgentResponse
     GetPlayerChatComponents.Response,
     GetPlayerInventory.Response,
     GetPlayerMessages.Response,
+    GetServerErrors.Response,
     GetServerPlatform.Response,
     GetServerTick.Response,
     Handshake.Response,
