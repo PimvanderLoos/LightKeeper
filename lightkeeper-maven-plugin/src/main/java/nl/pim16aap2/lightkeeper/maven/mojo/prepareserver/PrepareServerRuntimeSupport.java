@@ -150,6 +150,7 @@ final class PrepareServerRuntimeSupport
                     + "or remove the setting to use the default per-user directory."
             );
             FileUtil.createDirectories(configuredDirectory, "agent socket directory");
+            warnWhenWritableByOtherUsers(configuredDirectory);
             return socketPath;
         }
 
@@ -190,6 +191,38 @@ final class PrepareServerRuntimeSupport
         final String sanitizedUserName =
             (userName == null || userName.isBlank() ? "user" : userName).replaceAll("[^a-zA-Z0-9._-]", "_");
         return Path.of(tmpDirectory, "lightkeeper-" + sanitizedUserName).toAbsolutePath();
+    }
+
+    /**
+     * Warns when the explicitly configured socket directory is writable by other users, who could then delete or
+     * replace socket files. Explicit configuration is honored as-is; this only surfaces the risk.
+     */
+    private void warnWhenWritableByOtherUsers(Path directory)
+    {
+        if (!directory.getFileSystem().supportedFileAttributeViews().contains("posix"))
+            return;
+
+        try
+        {
+            final Set<PosixFilePermission> permissions = Files.getPosixFilePermissions(directory);
+            if (permissions.contains(PosixFilePermission.GROUP_WRITE) ||
+                permissions.contains(PosixFilePermission.OTHERS_WRITE))
+            {
+                log.warn(
+                    ("Configured agent socket directory '%s' has permissions '%s' and is writable by other users, "
+                        + "allowing them to replace socket files. Restrict its permissions or remove "
+                        + "'agentSocketDirectory' to use the protected per-user default directory.")
+                        .formatted(directory, PosixFilePermissions.toString(permissions))
+                );
+            }
+        }
+        catch (IOException exception)
+        {
+            log.warn(
+                "Failed to inspect permissions of agent socket directory '%s'.".formatted(directory),
+                exception
+            );
+        }
     }
 
     /**

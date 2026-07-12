@@ -2,6 +2,7 @@ package nl.pim16aap2.lightkeeper.maven.mojo.prepareserver;
 
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugin.logging.SystemStreamLog;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -15,6 +16,11 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 class PrepareServerRuntimeSupportTest
 {
@@ -49,6 +55,42 @@ class PrepareServerRuntimeSupportTest
         assertThat(socketPath.toString()).startsWith(configuredDirectory.toAbsolutePath().toString());
         assertThat(socketPath.getFileName().toString()).isEqualTo("lk-abcdef01.sock");
         assertThat(configuredDirectory).isDirectory();
+    }
+
+    @Test
+    void resolveUdsSocketPath_shouldWarnWhenConfiguredDirectoryIsWritableByOtherUsers(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        assumePosixFileSystem();
+        final Log log = mock(Log.class);
+        final Path configuredDirectory = Files.createDirectories(tempDirectory.resolve("configured"));
+        Files.setPosixFilePermissions(configuredDirectory, PosixFilePermissions.fromString("rwxrwxrwx"));
+        final PrepareServerRuntimeSupport runtimeSupport = new PrepareServerRuntimeSupport(log);
+
+        // execute
+        runtimeSupport.resolveUdsSocketPath(configuredDirectory, "abcdef0123456789abcdef0123456789");
+
+        // verify
+        verify(log).warn(contains("writable by other users"));
+    }
+
+    @Test
+    void resolveUdsSocketPath_shouldNotWarnWhenConfiguredDirectoryIsNotWritableByOtherUsers(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        assumePosixFileSystem();
+        final Log log = mock(Log.class);
+        final Path configuredDirectory = Files.createDirectories(tempDirectory.resolve("configured"));
+        Files.setPosixFilePermissions(configuredDirectory, PosixFilePermissions.fromString("rwxr-xr-x"));
+        final PrepareServerRuntimeSupport runtimeSupport = new PrepareServerRuntimeSupport(log);
+
+        // execute
+        runtimeSupport.resolveUdsSocketPath(configuredDirectory, "abcdef0123456789abcdef0123456789");
+
+        // verify
+        verify(log, never()).warn(any(CharSequence.class));
     }
 
     @Test
