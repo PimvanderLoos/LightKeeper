@@ -9,6 +9,9 @@ commands:
   lktestgui:
     description: Opens the standalone LightKeeper integration test GUI
     usage: /lktestgui
+  lktesterror:
+    description: Emits a SEVERE or WARNING log event for LightKeeper error-capture integration tests
+    usage: /lktesterror <severe|warning>
 permissions:
   lightkeeper.testplugin.lktestgui:
     description: Allows opening the LightKeeper test GUI.
