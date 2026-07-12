@@ -6,11 +6,15 @@ import org.apache.maven.plugin.logging.SystemStreamLog;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class PrepareServerRuntimeSupportTest
 {
@@ -30,17 +34,188 @@ class PrepareServerRuntimeSupportTest
     }
 
     @Test
-    void resolveUdsSocketPath_shouldReturnPreferredSocketWhenPathFits(@TempDir Path tempDirectory)
+    void resolveUdsSocketPath_shouldReturnConfiguredSocketWhenPathFits(@TempDir Path tempDirectory)
         throws Exception
     {
         // setup
         final PrepareServerRuntimeSupport runtimeSupport = new PrepareServerRuntimeSupport(new SystemStreamLog());
+        final Path configuredDirectory = tempDirectory.resolve("configured");
 
         // execute
-        final Path socketPath = runtimeSupport.resolveUdsSocketPath(tempDirectory, "abcdef0123456789abcdef0123456789");
+        final Path socketPath =
+            runtimeSupport.resolveUdsSocketPath(configuredDirectory, "abcdef0123456789abcdef0123456789");
 
         // verify
-        assertThat(socketPath.toString()).startsWith(tempDirectory.toAbsolutePath().toString());
+        assertThat(socketPath.toString()).startsWith(configuredDirectory.toAbsolutePath().toString());
+        assertThat(socketPath.getFileName().toString()).isEqualTo("lk-abcdef01.sock");
+        assertThat(configuredDirectory).isDirectory();
+    }
+
+    @Test
+    void resolveUdsSocketPath_shouldThrowExceptionWhenConfiguredPathIsTooLong(@TempDir Path tempDirectory)
+    {
+        // setup
+        final PrepareServerRuntimeSupport runtimeSupport = new PrepareServerRuntimeSupport(new SystemStreamLog());
+        final Path configuredDirectory = tempDirectory.resolve("very-long-segment-".repeat(7));
+
+        // execute + verify
+        assertThatThrownBy(
+            () -> runtimeSupport.resolveUdsSocketPath(configuredDirectory, "abcdef0123456789abcdef0123456789"))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("exceeding the AF_UNIX limit")
+            .hasMessageContaining("lightkeeper.agentSocketDirectory");
+        assertThat(configuredDirectory).doesNotExist();
+    }
+
+    @Test
+    void resolveUdsSocketPath_shouldUseDefaultDirectoryWhenNotConfigured(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path defaultDirectory = tempDirectory.resolve("default");
+        final PrepareServerRuntimeSupport runtimeSupport =
+            new PrepareServerRuntimeSupport(new SystemStreamLog(), defaultDirectory);
+
+        // execute
+        final Path socketPath = runtimeSupport.resolveUdsSocketPath(null, "abcdef0123456789abcdef0123456789");
+
+        // verify
+        assertThat(socketPath.toString()).startsWith(defaultDirectory.toAbsolutePath().toString());
+        assertThat(socketPath.getFileName().toString()).isEqualTo("lk-abcdef01.sock");
+        assertThat(defaultDirectory).isDirectory();
+    }
+
+    @Test
+    void resolveUdsSocketPath_shouldCreateDefaultDirectoryWithUserOnlyPermissions(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        assumePosixFileSystem();
+        final Path defaultDirectory = tempDirectory.resolve("default");
+        final PrepareServerRuntimeSupport runtimeSupport =
+            new PrepareServerRuntimeSupport(new SystemStreamLog(), defaultDirectory);
+
+        // execute
+        runtimeSupport.resolveUdsSocketPath(null, "abcdef0123456789abcdef0123456789");
+
+        // verify
+        assertThat(Files.getPosixFilePermissions(defaultDirectory)).containsExactlyInAnyOrder(
+            PosixFilePermission.OWNER_READ,
+            PosixFilePermission.OWNER_WRITE,
+            PosixFilePermission.OWNER_EXECUTE
+        );
+    }
+
+    @Test
+    void resolveUdsSocketPath_shouldRejectDefaultDirectoryAccessibleToOtherUsers(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        assumePosixFileSystem();
+        final Path defaultDirectory = tempDirectory.resolve("default");
+        Files.createDirectories(defaultDirectory);
+        Files.setPosixFilePermissions(defaultDirectory, PosixFilePermissions.fromString("rwxr-x---"));
+        final PrepareServerRuntimeSupport runtimeSupport =
+            new PrepareServerRuntimeSupport(new SystemStreamLog(), defaultDirectory);
+
+        // execute + verify
+        assertThatThrownBy(() -> runtimeSupport.resolveUdsSocketPath(null, "abcdef0123456789abcdef0123456789"))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("must only be accessible by the current user");
+    }
+
+    @Test
+    void resolveUdsSocketPath_shouldThrowExceptionWhenDefaultPathIsTooLong(@TempDir Path tempDirectory)
+    {
+        // setup
+        final Path defaultDirectory = tempDirectory.resolve("very-long-segment-".repeat(7));
+        final PrepareServerRuntimeSupport runtimeSupport =
+            new PrepareServerRuntimeSupport(new SystemStreamLog(), defaultDirectory);
+
+        // execute + verify
+        assertThatThrownBy(() -> runtimeSupport.resolveUdsSocketPath(null, "abcdef0123456789abcdef0123456789"))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("exceeding the AF_UNIX limit");
+        assertThat(defaultDirectory).doesNotExist();
+    }
+
+    @Test
+    void resolveDefaultSocketDirectory_shouldPreferXdgRuntimeDirectoryWhenItExists(@TempDir Path tempDirectory)
+    {
+        // setup
+        final String xdgRuntimeDirectory = tempDirectory.toString();
+
+        // execute
+        final Path defaultDirectory =
+            PrepareServerRuntimeSupport.resolveDefaultSocketDirectory(xdgRuntimeDirectory, "pim", "/unused-tmp");
+
+        // verify
+        assertThat(defaultDirectory).isEqualTo(tempDirectory.resolve("lightkeeper").toAbsolutePath());
+    }
+
+    @Test
+    void resolveDefaultSocketDirectory_shouldFallBackToTmpDirectoryWhenXdgRuntimeDirectoryIsMissing(
+        @TempDir Path tempDirectory)
+    {
+        // setup
+        final String missingXdgRuntimeDirectory = tempDirectory.resolve("missing").toString();
+        final Path tmpDirectory = tempDirectory.resolve("tmp");
+
+        // execute
+        final Path defaultDirectory = PrepareServerRuntimeSupport.resolveDefaultSocketDirectory(
+            missingXdgRuntimeDirectory,
+            "pim",
+            tmpDirectory.toString()
+        );
+
+        // verify
+        assertThat(defaultDirectory).isEqualTo(tmpDirectory.resolve("lightkeeper-pim").toAbsolutePath());
+    }
+
+    @Test
+    void resolveDefaultSocketDirectory_shouldFallBackToTmpDirectoryWhenXdgRuntimeDirectoryIsBlank(
+        @TempDir Path tempDirectory)
+    {
+        // setup
+        final Path tmpDirectory = tempDirectory.resolve("tmp");
+
+        // execute
+        final Path unsetResult =
+            PrepareServerRuntimeSupport.resolveDefaultSocketDirectory(null, "pim", tmpDirectory.toString());
+        final Path blankResult =
+            PrepareServerRuntimeSupport.resolveDefaultSocketDirectory(" ", "pim", tmpDirectory.toString());
+
+        // verify
+        assertThat(unsetResult).isEqualTo(tmpDirectory.resolve("lightkeeper-pim").toAbsolutePath());
+        assertThat(blankResult).isEqualTo(tmpDirectory.resolve("lightkeeper-pim").toAbsolutePath());
+    }
+
+    @Test
+    void resolveDefaultSocketDirectory_shouldSanitizeUserName(@TempDir Path tempDirectory)
+    {
+        // setup
+        final Path tmpDirectory = tempDirectory.resolve("tmp");
+
+        // execute
+        final Path sanitizedResult = PrepareServerRuntimeSupport.resolveDefaultSocketDirectory(
+            null,
+            "DOMAIN\\We ird/User",
+            tmpDirectory.toString()
+        );
+        final Path unknownUserResult =
+            PrepareServerRuntimeSupport.resolveDefaultSocketDirectory(null, null, tmpDirectory.toString());
+
+        // verify
+        assertThat(sanitizedResult).isEqualTo(tmpDirectory.resolve("lightkeeper-DOMAIN_We_ird_User").toAbsolutePath());
+        assertThat(unknownUserResult).isEqualTo(tmpDirectory.resolve("lightkeeper-user").toAbsolutePath());
+    }
+
+    private static void assumePosixFileSystem()
+    {
+        assumeTrue(
+            FileSystems.getDefault().supportedFileAttributeViews().contains("posix"),
+            "POSIX file permissions are not supported on this file system."
+        );
     }
 
     @Test

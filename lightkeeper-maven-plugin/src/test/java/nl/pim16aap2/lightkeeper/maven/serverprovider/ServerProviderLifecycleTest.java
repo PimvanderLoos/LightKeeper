@@ -189,7 +189,6 @@ class ServerProviderLifecycleTest
             tempDirectory.resolve("base"),
             tempDirectory.resolve("work"),
             tempDirectory.resolve("runtime-manifest.json"),
-            tempDirectory.resolve("sockets"),
             false,
             30,
             forceRebuildJar,

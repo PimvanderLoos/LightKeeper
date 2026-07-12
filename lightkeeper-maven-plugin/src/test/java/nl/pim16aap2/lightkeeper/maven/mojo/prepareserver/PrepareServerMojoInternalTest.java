@@ -597,8 +597,7 @@ class PrepareServerMojoInternalTest
     }
 
     @Test
-    void resolveUdsSocketPath_shouldFallbackToTemporaryDirectoryWhenPreferredPathIsTooLong(@TempDir Path tempDirectory)
-        throws Exception
+    void resolveUdsSocketPath_shouldThrowExceptionWhenConfiguredPathIsTooLong(@TempDir Path tempDirectory)
     {
         // setup
         final PrepareServerMojo mojo = new PrepareServerMojo();
@@ -606,19 +605,17 @@ class PrepareServerMojoInternalTest
         longNameBuilder.repeat("very-long-segment-", 200);
         final Path veryLongDirectory = tempDirectory.resolve(longNameBuilder.toString());
 
-        // execute
-        final Path socketPath = invokePrivate(
+        // execute + verify
+        assertThatThrownBy(() -> invokePrivate(
             mojo,
             "resolveUdsSocketPath",
             new Class<?>[]{Path.class, String.class},
             veryLongDirectory,
             "0123456789abcdef0123456789abcdef"
-        );
-
-        // verify
-        assertThat(socketPath.toString()).contains("lightkeeper-sockets");
-        assertThat(socketPath.getFileName().toString()).startsWith("lk-01234567");
-        assertThat(socketPath.getFileName().toString()).endsWith(".sock");
+        ))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("exceeding the AF_UNIX limit")
+            .hasMessageContaining("lightkeeper.agentSocketDirectory");
     }
 
     @Test
@@ -1042,12 +1039,12 @@ class PrepareServerMojoInternalTest
         }
 
         @Override
-        Path resolveUdsSocketPath(Path preferredDirectory, String agentAuthToken)
+        Path resolveUdsSocketPath(@Nullable Path configuredDirectory, String agentAuthToken)
             throws MojoExecutionException
         {
             if (resolvedSocketPath != null)
                 return resolvedSocketPath;
-            return super.resolveUdsSocketPath(preferredDirectory, agentAuthToken);
+            return super.resolveUdsSocketPath(configuredDirectory, agentAuthToken);
         }
 
         @Override

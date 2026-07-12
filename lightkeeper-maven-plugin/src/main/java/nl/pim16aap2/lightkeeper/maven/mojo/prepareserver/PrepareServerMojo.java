@@ -90,10 +90,13 @@ public class PrepareServerMojo extends AbstractMojo
     @Nullable
     private Path runtimeManifestPath;
 
-    @Parameter(
-        property = "lightkeeper.agentSocketDirectory",
-        defaultValue = "${project.build.directory}/lightkeeper/sockets", required = true
-    )
+    /**
+     * Optional directory for the agent's UDS socket file.
+     *
+     * <p>When not configured, a short per-user runtime directory is used to stay within the AF_UNIX path length
+     * limit. Explicitly configured paths that exceed that limit fail the build.</p>
+     */
+    @Parameter(property = "lightkeeper.agentSocketDirectory")
     @Nullable
     private Path agentSocketDirectory;
 
@@ -211,7 +214,8 @@ public class PrepareServerMojo extends AbstractMojo
         final PrepareServerAgentMetadata agentMetadata = resolveAgentMetadata();
         final int runtimeProtocolVersion = RuntimeProtocol.VERSION;
         final String agentAuthToken = UUID.randomUUID().toString();
-        final Path udsSocketPath = resolveUdsSocketPath(executionContext.agentSocketDirectory(), agentAuthToken);
+        final Path udsSocketPath =
+            resolveUdsSocketPath(executionContext.configuredAgentSocketDirectory(), agentAuthToken);
         final PrepareServerResolvedServerSetup resolvedServerSetup = resolveServerSetup(
             executionContext,
             agentMetadata,
@@ -252,7 +256,7 @@ public class PrepareServerMojo extends AbstractMojo
                 : pluginArtifactCacheDirectoryRoot,
             Objects.requireNonNull(serverWorkDirectoryRoot),
             Objects.requireNonNull(runtimeManifestPath),
-            Objects.requireNonNull(agentSocketDirectory),
+            agentSocketDirectory,
             Objects.requireNonNull(userAgent),
             resolveWorldInputSpecs(),
             resolvePluginArtifactSpecs()
@@ -277,7 +281,6 @@ public class PrepareServerMojo extends AbstractMojo
             "plugin artifact cache directory root"
         );
         FileUtil.createDirectories(executionContext.serverWorkDirectoryRoot(), "server work directory root");
-        FileUtil.createDirectories(executionContext.agentSocketDirectory(), "agent socket directory");
     }
 
     PrepareServerResolvedServerSetup resolveServerSetup(
@@ -331,7 +334,6 @@ public class PrepareServerMojo extends AbstractMojo
             executionContext.baseServerCacheDirectoryRoot(),
             executionContext.serverWorkDirectoryRoot(),
             executionContext.runtimeManifestPath(),
-            executionContext.agentSocketDirectory(),
             cacheKey,
             executionContext.userAgent(),
             agentMetadata,
@@ -370,7 +372,6 @@ public class PrepareServerMojo extends AbstractMojo
             executionContext.baseServerCacheDirectoryRoot(),
             executionContext.serverWorkDirectoryRoot(),
             executionContext.runtimeManifestPath(),
-            executionContext.agentSocketDirectory(),
             cacheKey,
             executionContext.userAgent(),
             agentMetadata,
@@ -468,7 +469,6 @@ public class PrepareServerMojo extends AbstractMojo
         Path baseServerCacheDirectoryRootValue,
         Path serverWorkDirectoryRootValue,
         Path runtimeManifestPathValue,
-        Path agentSocketDirectoryValue,
         String cacheKey,
         String effectiveUserAgent,
         PrepareServerAgentMetadata agentMetadata,
@@ -481,7 +481,6 @@ public class PrepareServerMojo extends AbstractMojo
             baseServerCacheDirectoryRootValue,
             serverWorkDirectoryRootValue,
             runtimeManifestPathValue,
-            agentSocketDirectoryValue,
             versionedCacheDirectories,
             jarCacheExpiryDays,
             forceRebuildJar,
@@ -561,10 +560,10 @@ public class PrepareServerMojo extends AbstractMojo
         return runtimeSupport().resolveAgentMetadata();
     }
 
-    Path resolveUdsSocketPath(Path preferredDirectory, String agentAuthToken)
+    Path resolveUdsSocketPath(@Nullable Path configuredDirectory, String agentAuthToken)
         throws MojoExecutionException
     {
-        return runtimeSupport().resolveUdsSocketPath(preferredDirectory, agentAuthToken);
+        return runtimeSupport().resolveUdsSocketPath(configuredDirectory, agentAuthToken);
     }
 
     private PrepareServerConfigurationValidator configurationValidator()
