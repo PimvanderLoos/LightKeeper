@@ -121,7 +121,26 @@ class PrepareServerRuntimeSupportTest
         // execute + verify
         assertThatThrownBy(() -> runtimeSupport.resolveUdsSocketPath(null, "abcdef0123456789abcdef0123456789"))
             .isInstanceOf(MojoExecutionException.class)
-            .hasMessageContaining("must only be accessible by the current user");
+            .hasMessageContaining("requires user-only permissions 'rwx------'");
+    }
+
+    @Test
+    void resolveUdsSocketPath_shouldRejectDefaultDirectoryWithoutOwnerWriteAccess(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        assumePosixFileSystem();
+        final Path defaultDirectory = tempDirectory.resolve("default");
+        Files.createDirectories(defaultDirectory);
+        Files.setPosixFilePermissions(defaultDirectory, PosixFilePermissions.fromString("r-x------"));
+        final PrepareServerRuntimeSupport runtimeSupport =
+            new PrepareServerRuntimeSupport(new SystemStreamLog(), defaultDirectory);
+
+        // execute + verify
+        assertThatThrownBy(() -> runtimeSupport.resolveUdsSocketPath(null, "abcdef0123456789abcdef0123456789"))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("has permissions 'r-x------'")
+            .hasMessageContaining("requires user-only permissions 'rwx------'");
     }
 
     @Test

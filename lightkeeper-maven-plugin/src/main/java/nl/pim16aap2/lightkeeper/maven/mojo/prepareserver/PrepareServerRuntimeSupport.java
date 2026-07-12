@@ -244,12 +244,16 @@ final class PrepareServerRuntimeSupport
             );
         }
 
-        if (!USER_ONLY_DIRECTORY_PERMISSIONS.containsAll(attributes.permissions()))
+        if (!attributes.permissions().equals(USER_ONLY_DIRECTORY_PERMISSIONS))
         {
             throw new MojoExecutionException(
-                ("Agent socket directory '%s' has permissions '%s' but must only be accessible by the current user. "
+                ("Agent socket directory '%s' has permissions '%s' but requires user-only permissions '%s'. "
                     + "Remove it or configure 'agentSocketDirectory' explicitly.")
-                    .formatted(directory, PosixFilePermissions.toString(attributes.permissions()))
+                    .formatted(
+                        directory,
+                        PosixFilePermissions.toString(attributes.permissions()),
+                        PosixFilePermissions.toString(USER_ONLY_DIRECTORY_PERMISSIONS)
+                    )
             );
         }
     }
