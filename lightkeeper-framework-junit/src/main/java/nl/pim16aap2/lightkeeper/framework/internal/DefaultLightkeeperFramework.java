@@ -510,8 +510,11 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     public void clearServerErrors()
     {
         ensureOpen();
+        // Snapshot the watermark before the RPC: stderr lines written during the round trip must
+        // stay above the watermark so they still surface in later capturedServerErrors() calls.
+        final long watermark = minecraftServerProcess.totalOutputLineCount();
         agentClient.clearServerErrors();
-        stderrScanWatermark.set(minecraftServerProcess.totalOutputLineCount());
+        stderrScanWatermark.set(watermark);
     }
 
     private static ServerErrorSnapshot toServerErrorSnapshot(ServerErrorEntry entry)

@@ -298,8 +298,16 @@ final class MinecraftServerProcess
 
     private void joinOutputThread(Duration timeout)
     {
-        outputThread = joinReaderThread(outputThread, timeout);
-        errorThread = joinReaderThread(errorThread, timeout);
+        // Both reader threads share one budget so a stuck reader cannot double the worst-case wait.
+        final Instant deadline = Instant.now().plus(timeout);
+        outputThread = joinReaderThread(outputThread, remainingUntil(deadline));
+        errorThread = joinReaderThread(errorThread, remainingUntil(deadline));
+    }
+
+    private static Duration remainingUntil(Instant deadline)
+    {
+        final Duration remaining = Duration.between(Instant.now(), deadline);
+        return remaining.isNegative() ? Duration.ZERO : remaining;
     }
 
     private static @Nullable Thread joinReaderThread(@Nullable Thread readerThread, Duration timeout)

@@ -129,8 +129,20 @@ final class AgentServerErrorCapture
             captureAppender.start();
             coreLogger.addAppender(captureAppender);
 
-            final CaptureStatusListener capturedStatusListener = new CaptureStatusListener();
-            StatusLogger.getLogger().registerListener(capturedStatusListener);
+            final CaptureStatusListener capturedStatusListener;
+            try
+            {
+                capturedStatusListener = new CaptureStatusListener();
+                StatusLogger.getLogger().registerListener(capturedStatusListener);
+            }
+            catch (RuntimeException | LinkageError exception)
+            {
+                // Roll back the already-attached appender: without the field set, uninstall() could
+                // never remove it, leaving a half-installed capture on the root logger.
+                coreLogger.removeAppender(captureAppender);
+                captureAppender.stop();
+                throw exception;
+            }
 
             appender = captureAppender;
             statusListener = capturedStatusListener;
