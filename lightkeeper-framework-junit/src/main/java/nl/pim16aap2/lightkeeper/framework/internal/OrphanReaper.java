@@ -96,7 +96,7 @@ public final class OrphanReaper
 
             if (watchedJvm == null || !watchedJvm.isAliveAndSame())
             {
-                killProcessTree(serverProcess.handle());
+                killProcessTree(serverProcess);
                 return;
             }
 
@@ -114,14 +114,19 @@ public final class OrphanReaper
 
     /**
      * Forcibly destroys a process and all of its descendants.
+     * <p>
+     * Re-verifies the process's identity immediately before the kill: the process may exit and its PID be recycled
+     * between the caller's liveness check and this call, and a stranger must never be destroyed.
      *
      * @param root
      *     The root of the process tree to destroy.
      */
-    static void killProcessTree(ProcessHandle root)
+    static void killProcessTree(WatchedProcess root)
     {
-        root.descendants().forEach(ProcessHandle::destroyForcibly);
-        root.destroyForcibly();
+        if (!root.isAliveAndSame())
+            return;
+        root.handle().descendants().forEach(ProcessHandle::destroyForcibly);
+        root.handle().destroyForcibly();
     }
 
     /**

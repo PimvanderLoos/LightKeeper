@@ -112,10 +112,12 @@ final class OrphanReaperLauncher
 
     /**
      * Locates a usable {@code setsid} executable for session detachment, if any.
+     * <p>
+     * Package-private so tests can gate session-detachment assertions on the same discovery logic.
      *
      * @return The path to {@code setsid}, or {@code null} when not available on this system.
      */
-    private static @Nullable Path findSetsid()
+    static @Nullable Path findSetsid()
     {
         for (final Path candidate : SETSID_CANDIDATES)
         {

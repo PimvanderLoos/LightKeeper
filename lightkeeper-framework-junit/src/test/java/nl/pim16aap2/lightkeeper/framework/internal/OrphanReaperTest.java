@@ -144,15 +144,30 @@ class OrphanReaperTest
         final ProcessHandle root = mock();
         final ProcessHandle childA = mock();
         final ProcessHandle childB = mock();
+        when(root.isAlive()).thenReturn(true);
         when(root.descendants()).thenReturn(Stream.of(childA, childB));
 
         // execute
-        OrphanReaper.killProcessTree(root);
+        OrphanReaper.killProcessTree(anyIdentity(root));
 
         // verify
         verify(childA).destroyForcibly();
         verify(childB).destroyForcibly();
         verify(root).destroyForcibly();
+    }
+
+    @Test
+    void killProcessTree_shouldNotKillWhenIdentityWasLostSinceLastCheck()
+    {
+        // setup
+        // The PID may be recycled between the caller's liveness check and the kill; never destroy a stranger.
+        final ProcessHandle root = aliveHandleWithStartMillis(9_999L);
+
+        // execute
+        OrphanReaper.killProcessTree(new WatchedProcess(root, 1_234L));
+
+        // verify
+        verify(root, never()).destroyForcibly();
     }
 
     @Test
@@ -221,7 +236,7 @@ class OrphanReaperTest
         // setup
         // Whole-group kills (e.g. GNU timeout in CI) must not take the reaper down with the test JVM.
         org.junit.jupiter.api.Assumptions.assumeTrue(
-            java.nio.file.Files.isExecutable(Path.of("/usr/bin/setsid")),
+            OrphanReaperLauncher.findSetsid() != null,
             "setsid not available; session detachment is best-effort on this platform");
         final Process fakeServer = startHelperJvm(LongLivedMain.class);
 
@@ -394,6 +409,11 @@ class OrphanReaperTest
     {
         final Process shortLived = startHelperJvm(ShortLivedMain.class);
         shortLived.waitFor(10, java.util.concurrent.TimeUnit.SECONDS);
+        // On a PID-churning system the freed PID could already belong to a new process; the tests using
+        // this helper assume a dead PID, so skip rather than flake in that (rare) case.
+        org.junit.jupiter.api.Assumptions.assumeTrue(
+            ProcessHandle.of(shortLived.pid()).isEmpty(),
+            "freed PID was immediately reused on this system");
         return shortLived.pid();
     }
 

@@ -30,6 +30,8 @@ import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.jspecify.annotations.Nullable;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
@@ -192,6 +194,7 @@ public class PrepareServerMojo extends AbstractMojo
         if (skip)
         {
             getLog().info("Skipping server preparation because 'lightkeeper.skip' is set.");
+            deleteStaleRuntimeManifest();
             return;
         }
 
@@ -222,6 +225,32 @@ public class PrepareServerMojo extends AbstractMojo
             executionContext.worldInputSpecs()
         );
         writeRuntimeManifest(runtimeManifest, executionContext.runtimeManifestPath());
+    }
+
+    /**
+     * Deletes a runtime manifest left behind by a previous run.
+     * <p>
+     * Without this, skipping preparation in a non-clean workspace would leave integration tests silently running
+     * against the stale manifest instead of failing fast on a missing one.
+     *
+     * @throws MojoExecutionException
+     *     When a stale manifest exists but cannot be deleted.
+     */
+    private void deleteStaleRuntimeManifest()
+        throws MojoExecutionException
+    {
+        if (runtimeManifestPath == null)
+            return;
+        try
+        {
+            if (Files.deleteIfExists(runtimeManifestPath))
+                getLog().info("Deleted stale runtime manifest '%s'.".formatted(runtimeManifestPath));
+        }
+        catch (IOException exception)
+        {
+            throw new MojoExecutionException(
+                "Failed to delete stale runtime manifest '%s'.".formatted(runtimeManifestPath), exception);
+        }
     }
 
     PrepareServerRuntimePreparation prepareRuntimePreparation(PrepareServerExecutionContext executionContext)

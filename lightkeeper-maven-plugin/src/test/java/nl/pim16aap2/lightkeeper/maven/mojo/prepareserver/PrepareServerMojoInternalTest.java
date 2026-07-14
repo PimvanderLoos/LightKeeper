@@ -677,6 +677,26 @@ class PrepareServerMojoInternalTest
     }
 
     @Test
+    void execute_shouldDeleteStaleRuntimeManifestWhenSkipIsSet(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        // A manifest from a previous run must not survive a skipped preparation: failsafe would
+        // otherwise silently run the integration tests against stale server state.
+        final Path staleManifest = tempDirectory.resolve("runtime-manifest.json");
+        Files.writeString(staleManifest, "{}");
+        final PrepareServerMojo mojo = new PrepareServerMojo();
+        setField(mojo, "skip", true);
+        setField(mojo, "runtimeManifestPath", staleManifest);
+
+        // execute
+        mojo.execute();
+
+        // verify
+        assertThat(staleManifest).doesNotExist();
+    }
+
+    @Test
     void execute_shouldPrepareServerAndWriteRuntimeManifestUsingResolvedSetup(@TempDir Path tempDirectory)
         throws Exception
     {
