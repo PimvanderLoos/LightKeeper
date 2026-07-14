@@ -37,6 +37,9 @@ import java.util.List;
  *     Optional extra JVM arguments that must be applied when launching the test server runtime.
  * @param preloadedWorlds
  *     Worlds that should be loaded by the framework before test execution.
+ * @param provisionedWorldNames
+ *     Names of all world folders provisioned into the server directory, including templates that are not
+ *     loaded on startup. Used by the framework to validate template names before loading.
  */
 public record RuntimeManifest(
     String serverType,
@@ -53,12 +56,14 @@ public record RuntimeManifest(
     int runtimeProtocolVersion,
     String agentCacheIdentity,
     @Nullable String extraJvmArgs,
-    List<PreloadedWorld> preloadedWorlds
+    List<PreloadedWorld> preloadedWorlds,
+    List<String> provisionedWorldNames
 )
 {
     public RuntimeManifest
     {
         preloadedWorlds = preloadedWorlds == null ? List.of() : List.copyOf(preloadedWorlds);
+        provisionedWorldNames = provisionedWorldNames == null ? List.of() : List.copyOf(provisionedWorldNames);
     }
 
     /**

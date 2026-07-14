@@ -472,6 +472,10 @@ public class PrepareServerMojo extends AbstractMojo
             ))
             .toList();
 
+        final List<String> provisionedWorldNames = worldInputSpecs.stream()
+            .map(WorldInputSpec::name)
+            .toList();
+
         return new RuntimeManifest(
             normalizedServerType,
             resolvedManifestServerVersion,
@@ -488,7 +492,8 @@ public class PrepareServerMojo extends AbstractMojo
             runtimeProtocolVersion,
             agentMetadata.cacheIdentity(),
             PrepareServerInputResolver.normalizeOptionalString(extraJvmArgs),
-            preloadedWorlds
+            preloadedWorlds,
+            provisionedWorldNames
         );
     }
 

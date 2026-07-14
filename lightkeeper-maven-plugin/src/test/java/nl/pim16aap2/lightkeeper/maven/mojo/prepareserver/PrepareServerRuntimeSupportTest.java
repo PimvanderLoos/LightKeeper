@@ -1,5 +1,7 @@
 package nl.pim16aap2.lightkeeper.maven.mojo.prepareserver;
 
+import nl.pim16aap2.lightkeeper.maven.provisioning.WorldInputSpec;
+import nl.pim16aap2.lightkeeper.maven.serverprovider.ServerProvider;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
@@ -21,6 +23,7 @@ import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class PrepareServerRuntimeSupportTest
 {
@@ -301,6 +304,7 @@ class PrepareServerRuntimeSupportTest
             1,
             "no-agent",
             null,
+            List.of(),
             List.of()
         );
 
@@ -308,5 +312,58 @@ class PrepareServerRuntimeSupportTest
         assertThatThrownBy(() -> PrepareServerRuntimeSupport.writeRuntimeManifest(runtimeManifest, manifestPath))
             .isInstanceOf(MojoExecutionException.class)
             .hasMessageContaining("not a directory");
+    }
+
+    @Test
+    void createRuntimeManifest_shouldIncludeAllWorldsInProvisionedNamesAndOnlyStartupWorldsInPreloaded(
+        @TempDir Path tempDirectory)
+    {
+        // setup
+        final PrepareServerMojo mojo = new PrepareServerMojo();
+        final WorldInputSpec startupWorld = new WorldInputSpec(
+            "startup-world",
+            WorldInputSpec.SourceType.FOLDER,
+            tempDirectory.resolve("startup-world"),
+            true,
+            true,
+            "NORMAL",
+            "NORMAL",
+            0L
+        );
+        final WorldInputSpec templateWorld = new WorldInputSpec(
+            "template-world",
+            WorldInputSpec.SourceType.FOLDER,
+            tempDirectory.resolve("template-world"),
+            true,
+            false,
+            "NORMAL",
+            "NORMAL",
+            0L
+        );
+        final ServerProvider serverProvider = mock(ServerProvider.class);
+        when(serverProvider.targetJarFilePath()).thenReturn(tempDirectory.resolve("paper.jar"));
+        final PrepareServerAgentMetadata agentMetadata = new PrepareServerAgentMetadata("abc123", "agent-cache-id");
+
+        // execute
+        final RuntimeManifest runtimeManifest = mojo.createRuntimeManifest(
+            "paper",
+            "1.21.11",
+            116L,
+            "cache-key",
+            tempDirectory.resolve("server"),
+            serverProvider,
+            768,
+            tempDirectory.resolve("socket.sock"),
+            "auth-token",
+            agentMetadata,
+            1,
+            List.of(startupWorld, templateWorld)
+        );
+
+        // verify
+        assertThat(runtimeManifest.provisionedWorldNames())
+            .containsExactlyInAnyOrder("startup-world", "template-world");
+        assertThat(runtimeManifest.preloadedWorlds()).hasSize(1);
+        assertThat(runtimeManifest.preloadedWorlds().getFirst().name()).isEqualTo("startup-world");
     }
 }

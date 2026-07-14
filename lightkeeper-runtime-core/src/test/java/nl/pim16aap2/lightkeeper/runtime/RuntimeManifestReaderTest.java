@@ -8,6 +8,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -341,6 +342,125 @@ class RuntimeManifestReaderTest
         assertThat(runtimeManifest.preloadedWorlds()).hasSize(1);
         assertThat(runtimeManifest.preloadedWorlds().getFirst().name()).isEqualTo("fixture-world");
         assertThat(runtimeManifest.preloadedWorlds().getFirst().worldType()).isEqualTo("FLAT");
+    }
+
+    @Test
+    void read_shouldParseProvisionedWorldNamesWhenPresent(@TempDir Path tempDirectory)
+        throws IOException
+    {
+        // setup
+        final Path manifestPath = tempDirectory.resolve("runtime-manifest.json");
+        Files.writeString(manifestPath, """
+            {
+              "serverType": "paper",
+              "serverVersion": "1.21.11",
+              "paperBuildId": 113,
+              "cacheKey": "cache-key",
+              "serverDirectory": "/tmp/server",
+              "serverJar": "/tmp/server/paper.jar",
+              "memoryMb": 2048,
+              "udsSocketPath": "/tmp/lightkeeper.sock",
+              "agentAuthToken": "token",
+              "runtimeProtocolVersion": %d,
+              "agentCacheIdentity": "no-agent",
+              "provisionedWorldNames": ["template-a", "world-b"]
+            }
+            """.formatted(RuntimeProtocol.VERSION)
+        );
+
+        // execute
+        final RuntimeManifest runtimeManifest = new RuntimeManifestReader().read(manifestPath);
+
+        // verify
+        assertThat(runtimeManifest.provisionedWorldNames()).containsExactly("template-a", "world-b");
+    }
+
+    @Test
+    void read_shouldDefaultProvisionedWorldNamesToEmptyListWhenAbsent(@TempDir Path tempDirectory)
+        throws IOException
+    {
+        // setup
+        final Path manifestPath = tempDirectory.resolve("runtime-manifest.json");
+        Files.writeString(manifestPath, """
+            {
+              "serverType": "paper",
+              "serverVersion": "1.21.11",
+              "paperBuildId": 113,
+              "cacheKey": "cache-key",
+              "serverDirectory": "/tmp/server",
+              "serverJar": "/tmp/server/paper.jar",
+              "memoryMb": 2048,
+              "udsSocketPath": "/tmp/lightkeeper.sock",
+              "agentAuthToken": "token",
+              "runtimeProtocolVersion": %d,
+              "agentCacheIdentity": "no-agent"
+            }
+            """.formatted(RuntimeProtocol.VERSION)
+        );
+
+        // execute
+        final RuntimeManifest runtimeManifest = new RuntimeManifestReader().read(manifestPath);
+
+        // verify
+        assertThat(runtimeManifest.provisionedWorldNames()).isEmpty();
+    }
+
+    @Test
+    void read_shouldThrowExceptionWhenProvisionedWorldNameIsBlank(@TempDir Path tempDirectory)
+        throws IOException
+    {
+        // setup
+        final Path manifestPath = tempDirectory.resolve("runtime-manifest.json");
+        Files.writeString(manifestPath, """
+            {
+              "serverType": "paper",
+              "serverVersion": "1.21.11",
+              "paperBuildId": 113,
+              "cacheKey": "cache-key",
+              "serverDirectory": "/tmp/server",
+              "serverJar": "/tmp/server/paper.jar",
+              "memoryMb": 2048,
+              "udsSocketPath": "/tmp/lightkeeper.sock",
+              "agentAuthToken": "token",
+              "runtimeProtocolVersion": %d,
+              "agentCacheIdentity": "no-agent",
+              "provisionedWorldNames": [""]
+            }
+            """.formatted(RuntimeProtocol.VERSION)
+        );
+
+        // execute + verify
+        assertThatThrownBy(() -> new RuntimeManifestReader().read(manifestPath))
+            .isInstanceOf(IOException.class)
+            .hasMessageContaining("Runtime manifest contains a provisioned world with a missing name.");
+    }
+
+    @Test
+    @SuppressWarnings("NullAway") // Intentionally crosses the non-null API boundary to verify default-on-null.
+    void runtimeManifest_shouldDefaultProvisionedWorldNamesToEmptyListWhenConstructedWithNull()
+    {
+        // setup + execute
+        final RuntimeManifest runtimeManifest = new RuntimeManifest(
+            "paper",
+            "1.21.11",
+            113,
+            "cache-key",
+            "/tmp/server",
+            "/tmp/server/paper.jar",
+            2048,
+            "/tmp/lightkeeper.sock",
+            "token",
+            null,
+            null,
+            RuntimeProtocol.VERSION,
+            "no-agent",
+            null,
+            List.of(),
+            null
+        );
+
+        // verify
+        assertThat(runtimeManifest.provisionedWorldNames()).isEmpty();
     }
 
     private static String defaultValueFor(String fieldName)

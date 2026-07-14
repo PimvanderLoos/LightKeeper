@@ -30,7 +30,8 @@ class RuntimeManifestWriterTest
             RuntimeProtocol.VERSION,
             "agent-cache-id",
             "-Dfoo=bar",
-            List.of(new RuntimeManifest.PreloadedWorld("fixture-world", "NORMAL", "FLAT", 42L))
+            List.of(new RuntimeManifest.PreloadedWorld("fixture-world", "NORMAL", "FLAT", 42L)),
+            List.of("fixture-world", "template-world")
         );
         final Path manifestPath = tempDirectory.resolve("runtime-manifest.json");
 

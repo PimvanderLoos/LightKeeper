@@ -88,6 +88,7 @@ class RuntimeManifestValidatorTest
             protocolVersion,
             "agent-cache-id",
             null,
+            List.of(),
             List.of()
         );
     }

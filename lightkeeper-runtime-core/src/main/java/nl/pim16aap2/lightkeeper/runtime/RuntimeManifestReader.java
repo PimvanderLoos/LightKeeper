@@ -77,5 +77,11 @@ public final class RuntimeManifestReader
                 throw new IOException("Runtime manifest preloaded world '%s' is missing worldType."
                     .formatted(preloadedWorld.name()));
         }
+
+        for (final String provisionedWorldName : manifest.provisionedWorldNames())
+        {
+            if (provisionedWorldName == null || provisionedWorldName.isBlank())
+                throw new IOException("Runtime manifest contains a provisioned world with a missing name.");
+        }
     }
 }
