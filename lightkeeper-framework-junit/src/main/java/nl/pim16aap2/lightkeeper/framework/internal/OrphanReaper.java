@@ -1,6 +1,9 @@
 package nl.pim16aap2.lightkeeper.framework.internal;
 
+import org.jspecify.annotations.Nullable;
+
 import java.time.Duration;
+import java.time.Instant;
 
 /**
  * Standalone watchdog that force-kills the Minecraft server process tree when the test JVM dies.
@@ -10,13 +13,21 @@ import java.time.Duration;
  * killed test JVM leaks a running Minecraft server that holds the agent socket and the world session lock.
  * <p>
  * The watchdog polls both processes and exits as soon as either side is gone: if the server exits first there is
- * nothing to guard; if the watched (test) JVM exits first, the server process tree is destroyed forcibly.
+ * nothing to guard; if the watched (test) JVM exits first, the server process tree is destroyed forcibly. Process
+ * identity is verified via the process start time where available, so a recycled PID is never mistaken for the
+ * original process (a reused watched-JVM PID would otherwise disable the reap forever; a reused server PID would
+ * get an unrelated process killed).
  * <p>
  * This class must only use JDK classes: it runs with nothing but the framework code location on its classpath.
  */
 public final class OrphanReaper
 {
     static final Duration DEFAULT_POLL_INTERVAL = Duration.ofMillis(500);
+
+    /**
+     * Sentinel for "process start time unknown"; identity checks are skipped for that side when set.
+     */
+    static final long START_INSTANT_UNKNOWN = -1L;
 
     private OrphanReaper()
     {
@@ -26,18 +37,34 @@ public final class OrphanReaper
      * Entry point for the watchdog process.
      *
      * @param args
-     *     Exactly two arguments: the PID of the test JVM to watch and the PID of the server process to reap.
+     *     Exactly four arguments: the PID of the test JVM to watch, its start time in epoch milliseconds (or
+     *     {@code -1} when unknown), the PID of the server process to reap, and its start time in epoch milliseconds
+     *     (or {@code -1} when unknown).
      */
     public static void main(String[] args)
     {
-        if (args.length != 2)
+        if (args.length != 4)
         {
-            System.err.println("Usage: OrphanReaper <watchedJvmPid> <serverPid>");
+            System.err.println(
+                "Usage: OrphanReaper <watchedJvmPid> <watchedJvmStartEpochMillis> <serverPid> <serverStartEpochMillis>"
+            );
             System.exit(2);
+            return;
         }
 
-        final ProcessHandle watchedJvm = ProcessHandle.of(Long.parseLong(args[0])).orElse(null);
-        final ProcessHandle serverProcess = ProcessHandle.of(Long.parseLong(args[1])).orElse(null);
+        runFromArgs(args);
+    }
+
+    /**
+     * Parses the validated arguments and runs the watchdog loop.
+     *
+     * @param args
+     *     The four arguments described on {@link #main(String[])}.
+     */
+    static void runFromArgs(String... args)
+    {
+        final WatchedProcess watchedJvm = WatchedProcess.of(Long.parseLong(args[0]), Long.parseLong(args[1]));
+        final WatchedProcess serverProcess = WatchedProcess.of(Long.parseLong(args[2]), Long.parseLong(args[3]));
 
         // A missing server process means there is nothing to guard. A missing watched JVM means it already died,
         // which run() handles by reaping immediately.
@@ -50,7 +77,7 @@ public final class OrphanReaper
     /**
      * Watches both processes until one of them exits.
      * <p>
-     * Returns when the server process has exited (either on its own, or because this method destroyed it after the
+     * Returns when the server process is gone (either on its own, or because this method destroyed it after the
      * watched JVM died).
      *
      * @param watchedJvm
@@ -60,16 +87,16 @@ public final class OrphanReaper
      * @param pollInterval
      *     How long to sleep between liveness checks.
      */
-    static void run(ProcessHandle watchedJvm, ProcessHandle serverProcess, Duration pollInterval)
+    static void run(@Nullable WatchedProcess watchedJvm, WatchedProcess serverProcess, Duration pollInterval)
     {
         while (true)
         {
-            if (!serverProcess.isAlive())
+            if (!serverProcess.isAliveAndSame())
                 return;
 
-            if (watchedJvm == null || !watchedJvm.isAlive())
+            if (watchedJvm == null || !watchedJvm.isAliveAndSame())
             {
-                killProcessTree(serverProcess);
+                killProcessTree(serverProcess.handle());
                 return;
             }
 
@@ -95,5 +122,65 @@ public final class OrphanReaper
     {
         root.descendants().forEach(ProcessHandle::destroyForcibly);
         root.destroyForcibly();
+    }
+
+    /**
+     * A process handle paired with the start time it is expected to have.
+     *
+     * @param handle
+     *     The handle to the process.
+     * @param expectedStartEpochMillis
+     *     The start time the process had when it was first observed, or {@link #START_INSTANT_UNKNOWN} to skip the
+     *     identity check.
+     */
+    record WatchedProcess(ProcessHandle handle, long expectedStartEpochMillis)
+    {
+        /**
+         * Looks up a process by PID.
+         *
+         * @param pid
+         *     The PID to look up.
+         * @param expectedStartEpochMillis
+         *     The expected start time of the process, or {@link #START_INSTANT_UNKNOWN}.
+         * @return The watched process, or {@code null} when no process with that PID exists.
+         */
+        static @Nullable WatchedProcess of(long pid, long expectedStartEpochMillis)
+        {
+            return ProcessHandle
+                .of(pid)
+                .map(handle -> new WatchedProcess(handle, expectedStartEpochMillis))
+                .orElse(null);
+        }
+
+        /**
+         * Whether the process is alive and still the process it was when first observed.
+         * <p>
+         * A start-time mismatch means the PID was recycled by an unrelated process, which is treated the same as
+         * "the original process is gone". The check is skipped when either side's start time is unknown.
+         *
+         * @return {@code true} when the process is alive and its identity matches.
+         */
+        boolean isAliveAndSame()
+        {
+            if (!handle.isAlive())
+                return false;
+            if (expectedStartEpochMillis == START_INSTANT_UNKNOWN)
+                return true;
+            final long actualStartEpochMillis = startEpochMillis(handle);
+            return actualStartEpochMillis == START_INSTANT_UNKNOWN
+                || actualStartEpochMillis == expectedStartEpochMillis;
+        }
+
+        /**
+         * Reads a process's start time.
+         *
+         * @param handle
+         *     The process to read.
+         * @return The start time in epoch milliseconds, or {@link #START_INSTANT_UNKNOWN} when unavailable.
+         */
+        static long startEpochMillis(ProcessHandle handle)
+        {
+            return handle.info().startInstant().map(Instant::toEpochMilli).orElse(START_INSTANT_UNKNOWN);
+        }
     }
 }

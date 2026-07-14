@@ -68,6 +68,31 @@ class MinecraftServerProcessTest
     }
 
     @Test
+    void kill_shouldDestroyOrphanReaperWhenServerIsConfirmedDead(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final MinecraftServerProcess serverProcess = new MinecraftServerProcess(
+            runtimeManifest(tempDirectory),
+            tempDirectory.resolve("diagnostics")
+        );
+        final Process process = mock();
+        final Process orphanReaperProcess = mock();
+        when(process.isAlive()).thenReturn(true, false);
+        when(process.waitFor(5_000L, TimeUnit.MILLISECONDS)).thenReturn(true);
+        when(orphanReaperProcess.isAlive()).thenReturn(true);
+        setField(serverProcess, "process", process);
+        setField(serverProcess, "orphanReaperProcess", orphanReaperProcess);
+
+        // execute
+        serverProcess.kill();
+
+        // verify
+        verify(orphanReaperProcess).destroy();
+        assertThat(getField(serverProcess, "orphanReaperProcess")).isNull();
+    }
+
+    @Test
     void stop_shouldForceKillAndThrowWhenProcessSurvivesShutdownFailure(@TempDir Path tempDirectory)
         throws Exception
     {
