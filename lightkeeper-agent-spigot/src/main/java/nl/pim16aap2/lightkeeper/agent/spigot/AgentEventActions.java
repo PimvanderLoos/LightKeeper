@@ -2,6 +2,7 @@ package nl.pim16aap2.lightkeeper.agent.spigot;
 
 import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEvents;
 import nl.pim16aap2.lightkeeper.protocol.GetCapturedEvents;
+import nl.pim16aap2.lightkeeper.protocol.IProtocolValue;
 import nl.pim16aap2.lightkeeper.protocol.RegisterEventListener;
 import nl.pim16aap2.lightkeeper.protocol.UnregisterEventListener;
 
@@ -73,7 +74,7 @@ final class AgentEventActions
     GetCapturedEvents.Response handleGetCapturedEvents(GetCapturedEvents.Command command)
     {
         final String eventClassName = command.eventClassName();
-        final List<Map<String, String>> events = eventCapture.getCapturedEvents(eventClassName);
+        final List<Map<String, IProtocolValue>> events = eventCapture.getCapturedEvents(eventClassName);
         return new GetCapturedEvents.Response(events);
     }
 

@@ -1,5 +1,6 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
+import nl.pim16aap2.lightkeeper.protocol.IProtocolValue;
 import org.bukkit.Bukkit;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
@@ -8,8 +9,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -34,11 +33,6 @@ final class AgentEventCapture
      * Prevents unbounded memory growth when a test forgets to close the capture handle.
      */
     private static final int MAX_CAPTURED_EVENTS_PER_CLASS = 10_000;
-    /**
-     * Maximum number of getter/isser methods inspected per event instance during capture.
-     * Bounds reflection overhead for events with very wide APIs.
-     */
-    private static final int MAX_CAPTURE_METHODS_PER_EVENT = 32;
 
     /**
      * Owning plugin used as registration context for Bukkit listeners.
@@ -49,18 +43,17 @@ final class AgentEventCapture
      */
     private final AgentMainThreadExecutor mainThreadExecutor;
     /**
+     * Encoder turning fired events into typed wire payloads; owns the drop markers and their WARN-once logging.
+     */
+    private final ProtocolValueEncoder protocolValueEncoder;
+    /**
      * Captured event payloads keyed by fully qualified event class name.
      */
-    private final Map<String, List<Map<String, String>>> capturedEvents = new ConcurrentHashMap<>();
+    private final Map<String, List<Map<String, IProtocolValue>>> capturedEvents = new ConcurrentHashMap<>();
     /**
      * Active marker listeners keyed by fully qualified event class name.
      */
     private final Map<String, Listener> activeListeners = new ConcurrentHashMap<>();
-    /**
-     * {@code eventClassName#methodName} keys whose capture failure has already been logged, so a getter that
-     * throws on every event is warned about once rather than flooding the log up to the capture cap.
-     */
-    private final Set<String> loggedCaptureFailures = ConcurrentHashMap.newKeySet();
     /**
      * Event class names whose capture cap has already been warned about, so hitting the cap is reported once
      * rather than silently discarding every subsequent event.
@@ -77,6 +70,7 @@ final class AgentEventCapture
     {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
         this.mainThreadExecutor = Objects.requireNonNull(mainThreadExecutor, "mainThreadExecutor");
+        this.protocolValueEncoder = new ProtocolValueEncoder(plugin);
     }
 
     /**
@@ -106,7 +100,7 @@ final class AgentEventCapture
                 throw new IllegalArgumentException("Class '%s' is not a Bukkit Event.".formatted(eventClassName));
 
             final Class<? extends Event> eventClass = resolvedClass.asSubclass(Event.class);
-            final List<Map<String, String>> events =
+            final List<Map<String, IProtocolValue>> events =
                 capturedEvents.computeIfAbsent(eventClassName, ignored -> new CopyOnWriteArrayList<>());
 
             mainThreadExecutor.callOnMainThread(() ->
@@ -225,9 +219,9 @@ final class AgentEventCapture
      * @return
      *     Snapshot list of captured event payloads, or an empty list when nothing has been captured.
      */
-    List<Map<String, String>> getCapturedEvents(String eventClassName)
+    List<Map<String, IProtocolValue>> getCapturedEvents(String eventClassName)
     {
-        final List<Map<String, String>> events = capturedEvents.get(eventClassName);
+        final List<Map<String, IProtocolValue>> events = capturedEvents.get(eventClassName);
         if (events == null)
             throw new IllegalArgumentException(
                 ("No capture listener is registered for event class '%s'; register it before querying captured "
@@ -244,7 +238,7 @@ final class AgentEventCapture
      */
     void clearCapturedEvents(String eventClassName)
     {
-        final List<Map<String, String>> events = capturedEvents.get(eventClassName);
+        final List<Map<String, IProtocolValue>> events = capturedEvents.get(eventClassName);
         if (events == null)
             throw new IllegalArgumentException(
                 "No capture listener is registered for event class '%s'; register it before clearing events."
@@ -252,7 +246,7 @@ final class AgentEventCapture
         events.clear();
     }
 
-    private void captureEventForList(Event event, List<Map<String, String>> targetList)
+    private void captureEventForList(Event event, List<Map<String, IProtocolValue>> targetList)
     {
         if (targetList.size() >= MAX_CAPTURED_EVENTS_PER_CLASS)
         {
@@ -264,73 +258,6 @@ final class AgentEventCapture
             return;
         }
 
-        final Map<String, String> data = new ConcurrentHashMap<>();
-        int inspectedMethodCount = 0;
-        for (final Method method : event.getClass().getMethods())
-        {
-            if (inspectedMethodCount >= MAX_CAPTURE_METHODS_PER_EVENT)
-                break;
-
-            if (method.getParameterCount() == 0 &&
-                (method.getName().startsWith("get") || method.getName().startsWith("is")) &&
-                !method.getName().equals("getClass") &&
-                !method.getName().equals("getHandlers") &&
-                !method.getName().equals("getEventName"))
-            {
-                ++inspectedMethodCount;
-                try
-                {
-                    final Object value = method.invoke(event);
-                    if (isPrintable(value))
-                        data.put(method.getName(), String.valueOf(value));
-                }
-                catch (InvocationTargetException exception)
-                {
-                    recordCaptureFailure(
-                        data, event, method, exception.getCause() == null ? exception : exception.getCause());
-                }
-                catch (ReflectiveOperationException | RuntimeException exception)
-                {
-                    recordCaptureFailure(data, event, method, exception);
-                }
-            }
-        }
-        targetList.add(data);
-    }
-
-    /**
-     * Records a visible sentinel for a failed event getter and warns once per event-class/method, so a getter
-     * that throws is never dropped silently (an absent key would let a negative assertion pass on broken
-     * capture).
-     *
-     * @param data
-     *     Captured property map for the current event.
-     * @param event
-     *     The event whose property failed to capture.
-     * @param method
-     *     The getter that failed.
-     * @param cause
-     *     The underlying failure (already unwrapped from any {@link InvocationTargetException}).
-     */
-    private void recordCaptureFailure(Map<String, String> data, Event event, Method method, Throwable cause)
-    {
-        data.put(method.getName(), "<capture-failed: " + cause.getClass().getSimpleName() + ">");
-        if (loggedCaptureFailures.add(event.getClass().getName() + "#" + method.getName()))
-            plugin.getLogger().log(
-                Level.WARNING,
-                "Failed to capture property '%s' of event '%s'."
-                    .formatted(method.getName(), event.getClass().getName()),
-                cause
-            );
-    }
-
-    private boolean isPrintable(Object value)
-    {
-        if (value == null) return false;
-        return value instanceof String ||
-               value instanceof Number ||
-               value instanceof Boolean ||
-               value instanceof java.util.UUID ||
-               value.getClass().isEnum();
+        targetList.add(protocolValueEncoder.encodeAccessors(event, event.getClass().getName()));
     }
 }

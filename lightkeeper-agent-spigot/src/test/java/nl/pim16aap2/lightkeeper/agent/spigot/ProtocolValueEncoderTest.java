@@ -1,0 +1,456 @@
+package nl.pim16aap2.lightkeeper.agent.spigot;
+
+import nl.pim16aap2.lightkeeper.protocol.IProtocolValue;
+import org.bukkit.World;
+import org.bukkit.entity.Entity;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.jspecify.annotations.Nullable;
+import org.junit.jupiter.api.Test;
+
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+class ProtocolValueEncoderTest
+{
+    private static ProtocolValueEncoder createEncoder(JavaPlugin plugin)
+    {
+        return new ProtocolValueEncoder(plugin);
+    }
+
+    @Test
+    void encodeAccessors_shouldEncodeStringNumberBooleanUuidAndEnumLeaves()
+    {
+        // setup
+        final UUID id = UUID.fromString("00000000-0000-0000-0000-000000000042");
+        final ProtocolValueEncoder encoder = createEncoder(mock());
+
+        // execute
+        final Map<String, IProtocolValue> result = encoder.encodeAccessors(new LeafFixture(id), "ctx");
+
+        // verify
+        assertThat(result)
+            .containsEntry("getText", new IProtocolValue.PString("hello"))
+            .containsEntry("getCount", new IProtocolValue.PNumber(5))
+            .containsEntry("getRatio", new IProtocolValue.PNumber(2.5))
+            .containsEntry("isActive", new IProtocolValue.PBool(true))
+            .containsEntry("getId", new IProtocolValue.PUuid(id))
+            .containsEntry("getKind", new IProtocolValue.PEnum(TestEnum.class.getName(), "ALPHA"));
+    }
+
+    @Test
+    void encodeAccessors_shouldEncodeEntityAsPRef()
+    {
+        // setup
+        final UUID entityId = UUID.fromString("00000000-0000-0000-0000-000000000043");
+        final Entity entity = mock();
+        when(entity.getUniqueId()).thenReturn(entityId);
+        final ProtocolValueEncoder encoder = createEncoder(mock());
+
+        // execute
+        final Map<String, IProtocolValue> result = encoder.encodeAccessors(new EntityHolder(entity), "ctx");
+
+        // verify
+        assertThat(result).containsEntry(
+            "getEntity", new IProtocolValue.PRef(entity.getClass().getName(), entityId.toString()));
+    }
+
+    @Test
+    void encodeAccessors_shouldEncodeWorldAsPRef()
+    {
+        // setup
+        final World world = mock();
+        when(world.getName()).thenReturn("world_test");
+        final ProtocolValueEncoder encoder = createEncoder(mock());
+
+        // execute
+        final Map<String, IProtocolValue> result = encoder.encodeAccessors(new WorldHolder(world), "ctx");
+
+        // verify
+        assertThat(result).containsEntry(
+            "getWorld", new IProtocolValue.PRef(world.getClass().getName(), "world_test"));
+    }
+
+    @Test
+    void encodeAccessors_shouldWalkRecordComponents()
+    {
+        // setup
+        final ProtocolValueEncoder encoder = createEncoder(mock());
+
+        // execute
+        final Map<String, IProtocolValue> result = encoder.encodeAccessors(new TestRecord("hello", 5), "ctx");
+
+        // verify
+        assertThat(result)
+            .containsEntry("name", new IProtocolValue.PString("hello"))
+            .containsEntry("value", new IProtocolValue.PNumber(5));
+    }
+
+    @Test
+    void encodeAccessors_shouldSortAccessorsByNameForDeterministicOutput()
+    {
+        // setup
+        final ProtocolValueEncoder encoder = createEncoder(mock());
+
+        // execute
+        final Map<String, IProtocolValue> result = encoder.encodeAccessors(new SortingFixture(), "ctx");
+
+        // verify
+        assertThat(result.keySet()).containsExactly("getA", "getB");
+    }
+
+    @Test
+    void encodeAccessors_shouldOmitNullAccessorResults()
+    {
+        // setup
+        final ProtocolValueEncoder encoder = createEncoder(mock());
+
+        // execute
+        final Map<String, IProtocolValue> result = encoder.encodeAccessors(new NullFieldFixture(), "ctx");
+
+        // verify
+        assertThat(result).doesNotContainKey("getMissing");
+    }
+
+    @Test
+    void encodeAccessors_shouldEncodeListAsPList()
+    {
+        // setup
+        final ProtocolValueEncoder encoder = createEncoder(mock());
+
+        // execute
+        final Map<String, IProtocolValue> result = encoder.encodeAccessors(new CollectionsFixture(), "ctx");
+
+        // verify — a null element is skipped rather than encoded
+        assertThat(result).containsEntry(
+            "getItems",
+            new IProtocolValue.PList(List.of(new IProtocolValue.PString("a"), new IProtocolValue.PString("b"))));
+    }
+
+    @Test
+    void encodeAccessors_shouldEncodeArrayAsPList()
+    {
+        // setup
+        final ProtocolValueEncoder encoder = createEncoder(mock());
+
+        // execute
+        final Map<String, IProtocolValue> result = encoder.encodeAccessors(new CollectionsFixture(), "ctx");
+
+        // verify
+        assertThat(result).containsEntry(
+            "getTags",
+            new IProtocolValue.PList(List.of(new IProtocolValue.PString("x"), new IProtocolValue.PString("y"))));
+    }
+
+    @Test
+    void encodeAccessors_shouldEncodeMapAsPRecord()
+    {
+        // setup
+        final ProtocolValueEncoder encoder = createEncoder(mock());
+
+        // execute
+        final Map<String, IProtocolValue> result = encoder.encodeAccessors(new CollectionsFixture(), "ctx");
+
+        // verify — a null-valued entry is skipped rather than encoded
+        assertThat(result).containsEntry(
+            "getMapping",
+            new IProtocolValue.PRecord(Map.of("k1", new IProtocolValue.PString("v1"))));
+    }
+
+    @Test
+    void encodeAccessors_shouldDropValueBeyondMaxDepth()
+    {
+        // setup
+        final JavaPlugin plugin = mock();
+        when(plugin.getLogger()).thenReturn(Logger.getLogger("protocol-value-encoder-test-depth"));
+        final ProtocolValueEncoder encoder = createEncoder(plugin);
+
+        // execute — a self-nesting fixture forces the walk past MAX_DEPTH
+        final Map<String, IProtocolValue> level0 = encoder.encodeAccessors(new SelfNestingFixture(), "ctx");
+
+        // verify — drill down through MAX_DEPTH nested records to reach the dropped innermost value
+        IProtocolValue current = java.util.Objects.requireNonNull(level0.get("getChild"));
+        for (int depth = 0; depth < ProtocolValueEncoder.MAX_DEPTH; depth++)
+        {
+            assertThat(current).isInstanceOf(IProtocolValue.PRecord.class);
+            current = java.util.Objects.requireNonNull(
+                ((IProtocolValue.PRecord) current).fields().get("getChild"));
+        }
+        assertThat(current).isInstanceOf(IProtocolValue.PDropped.class);
+        assertThat(((IProtocolValue.PDropped) current).accessorName()).isEqualTo("getChild");
+    }
+
+    @Test
+    void encodeAccessors_shouldDropEmptyNestedObject()
+    {
+        // setup
+        final JavaPlugin plugin = mock();
+        when(plugin.getLogger()).thenReturn(Logger.getLogger("protocol-value-encoder-test-empty"));
+        final ProtocolValueEncoder encoder = createEncoder(plugin);
+
+        // execute
+        final Map<String, IProtocolValue> result =
+            encoder.encodeAccessors(new HasEmptyFixtureField(), "ctx");
+
+        // verify
+        assertThat(result).containsEntry(
+            "getEmpty", new IProtocolValue.PDropped("getEmpty", EmptyFixture.class.getName()));
+    }
+
+    @Test
+    void encodeAccessors_shouldDropAndCaptureThrowingAccessor()
+    {
+        // setup
+        final JavaPlugin plugin = mock();
+        when(plugin.getLogger()).thenReturn(Logger.getLogger("protocol-value-encoder-test-throwing"));
+        final ProtocolValueEncoder encoder = createEncoder(plugin);
+
+        // execute
+        final Map<String, IProtocolValue> result = encoder.encodeAccessors(new ThrowingFixture(), "ctx");
+
+        // verify
+        assertThat(result).containsEntry(
+            "getBroken", new IProtocolValue.PDropped("getBroken", "capture-failed: IllegalStateException"));
+    }
+
+    @Test
+    void encodeAccessors_shouldCapAccessorCountAtMaxAccessorsPerObject()
+    {
+        // setup
+        final ProtocolValueEncoder encoder = createEncoder(mock());
+
+        // execute
+        final Map<String, IProtocolValue> result =
+            encoder.encodeAccessors(new AccessorCapFixture(), "ctx");
+
+        // verify — 35 getters are declared; only the first 32 in sorted order survive the cap
+        assertThat(result).hasSize(ProtocolValueEncoder.MAX_ACCESSORS_PER_OBJECT);
+        assertThat(result).containsKey("getP00");
+        assertThat(result).containsKey("getP31");
+        assertThat(result).doesNotContainKey("getP32");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked") // any(Supplier.class) necessarily returns a raw Supplier match.
+    void encodeAccessors_shouldLogDropWarningOnlyOncePerContextAndAccessor()
+    {
+        // setup
+        final JavaPlugin plugin = mock();
+        final Logger logger = mock();
+        when(plugin.getLogger()).thenReturn(logger);
+        final ProtocolValueEncoder encoder = createEncoder(plugin);
+
+        // execute — the same context+accessor pair drops twice across two separate captures
+        encoder.encodeAccessors(new ThrowingFixture(), "same-context");
+        encoder.encodeAccessors(new ThrowingFixture(), "same-context");
+
+        // verify
+        verify(logger, times(1)).log(eq(Level.WARNING), any(Supplier.class));
+    }
+
+    // -----------------------------------------------------------------------
+    // Fixtures
+    // -----------------------------------------------------------------------
+
+    public enum TestEnum
+    {
+        ALPHA,
+        BETA
+    }
+
+    public record TestRecord(String name, int value)
+    {
+    }
+
+    public static final class LeafFixture
+    {
+        private final UUID id;
+
+        public LeafFixture(UUID id)
+        {
+            this.id = id;
+        }
+
+        public String getText()
+        {
+            return "hello";
+        }
+
+        public int getCount()
+        {
+            return 5;
+        }
+
+        public double getRatio()
+        {
+            return 2.5;
+        }
+
+        public boolean isActive()
+        {
+            return true;
+        }
+
+        public UUID getId()
+        {
+            return id;
+        }
+
+        public TestEnum getKind()
+        {
+            return TestEnum.ALPHA;
+        }
+    }
+
+    public static final class EntityHolder
+    {
+        private final Entity entity;
+
+        public EntityHolder(Entity entity)
+        {
+            this.entity = entity;
+        }
+
+        public Entity getEntity()
+        {
+            return entity;
+        }
+    }
+
+    public static final class WorldHolder
+    {
+        private final World world;
+
+        public WorldHolder(World world)
+        {
+            this.world = world;
+        }
+
+        public World getWorld()
+        {
+            return world;
+        }
+    }
+
+    public static final class SortingFixture
+    {
+        public String getB()
+        {
+            return "b-value";
+        }
+
+        public String getA()
+        {
+            return "a-value";
+        }
+    }
+
+    public static final class NullFieldFixture
+    {
+        public @Nullable String getMissing()
+        {
+            return null;
+        }
+    }
+
+    public static final class CollectionsFixture
+    {
+        public List<String> getItems()
+        {
+            return Arrays.asList("a", null, "b");
+        }
+
+        public String[] getTags()
+        {
+            return new String[]{"x", "y"};
+        }
+
+        public Map<String, String> getMapping()
+        {
+            final Map<String, String> mapping = new LinkedHashMap<>();
+            mapping.put("k1", "v1");
+            mapping.put("k2", null);
+            return mapping;
+        }
+    }
+
+    public static final class SelfNestingFixture
+    {
+        public SelfNestingFixture getChild()
+        {
+            return new SelfNestingFixture();
+        }
+    }
+
+    public static final class EmptyFixture
+    {
+    }
+
+    public static final class HasEmptyFixtureField
+    {
+        public EmptyFixture getEmpty()
+        {
+            return new EmptyFixture();
+        }
+    }
+
+    public static final class ThrowingFixture
+    {
+        public String getBroken()
+        {
+            throw new IllegalStateException("boom");
+        }
+    }
+
+    public static final class AccessorCapFixture
+    {
+        public int getP00() { return 0; }
+        public int getP01() { return 1; }
+        public int getP02() { return 2; }
+        public int getP03() { return 3; }
+        public int getP04() { return 4; }
+        public int getP05() { return 5; }
+        public int getP06() { return 6; }
+        public int getP07() { return 7; }
+        public int getP08() { return 8; }
+        public int getP09() { return 9; }
+        public int getP10() { return 10; }
+        public int getP11() { return 11; }
+        public int getP12() { return 12; }
+        public int getP13() { return 13; }
+        public int getP14() { return 14; }
+        public int getP15() { return 15; }
+        public int getP16() { return 16; }
+        public int getP17() { return 17; }
+        public int getP18() { return 18; }
+        public int getP19() { return 19; }
+        public int getP20() { return 20; }
+        public int getP21() { return 21; }
+        public int getP22() { return 22; }
+        public int getP23() { return 23; }
+        public int getP24() { return 24; }
+        public int getP25() { return 25; }
+        public int getP26() { return 26; }
+        public int getP27() { return 27; }
+        public int getP28() { return 28; }
+        public int getP29() { return 29; }
+        public int getP30() { return 30; }
+        public int getP31() { return 31; }
+        public int getP32() { return 32; }
+        public int getP33() { return 33; }
+        public int getP34() { return 34; }
+    }
+}
