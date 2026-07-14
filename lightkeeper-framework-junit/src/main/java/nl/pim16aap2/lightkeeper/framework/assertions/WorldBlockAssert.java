@@ -1,6 +1,6 @@
 package nl.pim16aap2.lightkeeper.framework.assertions;
 
-import nl.pim16aap2.lightkeeper.framework.Vector3Di;
+import nl.pim16aap2.lightkeeper.framework.BlockPos;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import org.assertj.core.api.AbstractAssert;
 import org.bukkit.Material;
@@ -13,9 +13,9 @@ import java.util.Objects;
  */
 public final class WorldBlockAssert extends AbstractAssert<WorldBlockAssert, @Nullable WorldHandle>
 {
-    private final Vector3Di position;
+    private final BlockPos position;
 
-    WorldBlockAssert(WorldHandle worldHandle, Vector3Di position)
+    WorldBlockAssert(WorldHandle worldHandle, BlockPos position)
     {
         super(worldHandle, WorldBlockAssert.class);
         this.position = position;

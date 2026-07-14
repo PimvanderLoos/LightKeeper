@@ -1,5 +1,6 @@
 package nl.pim16aap2.lightkeeper.framework.internal;
 
+import nl.pim16aap2.lightkeeper.framework.BlockPos;
 import nl.pim16aap2.lightkeeper.framework.CapturedEventSnapshot;
 import nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot;
 import nl.pim16aap2.lightkeeper.framework.CommandResult;
@@ -15,7 +16,6 @@ import nl.pim16aap2.lightkeeper.framework.Platform;
 import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
 import nl.pim16aap2.lightkeeper.framework.ServerErrorSnapshot;
 import nl.pim16aap2.lightkeeper.framework.ServerErrorsHandle;
-import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import nl.pim16aap2.lightkeeper.framework.WorldSpec;
 import nl.pim16aap2.lightkeeper.protocol.CommandSource;
@@ -296,7 +296,7 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     }
 
     @Override
-    public String getBlock(String worldName, Vector3Di position)
+    public String getBlock(String worldName, BlockPos position)
     {
         ensureOpen();
         Objects.requireNonNull(worldName, "worldName may not be null.");
@@ -305,7 +305,7 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     }
 
     @Override
-    public void setBlock(String worldName, Vector3Di position, String material)
+    public void setBlock(String worldName, BlockPos position, String material)
     {
         ensureOpen();
         Objects.requireNonNull(worldName, "worldName may not be null.");
@@ -413,13 +413,13 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     }
 
     @Override
-    public boolean leftClickBlock(UUID playerId, Vector3Di position, String blockFace)
+    public boolean leftClickBlock(UUID playerId, BlockPos position, String blockFace)
     {
         return clickBlock(playerId, position, blockFace, agentClient::leftClickBlock);
     }
 
     @Override
-    public boolean rightClickBlock(UUID playerId, Vector3Di position, String blockFace)
+    public boolean rightClickBlock(UUID playerId, BlockPos position, String blockFace)
     {
         return clickBlock(playerId, position, blockFace, agentClient::rightClickBlock);
     }
@@ -742,7 +742,7 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
         startServer();
     }
 
-    private boolean clickBlock(UUID playerId, Vector3Di position, String blockFace, BlockClickOperation operation)
+    private boolean clickBlock(UUID playerId, BlockPos position, String blockFace, BlockClickOperation operation)
     {
         ensureOpen();
         Objects.requireNonNull(playerId, "playerId may not be null.");
@@ -756,7 +756,7 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     @FunctionalInterface
     private interface BlockClickOperation
     {
-        boolean clickBlock(UUID playerId, Vector3Di position, String blockFace);
+        boolean clickBlock(UUID playerId, BlockPos position, String blockFace);
     }
 
     @Override

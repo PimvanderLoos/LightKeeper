@@ -1,10 +1,10 @@
 package nl.pim16aap2.lightkeeper.framework.internal;
 
+import nl.pim16aap2.lightkeeper.framework.BlockPos;
 import nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot;
 import nl.pim16aap2.lightkeeper.framework.MenuItemSnapshot;
 import nl.pim16aap2.lightkeeper.framework.MenuSnapshot;
 import nl.pim16aap2.lightkeeper.framework.Platform;
-import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.framework.WorldSpec;
 import nl.pim16aap2.lightkeeper.protocol.BlockType;
 import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEvents;
@@ -133,7 +133,7 @@ final class UdsAgentClient implements AutoCloseable
         return send(cmd).dispatched();
     }
 
-    String blockType(String worldName, Vector3Di position)
+    String blockType(String worldName, BlockPos position)
     {
         final BlockType.Command command = new BlockType.Command(
             nextRequestId(),
@@ -145,7 +145,7 @@ final class UdsAgentClient implements AutoCloseable
         return send(command).material();
     }
 
-    void setBlock(String worldName, Vector3Di position, String material)
+    void setBlock(String worldName, BlockPos position, String material)
     {
         final SetBlock.Command command = new SetBlock.Command(
             nextRequestId(),
@@ -219,7 +219,7 @@ final class UdsAgentClient implements AutoCloseable
         send(command);
     }
 
-    boolean leftClickBlock(UUID uuid, Vector3Di position, String blockFace)
+    boolean leftClickBlock(UUID uuid, BlockPos position, String blockFace)
     {
         final LeftClickBlock.Command command = new LeftClickBlock.Command(
             nextRequestId(),
@@ -232,7 +232,7 @@ final class UdsAgentClient implements AutoCloseable
         return send(command).cancelled();
     }
 
-    boolean rightClickBlock(UUID uuid, Vector3Di position, String blockFace)
+    boolean rightClickBlock(UUID uuid, BlockPos position, String blockFace)
     {
         final RightClickBlock.Command command = new RightClickBlock.Command(
             nextRequestId(),

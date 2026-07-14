@@ -17,12 +17,12 @@ public interface IFrameworkGatewayView
     /**
      * Gets block material at a position.
      */
-    String getBlock(String worldName, Vector3Di position);
+    String getBlock(String worldName, BlockPos position);
 
     /**
      * Sets block material at a position.
      */
-    void setBlock(String worldName, Vector3Di position, String material);
+    void setBlock(String worldName, BlockPos position, String material);
 
     /**
      * Executes a command as a synthetic player.
@@ -83,14 +83,14 @@ public interface IFrameworkGatewayView
      *
      * @return {@code true} when a plugin cancelled the fired {@code PlayerInteractEvent}.
      */
-    boolean leftClickBlock(UUID playerId, Vector3Di position, String blockFace);
+    boolean leftClickBlock(UUID playerId, BlockPos position, String blockFace);
 
     /**
      * Fires a right-click block interaction as a synthetic player.
      *
      * @return {@code true} when a plugin cancelled the fired {@code PlayerInteractEvent}.
      */
-    boolean rightClickBlock(UUID playerId, Vector3Di position, String blockFace);
+    boolean rightClickBlock(UUID playerId, BlockPos position, String blockFace);
 
     /**
      * Retrieves menu snapshot for a synthetic player.

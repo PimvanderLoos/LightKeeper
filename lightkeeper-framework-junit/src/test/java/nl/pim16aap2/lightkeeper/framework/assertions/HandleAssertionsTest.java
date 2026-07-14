@@ -8,6 +8,7 @@ import nl.pim16aap2.lightkeeper.framework.MenuItemSnapshot;
 import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
 import nl.pim16aap2.lightkeeper.framework.ServerErrorSnapshot;
 import nl.pim16aap2.lightkeeper.framework.ServerErrorsHandle;
+import nl.pim16aap2.lightkeeper.framework.BlockPos;
 import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import org.bukkit.Material;
@@ -279,8 +280,8 @@ class HandleAssertionsTest
     {
         // setup
         final WorldHandle handle = mock(WorldHandle.class);
-        when(handle.blockTypeAt(new Vector3Di(1, 2, 3))).thenReturn("stone");
-        when(handle.blockTypeAt(new Vector3Di(4, 5, 6))).thenReturn("minecraft:dirt");
+        when(handle.blockTypeAt(new BlockPos(1, 2, 3))).thenReturn("stone");
+        when(handle.blockTypeAt(new BlockPos(4, 5, 6))).thenReturn("minecraft:dirt");
 
         // execute + verify
         LightkeeperAssertions.assertThat(handle).hasBlockAt(1, 2, 3).ofType(Material.STONE);
@@ -292,12 +293,24 @@ class HandleAssertionsTest
     {
         // setup
         final WorldHandle handle = mock(WorldHandle.class);
-        when(handle.blockTypeAt(new Vector3Di(0, 0, 0))).thenReturn("minecraft:stone");
+        when(handle.blockTypeAt(new BlockPos(0, 0, 0))).thenReturn("minecraft:stone");
 
         // execute + verify
         assertThatThrownBy(() ->
             LightkeeperAssertions.assertThat(handle).hasBlockAt(0, 0, 0).ofType("minecraft:dirt"))
             .isInstanceOf(AssertionError.class)
             .hasMessageContaining("Expected block at (0,0,0)");
+    }
+
+    @Test
+    @SuppressWarnings("removal")
+    void hasBlockAt_shouldDelegateFromDeprecatedVector3DiOverload()
+    {
+        // setup
+        final WorldHandle handle = mock(WorldHandle.class);
+        when(handle.blockTypeAt(new BlockPos(1, 2, 3))).thenReturn("minecraft:stone");
+
+        // execute + verify
+        LightkeeperAssertions.assertThat(handle).hasBlockAt(new Vector3Di(1, 2, 3)).ofType(Material.STONE);
     }
 }
