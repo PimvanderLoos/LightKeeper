@@ -8,7 +8,9 @@ import nl.pim16aap2.lightkeeper.protocol.ExecutePlayerCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponents;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerInventory;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerMessages;
+import nl.pim16aap2.lightkeeper.protocol.HasPlayerPermission;
 import nl.pim16aap2.lightkeeper.protocol.LeftClickBlock;
+import nl.pim16aap2.lightkeeper.protocol.MutatePlayerPermission;
 import nl.pim16aap2.lightkeeper.protocol.PlacePlayerBlock;
 import nl.pim16aap2.lightkeeper.protocol.RightClickBlock;
 import nl.pim16aap2.lightkeeper.protocol.TeleportPlayer;
@@ -308,6 +310,138 @@ class AgentPlayerActionsTest
             assertThat(item.materialKey()).isEqualTo("minecraft:stone");
             assertThat(item.lore()).isEmpty();
         });
+    }
+
+    @Test
+    void handleMutatePlayerPermission_shouldGrantPermissionWhenModeIsGrant()
+        throws Exception
+    {
+        // setup
+        final PlayerActionsFixture fixture = createPlayerActionsFixture();
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mock();
+        final PermissionAttachment attachment = mock();
+        when(player.addAttachment(any())).thenReturn(attachment);
+        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        final MutatePlayerPermission.Command command = new MutatePlayerPermission.Command(
+            "request-grant", uuid, "test.perm", MutatePlayerPermission.Mode.GRANT);
+
+        // execute
+        final MutatePlayerPermission.Response response;
+        try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
+        {
+            bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
+            response = fixture.playerActions().handleMutatePlayerPermission(command);
+        }
+
+        // verify
+        assertThat(response).isNotNull();
+        verify(attachment).setPermission("test.perm", true);
+    }
+
+    @Test
+    void handleMutatePlayerPermission_shouldRevokePermissionWhenModeIsRevoke()
+        throws Exception
+    {
+        // setup
+        final PlayerActionsFixture fixture = createPlayerActionsFixture();
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mock();
+        final PermissionAttachment attachment = mock();
+        when(player.addAttachment(any())).thenReturn(attachment);
+        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        final MutatePlayerPermission.Command command = new MutatePlayerPermission.Command(
+            "request-revoke", uuid, "test.perm", MutatePlayerPermission.Mode.REVOKE);
+
+        // execute
+        final MutatePlayerPermission.Response response;
+        try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
+        {
+            bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
+            response = fixture.playerActions().handleMutatePlayerPermission(command);
+        }
+
+        // verify
+        assertThat(response).isNotNull();
+        verify(attachment).setPermission("test.perm", false);
+    }
+
+    @Test
+    void handleMutatePlayerPermission_shouldUnsetPermissionWhenModeIsUnset()
+        throws Exception
+    {
+        // setup
+        final PlayerActionsFixture fixture = createPlayerActionsFixture();
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mock();
+        final PermissionAttachment attachment = mock();
+        when(player.addAttachment(any())).thenReturn(attachment);
+        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        final MutatePlayerPermission.Command grantCommand = new MutatePlayerPermission.Command(
+            "request-grant", uuid, "test.perm", MutatePlayerPermission.Mode.GRANT);
+        final MutatePlayerPermission.Command unsetCommand = new MutatePlayerPermission.Command(
+            "request-unset", uuid, "test.perm", MutatePlayerPermission.Mode.UNSET);
+
+        // execute
+        try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
+        {
+            bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
+            fixture.playerActions().handleMutatePlayerPermission(grantCommand);
+            fixture.playerActions().handleMutatePlayerPermission(unsetCommand);
+        }
+
+        // verify
+        verify(attachment).unsetPermission("test.perm");
+    }
+
+    @Test
+    void handleHasPlayerPermission_shouldReturnTrueWhenPlayerHasPermission()
+        throws Exception
+    {
+        // setup
+        final PlayerActionsFixture fixture = createPlayerActionsFixture();
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mock();
+        when(player.hasPermission("test.perm")).thenReturn(true);
+        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        final HasPlayerPermission.Command command =
+            new HasPlayerPermission.Command("request-has-true", uuid, "test.perm");
+
+        // execute
+        final HasPlayerPermission.Response response;
+        try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
+        {
+            bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
+            response = fixture.playerActions().handleHasPlayerPermission(command);
+        }
+
+        // verify
+        assertThat(response.value()).isTrue();
+    }
+
+    @Test
+    void handleHasPlayerPermission_shouldReturnFalseWhenPlayerLacksPermission()
+        throws Exception
+    {
+        // setup
+        final PlayerActionsFixture fixture = createPlayerActionsFixture();
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mock();
+        when(player.hasPermission("test.perm")).thenReturn(false);
+        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        final HasPlayerPermission.Command command =
+            new HasPlayerPermission.Command("request-has-false", uuid, "test.perm");
+
+        // execute
+        final HasPlayerPermission.Response response;
+        try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
+        {
+            bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
+            response = fixture.playerActions().handleHasPlayerPermission(command);
+        }
+
+        // verify
+        assertThat(response.value()).isFalse();
     }
 
     @Test

@@ -3,7 +3,9 @@ package nl.pim16aap2.lightkeeper.agent.spigot;
 import nl.pim16aap2.lightkeeper.nms.api.IBotPlayerNmsAdapter;
 import nl.pim16aap2.lightkeeper.protocol.CreatePlayer;
 import nl.pim16aap2.lightkeeper.protocol.ExecutePlayerCommand;
+import nl.pim16aap2.lightkeeper.protocol.HasPlayerPermission;
 import nl.pim16aap2.lightkeeper.protocol.LeftClickBlock;
+import nl.pim16aap2.lightkeeper.protocol.MutatePlayerPermission;
 import nl.pim16aap2.lightkeeper.protocol.PlacePlayerBlock;
 import nl.pim16aap2.lightkeeper.protocol.RemovePlayer;
 import nl.pim16aap2.lightkeeper.protocol.RightClickBlock;
@@ -285,6 +287,62 @@ final class AgentPlayerActions
         });
 
         return new TeleportPlayer.Response(teleported);
+    }
+
+    /**
+     * Handles {@code MUTATE_PLAYER_PERMISSION} by granting, revoking, or unsetting a single permission node on
+     * the player's LightKeeper-managed permission attachment.
+     *
+     * @param command
+     *     Typed command carrying player UUID, permission node, and mutation mode.
+     * @return Response when the mutation has been applied.
+     *
+     * @throws Exception
+     *     Propagates validation and main-thread execution failures.
+     */
+    MutatePlayerPermission.Response handleMutatePlayerPermission(MutatePlayerPermission.Command command)
+        throws Exception
+    {
+        final UUID uuid = command.uuid();
+        final String permission = command.permission();
+        final MutatePlayerPermission.Mode mode = command.mode();
+
+        mainThreadExecutor.callOnMainThread(() ->
+        {
+            final Player player = playerStore.getRequiredPlayer(uuid);
+            switch (mode)
+            {
+                case GRANT -> playerStore.setPermission(plugin, uuid, player, permission, true);
+                case REVOKE -> playerStore.setPermission(plugin, uuid, player, permission, false);
+                case UNSET -> playerStore.unsetPermission(uuid, permission);
+            }
+            return Boolean.TRUE;
+        });
+
+        return new MutatePlayerPermission.Response();
+    }
+
+    /**
+     * Handles {@code HAS_PLAYER_PERMISSION} by querying the live permission value on the player.
+     *
+     * @param command
+     *     Typed command carrying player UUID and permission node.
+     * @return Response containing the live {@code hasPermission} result.
+     *
+     * @throws Exception
+     *     Propagates validation and main-thread execution failures.
+     */
+    HasPlayerPermission.Response handleHasPlayerPermission(HasPlayerPermission.Command command)
+        throws Exception
+    {
+        final UUID uuid = command.uuid();
+        final String permission = command.permission();
+
+        final Boolean value = mainThreadExecutor.callOnMainThread(
+            () -> playerStore.getRequiredPlayer(uuid).hasPermission(permission)
+        );
+
+        return new HasPlayerPermission.Response(value);
     }
 
     /**

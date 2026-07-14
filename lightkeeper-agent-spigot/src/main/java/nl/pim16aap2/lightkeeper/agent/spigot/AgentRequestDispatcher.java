@@ -22,6 +22,7 @@ import nl.pim16aap2.lightkeeper.protocol.GetServerErrors;
 import nl.pim16aap2.lightkeeper.protocol.GetServerPlatform;
 import nl.pim16aap2.lightkeeper.protocol.GetServerTick;
 import nl.pim16aap2.lightkeeper.protocol.Handshake;
+import nl.pim16aap2.lightkeeper.protocol.HasPlayerPermission;
 import nl.pim16aap2.lightkeeper.protocol.IAgentCommand;
 import nl.pim16aap2.lightkeeper.protocol.IAgentResponse;
 import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
@@ -30,6 +31,7 @@ import nl.pim16aap2.lightkeeper.protocol.IsChunkLoaded;
 import nl.pim16aap2.lightkeeper.protocol.LeftClickBlock;
 import nl.pim16aap2.lightkeeper.protocol.LoadChunk;
 import nl.pim16aap2.lightkeeper.protocol.MainWorld;
+import nl.pim16aap2.lightkeeper.protocol.MutatePlayerPermission;
 import nl.pim16aap2.lightkeeper.protocol.NewWorld;
 import nl.pim16aap2.lightkeeper.protocol.PlacePlayerBlock;
 import nl.pim16aap2.lightkeeper.protocol.RegisterEventListener;
@@ -271,6 +273,8 @@ final class AgentRequestDispatcher
                 case GetServerPlatform.Command c -> handle(c, worldActions::handleGetServerPlatform);
                 case GetServerErrors.Command c -> handle(c, serverErrorActions::handleGetServerErrors);
                 case ClearServerErrors.Command c -> handle(c, serverErrorActions::handleClearServerErrors);
+                case MutatePlayerPermission.Command c -> handle(c, playerActions::handleMutatePlayerPermission);
+                case HasPlayerPermission.Command c -> handle(c, playerActions::handleHasPlayerPermission);
                 case Handshake.Command ignored ->
                     throw new IllegalStateException("Unreachable HANDSHAKE dispatch branch.");
             };

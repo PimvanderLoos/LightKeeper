@@ -25,11 +25,13 @@ import nl.pim16aap2.lightkeeper.protocol.GetServerErrors;
 import nl.pim16aap2.lightkeeper.protocol.GetServerPlatform;
 import nl.pim16aap2.lightkeeper.protocol.GetServerTick;
 import nl.pim16aap2.lightkeeper.protocol.Handshake;
+import nl.pim16aap2.lightkeeper.protocol.HasPlayerPermission;
 import nl.pim16aap2.lightkeeper.protocol.IAgentCommand;
 import nl.pim16aap2.lightkeeper.protocol.IsChunkLoaded;
 import nl.pim16aap2.lightkeeper.protocol.LeftClickBlock;
 import nl.pim16aap2.lightkeeper.protocol.LoadChunk;
 import nl.pim16aap2.lightkeeper.protocol.MainWorld;
+import nl.pim16aap2.lightkeeper.protocol.MutatePlayerPermission;
 import nl.pim16aap2.lightkeeper.protocol.NewWorld;
 import nl.pim16aap2.lightkeeper.protocol.PlacePlayerBlock;
 import nl.pim16aap2.lightkeeper.protocol.RegisterEventListener;
@@ -361,6 +363,10 @@ class AgentRequestDispatcherTest
             .thenReturn(new GetServerErrors.Response(java.util.List.of(), 0L, true));
         when(fixture.serverErrorActions().handleClearServerErrors(any(ClearServerErrors.Command.class)))
             .thenReturn(new ClearServerErrors.Response());
+        when(fixture.playerActions().handleMutatePlayerPermission(any(MutatePlayerPermission.Command.class)))
+            .thenReturn(new MutatePlayerPermission.Response());
+        when(fixture.playerActions().handleHasPlayerPermission(any(HasPlayerPermission.Command.class)))
+            .thenReturn(new HasPlayerPermission.Response(true));
 
         // execute
         dispatchExpectingSuccess(fixture, toJson(new NewWorld.Command("request-1", "w", "NORMAL", "NORMAL", 0L)));
@@ -393,6 +399,9 @@ class AgentRequestDispatcherTest
         dispatchExpectingSuccess(fixture, toJson(new GetServerPlatform.Command("request-28")));
         dispatchExpectingSuccess(fixture, toJson(new GetServerErrors.Command("request-29")));
         dispatchExpectingSuccess(fixture, toJson(new ClearServerErrors.Command("request-30")));
+        dispatchExpectingSuccess(fixture, toJson(new MutatePlayerPermission.Command(
+            "request-31", uuid, "test.perm", MutatePlayerPermission.Mode.GRANT)));
+        dispatchExpectingSuccess(fixture, toJson(new HasPlayerPermission.Command("request-32", uuid, "test.perm")));
 
         // verify
         verify(fixture.worldActions()).handleNewWorld(any(NewWorld.Command.class));
@@ -425,6 +434,8 @@ class AgentRequestDispatcherTest
         verify(fixture.worldActions()).handleGetServerPlatform(any(GetServerPlatform.Command.class));
         verify(fixture.serverErrorActions()).handleGetServerErrors(any(GetServerErrors.Command.class));
         verify(fixture.serverErrorActions()).handleClearServerErrors(any(ClearServerErrors.Command.class));
+        verify(fixture.playerActions()).handleMutatePlayerPermission(any(MutatePlayerPermission.Command.class));
+        verify(fixture.playerActions()).handleHasPlayerPermission(any(HasPlayerPermission.Command.class));
     }
 
     @Test
