@@ -127,7 +127,16 @@ final class AgentServerErrorCapture
 
             final CaptureAppender captureAppender = new CaptureAppender();
             captureAppender.start();
-            coreLogger.addAppender(captureAppender);
+            try
+            {
+                coreLogger.addAppender(captureAppender);
+            }
+            catch (RuntimeException | LinkageError exception)
+            {
+                // Never leak a started appender that was not attached.
+                captureAppender.stop();
+                throw exception;
+            }
 
             final CaptureStatusListener capturedStatusListener;
             try

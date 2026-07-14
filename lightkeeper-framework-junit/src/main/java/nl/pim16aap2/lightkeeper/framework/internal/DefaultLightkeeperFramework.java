@@ -85,6 +85,9 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
      * @param runtimeManifestPath
      *     Path to runtime manifest.
      * @return Started framework.
+      * <p>
+     * Fails loudly (rather than silently degrading to the stderr net alone) when the agent-side capture
+     * never attached: a disabled safety net must fail the tests that rely on it, not weaken them.
      */
     public static DefaultLightkeeperFramework start(Path runtimeManifestPath)
     {

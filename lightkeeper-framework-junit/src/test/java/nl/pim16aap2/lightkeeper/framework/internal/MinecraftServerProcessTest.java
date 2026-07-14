@@ -468,4 +468,41 @@ class MinecraftServerProcessTest
         field.setAccessible(true);
         return field.get(target);
     }
+
+    @Test
+    @org.junit.jupiter.api.Timeout(10)
+    void joinReaderThread_shouldReturnImmediatelyWhenBudgetIsExhausted()
+        throws Exception
+    {
+        // setup
+        // Thread.join(0) waits forever; an exhausted shared budget must skip the join instead of hanging.
+        final Thread stuckReader = Thread.ofPlatform().daemon().start(() ->
+        {
+            try
+            {
+                Thread.sleep(60_000);
+            }
+            catch (InterruptedException exception)
+            {
+                Thread.currentThread().interrupt();
+            }
+        });
+
+        try
+        {
+            final java.lang.reflect.Method joinReaderThread = MinecraftServerProcess.class
+                .getDeclaredMethod("joinReaderThread", Thread.class, Duration.class);
+            joinReaderThread.setAccessible(true);
+
+            // execute — must return promptly despite the reader being stuck (guarded by @Timeout)
+            final Object result = joinReaderThread.invoke(null, stuckReader, Duration.ZERO);
+
+            // verify — the still-alive reader is retained for the caller to observe
+            assertThat(result).isSameAs(stuckReader);
+        }
+        finally
+        {
+            stuckReader.interrupt();
+        }
+    }
 }

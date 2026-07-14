@@ -315,13 +315,18 @@ final class MinecraftServerProcess
         if (readerThread == null)
             return null;
 
-        try
+        // An exhausted budget must skip the join entirely: Thread.join(0) waits forever, which would
+        // turn a stuck first reader into an unbounded hang on the second.
+        if (!timeout.isZero() && !timeout.isNegative())
         {
-            readerThread.join(timeout.toMillis());
-        }
-        catch (InterruptedException exception)
-        {
-            Thread.currentThread().interrupt();
+            try
+            {
+                readerThread.join(timeout.toMillis());
+            }
+            catch (InterruptedException exception)
+            {
+                Thread.currentThread().interrupt();
+            }
         }
         return readerThread.isAlive() ? readerThread : null;
     }
@@ -518,6 +523,9 @@ final class MinecraftServerProcess
      *     Watermark obtained from an earlier {@link #totalOutputLineCount()} call.
      * @return
      *     Captured stderr lines in arrival order.
+      * <p>
+     * The scan window rides the bounded output buffer: under extreme stdout flooding, stderr lines older
+     * than the retained window can be evicted before they are scanned.
      */
     List<OutputLine> snapshotStderrLinesFrom(long fromTotalLineIndex)
     {
