@@ -116,7 +116,9 @@ public final class LightkeeperAssertions extends Assertions
     private static void runWithRetries(Duration timeout, RetryingAssertion assertion)
     {
         final long startNanos = System.nanoTime();
-        final long deadlineNanos = startNanos + timeout.toNanos();
+        // Compare elapsed time rather than an absolute deadline: nanoTime() may take any long value, so a
+        // precomputed deadline could overflow and expire immediately.
+        final long timeoutNanos = timeout.toNanos();
         int attempts = 0;
         while (true)
         {
@@ -144,7 +146,7 @@ public final class LightkeeperAssertions extends Assertions
                     exception);
             }
 
-            if (System.nanoTime() >= deadlineNanos)
+            if (System.nanoTime() - startNanos >= timeoutNanos)
             {
                 final double elapsedSeconds = (System.nanoTime() - startNanos) / 1_000_000_000.0;
                 throw new AssertionError(

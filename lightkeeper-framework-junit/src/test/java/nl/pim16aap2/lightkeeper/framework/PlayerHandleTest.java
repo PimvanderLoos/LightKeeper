@@ -415,7 +415,7 @@ class PlayerHandleTest
 
         // verify
         assertThat(result).isEqualTo(new InteractionResult(true, false));
-        verify(frameworkGateway).leftClickBlock(eq(PLAYER_UUID), any(BlockPos.class), eq("UP"));
+        verify(frameworkGateway).leftClickBlock(PLAYER_UUID, new BlockPos(5, 64, 6), "UP");
     }
 
     @Test
@@ -440,6 +440,6 @@ class PlayerHandleTest
 
         // verify
         assertThat(result).isEqualTo(new InteractionResult(true, false));
-        verify(frameworkGateway).rightClickBlock(eq(PLAYER_UUID), any(BlockPos.class), eq("UP"));
+        verify(frameworkGateway).rightClickBlock(PLAYER_UUID, new BlockPos(9, 64, 10), "UP");
     }
 }

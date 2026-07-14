@@ -141,10 +141,10 @@ class LightkeeperBotIT
         builtPlayer.andWaitTicks(1);
         final MenuHandle noLongerOpenMenu = builtPlayer.getMenu();
         explicitPlayer.placeBlock("STONE", 2, 100, 0);
-        eventually(Duration.ofSeconds(20), () ->
-            assertThat(buildWorldResult).hasBlockAt(new BlockPos(2, 100, 0)).ofType(Material.STONE));
 
         // verify
+        eventually(Duration.ofSeconds(20), () ->
+            assertThat(buildWorldResult).hasBlockAt(new BlockPos(2, 100, 0)).ofType(Material.STONE));
         assertThat(consoleCommandResult.success()).isTrue();
         assertThat(buildWorldResult.name()).isNotBlank();
         assertThat(menu.player()).isEqualTo(builtPlayer);
