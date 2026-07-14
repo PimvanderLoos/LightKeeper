@@ -248,7 +248,15 @@ class OrphanReaperTest
             // verify
             assertThat(reaper).isNotNull();
             final long ownProcessGroup = readProcessGroup(ProcessHandle.current().pid());
-            final long reaperProcessGroup = readProcessGroup(reaper.pid());
+            // The setsid wrapper only leaves the parent's process group once it has performed its setsid()
+            // call after fork/exec; poll briefly instead of racing it (observed flaking at ~17ms on CI).
+            final long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(10);
+            long reaperProcessGroup = readProcessGroup(reaper.pid());
+            while (reaperProcessGroup == ownProcessGroup && System.nanoTime() < deadline)
+            {
+                Thread.sleep(50L);
+                reaperProcessGroup = readProcessGroup(reaper.pid());
+            }
             assertThat(reaperProcessGroup)
                 .as("the reaper must not share the test JVM's process group")
                 .isNotEqualTo(ownProcessGroup);
