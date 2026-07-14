@@ -20,15 +20,19 @@ class FrameworkApiVisibilityTest
             MenuHandle.class.getDeclaredConstructor(IFrameworkGatewayView.class, PlayerHandle.class);
         final Constructor<WorldHandle> worldConstructor =
             WorldHandle.class.getDeclaredConstructor(IFrameworkGatewayView.class, String.class);
+        final Constructor<ServerErrorsHandle> serverErrorsConstructor =
+            ServerErrorsHandle.class.getDeclaredConstructor(IFrameworkGatewayView.class);
 
         // execute
         final boolean isPlayerConstructorPublic = Modifier.isPublic(playerConstructor.getModifiers());
         final boolean isMenuConstructorPublic = Modifier.isPublic(menuConstructor.getModifiers());
         final boolean isWorldConstructorPublic = Modifier.isPublic(worldConstructor.getModifiers());
+        final boolean isServerErrorsConstructorPublic = Modifier.isPublic(serverErrorsConstructor.getModifiers());
 
         // verify
         assertThat(isPlayerConstructorPublic).isFalse();
         assertThat(isMenuConstructorPublic).isFalse();
         assertThat(isWorldConstructorPublic).isFalse();
+        assertThat(isServerErrorsConstructorPublic).isFalse();
     }
 }

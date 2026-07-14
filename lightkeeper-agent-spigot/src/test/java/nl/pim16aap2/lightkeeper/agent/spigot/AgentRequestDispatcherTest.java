@@ -8,6 +8,7 @@ import nl.pim16aap2.lightkeeper.protocol.AgentProtocolException;
 import nl.pim16aap2.lightkeeper.protocol.AgentProtocolMapper;
 import nl.pim16aap2.lightkeeper.protocol.BlockType;
 import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEvents;
+import nl.pim16aap2.lightkeeper.protocol.ClearServerErrors;
 import nl.pim16aap2.lightkeeper.protocol.ClickMenuSlot;
 import nl.pim16aap2.lightkeeper.protocol.CommandSource;
 import nl.pim16aap2.lightkeeper.protocol.CreatePlayer;
@@ -20,6 +21,7 @@ import nl.pim16aap2.lightkeeper.protocol.GetOpenMenu;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponents;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerInventory;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerMessages;
+import nl.pim16aap2.lightkeeper.protocol.GetServerErrors;
 import nl.pim16aap2.lightkeeper.protocol.GetServerPlatform;
 import nl.pim16aap2.lightkeeper.protocol.GetServerTick;
 import nl.pim16aap2.lightkeeper.protocol.Handshake;
@@ -355,6 +357,10 @@ class AgentRequestDispatcherTest
             .thenReturn(new GetPlayerChatComponents.Response("[]"));
         when(fixture.worldActions().handleGetServerPlatform(any(GetServerPlatform.Command.class)))
             .thenReturn(new GetServerPlatform.Response("SPIGOT"));
+        when(fixture.serverErrorActions().handleGetServerErrors(any(GetServerErrors.Command.class)))
+            .thenReturn(new GetServerErrors.Response(java.util.List.of(), 0L, true));
+        when(fixture.serverErrorActions().handleClearServerErrors(any(ClearServerErrors.Command.class)))
+            .thenReturn(new ClearServerErrors.Response());
 
         // execute
         dispatchExpectingSuccess(fixture, toJson(new NewWorld.Command("request-1", "w", "NORMAL", "NORMAL", 0L)));
@@ -385,6 +391,8 @@ class AgentRequestDispatcherTest
         dispatchExpectingSuccess(fixture, toJson(new UnregisterEventListener.Command("request-26", "org.bukkit.event.player.PlayerJoinEvent")));
         dispatchExpectingSuccess(fixture, toJson(new GetPlayerChatComponents.Command("request-27", uuid)));
         dispatchExpectingSuccess(fixture, toJson(new GetServerPlatform.Command("request-28")));
+        dispatchExpectingSuccess(fixture, toJson(new GetServerErrors.Command("request-29")));
+        dispatchExpectingSuccess(fixture, toJson(new ClearServerErrors.Command("request-30")));
 
         // verify
         verify(fixture.worldActions()).handleNewWorld(any(NewWorld.Command.class));
@@ -415,6 +423,8 @@ class AgentRequestDispatcherTest
         verify(fixture.eventActions()).handleUnregisterEventListener(any(UnregisterEventListener.Command.class));
         verify(fixture.playerStateActions()).handleGetPlayerChatComponents(any(GetPlayerChatComponents.Command.class));
         verify(fixture.worldActions()).handleGetServerPlatform(any(GetServerPlatform.Command.class));
+        verify(fixture.serverErrorActions()).handleGetServerErrors(any(GetServerErrors.Command.class));
+        verify(fixture.serverErrorActions()).handleClearServerErrors(any(ClearServerErrors.Command.class));
     }
 
     @Test
@@ -570,6 +580,8 @@ class AgentRequestDispatcherTest
         );
         final AgentEventCapture eventCapture = mock();
         final AgentEventActions eventActions = new AgentEventActions(eventCapture);
+        final AgentServerErrorCapture serverErrorCapture = mock();
+        final AgentServerErrorActions serverErrorActions = new AgentServerErrorActions(serverErrorCapture);
 
         return new AgentRequestDispatcher(
             objectMapper,
@@ -578,6 +590,7 @@ class AgentRequestDispatcherTest
             playerStateActions,
             menuActions,
             eventActions,
+            serverErrorActions,
             new AgentRequestDispatcher.Config(
                 authToken,
                 protocolVersion,
@@ -595,6 +608,7 @@ class AgentRequestDispatcherTest
         final AgentPlayerStateActions playerStateActions = mock();
         final AgentMenuActions menuActions = mock();
         final AgentEventActions eventActions = mock();
+        final AgentServerErrorActions serverErrorActions = mock();
         final AgentRequestDispatcher dispatcher = new AgentRequestDispatcher(
             objectMapper,
             worldActions,
@@ -602,6 +616,7 @@ class AgentRequestDispatcherTest
             playerStateActions,
             menuActions,
             eventActions,
+            serverErrorActions,
             new AgentRequestDispatcher.Config(
                 "token",
                 1,
@@ -610,7 +625,8 @@ class AgentRequestDispatcherTest
             )
         );
         return new DispatcherFixture(
-            dispatcher, worldActions, playerActions, playerStateActions, menuActions, eventActions);
+            dispatcher, worldActions, playerActions, playerStateActions, menuActions, eventActions,
+            serverErrorActions);
     }
 
     private record DispatcherFixture(
@@ -619,7 +635,8 @@ class AgentRequestDispatcherTest
         AgentPlayerActions playerActions,
         AgentPlayerStateActions playerStateActions,
         AgentMenuActions menuActions,
-        AgentEventActions eventActions)
+        AgentEventActions eventActions,
+        AgentServerErrorActions serverErrorActions)
     {
     }
 

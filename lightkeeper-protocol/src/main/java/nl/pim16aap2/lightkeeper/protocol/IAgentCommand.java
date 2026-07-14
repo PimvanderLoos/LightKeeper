@@ -51,6 +51,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
     @JsonSubTypes.Type(value = UnregisterEventListener.Command.class, name = "UNREGISTER_EVENT_LISTENER"),
     @JsonSubTypes.Type(value = GetPlayerChatComponents.Command.class, name = "GET_PLAYER_CHAT_COMPONENTS"),
     @JsonSubTypes.Type(value = GetServerPlatform.Command.class, name = "GET_SERVER_PLATFORM"),
+    @JsonSubTypes.Type(value = GetServerErrors.Command.class, name = "GET_SERVER_ERRORS"),
+    @JsonSubTypes.Type(value = ClearServerErrors.Command.class, name = "CLEAR_SERVER_ERRORS"),
 })
 public sealed interface IAgentCommand<R extends IAgentResponse>
     permits Handshake.Command, MainWorld.Command, NewWorld.Command, ExecuteCommand.Command,
@@ -62,7 +64,8 @@ public sealed interface IAgentCommand<R extends IAgentResponse>
             UnloadChunk.Command, IsChunkLoaded.Command, GetPlayerInventory.Command,
             DropItem.Command, RegisterEventListener.Command, GetCapturedEvents.Command,
             ClearCapturedEvents.Command, UnregisterEventListener.Command,
-            GetPlayerChatComponents.Command, GetServerPlatform.Command
+            GetPlayerChatComponents.Command, GetServerPlatform.Command,
+            GetServerErrors.Command, ClearServerErrors.Command
 {
     /**
      * Correlation identifier matching the response's {@code requestId}.

@@ -13,10 +13,14 @@ import nl.pim16aap2.lightkeeper.framework.InventorySnapshot;
 import nl.pim16aap2.lightkeeper.framework.MenuSnapshot;
 import nl.pim16aap2.lightkeeper.framework.Platform;
 import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
+import nl.pim16aap2.lightkeeper.framework.ServerErrorSnapshot;
+import nl.pim16aap2.lightkeeper.framework.ServerErrorsHandle;
 import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import nl.pim16aap2.lightkeeper.framework.WorldSpec;
 import nl.pim16aap2.lightkeeper.protocol.CommandSource;
+import nl.pim16aap2.lightkeeper.protocol.GetServerErrors;
+import nl.pim16aap2.lightkeeper.protocol.ServerErrorEntry;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestReader;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestValidator;
@@ -27,10 +31,12 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Default LightKeeper framework implementation.
@@ -53,6 +59,11 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     private final PlayerScopeRegistry playerScopeRegistry;
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final AtomicBoolean serverCrashed = new AtomicBoolean(false);
+    /**
+     * Total-line-count watermark delimiting the raw stderr scan window; advanced on every
+     * {@link #clearServerErrors()}.
+     */
+    private final AtomicLong stderrScanWatermark = new AtomicLong(0L);
 
     @Inject
     DefaultLightkeeperFramework(
@@ -74,6 +85,9 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
      * @param runtimeManifestPath
      *     Path to runtime manifest.
      * @return Started framework.
+      * <p>
+     * Fails loudly (rather than silently degrading to the stderr net alone) when the agent-side capture
+     * never attached: a disabled safety net must fail the tests that rely on it, not weaken them.
      */
     public static DefaultLightkeeperFramework start(Path runtimeManifestPath)
     {
@@ -465,6 +479,65 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     }
 
     @Override
+    public ServerErrorsHandle serverErrors()
+    {
+        ensureOpen();
+        return FrameworkHandleFactory.serverErrorsHandle(this);
+    }
+
+    @Override
+    public List<ServerErrorSnapshot> capturedServerErrors()
+    {
+        ensureOpen();
+        final GetServerErrors.Response response = agentClient.getServerErrors();
+        if (!response.captureActive())
+            throw new IllegalStateException(
+                "Structured server-error capture is inactive: the agent could not attach its log appender. "
+                    + "Captured server errors are unavailable on this server.");
+        if (response.droppedCount() > 0L)
+            LOG.log(
+                System.Logger.Level.WARNING,
+                () -> "LK_FRAMEWORK: Server-error capture dropped %d entries because its buffer was full."
+                    .formatted(response.droppedCount())
+            );
+
+        final List<ServerErrorSnapshot> snapshots = new ArrayList<>(response.errors().size());
+        for (final ServerErrorEntry entry : response.errors())
+            snapshots.add(toServerErrorSnapshot(entry));
+        snapshots.addAll(ServerStderrErrorScanner.scan(
+            minecraftServerProcess.snapshotStderrLinesFrom(stderrScanWatermark.get())));
+        return List.copyOf(snapshots);
+    }
+
+    @Override
+    public void clearServerErrors()
+    {
+        ensureOpen();
+        // Snapshot the watermark before the RPC: stderr lines written during the round trip must
+        // stay above the watermark so they still surface in later capturedServerErrors() calls.
+        final long watermark = minecraftServerProcess.totalOutputLineCount();
+        agentClient.clearServerErrors();
+        stderrScanWatermark.set(watermark);
+    }
+
+    private static ServerErrorSnapshot toServerErrorSnapshot(ServerErrorEntry entry)
+    {
+        return new ServerErrorSnapshot(
+            entry.timestampMillis(),
+            "ERROR".equals(entry.severity())
+                ? ServerErrorSnapshot.Severity.ERROR
+                : ServerErrorSnapshot.Severity.WARNING,
+            entry.levelName(),
+            entry.loggerName(),
+            entry.threadName(),
+            entry.message(),
+            entry.throwableClass(),
+            entry.throwableMessage(),
+            entry.stackTrace()
+        );
+    }
+
+    @Override
     public Platform platform()
     {
         ensureOpen();
@@ -558,6 +631,11 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     {
         ensureOpen();
         playerScopeRegistry.endMethodScope(methodExecutionId, agentClient::removePlayer);
+        // Clear captured server errors at the END of each method (not the start): boot-window errors stay
+        // visible to the first test's assertions, and every later test only observes its own window. Skipped
+        // after a crash, when the agent connection is gone.
+        if (!serverCrashed.get())
+            clearServerErrors();
     }
 
     private void preloadConfiguredWorlds()

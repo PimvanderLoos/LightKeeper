@@ -135,4 +135,14 @@ public interface IFrameworkGatewayView
      * Unregisters an event listener.
      */
     void unregisterEventListener(String eventClassName);
+
+    /**
+     * Gets all captured server errors: structured log events plus raw stderr stack-trace detections.
+     */
+    List<ServerErrorSnapshot> capturedServerErrors();
+
+    /**
+     * Clears all captured server errors and advances the raw stderr scan window.
+     */
+    void clearServerErrors();
 }

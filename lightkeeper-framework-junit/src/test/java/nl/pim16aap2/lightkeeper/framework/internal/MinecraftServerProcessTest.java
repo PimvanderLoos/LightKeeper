@@ -9,14 +9,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
+import java.io.ByteArrayInputStream;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -43,19 +47,24 @@ class MinecraftServerProcessTest
         final Thread outputThread = Thread.ofPlatform().unstarted(() -> { });
         outputThread.start();
         outputThread.join();
+        final Thread errorThread = Thread.ofPlatform().unstarted(() -> { });
+        errorThread.start();
+        errorThread.join();
         when(process.isAlive()).thenReturn(true, false);
         when(process.waitFor(5_000L, TimeUnit.MILLISECONDS)).thenReturn(true);
         setField(serverProcess, "process", process);
         setField(serverProcess, "outputThread", outputThread);
+        setField(serverProcess, "errorThread", errorThread);
 
         // execute
         serverProcess.kill();
 
-        // verify
+        // verify — both reader threads are joined and cleared, not just the output one
         verify(process).destroyForcibly();
         verify(process).waitFor(5_000L, TimeUnit.MILLISECONDS);
         assertThat(getField(serverProcess, "process")).isNull();
         assertThat(getField(serverProcess, "outputThread")).isNull();
+        assertThat(getField(serverProcess, "errorThread")).isNull();
     }
 
     @Test
@@ -127,6 +136,127 @@ class MinecraftServerProcessTest
             lingeringOutputThread.interrupt();
             lingeringOutputThread.join(Duration.ofSeconds(5));
         }
+    }
+
+    @Test
+    void start_shouldRejectLingeringErrorReaderBeforeNewProcessLaunch(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup — the output reader is absent/finished, only the stderr reader is still lingering
+        final MinecraftServerProcess serverProcess = new MinecraftServerProcess(
+            runtimeManifest(tempDirectory),
+            tempDirectory.resolve("diagnostics")
+        );
+        final Thread lingeringErrorThread = Thread.ofPlatform().unstarted(() ->
+        {
+            try
+            {
+                Thread.sleep(Duration.ofSeconds(30));
+            }
+            catch (InterruptedException exception)
+            {
+                Thread.currentThread().interrupt();
+            }
+        });
+        lingeringErrorThread.start();
+        setField(serverProcess, "errorThread", lingeringErrorThread);
+
+        // execute + verify
+        try
+        {
+            assertThatThrownBy(() -> serverProcess.start(Duration.ofMillis(1)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("output reader is still stopping");
+        }
+        finally
+        {
+            lingeringErrorThread.interrupt();
+            lingeringErrorThread.join(Duration.ofSeconds(5));
+        }
+    }
+
+    @Test
+    void getProcessBuilder_shouldNotRedirectErrorStreamIntoStdout(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup — stdout and stderr must stay on separate pipes so OutputLine provenance is meaningful
+        final MinecraftServerProcess serverProcess = new MinecraftServerProcess(
+            runtimeManifest(tempDirectory),
+            tempDirectory.resolve("diagnostics")
+        );
+        final Method getProcessBuilder =
+            MinecraftServerProcess.class.getDeclaredMethod("getProcessBuilder", Path.class);
+        getProcessBuilder.setAccessible(true);
+
+        // execute
+        final ProcessBuilder processBuilder =
+            (ProcessBuilder) getProcessBuilder.invoke(serverProcess, Path.of("java"));
+
+        // verify
+        assertThat(processBuilder.redirectErrorStream()).isFalse();
+    }
+
+    @Test
+    void createOutputReaderThread_shouldCaptureLinesAndSignalStartupOnReadyMarker(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final MinecraftServerProcess serverProcess = new MinecraftServerProcess(
+            runtimeManifest(tempDirectory),
+            tempDirectory.resolve("diagnostics")
+        );
+        final Process process = mock();
+        final String content = "Starting server" + System.lineSeparator()
+            + "Done (1.234s)! For help, type \"help\"" + System.lineSeparator();
+        when(process.getInputStream())
+            .thenReturn(new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)));
+        final CountDownLatch startLatch = new CountDownLatch(1);
+        final Method createOutputReaderThread = MinecraftServerProcess.class
+            .getDeclaredMethod("createOutputReaderThread", Process.class, CountDownLatch.class);
+        createOutputReaderThread.setAccessible(true);
+        final Thread readerThread = (Thread) createOutputReaderThread.invoke(serverProcess, process, startLatch);
+
+        // execute
+        readerThread.start();
+        readerThread.join(Duration.ofSeconds(5).toMillis());
+
+        // verify — the readiness marker line signals startup, and both lines land on the stdout pipe
+        assertThat(startLatch.getCount()).isZero();
+        assertThat(serverProcess.snapshotOutputLines())
+            .containsExactly("Starting server", "Done (1.234s)! For help, type \"help\"");
+        assertThat(serverProcess.snapshotStderrLinesFrom(0L)).isEmpty();
+    }
+
+    @Test
+    void createErrorReaderThread_shouldCaptureLinesWithStderrProvenance(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final MinecraftServerProcess serverProcess = new MinecraftServerProcess(
+            runtimeManifest(tempDirectory),
+            tempDirectory.resolve("diagnostics")
+        );
+        final Process process = mock();
+        final String content = "java.lang.RuntimeException: raw" + System.lineSeparator();
+        when(process.getErrorStream())
+            .thenReturn(new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)));
+        final Method createErrorReaderThread =
+            MinecraftServerProcess.class.getDeclaredMethod("createErrorReaderThread", Process.class);
+        createErrorReaderThread.setAccessible(true);
+        final Thread readerThread = (Thread) createErrorReaderThread.invoke(serverProcess, process);
+
+        // execute
+        readerThread.start();
+        readerThread.join(Duration.ofSeconds(5).toMillis());
+
+        // verify — the line is captured with stderr provenance, distinct from the stdout pipe
+        assertThat(serverProcess.snapshotStderrLinesFrom(0L))
+            .singleElement()
+            .satisfies(line ->
+            {
+                assertThat(line.text()).isEqualTo("java.lang.RuntimeException: raw");
+                assertThat(line.fromStderr()).isTrue();
+            });
     }
 
     @Test
@@ -205,16 +335,13 @@ class MinecraftServerProcessTest
             runtimeManifest(tempDirectory),
             tempDirectory.resolve("diagnostics")
         );
-        final java.lang.reflect.Method appendOutputLine =
-            MinecraftServerProcess.class.getDeclaredMethod("appendOutputLine", String.class);
-        appendOutputLine.setAccessible(true);
-        appendOutputLine.invoke(serverProcess, "line one");
-        appendOutputLine.invoke(serverProcess, "line two");
+        appendOutputLine(serverProcess, "line one", false);
+        appendOutputLine(serverProcess, "line two", true);
 
         // execute
         final List<String> lines = serverProcess.snapshotOutputLines();
 
-        // verify
+        // verify — snapshotOutputLines merges both pipes in arrival order
         assertThat(lines).containsExactly("line one", "line two");
     }
 
@@ -232,10 +359,7 @@ class MinecraftServerProcessTest
         discardedField.setAccessible(true);
         discardedField.set(serverProcess, 5L);
 
-        final java.lang.reflect.Method appendOutputLine =
-            MinecraftServerProcess.class.getDeclaredMethod("appendOutputLine", String.class);
-        appendOutputLine.setAccessible(true);
-        appendOutputLine.invoke(serverProcess, "survivor line");
+        appendOutputLine(serverProcess, "survivor line", false);
 
         // execute
         final List<String> lines = serverProcess.snapshotOutputLines();
@@ -244,6 +368,68 @@ class MinecraftServerProcessTest
         assertThat(lines).hasSize(2);
         assertThat(lines.getFirst()).contains("Discarded").contains("5");
         assertThat(lines.get(1)).isEqualTo("survivor line");
+    }
+
+    @Test
+    void totalOutputLineCount_shouldIncludeDiscardedLines(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final MinecraftServerProcess serverProcess = new MinecraftServerProcess(
+            runtimeManifest(tempDirectory),
+            tempDirectory.resolve("diagnostics")
+        );
+        final java.lang.reflect.Field discardedField =
+            MinecraftServerProcess.class.getDeclaredField("discardedOutputLineCount");
+        discardedField.setAccessible(true);
+        discardedField.set(serverProcess, 7L);
+        appendOutputLine(serverProcess, "line one", false);
+        appendOutputLine(serverProcess, "line two", true);
+
+        // execute
+        final long totalLineCount = serverProcess.totalOutputLineCount();
+
+        // verify
+        assertThat(totalLineCount).isEqualTo(9L);
+    }
+
+    @Test
+    void snapshotStderrLinesFrom_shouldFilterByProvenanceAndWatermark(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final MinecraftServerProcess serverProcess = new MinecraftServerProcess(
+            runtimeManifest(tempDirectory),
+            tempDirectory.resolve("diagnostics")
+        );
+        appendOutputLine(serverProcess, "stdout before", false);
+        appendOutputLine(serverProcess, "stderr before", true);
+        final long watermark = serverProcess.totalOutputLineCount();
+        appendOutputLine(serverProcess, "stdout after", false);
+        appendOutputLine(serverProcess, "stderr after", true);
+
+        // execute
+        final List<MinecraftServerProcess.OutputLine> stderrLines =
+            serverProcess.snapshotStderrLinesFrom(watermark);
+
+        // verify — only stderr lines at or past the watermark are returned
+        assertThat(stderrLines)
+            .singleElement()
+            .satisfies(line ->
+            {
+                assertThat(line.text()).isEqualTo("stderr after");
+                assertThat(line.fromStderr()).isTrue();
+                assertThat(line.timestampMillis()).isPositive();
+            });
+    }
+
+    private static void appendOutputLine(MinecraftServerProcess serverProcess, String line, boolean fromStderr)
+        throws ReflectiveOperationException
+    {
+        final java.lang.reflect.Method appendOutputLine =
+            MinecraftServerProcess.class.getDeclaredMethod("appendOutputLine", String.class, boolean.class);
+        appendOutputLine.setAccessible(true);
+        appendOutputLine.invoke(serverProcess, line, fromStderr);
     }
 
     private static RuntimeManifest runtimeManifest(Path tempDirectory)
@@ -281,5 +467,42 @@ class MinecraftServerProcessTest
         final Field field = target.getClass().getDeclaredField(fieldName);
         field.setAccessible(true);
         return field.get(target);
+    }
+
+    @Test
+    @org.junit.jupiter.api.Timeout(10)
+    void joinReaderThread_shouldReturnImmediatelyWhenBudgetIsExhausted()
+        throws Exception
+    {
+        // setup
+        // Thread.join(0) waits forever; an exhausted shared budget must skip the join instead of hanging.
+        final Thread stuckReader = Thread.ofPlatform().daemon().start(() ->
+        {
+            try
+            {
+                Thread.sleep(60_000);
+            }
+            catch (InterruptedException exception)
+            {
+                Thread.currentThread().interrupt();
+            }
+        });
+
+        try
+        {
+            final java.lang.reflect.Method joinReaderThread = MinecraftServerProcess.class
+                .getDeclaredMethod("joinReaderThread", Thread.class, Duration.class);
+            joinReaderThread.setAccessible(true);
+
+            // execute — must return promptly despite the reader being stuck (guarded by @Timeout)
+            final Object result = joinReaderThread.invoke(null, stuckReader, Duration.ZERO);
+
+            // verify — the still-alive reader is retained for the caller to observe
+            assertThat(result).isSameAs(stuckReader);
+        }
+        finally
+        {
+            stuckReader.interrupt();
+        }
     }
 }

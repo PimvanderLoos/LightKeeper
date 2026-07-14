@@ -137,6 +137,27 @@ class SpigotLightkeeperAgentPluginTest
     }
 
     @Test
+    void onDisable_shouldUninstallServerErrorCaptureWhenPresent()
+        throws Exception
+    {
+        // setup
+        final SpigotLightkeeperAgentPlugin plugin = allocatePlugin();
+        final AgentServerErrorCapture serverErrorCapture = mock(AgentServerErrorCapture.class);
+        final Path socketPath = Files.createTempFile("lk-agent-test", ".sock");
+
+        setField(plugin, "requestExecutor", mock(ExecutorService.class));
+        setField(plugin, "acceptExecutor", mock(ExecutorService.class));
+        setField(plugin, "socketPath", socketPath);
+        setField(plugin, "serverErrorCapture", serverErrorCapture);
+
+        // execute
+        plugin.onDisable();
+
+        // verify
+        verify(serverErrorCapture).uninstall();
+    }
+
+    @Test
     void validateNmsCompatibility_shouldThrowExceptionWhenServerPackageIsUnexpected()
         throws Exception
     {

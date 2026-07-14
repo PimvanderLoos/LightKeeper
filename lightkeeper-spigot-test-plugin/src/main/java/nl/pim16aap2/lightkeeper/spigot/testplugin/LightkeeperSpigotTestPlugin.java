@@ -29,6 +29,10 @@ public final class LightkeeperSpigotTestPlugin extends JavaPlugin implements Lis
      */
     private static final String COMMAND_NAME = "lktestgui";
     /**
+     * Command name used to provoke log events for error-capture integration tests.
+     */
+    private static final String ERROR_COMMAND_NAME = "lktesterror";
+    /**
      * Prefix used for deterministic block interaction messages.
      */
     static final String BLOCK_CLICK_MESSAGE_PREFIX = "LK_BLOCK_CLICK";
@@ -48,7 +52,13 @@ public final class LightkeeperSpigotTestPlugin extends JavaPlugin implements Lis
             throw new IllegalStateException(
                 "Required command '/%s' is not declared in plugin metadata.".formatted(COMMAND_NAME));
 
+        final PluginCommand errorCommand = getCommand(ERROR_COMMAND_NAME);
+        if (errorCommand == null)
+            throw new IllegalStateException(
+                "Required command '/%s' is not declared in plugin metadata.".formatted(ERROR_COMMAND_NAME));
+
         pluginCommand.setExecutor(new LkTestGuiCommandExecutor(guiMenuService));
+        errorCommand.setExecutor(new LkTestErrorCommandExecutor(getLogger()));
         Bukkit.getPluginManager().registerEvents(this, this);
     }
 

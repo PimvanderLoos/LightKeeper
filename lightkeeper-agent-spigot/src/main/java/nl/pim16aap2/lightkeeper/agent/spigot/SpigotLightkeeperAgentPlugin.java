@@ -93,6 +93,25 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin
      * Request dispatcher wired during startup.
      */
     private @Nullable AgentRequestDispatcher requestDispatcher;
+    /**
+     * Structured server-error capture, installed during {@link #onLoad()}.
+     */
+    private @Nullable AgentServerErrorCapture serverErrorCapture;
+
+    /**
+     * Installs the structured server-error capture appender.
+     *
+     * <p>This runs in {@code onLoad} — before any plugin's {@code onEnable} — so enable-time errors of the
+     * plugins under test are already captured. Install failures leave capture inactive but never break agent
+     * startup.
+     */
+    @Override
+    public void onLoad()
+    {
+        final AgentServerErrorCapture capture = new AgentServerErrorCapture(getLogger());
+        serverErrorCapture = capture;
+        capture.install();
+    }
 
     /**
      * Initializes agent configuration and socket server.
@@ -134,6 +153,11 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin
             final AgentEventCapture eventCapture = new AgentEventCapture(this, mainThreadExecutor);
             final AgentEventActions eventActions = new AgentEventActions(eventCapture);
 
+            final AgentServerErrorCapture errorCapture = serverErrorCapture;
+            if (errorCapture == null)
+                throw new IllegalStateException("Server-error capture is not initialized; onLoad did not run.");
+            final AgentServerErrorActions serverErrorActions = new AgentServerErrorActions(errorCapture);
+
             requestDispatcher = new AgentRequestDispatcher(
                 objectMapper,
                 worldActions,
@@ -141,6 +165,7 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin
                 playerStateActions,
                 menuActions,
                 eventActions,
+                serverErrorActions,
                 new AgentRequestDispatcher.Config(
                     configuration.authToken(),
                     configuration.protocolVersion(),
@@ -167,6 +192,10 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin
     {
         running = false;
         closeQuietly(serverSocketChannel);
+
+        final AgentServerErrorCapture errorCapture = serverErrorCapture;
+        if (errorCapture != null)
+            errorCapture.uninstall();
 
         final AgentRequestDispatcher dispatcher = requestDispatcher;
         if (dispatcher != null)

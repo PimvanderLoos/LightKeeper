@@ -253,6 +253,119 @@ class AgentCommandSerializationTest
     }
 
     // -----------------------------------------------------------------------
+    // Deserialization from raw JSON: GET_SERVER_ERRORS / CLEAR_SERVER_ERRORS subtypes
+    // -----------------------------------------------------------------------
+
+    @Test
+    void deserialize_getServerErrorsJson_selectsGetServerErrorsCommand() throws Exception
+    {
+        // setup
+        final ObjectMapper mapper = AgentProtocolMapper.create();
+        final String json = "{\"action\":\"GET_SERVER_ERRORS\",\"requestId\":\"req-9\"}";
+
+        // execute
+        @SuppressWarnings("rawtypes")
+        final IAgentCommand deserialized = mapper.readValue(json, IAgentCommand.class);
+
+        // verify
+        assertThat(deserialized).isInstanceOf(GetServerErrors.Command.class);
+        assertThat(deserialized.requestId()).isEqualTo("req-9");
+    }
+
+    @Test
+    void deserialize_clearServerErrorsJson_selectsClearServerErrorsCommand() throws Exception
+    {
+        // setup
+        final ObjectMapper mapper = AgentProtocolMapper.create();
+        final String json = "{\"action\":\"CLEAR_SERVER_ERRORS\",\"requestId\":\"req-10\"}";
+
+        // execute
+        @SuppressWarnings("rawtypes")
+        final IAgentCommand deserialized = mapper.readValue(json, IAgentCommand.class);
+
+        // verify
+        assertThat(deserialized).isInstanceOf(ClearServerErrors.Command.class);
+        assertThat(deserialized.requestId()).isEqualTo("req-10");
+    }
+
+    @Test
+    void serialize_clearServerErrorsResponse_roundTrips() throws Exception
+    {
+        // setup
+        final ObjectMapper mapper = AgentProtocolMapper.create();
+        final ClearServerErrors.Response original = new ClearServerErrors.Response();
+
+        // execute
+        final String json = mapper.writeValueAsString(original);
+        final ClearServerErrors.Response result = mapper.readValue(json, ClearServerErrors.Response.class);
+
+        // verify
+        assertThat(result).isEqualTo(original);
+    }
+
+    // -----------------------------------------------------------------------
+    // Round-trip: GetServerErrors.Response with and without throwable metadata
+    // -----------------------------------------------------------------------
+
+    @Test
+    void serialize_getServerErrorsResponse_withThrowableEntry_roundTrips() throws Exception
+    {
+        // setup
+        final ObjectMapper mapper = AgentProtocolMapper.create();
+        final ServerErrorEntry entry = new ServerErrorEntry(
+            1_720_000_000_000L,
+            "ERROR",
+            "ERROR",
+            "net.example.SomePlugin",
+            "Server thread",
+            "Could not pass event to plugin",
+            "java.lang.IllegalStateException",
+            "boom",
+            List.of("java.lang.IllegalStateException: boom", "\tat net.example.SomePlugin.onEvent(SomePlugin.java:1)")
+        );
+        final GetServerErrors.Response original = new GetServerErrors.Response(List.of(entry), 5L, true);
+
+        // execute
+        final String json = mapper.writeValueAsString(original);
+        final GetServerErrors.Response result = mapper.readValue(json, GetServerErrors.Response.class);
+
+        // verify
+        assertThat(result.droppedCount()).isEqualTo(5L);
+        assertThat(result.captureActive()).isTrue();
+        assertThat(result.errors()).containsExactly(entry);
+    }
+
+    @Test
+    void serialize_getServerErrorsResponse_withoutThrowableEntry_roundTrips() throws Exception
+    {
+        // setup
+        final ObjectMapper mapper = AgentProtocolMapper.create();
+        final ServerErrorEntry entry = new ServerErrorEntry(
+            1_720_000_000_001L,
+            "WARNING",
+            "WARN",
+            "net.minecraft.server",
+            "Worker-1",
+            "Something looked off",
+            null,
+            null,
+            List.of()
+        );
+        final GetServerErrors.Response original = new GetServerErrors.Response(List.of(entry), 0L, false);
+
+        // execute
+        final String json = mapper.writeValueAsString(original);
+        final GetServerErrors.Response result = mapper.readValue(json, GetServerErrors.Response.class);
+
+        // verify
+        assertThat(result.droppedCount()).isZero();
+        assertThat(result.captureActive()).isFalse();
+        assertThat(result.errors()).containsExactly(entry);
+        assertThat(result.errors().getFirst().throwableClass()).isNull();
+        assertThat(result.errors().getFirst().throwableMessage()).isNull();
+    }
+
+    // -----------------------------------------------------------------------
     // Round-trip: MainWorld.Response
     // -----------------------------------------------------------------------
 

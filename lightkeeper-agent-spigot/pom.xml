@@ -59,6 +59,20 @@
             <version>${version.spigot-api}</version>
             <scope>provided</scope>
         </dependency>
+
+        <!-- Provided by the Minecraft server runtime; used to attach the structured error-capture appender. -->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>${version.log4j}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>${version.log4j}</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>
