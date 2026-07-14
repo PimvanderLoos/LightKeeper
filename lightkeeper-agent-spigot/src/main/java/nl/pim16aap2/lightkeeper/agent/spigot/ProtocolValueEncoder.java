@@ -9,6 +9,7 @@ import org.jspecify.annotations.Nullable;
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,6 +50,12 @@ final class ProtocolValueEncoder
      * Maximum number of accessors encoded per object; prevents pathological types from bloating payloads.
      */
     static final int MAX_ACCESSORS_PER_OBJECT = 32;
+
+    /**
+     * Maximum number of elements encoded per collection, array, or map; a truncated container carries a
+     * trailing {@link IProtocolValue.PDropped} marker naming the omitted remainder.
+     */
+    static final int MAX_CONTAINER_ELEMENTS = 128;
 
     private final JavaPlugin plugin;
     /**
@@ -118,6 +125,9 @@ final class ProtocolValueEncoder
     private List<Method> boundedAccessors(Object subject)
     {
         return Arrays.stream(subject.getClass().getMethods())
+            // Static methods are never instance state; without this, every Bukkit event's static
+            // getHandlerList() would drag server-global handler registrations into each payload.
+            .filter(method -> !Modifier.isStatic(method.getModifiers()))
             .filter(method -> method.getParameterCount() == 0)
             .filter(method -> method.getName().startsWith("get") || method.getName().startsWith("is"))
             .filter(method -> !method.getName().equals("getClass")
@@ -168,8 +178,10 @@ final class ProtocolValueEncoder
             return new IProtocolValue.PBool(bool);
         if (value instanceof UUID uuid)
             return new IProtocolValue.PUuid(uuid);
-        if (value.getClass().isEnum())
-            return new IProtocolValue.PEnum(value.getClass().getName(), ((Enum<?>) value).name());
+        // instanceof (not Class#isEnum) so enum constants with class bodies (e.g. ChatColor.RED, a synthetic
+        // ChatColor$13 subclass) still encode as enums; getDeclaringClass names the enum type, not the subclass.
+        if (value instanceof Enum<?> enumValue)
+            return new IProtocolValue.PEnum(enumValue.getDeclaringClass().getName(), enumValue.name());
         if (value instanceof Entity entity)
             return new IProtocolValue.PRef(entity.getClass().getName(), entity.getUniqueId().toString());
         if (value instanceof World world)
@@ -197,12 +209,19 @@ final class ProtocolValueEncoder
         String context,
         int remainingDepth)
     {
-        final List<IProtocolValue> elements = new ArrayList<>(collection.size());
+        final List<IProtocolValue> elements = new ArrayList<>(Math.min(collection.size(), MAX_CONTAINER_ELEMENTS));
+        int encodedCount = 0;
         for (final Object element : collection)
         {
             if (element == null)
                 continue;
+            if (encodedCount >= MAX_CONTAINER_ELEMENTS)
+            {
+                elements.add(truncated(context, accessorName, collection.size() - encodedCount));
+                break;
+            }
             elements.add(encodeValue(element, accessorName, context, remainingDepth - 1));
+            encodedCount++;
         }
         return new IProtocolValue.PList(elements);
     }
@@ -210,13 +229,20 @@ final class ProtocolValueEncoder
     private IProtocolValue encodeArray(Object array, String accessorName, String context, int remainingDepth)
     {
         final int length = Array.getLength(array);
-        final List<IProtocolValue> elements = new ArrayList<>(length);
+        final List<IProtocolValue> elements = new ArrayList<>(Math.min(length, MAX_CONTAINER_ELEMENTS));
+        int encodedCount = 0;
         for (int i = 0; i < length; i++)
         {
             final Object element = Array.get(array, i);
             if (element == null)
                 continue;
+            if (encodedCount >= MAX_CONTAINER_ELEMENTS)
+            {
+                elements.add(truncated(context, accessorName, length - encodedCount));
+                break;
+            }
             elements.add(encodeValue(element, accessorName, context, remainingDepth - 1));
+            encodedCount++;
         }
         return new IProtocolValue.PList(elements);
     }
@@ -224,14 +250,26 @@ final class ProtocolValueEncoder
     private IProtocolValue encodeMap(Map<?, ?> map, String accessorName, String context, int remainingDepth)
     {
         final Map<String, IProtocolValue> fields = new LinkedHashMap<>();
+        int encodedCount = 0;
         for (final Map.Entry<?, ?> entry : map.entrySet())
         {
             if (entry.getValue() == null)
                 continue;
+            if (encodedCount >= MAX_CONTAINER_ELEMENTS)
+            {
+                fields.put("<truncated>", truncated(context, accessorName, map.size() - encodedCount));
+                break;
+            }
             fields.put(String.valueOf(entry.getKey()),
                 encodeValue(entry.getValue(), accessorName, context, remainingDepth - 1));
+            encodedCount++;
         }
         return new IProtocolValue.PRecord(fields);
+    }
+
+    private IProtocolValue.PDropped truncated(String context, String accessorName, int omittedCount)
+    {
+        return dropped(context, accessorName, "truncated: %d more elements".formatted(omittedCount));
     }
 
     private IProtocolValue.PDropped dropped(String context, String accessorName, String runtimeType)

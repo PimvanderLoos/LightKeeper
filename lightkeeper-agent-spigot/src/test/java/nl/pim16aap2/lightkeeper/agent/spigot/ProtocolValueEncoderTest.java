@@ -453,4 +453,126 @@ class ProtocolValueEncoderTest
         public int getP33() { return 33; }
         public int getP34() { return 34; }
     }
+
+    @Test
+    void encodeAccessors_shouldExcludeStaticAccessors()
+    {
+        // setup
+        final JavaPlugin plugin = mock();
+        when(plugin.getLogger()).thenReturn(Logger.getLogger("protocol-value-encoder-test-static"));
+        final ProtocolValueEncoder encoder = createEncoder(plugin);
+
+        // execute
+        final Map<String, IProtocolValue> encoded =
+            encoder.encodeAccessors(new StaticAccessorFixture(), "ctx");
+
+        // verify - the static accessor must not be walked into the payload
+        assertThat(encoded).containsOnlyKeys("getInstanceValue");
+    }
+
+    @Test
+    void encodeAccessors_shouldEncodeEnumConstantsWithClassBodiesAsEnums()
+    {
+        // setup
+        final JavaPlugin plugin = mock();
+        when(plugin.getLogger()).thenReturn(Logger.getLogger("protocol-value-encoder-test-enum-body"));
+        final ProtocolValueEncoder encoder = createEncoder(plugin);
+
+        // execute
+        final Map<String, IProtocolValue> encoded =
+            encoder.encodeAccessors(new EnumWithBodyFixture(), "ctx");
+
+        // verify - a constant with a body is a synthetic subclass; it must still encode as the declaring enum
+        assertThat(encoded.get("getMode")).isEqualTo(
+            new IProtocolValue.PEnum(BodiedEnum.class.getName(), "SPECIAL"));
+    }
+
+    @Test
+    void encodeAccessors_shouldMarkTruncatedRemainderOfOversizedCollections()
+    {
+        // setup
+        final JavaPlugin plugin = mock();
+        when(plugin.getLogger()).thenReturn(Logger.getLogger("protocol-value-encoder-test-truncate"));
+        final ProtocolValueEncoder encoder = createEncoder(plugin);
+        final int oversize = ProtocolValueEncoder.MAX_CONTAINER_ELEMENTS + 5;
+
+        // execute
+        final Map<String, IProtocolValue> encoded =
+            encoder.encodeAccessors(new OversizedListFixture(oversize), "ctx");
+
+        // verify - the cap keeps the first MAX elements and reports the omitted remainder loudly
+        assertThat(encoded.get("getEntries")).isInstanceOfSatisfying(IProtocolValue.PList.class, list ->
+        {
+            assertThat(list.values()).hasSize(ProtocolValueEncoder.MAX_CONTAINER_ELEMENTS + 1);
+            assertThat(list.values().getLast()).isEqualTo(
+                new IProtocolValue.PDropped("getEntries", "truncated: 5 more elements"));
+        });
+    }
+
+    /**
+     * Fixture with one instance accessor and one static accessor that must not be encoded.
+     */
+    public static final class StaticAccessorFixture
+    {
+        public String getInstanceValue()
+        {
+            return "instance";
+        }
+
+        public static String getStaticValue()
+        {
+            return "static";
+        }
+    }
+
+    /**
+     * Enum whose constant carries a class body, producing a synthetic subclass at runtime.
+     */
+    public enum BodiedEnum
+    {
+        SPECIAL
+        {
+            @Override
+            public String describe()
+            {
+                return "special";
+            }
+        };
+
+        public String describe()
+        {
+            return "plain";
+        }
+    }
+
+    /**
+     * Fixture exposing an enum-with-body value.
+     */
+    public static final class EnumWithBodyFixture
+    {
+        public BodiedEnum getMode()
+        {
+            return BodiedEnum.SPECIAL;
+        }
+    }
+
+    /**
+     * Fixture exposing a list larger than the container cap.
+     */
+    public static final class OversizedListFixture
+    {
+        private final java.util.List<String> entries;
+
+        OversizedListFixture(int size)
+        {
+            entries = new java.util.ArrayList<>(size);
+            for (int i = 0; i < size; i++)
+                entries.add("entry-" + i);
+        }
+
+        public java.util.List<String> getEntries()
+        {
+            return entries;
+        }
+    }
 }

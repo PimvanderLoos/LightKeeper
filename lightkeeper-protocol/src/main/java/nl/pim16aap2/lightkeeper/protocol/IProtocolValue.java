@@ -71,7 +71,9 @@ public sealed interface IProtocolValue
      * A numeric value.
      *
      * <p>Integral inputs are normalized to {@link Long} and floating-point inputs to {@link Double}, so equal
-     * numbers compare equal regardless of the boxed type they were encoded or deserialized from.
+     * numbers compare equal regardless of the boxed type they were encoded or deserialized from. Arbitrary
+     * precision types ({@code BigInteger}, {@code BigDecimal}) are coerced to {@code double} and may lose
+     * precision; no supported payload source produces them today.
      *
      * @param value
      *     The number; a {@link Long} for integral values, a {@link Double} for floating-point values.
