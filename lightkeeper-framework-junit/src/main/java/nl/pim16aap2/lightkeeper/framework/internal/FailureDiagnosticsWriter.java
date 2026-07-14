@@ -18,7 +18,10 @@ import java.util.List;
  * <p>A bundle is a directory of plain-text files under the configured reports root:
  * {@code <root>/<TestClass>/<testMethod>-<timestamp>/} containing the test outcome and failure
  * ({@code outcome.txt}), all captured server errors ({@code server-errors.txt}), and the captured server
- * console output ({@code server-output.log}).
+ * console output ({@code server-output.log}). The timestamp suffix keeps repeated runs (and repeated
+ * invocations of parameterized tests) from colliding; in shared-server mode the console output is the full
+ * bounded buffer for the server, not just the failing test's own window (unlike the server errors, which are
+ * cleared per method).
  *
  * <p>Writing is strictly best-effort: diagnostics must never fail (or further fail) a test run. Every data
  * source is captured independently, so one broken source (e.g. a dead agent connection) still leaves the other
@@ -67,7 +70,7 @@ public final class FailureDiagnosticsWriter
             writeSection(bundleDirectory, "server-output.log", () -> renderServerOutput(framework));
 
             LOG.log(
-                System.Logger.Level.WARNING,
+                System.Logger.Level.INFO,
                 () -> "LK_DIAGNOSTICS: Wrote diagnostics bundle for %s.%s to '%s'."
                     .formatted(testClassName, testMethodName, bundleDirectory)
             );
@@ -92,10 +95,18 @@ public final class FailureDiagnosticsWriter
         @Nullable Throwable failure)
         throws IOException
     {
+        final String outcomeLabel;
+        if (failure == null)
+            outcomeLabel = "PASSED";
+        else if (failure instanceof org.opentest4j.TestAbortedException)
+            outcomeLabel = "ABORTED";
+        else
+            outcomeLabel = "FAILED";
+
         final StringBuilder outcome = new StringBuilder(256)
             .append("test: ").append(testClassName).append('.').append(testMethodName)
             .append(System.lineSeparator())
-            .append("outcome: ").append(failure == null ? "PASSED" : "FAILED")
+            .append("outcome: ").append(outcomeLabel)
             .append(System.lineSeparator());
         if (failure != null)
         {

@@ -32,6 +32,8 @@ public final class LightkeeperExtension implements
     AfterAllCallback,
     ParameterResolver
 {
+    private static final System.Logger LOG = System.getLogger(LightkeeperExtension.class.getName());
+
     private static final ExtensionContext.Namespace NAMESPACE =
         ExtensionContext.Namespace.create(LightkeeperExtension.class);
     private static final String KEY_SHARED_FRAMEWORK = "shared-framework";
@@ -41,10 +43,14 @@ public final class LightkeeperExtension implements
 
     /**
      * Starts a shared framework when tests are not configured for per-method fresh servers.
+     *
+     * <p>Also validates the diagnostics configuration up front: a typo in {@code lightkeeper.diagnostics} must
+     * fail loudly here, before any server is provisioned — not during cleanup.
      */
     @Override
     public void beforeAll(ExtensionContext context)
     {
+        diagnosticsMode();
         if (usesFreshLifecycleForClass(context) || hasMethodLevelFreshServers(context))
             return;
         getClassStore(context).put(KEY_SHARED_FRAMEWORK, startFramework());
@@ -236,29 +242,57 @@ public final class LightkeeperExtension implements
 
     /**
      * Writes a diagnostics bundle when the configured mode calls for one and a live framework exists for the
-     * current test. Never starts a framework and never throws: diagnostics are best-effort by contract.
+     * current test. Never starts a framework and never throws — this runs before the cleanup in
+     * {@link #afterEach}, and a diagnostics problem (including a mode value changed to garbage mid-run) must
+     * not prevent that cleanup from running.
      */
     private static void maybeWriteDiagnostics(ExtensionContext context)
     {
-        final DiagnosticsMode mode = diagnosticsMode();
+        try
+        {
+            final DiagnosticsMode mode = diagnosticsMode();
+            if (mode == DiagnosticsMode.OFF)
+                return;
+
+            final @Nullable Throwable failure = context.getExecutionException().orElse(null);
+            if (!shouldWriteBundle(mode, failure))
+                return;
+
+            final @Nullable ILightkeeperFramework framework = findExistingFramework(context);
+            if (framework == null)
+                return;
+
+            FailureDiagnosticsWriter.write(
+                framework,
+                diagnosticsDirectory(),
+                context.getRequiredTestClass().getSimpleName(),
+                context.getRequiredTestMethod().getName(),
+                failure
+            );
+        }
+        catch (RuntimeException exception)
+        {
+            LOG.log(
+                System.Logger.Level.WARNING,
+                "LK_DIAGNOSTICS: Skipping the diagnostics bundle because of an unexpected error.",
+                exception
+            );
+        }
+    }
+
+    /**
+     * Decides whether a bundle should be written for the given mode and collected throwable.
+     *
+     * <p>An assumption abort ({@link org.opentest4j.TestAbortedException}) means the test was skipped, not
+     * failed: it never triggers an {@code on-failure} bundle, though {@code always} mode still records it.
+     */
+    static boolean shouldWriteBundle(DiagnosticsMode mode, @Nullable Throwable failure)
+    {
+        if (mode == DiagnosticsMode.ALWAYS)
+            return true;
         if (mode == DiagnosticsMode.OFF)
-            return;
-
-        final @Nullable Throwable failure = context.getExecutionException().orElse(null);
-        if (failure == null && mode != DiagnosticsMode.ALWAYS)
-            return;
-
-        final @Nullable ILightkeeperFramework framework = findExistingFramework(context);
-        if (framework == null)
-            return;
-
-        FailureDiagnosticsWriter.write(
-            framework,
-            diagnosticsDirectory(),
-            context.getRequiredTestClass().getSimpleName(),
-            context.getTestMethod().map(java.lang.reflect.Method::getName).orElse("unknown-method"),
-            failure
-        );
+            return false;
+        return failure != null && !(failure instanceof org.opentest4j.TestAbortedException);
     }
 
     /**
@@ -275,12 +309,13 @@ public final class LightkeeperExtension implements
         return getClassStore(context).get(KEY_SHARED_FRAMEWORK, ILightkeeperFramework.class);
     }
 
-    private static DiagnosticsMode diagnosticsMode()
+    static DiagnosticsMode diagnosticsMode()
     {
         final String configuredMode = System.getProperty("lightkeeper.diagnostics", "on-failure").trim();
         return switch (configuredMode.toLowerCase(Locale.ROOT))
         {
-            case "on-failure" -> DiagnosticsMode.ON_FAILURE;
+            // An empty value (e.g. a bare -Dlightkeeper.diagnostics=) means "use the default".
+            case "", "on-failure" -> DiagnosticsMode.ON_FAILURE;
             case "always" -> DiagnosticsMode.ALWAYS;
             case "off" -> DiagnosticsMode.OFF;
             default -> throw new IllegalStateException(
@@ -297,7 +332,7 @@ public final class LightkeeperExtension implements
     /**
      * When the extension captures a diagnostics bundle.
      */
-    private enum DiagnosticsMode
+    enum DiagnosticsMode
     {
         /**
          * Never write bundles.

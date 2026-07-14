@@ -88,6 +88,33 @@ class FailureDiagnosticsWriterTest
     }
 
     @Test
+    void write_shouldReportAbortedOutcomeForAssumptionAborts(@TempDir Path tempDirectory)
+        throws IOException
+    {
+        // setup
+        final ILightkeeperFramework framework = mock(ILightkeeperFramework.class);
+        final ServerErrorsHandle serverErrorsHandle = mock(ServerErrorsHandle.class);
+        when(framework.serverErrors()).thenReturn(serverErrorsHandle);
+        when(serverErrorsHandle.getCaptured()).thenReturn(List.of());
+        when(framework.serverOutput()).thenReturn(List.of());
+
+        // execute
+        final Path writtenDirectory = FailureDiagnosticsWriter.write(
+            framework,
+            tempDirectory,
+            "MyTestClass",
+            "myAbortedMethod",
+            new org.opentest4j.TestAbortedException("skipped on this platform"));
+
+        // verify
+        assertThat(writtenDirectory).isNotNull();
+        final Path bundleDirectory = java.util.Objects.requireNonNull(writtenDirectory);
+        assertThat(Files.readString(bundleDirectory.resolve("outcome.txt")))
+            .contains("outcome: ABORTED")
+            .contains("skipped on this platform");
+    }
+
+    @Test
     void write_shouldRecordSectionFailureWithoutLosingOtherSections(@TempDir Path tempDirectory)
         throws IOException
     {
