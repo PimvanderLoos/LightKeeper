@@ -228,7 +228,12 @@ class MyPluginIT
 - Config overlay support (copy tree into prepared server directory)
 - Synthetic players and fluent interaction API
 - Runtime permission control per player (`player.permissions().grant/revoke/unset/has`)
-- Menu interaction and assertions
+- Observable interaction outcomes: block clicks return `InteractionResult` (event fired + cancellation),
+  drops return `DropResult` (`DROPPED`/`CANCELLED`/`EMPTY_HAND`)
+- Menu interaction and assertions; menu actions auto-wait for an open menu, and `clickItem("name")`
+  clicks by item display name
+- World templates: provision world folders via `<worlds>` and load them with
+  `newWorldFromTemplate("name")` — typos fail loudly instead of silently creating a fresh world
 - Received-message assertions with AssertJ string chaining
 - Graceful server lifecycle control from tests (`stopServer()`, `startServer()`, `restartServer()`), plus
   `crashServer()` for hard-kill scenarios
