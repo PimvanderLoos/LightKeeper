@@ -9,14 +9,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
+import java.io.ByteArrayInputStream;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -43,19 +47,24 @@ class MinecraftServerProcessTest
         final Thread outputThread = Thread.ofPlatform().unstarted(() -> { });
         outputThread.start();
         outputThread.join();
+        final Thread errorThread = Thread.ofPlatform().unstarted(() -> { });
+        errorThread.start();
+        errorThread.join();
         when(process.isAlive()).thenReturn(true, false);
         when(process.waitFor(5_000L, TimeUnit.MILLISECONDS)).thenReturn(true);
         setField(serverProcess, "process", process);
         setField(serverProcess, "outputThread", outputThread);
+        setField(serverProcess, "errorThread", errorThread);
 
         // execute
         serverProcess.kill();
 
-        // verify
+        // verify — both reader threads are joined and cleared, not just the output one
         verify(process).destroyForcibly();
         verify(process).waitFor(5_000L, TimeUnit.MILLISECONDS);
         assertThat(getField(serverProcess, "process")).isNull();
         assertThat(getField(serverProcess, "outputThread")).isNull();
+        assertThat(getField(serverProcess, "errorThread")).isNull();
     }
 
     @Test
@@ -127,6 +136,127 @@ class MinecraftServerProcessTest
             lingeringOutputThread.interrupt();
             lingeringOutputThread.join(Duration.ofSeconds(5));
         }
+    }
+
+    @Test
+    void start_shouldRejectLingeringErrorReaderBeforeNewProcessLaunch(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup — the output reader is absent/finished, only the stderr reader is still lingering
+        final MinecraftServerProcess serverProcess = new MinecraftServerProcess(
+            runtimeManifest(tempDirectory),
+            tempDirectory.resolve("diagnostics")
+        );
+        final Thread lingeringErrorThread = Thread.ofPlatform().unstarted(() ->
+        {
+            try
+            {
+                Thread.sleep(Duration.ofSeconds(30));
+            }
+            catch (InterruptedException exception)
+            {
+                Thread.currentThread().interrupt();
+            }
+        });
+        lingeringErrorThread.start();
+        setField(serverProcess, "errorThread", lingeringErrorThread);
+
+        // execute + verify
+        try
+        {
+            assertThatThrownBy(() -> serverProcess.start(Duration.ofMillis(1)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("output reader is still stopping");
+        }
+        finally
+        {
+            lingeringErrorThread.interrupt();
+            lingeringErrorThread.join(Duration.ofSeconds(5));
+        }
+    }
+
+    @Test
+    void getProcessBuilder_shouldNotRedirectErrorStreamIntoStdout(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup — stdout and stderr must stay on separate pipes so OutputLine provenance is meaningful
+        final MinecraftServerProcess serverProcess = new MinecraftServerProcess(
+            runtimeManifest(tempDirectory),
+            tempDirectory.resolve("diagnostics")
+        );
+        final Method getProcessBuilder =
+            MinecraftServerProcess.class.getDeclaredMethod("getProcessBuilder", Path.class);
+        getProcessBuilder.setAccessible(true);
+
+        // execute
+        final ProcessBuilder processBuilder =
+            (ProcessBuilder) getProcessBuilder.invoke(serverProcess, Path.of("java"));
+
+        // verify
+        assertThat(processBuilder.redirectErrorStream()).isFalse();
+    }
+
+    @Test
+    void createOutputReaderThread_shouldCaptureLinesAndSignalStartupOnReadyMarker(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final MinecraftServerProcess serverProcess = new MinecraftServerProcess(
+            runtimeManifest(tempDirectory),
+            tempDirectory.resolve("diagnostics")
+        );
+        final Process process = mock();
+        final String content = "Starting server" + System.lineSeparator()
+            + "Done (1.234s)! For help, type \"help\"" + System.lineSeparator();
+        when(process.getInputStream())
+            .thenReturn(new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)));
+        final CountDownLatch startLatch = new CountDownLatch(1);
+        final Method createOutputReaderThread = MinecraftServerProcess.class
+            .getDeclaredMethod("createOutputReaderThread", Process.class, CountDownLatch.class);
+        createOutputReaderThread.setAccessible(true);
+        final Thread readerThread = (Thread) createOutputReaderThread.invoke(serverProcess, process, startLatch);
+
+        // execute
+        readerThread.start();
+        readerThread.join(Duration.ofSeconds(5).toMillis());
+
+        // verify — the readiness marker line signals startup, and both lines land on the stdout pipe
+        assertThat(startLatch.getCount()).isZero();
+        assertThat(serverProcess.snapshotOutputLines())
+            .containsExactly("Starting server", "Done (1.234s)! For help, type \"help\"");
+        assertThat(serverProcess.snapshotStderrLinesFrom(0L)).isEmpty();
+    }
+
+    @Test
+    void createErrorReaderThread_shouldCaptureLinesWithStderrProvenance(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final MinecraftServerProcess serverProcess = new MinecraftServerProcess(
+            runtimeManifest(tempDirectory),
+            tempDirectory.resolve("diagnostics")
+        );
+        final Process process = mock();
+        final String content = "java.lang.RuntimeException: raw" + System.lineSeparator();
+        when(process.getErrorStream())
+            .thenReturn(new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)));
+        final Method createErrorReaderThread =
+            MinecraftServerProcess.class.getDeclaredMethod("createErrorReaderThread", Process.class);
+        createErrorReaderThread.setAccessible(true);
+        final Thread readerThread = (Thread) createErrorReaderThread.invoke(serverProcess, process);
+
+        // execute
+        readerThread.start();
+        readerThread.join(Duration.ofSeconds(5).toMillis());
+
+        // verify — the line is captured with stderr provenance, distinct from the stdout pipe
+        assertThat(serverProcess.snapshotStderrLinesFrom(0L))
+            .singleElement()
+            .satisfies(line ->
+            {
+                assertThat(line.text()).isEqualTo("java.lang.RuntimeException: raw");
+                assertThat(line.fromStderr()).isTrue();
+            });
     }
 
     @Test

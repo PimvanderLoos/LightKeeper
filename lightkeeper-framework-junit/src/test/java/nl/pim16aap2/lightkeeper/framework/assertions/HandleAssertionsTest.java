@@ -15,6 +15,7 @@ import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
@@ -187,6 +188,51 @@ class HandleAssertionsTest
         // execute + verify
         LightkeeperAssertions.assertThat(framework)
             .hasNoServerErrors(error -> error.message().contains("moving_piston"));
+    }
+
+    @Test
+    void lightkeeperFrameworkAssert_shouldTruncateOverlongStackTraceInFailureMessage()
+    {
+        // setup — more stack trace lines than the 15-line rendering cap
+        final ILightkeeperFramework framework = mock(ILightkeeperFramework.class);
+        final ServerErrorsHandle serverErrorsHandle = mock(ServerErrorsHandle.class);
+        when(framework.serverErrors()).thenReturn(serverErrorsHandle);
+        final List<String> stackTrace = IntStream.range(0, 20)
+            .mapToObj(i -> "\tat net.example.SomePlugin.frame" + i + "(SomePlugin.java:" + i + ")")
+            .toList();
+        when(serverErrorsHandle.getCaptured()).thenReturn(List.of(new ServerErrorSnapshot(
+            1L,
+            ServerErrorSnapshot.Severity.ERROR,
+            "ERROR",
+            "net.example.SomePlugin",
+            "Server thread",
+            "boom",
+            "java.lang.IllegalStateException",
+            "boom",
+            stackTrace
+        )));
+
+        // execute + verify
+        assertThatThrownBy(() -> LightkeeperAssertions.assertThat(framework).hasNoServerErrors())
+            .isInstanceOf(AssertionError.class)
+            .hasMessageContaining("... (5 more stack trace lines)");
+    }
+
+    @Test
+    void lightkeeperFrameworkAssert_shouldRenderQuestionMarkWhenThreadNameIsEmpty()
+    {
+        // setup
+        final ILightkeeperFramework framework = mock(ILightkeeperFramework.class);
+        final ServerErrorsHandle serverErrorsHandle = mock(ServerErrorsHandle.class);
+        when(framework.serverErrors()).thenReturn(serverErrorsHandle);
+        when(serverErrorsHandle.getCaptured()).thenReturn(List.of(new ServerErrorSnapshot(
+            1L, ServerErrorSnapshot.Severity.ERROR, "ERROR", "net.example.SomePlugin", "", "boom",
+            null, null, List.of())));
+
+        // execute + verify
+        assertThatThrownBy(() -> LightkeeperAssertions.assertThat(framework).hasNoServerErrors())
+            .isInstanceOf(AssertionError.class)
+            .hasMessageContaining("(thread: ?)");
     }
 
     private static ServerErrorSnapshot serverError(

@@ -61,6 +61,18 @@ class ProtocolDefensiveCopyTest
     }
 
     @Test
+    @SuppressWarnings("NullAway") // Intentionally crosses the non-null API boundary to verify default-on-null.
+    void stackTrace_shouldDefaultToEmptyListWhenServerErrorEntryConstructedWithNull()
+    {
+        // setup + execute
+        final ServerErrorEntry entry = new ServerErrorEntry(
+            0L, "ERROR", "ERROR", "logger", "thread", "message", null, null, null);
+
+        // verify
+        assertThat(entry.stackTrace()).isEmpty();
+    }
+
+    @Test
     void errors_shouldNotExposeGetServerErrorsResponseState()
     {
         // setup
@@ -76,6 +88,17 @@ class ProtocolDefensiveCopyTest
         assertThat(response.errors()).containsExactly(entry);
         assertThatThrownBy(() -> response.errors().add(entry))
             .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    @SuppressWarnings("NullAway") // Intentionally crosses the non-null API boundary to verify default-on-null.
+    void errors_shouldDefaultToEmptyListWhenGetServerErrorsResponseConstructedWithNull()
+    {
+        // setup + execute
+        final GetServerErrors.Response response = new GetServerErrors.Response(null, 0L, true);
+
+        // verify
+        assertThat(response.errors()).isEmpty();
     }
 
     @Test

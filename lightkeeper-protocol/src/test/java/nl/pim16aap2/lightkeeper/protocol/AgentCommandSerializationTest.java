@@ -288,6 +288,21 @@ class AgentCommandSerializationTest
         assertThat(deserialized.requestId()).isEqualTo("req-10");
     }
 
+    @Test
+    void serialize_clearServerErrorsResponse_roundTrips() throws Exception
+    {
+        // setup
+        final ObjectMapper mapper = AgentProtocolMapper.create();
+        final ClearServerErrors.Response original = new ClearServerErrors.Response();
+
+        // execute
+        final String json = mapper.writeValueAsString(original);
+        final ClearServerErrors.Response result = mapper.readValue(json, ClearServerErrors.Response.class);
+
+        // verify
+        assertThat(result).isEqualTo(original);
+    }
+
     // -----------------------------------------------------------------------
     // Round-trip: GetServerErrors.Response with and without throwable metadata
     // -----------------------------------------------------------------------

@@ -168,4 +168,21 @@ class ServerStderrErrorScannerTest
         // execute + verify
         assertThat(ServerStderrErrorScanner.scan(List.of())).isEmpty();
     }
+
+    @Test
+    void scan_shouldTreatBlankThrowableMessageAsNull()
+    {
+        // setup — a header line with a colon but no message text after it
+        final List<OutputLine> lines = List.of(
+            stderrLine("java.lang.RuntimeException:"),
+            stderrLine("\tat net.example.Foo.bar(Foo.java:1)")
+        );
+
+        // execute
+        final List<ServerErrorSnapshot> snapshots = ServerStderrErrorScanner.scan(lines);
+
+        // verify
+        assertThat(snapshots).hasSize(1);
+        assertThat(snapshots.getFirst().throwableMessage()).isNull();
+    }
 }
