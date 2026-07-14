@@ -124,6 +124,19 @@ final class OrphanReaperLauncher
             if (Files.isExecutable(candidate))
                 return candidate;
         }
+
+        // Fall back to a PATH scan for container images with non-standard layouts.
+        final String pathEnvironment = System.getenv("PATH");
+        if (pathEnvironment == null || pathEnvironment.isBlank())
+            return null;
+        for (final String entry : pathEnvironment.split(java.io.File.pathSeparator, -1))
+        {
+            if (entry.isBlank())
+                continue;
+            final Path candidate = Path.of(entry).resolve("setsid");
+            if (Files.isExecutable(candidate))
+                return candidate;
+        }
         return null;
     }
 

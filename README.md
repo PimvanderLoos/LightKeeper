@@ -103,6 +103,12 @@ runtime, and the framework module provides the API used by your tests.
 </dependencies>
 ```
 
+Both goals support `-Dlightkeeper.skip=true` to disable a whole LightKeeper lane (e.g. per job in a
+CI matrix) without pom changes. Skipping `prepare-server` deletes any stale runtime manifest, so
+integration tests that still run will fail fast instead of using leftover server state; combine
+with `-DskipITs` to skip the tests too.
+
+
 ### Gradle
 
 ```gradle
@@ -156,11 +162,6 @@ dependencies {
             </executions>
         </plugin>
     </plugins>
-
-Both goals support `-Dlightkeeper.skip=true` to disable a whole LightKeeper lane (e.g. per job in a
-CI matrix) without pom changes. Skipping `prepare-server` deletes any stale runtime manifest, so
-integration tests that still run will fail fast instead of using leftover server state; combine
-with `-DskipITs` to skip the tests too.
 
 </build>
 
