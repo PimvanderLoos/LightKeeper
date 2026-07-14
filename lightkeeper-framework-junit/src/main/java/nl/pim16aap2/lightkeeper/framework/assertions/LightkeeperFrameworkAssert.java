@@ -114,25 +114,7 @@ public final class LightkeeperFrameworkAssert
         final int maxRenderedStackTraceLines = 15;
         final StringBuilder rendered = new StringBuilder(256);
         for (final ServerErrorSnapshot error : errors)
-        {
-            rendered
-                .append("[%s] %s (thread: %s): %s".formatted(
-                    error.levelName(),
-                    error.loggerName(),
-                    error.threadName().isEmpty() ? "?" : error.threadName(),
-                    error.message()))
-                .append(System.lineSeparator());
-
-            final List<String> stackTrace = error.stackTrace();
-            stackTrace.stream()
-                .limit(maxRenderedStackTraceLines)
-                .forEach(line -> rendered.append("    ").append(line).append(System.lineSeparator()));
-            if (stackTrace.size() > maxRenderedStackTraceLines)
-                rendered
-                    .append("    ... (%d more stack trace lines)"
-                        .formatted(stackTrace.size() - maxRenderedStackTraceLines))
-                    .append(System.lineSeparator());
-        }
+            rendered.append(error.toDisplayString(maxRenderedStackTraceLines));
         return rendered.toString();
     }
 
