@@ -28,6 +28,26 @@ public interface IFrameworkGatewayView
     void executePlayerCommand(UUID playerId, String command);
 
     /**
+     * Grants a permission node to a synthetic player by setting it to {@code true} on the player's attachment.
+     */
+    void grantPermission(UUID playerId, String permission);
+
+    /**
+     * Revokes a permission node from a synthetic player by setting it to {@code false} on the player's attachment.
+     */
+    void revokePermission(UUID playerId, String permission);
+
+    /**
+     * Removes a permission node from a synthetic player's attachment, restoring the player's default.
+     */
+    void unsetPermission(UUID playerId, String permission);
+
+    /**
+     * Queries the live value of a permission node for a synthetic player.
+     */
+    boolean hasPermission(UUID playerId, String permission);
+
+    /**
      * Teleports a synthetic player.
      *
      * @return True if the teleport succeeded, false if it was blocked (e.g. a cancelled teleport event).

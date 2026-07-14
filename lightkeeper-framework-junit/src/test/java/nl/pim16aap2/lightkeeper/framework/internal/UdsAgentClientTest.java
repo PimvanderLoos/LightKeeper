@@ -4,6 +4,7 @@ import nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot;
 import nl.pim16aap2.lightkeeper.framework.Platform;
 import nl.pim16aap2.lightkeeper.protocol.CommandSource;
 import nl.pim16aap2.lightkeeper.protocol.ItemSnapshot;
+import nl.pim16aap2.lightkeeper.protocol.MutatePlayerPermission;
 import nl.pim16aap2.lightkeeper.protocol.WaitTicks;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -621,6 +622,108 @@ class UdsAgentClientTest
             assertThat(result).extracting(ChatComponentSnapshot::json)
                 .containsExactly("{\"text\":\"Hi\"}");
             assertThat(server.capturedRequest()).contains("\"action\":\"GET_PLAYER_CHAT_COMPONENTS\"");
+        }
+    }
+
+    @Test
+    void mutatePlayerPermission_shouldSendGrantModeInRequest(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("mutate-permission-grant.sock");
+        final String responseJson = "{\"requestId\":\"1\",\"success\":true}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            client.mutatePlayerPermission(PLAYER_ID, "lightkeeper.fly", MutatePlayerPermission.Mode.GRANT);
+
+            // verify
+            assertThat(server.capturedRequest())
+                .contains("\"action\":\"MUTATE_PLAYER_PERMISSION\"")
+                .contains("\"permission\":\"lightkeeper.fly\"")
+                .contains("\"mode\":\"GRANT\"");
+        }
+    }
+
+    @Test
+    void mutatePlayerPermission_shouldSendRevokeModeInRequest(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("mutate-permission-revoke.sock");
+        final String responseJson = "{\"requestId\":\"1\",\"success\":true}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            client.mutatePlayerPermission(PLAYER_ID, "lightkeeper.fly", MutatePlayerPermission.Mode.REVOKE);
+
+            // verify
+            assertThat(server.capturedRequest())
+                .contains("\"action\":\"MUTATE_PLAYER_PERMISSION\"")
+                .contains("\"permission\":\"lightkeeper.fly\"")
+                .contains("\"mode\":\"REVOKE\"");
+        }
+    }
+
+    @Test
+    void mutatePlayerPermission_shouldSendUnsetModeInRequest(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("mutate-permission-unset.sock");
+        final String responseJson = "{\"requestId\":\"1\",\"success\":true}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            client.mutatePlayerPermission(PLAYER_ID, "lightkeeper.fly", MutatePlayerPermission.Mode.UNSET);
+
+            // verify
+            assertThat(server.capturedRequest())
+                .contains("\"action\":\"MUTATE_PLAYER_PERMISSION\"")
+                .contains("\"permission\":\"lightkeeper.fly\"")
+                .contains("\"mode\":\"UNSET\"");
+        }
+    }
+
+    @Test
+    void hasPlayerPermission_shouldReturnTrueFromResponse(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("has-permission-true.sock");
+        final String responseJson = "{\"requestId\":\"1\",\"success\":true,\"value\":true}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            final boolean result = client.hasPlayerPermission(PLAYER_ID, "lightkeeper.fly");
+
+            // verify
+            assertThat(result).isTrue();
+            assertThat(server.capturedRequest())
+                .contains("\"action\":\"HAS_PLAYER_PERMISSION\"")
+                .contains("\"permission\":\"lightkeeper.fly\"");
+        }
+    }
+
+    @Test
+    void hasPlayerPermission_shouldReturnFalseFromResponse(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("has-permission-false.sock");
+        final String responseJson = "{\"requestId\":\"1\",\"success\":true,\"value\":false}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            final boolean result = client.hasPlayerPermission(PLAYER_ID, "lightkeeper.fly");
+
+            // verify
+            assertThat(result).isFalse();
         }
     }
 
