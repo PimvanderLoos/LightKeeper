@@ -19,6 +19,7 @@ import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import nl.pim16aap2.lightkeeper.framework.WorldSpec;
 import nl.pim16aap2.lightkeeper.protocol.CommandSource;
+import nl.pim16aap2.lightkeeper.protocol.DropResult;
 import nl.pim16aap2.lightkeeper.protocol.GetServerErrors;
 import nl.pim16aap2.lightkeeper.protocol.MutatePlayerPermission;
 import nl.pim16aap2.lightkeeper.protocol.ServerErrorEntry;
@@ -163,6 +164,34 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
         LOG.log(
             System.Logger.Level.INFO,
             () -> "LK_FRAMEWORK: Created world '" + worldName + "'."
+        );
+        return FrameworkHandleFactory.worldHandle(this, worldName);
+    }
+
+    @Override
+    public WorldHandle newWorldFromTemplate(String templateName)
+    {
+        ensureOpen();
+        final String trimmedTemplateName =
+            Objects.requireNonNull(templateName, "templateName may not be null.").trim();
+        if (trimmedTemplateName.isEmpty())
+            throw new IllegalArgumentException("templateName may not be blank.");
+        if (!runtimeManifest.provisionedWorldNames().contains(trimmedTemplateName))
+            throw new IllegalArgumentException(
+                "No world template named '%s' was provisioned. Provisioned templates: %s".formatted(
+                    trimmedTemplateName, runtimeManifest.provisionedWorldNames()));
+
+        // The world folder already exists on disk, so the server loads it from its own data; the spec's
+        // type/environment/seed only apply to genuinely new worlds and are ignored here.
+        final String worldName = agentClient.newWorld(new WorldSpec(
+            trimmedTemplateName,
+            DEFAULT_WORLD_TYPE,
+            DEFAULT_WORLD_ENVIRONMENT,
+            DEFAULT_WORLD_SEED
+        ));
+        LOG.log(
+            System.Logger.Level.INFO,
+            () -> "LK_FRAMEWORK: Loaded world '" + worldName + "' from a provisioned template."
         );
         return FrameworkHandleFactory.worldHandle(this, worldName);
     }
@@ -374,15 +403,15 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     }
 
     @Override
-    public void leftClickBlock(UUID playerId, Vector3Di position, String blockFace)
+    public boolean leftClickBlock(UUID playerId, Vector3Di position, String blockFace)
     {
-        clickBlock(playerId, position, blockFace, agentClient::leftClickBlock);
+        return clickBlock(playerId, position, blockFace, agentClient::leftClickBlock);
     }
 
     @Override
-    public void rightClickBlock(UUID playerId, Vector3Di position, String blockFace)
+    public boolean rightClickBlock(UUID playerId, Vector3Di position, String blockFace)
     {
-        clickBlock(playerId, position, blockFace, agentClient::rightClickBlock);
+        return clickBlock(playerId, position, blockFace, agentClient::rightClickBlock);
     }
 
     @Override
@@ -480,7 +509,7 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     }
 
     @Override
-    public boolean dropItem(UUID playerId)
+    public DropResult dropItem(UUID playerId)
     {
         ensureOpen();
         Objects.requireNonNull(playerId, "playerId may not be null.");
@@ -703,7 +732,7 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
         startServer();
     }
 
-    private void clickBlock(UUID playerId, Vector3Di position, String blockFace, BlockClickOperation operation)
+    private boolean clickBlock(UUID playerId, Vector3Di position, String blockFace, BlockClickOperation operation)
     {
         ensureOpen();
         Objects.requireNonNull(playerId, "playerId may not be null.");
@@ -711,13 +740,13 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
         final String trimmedBlockFace = Objects.requireNonNull(blockFace, "blockFace may not be null.").trim();
         if (trimmedBlockFace.isEmpty())
             throw new IllegalArgumentException("blockFace may not be blank.");
-        operation.clickBlock(playerId, position, trimmedBlockFace);
+        return operation.clickBlock(playerId, position, trimmedBlockFace);
     }
 
     @FunctionalInterface
     private interface BlockClickOperation
     {
-        void clickBlock(UUID playerId, Vector3Di position, String blockFace);
+        boolean clickBlock(UUID playerId, Vector3Di position, String blockFace);
     }
 
     @Override

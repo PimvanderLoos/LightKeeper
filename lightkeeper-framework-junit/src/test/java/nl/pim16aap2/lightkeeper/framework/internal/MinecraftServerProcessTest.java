@@ -474,6 +474,7 @@ class MinecraftServerProcessTest
             RuntimeProtocol.VERSION,
             "agent-cache",
             null,
+            List.of(),
             List.of()
         );
     }

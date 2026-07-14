@@ -2,7 +2,9 @@ package nl.pim16aap2.lightkeeper.framework.internal;
 
 import nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot;
 import nl.pim16aap2.lightkeeper.framework.Platform;
+import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.protocol.CommandSource;
+import nl.pim16aap2.lightkeeper.protocol.DropResult;
 import nl.pim16aap2.lightkeeper.protocol.ItemSnapshot;
 import nl.pim16aap2.lightkeeper.protocol.MutatePlayerPermission;
 import nl.pim16aap2.lightkeeper.protocol.WaitTicks;
@@ -244,38 +246,94 @@ class UdsAgentClientTest
     }
 
     @Test
-    void dropItem_shouldReturnTrueWhenEventWasNotCancelled(@TempDir Path tempDirectory)
+    void dropItem_shouldReturnDroppedWhenEventWasNotCancelled(@TempDir Path tempDirectory)
         throws Exception
     {
         // setup
         final Path socketPath = tempDirectory.resolve("drop-item.sock");
-        final String responseJson = "{\"requestId\":\"1\",\"success\":true,\"dropped\":true}";
+        final String responseJson = "{\"requestId\":\"1\",\"success\":true,\"result\":\"DROPPED\"}";
         try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
              UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
         {
             // execute
-            final boolean dropped = client.dropItem(UUID.randomUUID());
+            final DropResult result = client.dropItem(UUID.randomUUID());
 
             // verify
-            assertThat(dropped).isTrue();
+            assertThat(result).isEqualTo(DropResult.DROPPED);
         }
     }
 
     @Test
-    void dropItem_shouldReturnFalseWhenEventWasCancelled(@TempDir Path tempDirectory)
+    void dropItem_shouldReturnCancelledWhenEventWasCancelled(@TempDir Path tempDirectory)
         throws Exception
     {
         // setup
         final Path socketPath = tempDirectory.resolve("drop-item-cancel.sock");
-        final String responseJson = "{\"requestId\":\"1\",\"success\":true,\"dropped\":false}";
+        final String responseJson = "{\"requestId\":\"1\",\"success\":true,\"result\":\"CANCELLED\"}";
         try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
              UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
         {
             // execute
-            final boolean dropped = client.dropItem(UUID.randomUUID());
+            final DropResult result = client.dropItem(UUID.randomUUID());
 
             // verify
-            assertThat(dropped).isFalse();
+            assertThat(result).isEqualTo(DropResult.CANCELLED);
+        }
+    }
+
+    @Test
+    void dropItem_shouldReturnEmptyHandWhenMainHandIsEmpty(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("drop-item-empty-hand.sock");
+        final String responseJson = "{\"requestId\":\"1\",\"success\":true,\"result\":\"EMPTY_HAND\"}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            final DropResult result = client.dropItem(UUID.randomUUID());
+
+            // verify
+            assertThat(result).isEqualTo(DropResult.EMPTY_HAND);
+        }
+    }
+
+    @Test
+    void leftClickBlock_shouldReturnCancelledFlagFromResponse(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("left-click-block.sock");
+        final String responseJson = "{\"requestId\":\"1\",\"success\":true,\"cancelled\":true}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            final boolean cancelled = client.leftClickBlock(PLAYER_ID, new Vector3Di(1, 64, 1), "UP");
+
+            // verify
+            assertThat(cancelled).isTrue();
+            assertThat(server.capturedRequest()).contains("\"action\":\"LEFT_CLICK_BLOCK\"");
+        }
+    }
+
+    @Test
+    void rightClickBlock_shouldReturnCancelledFlagFromResponse(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("right-click-block.sock");
+        final String responseJson = "{\"requestId\":\"1\",\"success\":true,\"cancelled\":false}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            final boolean cancelled = client.rightClickBlock(PLAYER_ID, new Vector3Di(1, 64, 1), "UP");
+
+            // verify
+            assertThat(cancelled).isFalse();
+            assertThat(server.capturedRequest()).contains("\"action\":\"RIGHT_CLICK_BLOCK\"");
         }
     }
 

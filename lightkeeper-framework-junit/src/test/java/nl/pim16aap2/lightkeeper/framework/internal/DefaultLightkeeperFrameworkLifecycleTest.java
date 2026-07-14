@@ -447,6 +447,7 @@ class DefaultLightkeeperFrameworkLifecycleTest
             1,
             "agent-cache-identity",
             null,
+            List.of(),
             List.of()
         );
     }
@@ -468,7 +469,8 @@ class DefaultLightkeeperFrameworkLifecycleTest
             1,
             "agent-cache-identity",
             null,
-            List.of(new RuntimeManifest.PreloadedWorld("preload_world", "NORMAL", "NORMAL", 42L))
+            List.of(new RuntimeManifest.PreloadedWorld("preload_world", "NORMAL", "NORMAL", 42L)),
+            List.of("preload_world")
         );
     }
 }
