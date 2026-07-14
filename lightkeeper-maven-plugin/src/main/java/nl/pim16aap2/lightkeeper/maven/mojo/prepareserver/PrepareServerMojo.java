@@ -462,18 +462,14 @@ public class PrepareServerMojo extends AbstractMojo
         int runtimeProtocolVersion,
         List<WorldInputSpec> worldInputSpecs)
     {
-        final List<RuntimeManifest.PreloadedWorld> preloadedWorlds = worldInputSpecs.stream()
-            .filter(WorldInputSpec::loadOnStartup)
-            .map(worldInput -> new RuntimeManifest.PreloadedWorld(
+        final List<RuntimeManifest.ProvisionedWorld> provisionedWorlds = worldInputSpecs.stream()
+            .map(worldInput -> new RuntimeManifest.ProvisionedWorld(
                 worldInput.name(),
                 worldInput.environment(),
                 worldInput.worldType(),
-                worldInput.seed()
+                worldInput.seed(),
+                worldInput.loadOnStartup()
             ))
-            .toList();
-
-        final List<String> provisionedWorldNames = worldInputSpecs.stream()
-            .map(WorldInputSpec::name)
             .toList();
 
         return new RuntimeManifest(
@@ -492,8 +488,7 @@ public class PrepareServerMojo extends AbstractMojo
             runtimeProtocolVersion,
             agentMetadata.cacheIdentity(),
             PrepareServerInputResolver.normalizeOptionalString(extraJvmArgs),
-            preloadedWorlds,
-            provisionedWorldNames
+            provisionedWorlds
         );
     }
 

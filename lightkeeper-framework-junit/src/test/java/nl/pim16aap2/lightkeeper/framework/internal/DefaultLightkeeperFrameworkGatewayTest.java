@@ -227,10 +227,12 @@ class DefaultLightkeeperFrameworkGatewayTest
         // setup
         final UdsAgentClient agentClient = mock(UdsAgentClient.class);
         when(agentClient.newWorld(new WorldSpec(
-            "template-a", WorldSpec.WorldType.NORMAL, WorldSpec.WorldEnvironment.NORMAL, 0L)))
+            "template-a", WorldSpec.WorldType.FLAT, WorldSpec.WorldEnvironment.NETHER, 7L)))
             .thenReturn("template-a-instance");
         final DefaultLightkeeperFramework framework = new DefaultLightkeeperFramework(
-            runtimeManifestWithProvisionedWorlds(List.of("template-a")),
+            runtimeManifestWithProvisionedWorlds(List.of(
+                new RuntimeManifest.ProvisionedWorld("template-a", "NETHER", "FLAT", 7L, false)
+            )),
             mock(MinecraftServerProcess.class),
             agentClient,
             new PlayerScopeRegistry()
@@ -242,7 +244,7 @@ class DefaultLightkeeperFrameworkGatewayTest
         // verify
         assertThat(result.name()).isEqualTo("template-a-instance");
         verify(agentClient).newWorld(new WorldSpec(
-            "template-a", WorldSpec.WorldType.NORMAL, WorldSpec.WorldEnvironment.NORMAL, 0L));
+            "template-a", WorldSpec.WorldType.FLAT, WorldSpec.WorldEnvironment.NETHER, 7L));
     }
 
     @Test
@@ -250,7 +252,10 @@ class DefaultLightkeeperFrameworkGatewayTest
     {
         // setup
         final DefaultLightkeeperFramework framework = new DefaultLightkeeperFramework(
-            runtimeManifestWithProvisionedWorlds(List.of("template-a", "template-b")),
+            runtimeManifestWithProvisionedWorlds(List.of(
+                new RuntimeManifest.ProvisionedWorld("template-a", "NORMAL", "NORMAL", 0L, false),
+                new RuntimeManifest.ProvisionedWorld("template-b", "NORMAL", "NORMAL", 0L, false)
+            )),
             mock(MinecraftServerProcess.class),
             mock(UdsAgentClient.class),
             new PlayerScopeRegistry()
@@ -423,12 +428,12 @@ class DefaultLightkeeperFrameworkGatewayTest
             1,
             "agent-cache-identity",
             null,
-            List.of(),
             List.of()
         );
     }
 
-    private static RuntimeManifest runtimeManifestWithProvisionedWorlds(List<String> provisionedWorldNames)
+    private static RuntimeManifest runtimeManifestWithProvisionedWorlds(
+        List<RuntimeManifest.ProvisionedWorld> provisionedWorlds)
     {
         return new RuntimeManifest(
             "paper",
@@ -445,8 +450,7 @@ class DefaultLightkeeperFrameworkGatewayTest
             1,
             "agent-cache-identity",
             null,
-            List.of(),
-            provisionedWorldNames
+            provisionedWorlds
         );
     }
 }

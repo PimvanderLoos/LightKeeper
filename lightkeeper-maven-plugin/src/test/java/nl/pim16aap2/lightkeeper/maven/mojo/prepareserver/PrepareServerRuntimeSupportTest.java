@@ -304,7 +304,6 @@ class PrepareServerRuntimeSupportTest
             1,
             "no-agent",
             null,
-            List.of(),
             List.of()
         );
 
@@ -315,8 +314,7 @@ class PrepareServerRuntimeSupportTest
     }
 
     @Test
-    void createRuntimeManifest_shouldIncludeAllWorldsInProvisionedNamesAndOnlyStartupWorldsInPreloaded(
-        @TempDir Path tempDirectory)
+    void createRuntimeManifest_shouldMapAllWorldInputSpecsToProvisionedWorlds(@TempDir Path tempDirectory)
     {
         // setup
         final PrepareServerMojo mojo = new PrepareServerMojo();
@@ -336,9 +334,9 @@ class PrepareServerRuntimeSupportTest
             tempDirectory.resolve("template-world"),
             true,
             false,
-            "NORMAL",
-            "NORMAL",
-            0L
+            "NETHER",
+            "FLAT",
+            99L
         );
         final ServerProvider serverProvider = mock(ServerProvider.class);
         when(serverProvider.targetJarFilePath()).thenReturn(tempDirectory.resolve("paper.jar"));
@@ -361,9 +359,18 @@ class PrepareServerRuntimeSupportTest
         );
 
         // verify
-        assertThat(runtimeManifest.provisionedWorldNames())
-            .containsExactlyInAnyOrder("startup-world", "template-world");
-        assertThat(runtimeManifest.preloadedWorlds()).hasSize(1);
-        assertThat(runtimeManifest.preloadedWorlds().getFirst().name()).isEqualTo("startup-world");
+        assertThat(runtimeManifest.provisionedWorlds()).hasSize(2);
+        final RuntimeManifest.ProvisionedWorld provisionedStartupWorld = runtimeManifest.provisionedWorlds().get(0);
+        assertThat(provisionedStartupWorld.name()).isEqualTo("startup-world");
+        assertThat(provisionedStartupWorld.environment()).isEqualTo("NORMAL");
+        assertThat(provisionedStartupWorld.worldType()).isEqualTo("NORMAL");
+        assertThat(provisionedStartupWorld.seed()).isEqualTo(0L);
+        assertThat(provisionedStartupWorld.loadOnStartup()).isTrue();
+        final RuntimeManifest.ProvisionedWorld provisionedTemplateWorld = runtimeManifest.provisionedWorlds().get(1);
+        assertThat(provisionedTemplateWorld.name()).isEqualTo("template-world");
+        assertThat(provisionedTemplateWorld.environment()).isEqualTo("NETHER");
+        assertThat(provisionedTemplateWorld.worldType()).isEqualTo("FLAT");
+        assertThat(provisionedTemplateWorld.seed()).isEqualTo(99L);
+        assertThat(provisionedTemplateWorld.loadOnStartup()).isFalse();
     }
 }

@@ -12,6 +12,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 class RuntimeManifestReaderTest
 {
@@ -148,12 +149,13 @@ class RuntimeManifestReaderTest
               "agentAuthToken": "token",
               "runtimeProtocolVersion": %d,
               "agentCacheIdentity": "no-agent",
-              "preloadedWorlds": [
+              "provisionedWorlds": [
                 {
                   "name": "",
                   "environment": "NORMAL",
                   "worldType": "FLAT",
-                  "seed": 42
+                  "seed": 42,
+                  "loadOnStartup": true
                 }
               ]
             }
@@ -185,12 +187,13 @@ class RuntimeManifestReaderTest
               "agentAuthToken": "token",
               "runtimeProtocolVersion": %d,
               "agentCacheIdentity": "no-agent",
-              "preloadedWorlds": [
+              "provisionedWorlds": [
                 {
                   "name": "fixture",
                   "environment": "",
                   "worldType": "FLAT",
-                  "seed": 42
+                  "seed": 42,
+                  "loadOnStartup": true
                 }
               ]
             }
@@ -222,12 +225,13 @@ class RuntimeManifestReaderTest
               "agentAuthToken": "token",
               "runtimeProtocolVersion": %d,
               "agentCacheIdentity": "no-agent",
-              "preloadedWorlds": [
+              "provisionedWorlds": [
                 {
                   "name": "fixture",
                   "environment": "NORMAL",
                   "worldType": "",
-                  "seed": 42
+                  "seed": 42,
+                  "loadOnStartup": true
                 }
               ]
             }
@@ -301,7 +305,7 @@ class RuntimeManifestReaderTest
         assertThat(runtimeManifest.serverType()).isEqualTo("paper");
         assertThat(runtimeManifest.udsSocketPath()).isEqualTo("/tmp/lightkeeper.sock");
         assertThat(runtimeManifest.memoryMb()).isEqualTo(2048);
-        assertThat(runtimeManifest.preloadedWorlds()).isEmpty();
+        assertThat(runtimeManifest.provisionedWorlds()).isEmpty();
     }
 
     @Test
@@ -323,12 +327,13 @@ class RuntimeManifestReaderTest
               "agentAuthToken": "token",
               "runtimeProtocolVersion": %d,
               "agentCacheIdentity": "no-agent",
-              "preloadedWorlds": [
+              "provisionedWorlds": [
                 {
                   "name": "fixture-world",
                   "environment": "NORMAL",
                   "worldType": "FLAT",
-                  "seed": 42
+                  "seed": 42,
+                  "loadOnStartup": true
                 }
               ]
             }
@@ -339,13 +344,13 @@ class RuntimeManifestReaderTest
         final RuntimeManifest runtimeManifest = new RuntimeManifestReader().read(manifestPath);
 
         // verify
-        assertThat(runtimeManifest.preloadedWorlds()).hasSize(1);
-        assertThat(runtimeManifest.preloadedWorlds().getFirst().name()).isEqualTo("fixture-world");
-        assertThat(runtimeManifest.preloadedWorlds().getFirst().worldType()).isEqualTo("FLAT");
+        assertThat(runtimeManifest.provisionedWorlds()).hasSize(1);
+        assertThat(runtimeManifest.provisionedWorlds().getFirst().name()).isEqualTo("fixture-world");
+        assertThat(runtimeManifest.provisionedWorlds().getFirst().worldType()).isEqualTo("FLAT");
     }
 
     @Test
-    void read_shouldParseProvisionedWorldNamesWhenPresent(@TempDir Path tempDirectory)
+    void read_shouldParseProvisionedWorldsWhenPresent(@TempDir Path tempDirectory)
         throws IOException
     {
         // setup
@@ -363,7 +368,22 @@ class RuntimeManifestReaderTest
               "agentAuthToken": "token",
               "runtimeProtocolVersion": %d,
               "agentCacheIdentity": "no-agent",
-              "provisionedWorldNames": ["template-a", "world-b"]
+              "provisionedWorlds": [
+                {
+                  "name": "template-a",
+                  "environment": "NORMAL",
+                  "worldType": "NORMAL",
+                  "seed": 0,
+                  "loadOnStartup": true
+                },
+                {
+                  "name": "world-b",
+                  "environment": "NETHER",
+                  "worldType": "FLAT",
+                  "seed": 7,
+                  "loadOnStartup": false
+                }
+              ]
             }
             """.formatted(RuntimeProtocol.VERSION)
         );
@@ -372,11 +392,15 @@ class RuntimeManifestReaderTest
         final RuntimeManifest runtimeManifest = new RuntimeManifestReader().read(manifestPath);
 
         // verify
-        assertThat(runtimeManifest.provisionedWorldNames()).containsExactly("template-a", "world-b");
+        assertThat(runtimeManifest.provisionedWorlds()).hasSize(2);
+        assertThat(runtimeManifest.provisionedWorlds().get(0).name()).isEqualTo("template-a");
+        assertThat(runtimeManifest.provisionedWorlds().get(0).loadOnStartup()).isTrue();
+        assertThat(runtimeManifest.provisionedWorlds().get(1).name()).isEqualTo("world-b");
+        assertThat(runtimeManifest.provisionedWorlds().get(1).loadOnStartup()).isFalse();
     }
 
     @Test
-    void read_shouldDefaultProvisionedWorldNamesToEmptyListWhenAbsent(@TempDir Path tempDirectory)
+    void read_shouldDefaultProvisionedWorldsToEmptyListWhenAbsent(@TempDir Path tempDirectory)
         throws IOException
     {
         // setup
@@ -402,7 +426,7 @@ class RuntimeManifestReaderTest
         final RuntimeManifest runtimeManifest = new RuntimeManifestReader().read(manifestPath);
 
         // verify
-        assertThat(runtimeManifest.provisionedWorldNames()).isEmpty();
+        assertThat(runtimeManifest.provisionedWorlds()).isEmpty();
     }
 
     @Test
@@ -424,22 +448,37 @@ class RuntimeManifestReaderTest
               "agentAuthToken": "token",
               "runtimeProtocolVersion": %d,
               "agentCacheIdentity": "no-agent",
-              "provisionedWorldNames": [""]
+              "provisionedWorlds": [
+                {
+                  "name": "",
+                  "environment": "NORMAL",
+                  "worldType": "NORMAL",
+                  "seed": 0,
+                  "loadOnStartup": true
+                }
+              ]
             }
             """.formatted(RuntimeProtocol.VERSION)
         );
+        final RuntimeManifestReader runtimeManifestReader = new RuntimeManifestReader();
 
-        // execute + verify
-        assertThatThrownBy(() -> new RuntimeManifestReader().read(manifestPath))
+        // execute
+        final Throwable thrown = catchThrowable(() -> runtimeManifestReader.read(manifestPath));
+
+        // verify
+        assertThat(thrown)
             .isInstanceOf(IOException.class)
             .hasMessageContaining("Runtime manifest contains a provisioned world with a missing name.");
     }
 
     @Test
     @SuppressWarnings("NullAway") // Intentionally crosses the non-null API boundary to verify default-on-null.
-    void runtimeManifest_shouldDefaultProvisionedWorldNamesToEmptyListWhenConstructedWithNull()
+    void runtimeManifest_shouldDefaultProvisionedWorldsToEmptyListWhenConstructedWithNull()
     {
-        // setup + execute
+        // setup
+        final List<RuntimeManifest.ProvisionedWorld> nullProvisionedWorlds = null;
+
+        // execute
         final RuntimeManifest runtimeManifest = new RuntimeManifest(
             "paper",
             "1.21.11",
@@ -455,12 +494,11 @@ class RuntimeManifestReaderTest
             RuntimeProtocol.VERSION,
             "no-agent",
             null,
-            List.of(),
-            null
+            nullProvisionedWorlds
         );
 
         // verify
-        assertThat(runtimeManifest.provisionedWorldNames()).isEmpty();
+        assertThat(runtimeManifest.provisionedWorlds()).isEmpty();
     }
 
     private static String defaultValueFor(String fieldName)

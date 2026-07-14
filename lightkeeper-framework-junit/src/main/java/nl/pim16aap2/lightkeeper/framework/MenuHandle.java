@@ -107,6 +107,9 @@ public final class MenuHandle
      */
     public MenuHandle clickAtIndex(int slot)
     {
+        // Validate before the auto-wait so invalid arguments fail immediately instead of after the menu wait.
+        if (slot < 0)
+            throw new IllegalArgumentException("slot must be >= 0.");
         awaitOpenMenu();
         frameworkGateway.clickMenuSlot(player.uniqueId(), slot);
         return this;
@@ -177,8 +180,20 @@ public final class MenuHandle
      */
     public MenuHandle dragWithMaterial(String materialKey, int... slots)
     {
+        // Validate before the auto-wait so invalid arguments fail immediately instead of after the menu wait.
+        final String trimmedMaterialKey =
+            Objects.requireNonNull(materialKey, "materialKey may not be null.").trim();
+        if (trimmedMaterialKey.isEmpty())
+            throw new IllegalArgumentException("materialKey may not be blank.");
+        if (slots.length == 0)
+            throw new IllegalArgumentException("slots may not be empty.");
+        for (final int slot : slots)
+        {
+            if (slot < 0)
+                throw new IllegalArgumentException("slot must be >= 0.");
+        }
         awaitOpenMenu();
-        frameworkGateway.dragMenuSlots(player.uniqueId(), materialKey, slots);
+        frameworkGateway.dragMenuSlots(player.uniqueId(), trimmedMaterialKey, slots);
         return this;
     }
 
@@ -196,10 +211,21 @@ public final class MenuHandle
         }
         catch (IllegalStateException exception)
         {
-            final MenuSnapshot lastSnapshot = snapshot();
+            // The diagnostic snapshot is best-effort: if it fails too, the original wait failure must
+            // still surface, with the snapshot failure attached instead of masking it.
+            String menuState = "menu state unavailable";
+            try
+            {
+                final MenuSnapshot lastSnapshot = snapshot();
+                menuState = "open=%s, title='%s'".formatted(lastSnapshot.open(), lastSnapshot.title());
+            }
+            catch (RuntimeException snapshotException)
+            {
+                exception.addSuppressed(snapshotException);
+            }
             throw new IllegalStateException(
-                "No open menu for player '%s' within %s (open=%s, title='%s').".formatted(
-                    player.name(), DEFAULT_MENU_WAIT_TIMEOUT, lastSnapshot.open(), lastSnapshot.title()),
+                "No open menu for player '%s' within %s (%s).".formatted(
+                    player.name(), DEFAULT_MENU_WAIT_TIMEOUT, menuState),
                 exception);
         }
     }

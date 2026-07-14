@@ -245,6 +245,8 @@ class DefaultLightkeeperFrameworkLifecycleTest
             WorldSpec.WorldEnvironment.NORMAL,
             42L
         ));
+        // Only the loadOnStartup=true world is preloaded; the template world in the fixture must be skipped.
+        verify(agentClient, times(1)).newWorld(any());
 
         framework.beginMethodScope("method-after-restart");
         verify(playerScopeRegistry, times(1)).beginMethodScope("method-after-restart");
@@ -447,7 +449,6 @@ class DefaultLightkeeperFrameworkLifecycleTest
             1,
             "agent-cache-identity",
             null,
-            List.of(),
             List.of()
         );
     }
@@ -469,8 +470,10 @@ class DefaultLightkeeperFrameworkLifecycleTest
             1,
             "agent-cache-identity",
             null,
-            List.of(new RuntimeManifest.PreloadedWorld("preload_world", "NORMAL", "NORMAL", 42L)),
-            List.of("preload_world")
+            List.of(
+                new RuntimeManifest.ProvisionedWorld("preload_world", "NORMAL", "NORMAL", 42L, true),
+                new RuntimeManifest.ProvisionedWorld("template_world", "NETHER", "FLAT", 7L, false)
+            )
         );
     }
 }

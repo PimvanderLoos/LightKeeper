@@ -66,24 +66,16 @@ public final class RuntimeManifestReader
         if (manifest.agentCacheIdentity() == null || manifest.agentCacheIdentity().isBlank())
             throw new IOException("Runtime manifest field 'agentCacheIdentity' is missing or blank.");
 
-        for (final RuntimeManifest.PreloadedWorld preloadedWorld : manifest.preloadedWorlds())
+        for (final RuntimeManifest.ProvisionedWorld provisionedWorld : manifest.provisionedWorlds())
         {
-            if (preloadedWorld.name() == null || preloadedWorld.name().isBlank())
-                throw new IOException("Runtime manifest contains preloaded world with missing name.");
-            if (preloadedWorld.environment() == null || preloadedWorld.environment().isBlank())
-                throw new IOException("Runtime manifest preloaded world '%s' is missing environment."
-                    .formatted(preloadedWorld.name()));
-            if (preloadedWorld.worldType() == null || preloadedWorld.worldType().isBlank())
-                throw new IOException("Runtime manifest preloaded world '%s' is missing worldType."
-                    .formatted(preloadedWorld.name()));
-        }
-
-        // Null elements cannot reach this point: the record's compact constructor copies the list via
-        // List.copyOf, which rejects them during deserialization.
-        for (final String provisionedWorldName : manifest.provisionedWorldNames())
-        {
-            if (provisionedWorldName.isBlank())
+            if (provisionedWorld.name() == null || provisionedWorld.name().isBlank())
                 throw new IOException("Runtime manifest contains a provisioned world with a missing name.");
+            if (provisionedWorld.environment() == null || provisionedWorld.environment().isBlank())
+                throw new IOException("Runtime manifest provisioned world '%s' is missing environment."
+                    .formatted(provisionedWorld.name()));
+            if (provisionedWorld.worldType() == null || provisionedWorld.worldType().isBlank())
+                throw new IOException("Runtime manifest provisioned world '%s' is missing worldType."
+                    .formatted(provisionedWorld.name()));
         }
     }
 }

@@ -210,7 +210,6 @@ class DefaultLightkeeperFrameworkServerErrorsTest
             1,
             "agent-cache-identity",
             null,
-            List.of(),
             List.of()
         );
     }
