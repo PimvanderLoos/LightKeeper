@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Returns all captured events of the given class as property-map snapshots.
+ * Returns all captured events of the given class as typed property snapshots.
  */
 public final class GetCapturedEvents
 {
@@ -45,10 +45,11 @@ public final class GetCapturedEvents
      * Response record for {@code GET_CAPTURED_EVENTS}.
      *
      * @param events
-     *     Captured event property snapshots, one map per captured event instance.
+     *     Captured event property snapshots, one map of accessor name to typed {@link IProtocolValue} per
+     *     captured event instance.
      */
     public record Response(
-        List<Map<String, String>> events
+        List<Map<String, IProtocolValue>> events
     ) implements IAgentResponse
     {
         /**
