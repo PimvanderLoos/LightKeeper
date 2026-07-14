@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -57,7 +56,7 @@ public sealed interface IProtocolValue
          */
         public PString
         {
-            Objects.requireNonNull(value, "value may not be null.");
+            ProtocolPreconditions.requireNonNull(value, "value");
         }
 
         @Override
@@ -85,7 +84,7 @@ public sealed interface IProtocolValue
          */
         public PNumber
         {
-            Objects.requireNonNull(value, "value may not be null.");
+            ProtocolPreconditions.requireNonNull(value, "value");
             if (value instanceof Byte || value instanceof Short || value instanceof Integer
                 || value instanceof Long)
                 value = value.longValue();
@@ -128,7 +127,7 @@ public sealed interface IProtocolValue
          */
         public PUuid
         {
-            Objects.requireNonNull(value, "value may not be null.");
+            ProtocolPreconditions.requireNonNull(value, "value");
         }
 
         @Override

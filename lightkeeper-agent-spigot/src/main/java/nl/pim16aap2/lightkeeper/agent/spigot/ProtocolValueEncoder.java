@@ -57,6 +57,11 @@ final class ProtocolValueEncoder
      */
     static final int MAX_CONTAINER_ELEMENTS = 128;
 
+    /**
+     * Reserved field name for truncation markers in encoded records and maps.
+     */
+    static final String TRUNCATED_KEY = "<truncated>";
+
     private final JavaPlugin plugin;
     /**
      * WARN-once guard keyed by {@code context + "#" + accessorName}, so a noisy accessor logs a single warning
@@ -95,34 +100,45 @@ final class ProtocolValueEncoder
         final Map<String, IProtocolValue> encoded = new LinkedHashMap<>();
         if (subject.getClass().isRecord())
         {
-            for (final RecordComponent component : boundedRecordComponents(subject))
+            final RecordComponent[] components = subject.getClass().getRecordComponents();
+            for (int i = 0; i < Math.min(components.length, MAX_ACCESSORS_PER_OBJECT); i++)
             {
+                final RecordComponent component = components[i];
                 final IProtocolValue value =
                     encodeAccessorResult(subject, component.getAccessor(), component.getName(),
                         context, remainingDepth);
                 if (value != null)
                     encoded.put(component.getName(), value);
             }
+            markTruncatedAccessors(encoded, context, components.length);
             return encoded;
         }
 
-        for (final Method accessor : boundedAccessors(subject))
+        final List<Method> accessors = sortedInstanceAccessors(subject);
+        for (int i = 0; i < Math.min(accessors.size(), MAX_ACCESSORS_PER_OBJECT); i++)
         {
+            final Method accessor = accessors.get(i);
             final IProtocolValue value =
                 encodeAccessorResult(subject, accessor, accessor.getName(), context, remainingDepth);
             if (value != null)
                 encoded.put(accessor.getName(), value);
         }
+        markTruncatedAccessors(encoded, context, accessors.size());
         return encoded;
     }
 
-    private List<RecordComponent> boundedRecordComponents(Object subject)
+    /**
+     * Appends a loud truncation marker when an object exposed more accessors than the per-object cap, so the
+     * cap never silently discards fields.
+     */
+    private void markTruncatedAccessors(Map<String, IProtocolValue> encoded, String context, int totalAccessors)
     {
-        final RecordComponent[] components = subject.getClass().getRecordComponents();
-        return Arrays.asList(components).subList(0, Math.min(components.length, MAX_ACCESSORS_PER_OBJECT));
+        if (totalAccessors > MAX_ACCESSORS_PER_OBJECT)
+            encoded.put(TRUNCATED_KEY, dropped(context, TRUNCATED_KEY,
+                "truncated: %d more accessors".formatted(totalAccessors - MAX_ACCESSORS_PER_OBJECT)));
     }
 
-    private List<Method> boundedAccessors(Object subject)
+    private List<Method> sortedInstanceAccessors(Object subject)
     {
         return Arrays.stream(subject.getClass().getMethods())
             // Static methods are never instance state; without this, every Bukkit event's static
@@ -134,7 +150,6 @@ final class ProtocolValueEncoder
                 && !method.getName().equals("getHandlers")
                 && !method.getName().equals("getEventName"))
             .sorted(Comparator.comparing(Method::getName))
-            .limit(MAX_ACCESSORS_PER_OBJECT)
             .toList();
     }
 
@@ -257,11 +272,16 @@ final class ProtocolValueEncoder
                 continue;
             if (encodedCount >= MAX_CONTAINER_ELEMENTS)
             {
-                fields.put("<truncated>", truncated(context, accessorName, map.size() - encodedCount));
+                fields.put(TRUNCATED_KEY, truncated(context, accessorName, map.size() - encodedCount));
                 break;
             }
-            fields.put(String.valueOf(entry.getKey()),
-                encodeValue(entry.getValue(), accessorName, context, remainingDepth - 1));
+            final String key = String.valueOf(entry.getKey());
+            final IProtocolValue encodedEntry =
+                encodeValue(entry.getValue(), accessorName, context, remainingDepth - 1);
+            // Distinct map keys can stringify identically (1 vs "1"); overwriting would lose data silently,
+            // so a collision is reported as a loud marker instead.
+            if (fields.putIfAbsent(key, encodedEntry) != null)
+                fields.put(key, dropped(context, accessorName, "key-collision: '%s'".formatted(key)));
             encodedCount++;
         }
         return new IProtocolValue.PRecord(fields);

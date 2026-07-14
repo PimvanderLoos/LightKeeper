@@ -227,20 +227,24 @@ class ProtocolValueEncoderTest
     }
 
     @Test
-    void encodeAccessors_shouldCapAccessorCountAtMaxAccessorsPerObject()
+    void encodeAccessors_shouldCapAccessorCountAndMarkTheOmittedRemainder()
     {
         // setup
-        final ProtocolValueEncoder encoder = createEncoder(mock());
+        final JavaPlugin plugin = mock();
+        when(plugin.getLogger()).thenReturn(Logger.getLogger("protocol-value-encoder-test-accessor-cap"));
+        final ProtocolValueEncoder encoder = createEncoder(plugin);
 
         // execute
         final Map<String, IProtocolValue> result =
             encoder.encodeAccessors(new AccessorCapFixture(), "ctx");
 
-        // verify — 35 getters are declared; only the first 32 in sorted order survive the cap
-        assertThat(result).hasSize(ProtocolValueEncoder.MAX_ACCESSORS_PER_OBJECT);
+        // verify — 35 getters are declared; the first 32 in sorted order survive, plus a loud marker
+        assertThat(result).hasSize(ProtocolValueEncoder.MAX_ACCESSORS_PER_OBJECT + 1);
         assertThat(result).containsKey("getP00");
         assertThat(result).containsKey("getP31");
         assertThat(result).doesNotContainKey("getP32");
+        assertThat(result.get(ProtocolValueEncoder.TRUNCATED_KEY)).isEqualTo(new IProtocolValue.PDropped(
+            ProtocolValueEncoder.TRUNCATED_KEY, "truncated: 3 more accessors"));
     }
 
     @Test

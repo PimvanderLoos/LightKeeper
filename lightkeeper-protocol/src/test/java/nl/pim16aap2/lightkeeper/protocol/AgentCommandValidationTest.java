@@ -163,7 +163,7 @@ class AgentCommandValidationTest
     {
         // execute + verify
         assertThatThrownBy(() -> new IProtocolValue.PString(null))
-            .isInstanceOf(NullPointerException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("value");
     }
 
@@ -173,7 +173,7 @@ class AgentCommandValidationTest
     {
         // execute + verify
         assertThatThrownBy(() -> new IProtocolValue.PNumber(null))
-            .isInstanceOf(NullPointerException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("value");
     }
 
