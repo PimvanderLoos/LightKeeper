@@ -30,6 +30,9 @@ import java.util.concurrent.TimeUnit;
  * <p>
  * This class is responsible for managing the lifecycle of a Minecraft server process, including starting it with the
  * specified Java executable and memory settings, and stopping it gracefully.
+  * <p>
+ * Intentionally not guarded by the framework's orphan reaper: this build-time server is short-lived and
+ * driven synchronously by the mojo, unlike the long-lived per-test server the reaper protects.
  */
 @RequiredArgsConstructor
 public class MinecraftServerProcess
