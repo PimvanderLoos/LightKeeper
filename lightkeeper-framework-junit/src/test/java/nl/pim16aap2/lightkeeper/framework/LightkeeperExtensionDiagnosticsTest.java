@@ -1,10 +1,11 @@
 package nl.pim16aap2.lightkeeper.framework;
 
+import nl.pim16aap2.lightkeeper.framework.LightkeeperExtension.DiagnosticsMode;
 import org.junit.jupiter.api.Test;
 import org.opentest4j.TestAbortedException;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 class LightkeeperExtensionDiagnosticsTest
 {
@@ -17,26 +18,24 @@ class LightkeeperExtensionDiagnosticsTest
         final String previousValue = System.getProperty(MODE_PROPERTY);
         try
         {
-            // execute + verify
+            // execute
             System.clearProperty(MODE_PROPERTY);
-            assertThat(LightkeeperExtension.diagnosticsMode())
-                .isEqualTo(LightkeeperExtension.DiagnosticsMode.ON_FAILURE);
-
+            final DiagnosticsMode whenAbsent = LightkeeperExtension.diagnosticsMode();
             System.setProperty(MODE_PROPERTY, "");
-            assertThat(LightkeeperExtension.diagnosticsMode())
-                .isEqualTo(LightkeeperExtension.DiagnosticsMode.ON_FAILURE);
-
+            final DiagnosticsMode whenBlank = LightkeeperExtension.diagnosticsMode();
             System.setProperty(MODE_PROPERTY, "on-failure");
-            assertThat(LightkeeperExtension.diagnosticsMode())
-                .isEqualTo(LightkeeperExtension.DiagnosticsMode.ON_FAILURE);
-
+            final DiagnosticsMode whenOnFailure = LightkeeperExtension.diagnosticsMode();
             System.setProperty(MODE_PROPERTY, "ALWAYS");
-            assertThat(LightkeeperExtension.diagnosticsMode())
-                .isEqualTo(LightkeeperExtension.DiagnosticsMode.ALWAYS);
-
+            final DiagnosticsMode whenAlwaysUpperCase = LightkeeperExtension.diagnosticsMode();
             System.setProperty(MODE_PROPERTY, "off");
-            assertThat(LightkeeperExtension.diagnosticsMode())
-                .isEqualTo(LightkeeperExtension.DiagnosticsMode.OFF);
+            final DiagnosticsMode whenOff = LightkeeperExtension.diagnosticsMode();
+
+            // verify
+            assertThat(whenAbsent).isEqualTo(DiagnosticsMode.ON_FAILURE);
+            assertThat(whenBlank).isEqualTo(DiagnosticsMode.ON_FAILURE);
+            assertThat(whenOnFailure).isEqualTo(DiagnosticsMode.ON_FAILURE);
+            assertThat(whenAlwaysUpperCase).isEqualTo(DiagnosticsMode.ALWAYS);
+            assertThat(whenOff).isEqualTo(DiagnosticsMode.OFF);
         }
         finally
         {
@@ -53,8 +52,11 @@ class LightkeeperExtensionDiagnosticsTest
         {
             System.setProperty(MODE_PROPERTY, "on_failure");
 
-            // execute + verify
-            assertThatThrownBy(LightkeeperExtension::diagnosticsMode)
+            // execute
+            final Throwable thrown = catchThrowable(LightkeeperExtension::diagnosticsMode);
+
+            // verify
+            assertThat(thrown)
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("on_failure")
                 .hasMessageContaining("lightkeeper.diagnostics");
@@ -72,13 +74,17 @@ class LightkeeperExtensionDiagnosticsTest
         final Throwable realFailure = new AssertionError("boom");
         final Throwable assumptionAbort = new TestAbortedException("skipped on this platform");
 
-        // execute + verify
-        assertThat(LightkeeperExtension.shouldWriteBundle(
-            LightkeeperExtension.DiagnosticsMode.ON_FAILURE, realFailure)).isTrue();
-        assertThat(LightkeeperExtension.shouldWriteBundle(
-            LightkeeperExtension.DiagnosticsMode.ON_FAILURE, null)).isFalse();
-        assertThat(LightkeeperExtension.shouldWriteBundle(
-            LightkeeperExtension.DiagnosticsMode.ON_FAILURE, assumptionAbort)).isFalse();
+        // execute
+        final boolean writesRealFailure =
+            LightkeeperExtension.shouldWriteBundle(DiagnosticsMode.ON_FAILURE, realFailure);
+        final boolean writesOnPass = LightkeeperExtension.shouldWriteBundle(DiagnosticsMode.ON_FAILURE, null);
+        final boolean writesOnAbort =
+            LightkeeperExtension.shouldWriteBundle(DiagnosticsMode.ON_FAILURE, assumptionAbort);
+
+        // verify
+        assertThat(writesRealFailure).isTrue();
+        assertThat(writesOnPass).isFalse();
+        assertThat(writesOnAbort).isFalse();
     }
 
     @Test
@@ -87,15 +93,18 @@ class LightkeeperExtensionDiagnosticsTest
         // setup
         final Throwable realFailure = new AssertionError("boom");
 
-        // execute + verify
-        assertThat(LightkeeperExtension.shouldWriteBundle(
-            LightkeeperExtension.DiagnosticsMode.ALWAYS, null)).isTrue();
-        assertThat(LightkeeperExtension.shouldWriteBundle(
-            LightkeeperExtension.DiagnosticsMode.ALWAYS, realFailure)).isTrue();
-        assertThat(LightkeeperExtension.shouldWriteBundle(
-            LightkeeperExtension.DiagnosticsMode.OFF, realFailure)).isFalse();
-        assertThat(LightkeeperExtension.shouldWriteBundle(
-            LightkeeperExtension.DiagnosticsMode.OFF, null)).isFalse();
+        // execute
+        final boolean alwaysWritesOnPass = LightkeeperExtension.shouldWriteBundle(DiagnosticsMode.ALWAYS, null);
+        final boolean alwaysWritesOnFailure =
+            LightkeeperExtension.shouldWriteBundle(DiagnosticsMode.ALWAYS, realFailure);
+        final boolean offWritesOnFailure = LightkeeperExtension.shouldWriteBundle(DiagnosticsMode.OFF, realFailure);
+        final boolean offWritesOnPass = LightkeeperExtension.shouldWriteBundle(DiagnosticsMode.OFF, null);
+
+        // verify
+        assertThat(alwaysWritesOnPass).isTrue();
+        assertThat(alwaysWritesOnFailure).isTrue();
+        assertThat(offWritesOnFailure).isFalse();
+        assertThat(offWritesOnPass).isFalse();
     }
 
     private static void restore(String previousValue)
