@@ -16,3 +16,6 @@ permissions:
   lightkeeper.testplugin.lktestgui:
     description: Allows opening the LightKeeper test GUI.
     default: false
+  lightkeeper.testplugin.lktesterror:
+    description: Allows emitting LightKeeper error-capture test log events.
+    default: false
