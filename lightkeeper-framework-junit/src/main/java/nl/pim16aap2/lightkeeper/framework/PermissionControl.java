@@ -51,7 +51,9 @@ public final class PermissionControl
     /**
      * Revokes a permission node by setting it to {@code false} on the player's attachment.
      * <p>
-     * Unlike {@link #unset(String)}, this overrides any other source that would grant the node.
+     * Unlike {@link #unset(String)}, this overrides the node's default and any grant on LightKeeper's own
+     * attachment. Grants applied by other attachments (e.g. a permission plugin's) may still win, depending on
+     * Bukkit's attachment resolution order.
      *
      * @param permission
      *     The permission node to revoke.

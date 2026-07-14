@@ -11,6 +11,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -166,6 +167,8 @@ class DefaultLightkeeperFrameworkLifecycleTest
     @Test
     void stopServer_shouldStillStopProcessAndPropagateWhenCleanupThrows()
     {
+        // Note: the real PlayerScopeRegistry.cleanupAll swallows per-player failures and cannot currently throw;
+        // this test pins the structural try/finally contract (process stop must survive a cleanup failure).
         // setup
         final MinecraftServerProcess minecraftServerProcess = mock(MinecraftServerProcess.class);
         when(minecraftServerProcess.isRunning()).thenReturn(true);
@@ -248,6 +251,34 @@ class DefaultLightkeeperFrameworkLifecycleTest
     }
 
     @Test
+    void startServer_shouldStopProcessAndRethrowWhenRehandshakeFails()
+    {
+        // setup
+        final RuntimeManifest runtimeManifest = runtimeManifest();
+        final MinecraftServerProcess minecraftServerProcess = mock(MinecraftServerProcess.class);
+        when(minecraftServerProcess.isRunning()).thenReturn(false);
+        final UdsAgentClient agentClient = mock(UdsAgentClient.class);
+        final PlayerScopeRegistry playerScopeRegistry = mock(PlayerScopeRegistry.class);
+        final RuntimeException rehandshakeFailure = new RuntimeException("handshake boom");
+        doThrow(rehandshakeFailure).when(agentClient).rehandshake(any(), any(), anyInt(), any());
+
+        final DefaultLightkeeperFramework framework = new DefaultLightkeeperFramework(
+            runtimeManifest,
+            minecraftServerProcess,
+            agentClient,
+            playerScopeRegistry
+        );
+        framework.crashServer();
+
+        // execute + verify: the failure propagates and the process is stopped again so a retry stays possible
+        assertThatThrownBy(framework::startServer).isSameAs(rehandshakeFailure);
+        verify(minecraftServerProcess, times(1)).start(java.time.Duration.ofMinutes(2));
+        verify(minecraftServerProcess, times(1)).stop(java.time.Duration.ofSeconds(45));
+        assertThatThrownBy(() -> framework.beginMethodScope("method-after-failed-start"))
+            .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
     void restartServer_shouldStartProcessAndRehandshake()
     {
         // setup
@@ -282,9 +313,9 @@ class DefaultLightkeeperFrameworkLifecycleTest
         // setup
         final RuntimeManifest runtimeManifest = runtimeManifest();
         final MinecraftServerProcess minecraftServerProcess = mock(MinecraftServerProcess.class);
-        // Consecutive stubbing models the process actually stopping mid-call: running for the restart and
-        // stop checks, then down for the subsequent start check.
-        when(minecraftServerProcess.isRunning()).thenReturn(true, true, false);
+        // Consecutive stubbing models the process actually stopping mid-call: running for the restart check,
+        // then down for the subsequent start check (the internal stop path performs no check of its own).
+        when(minecraftServerProcess.isRunning()).thenReturn(true, false);
         final UdsAgentClient agentClient = mock(UdsAgentClient.class);
         final PlayerScopeRegistry playerScopeRegistry = mock(PlayerScopeRegistry.class);
 

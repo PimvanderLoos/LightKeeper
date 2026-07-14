@@ -309,11 +309,13 @@ final class AgentPlayerActions
 
         mainThreadExecutor.callOnMainThread(() ->
         {
-            final Player player = playerStore.getRequiredPlayer(uuid);
+            // The store methods validate registration themselves; only the set paths need the player instance.
             switch (mode)
             {
-                case GRANT -> playerStore.setPermission(plugin, uuid, player, permission, true);
-                case REVOKE -> playerStore.setPermission(plugin, uuid, player, permission, false);
+                case GRANT ->
+                    playerStore.setPermission(plugin, uuid, playerStore.getRequiredPlayer(uuid), permission, true);
+                case REVOKE ->
+                    playerStore.setPermission(plugin, uuid, playerStore.getRequiredPlayer(uuid), permission, false);
                 case UNSET -> playerStore.unsetPermission(uuid, permission);
             }
             return Boolean.TRUE;

@@ -605,6 +605,8 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
             Objects.requireNonNull(pluginName, "pluginName may not be null.").trim();
         if (trimmedPluginName.isEmpty())
             throw new IllegalArgumentException("pluginName may not be blank.");
+        // The plugin name is authored by the test writer (trusted input); this check catches accidental path
+        // fragments early rather than acting as a security boundary.
         if (trimmedPluginName.contains("/") || trimmedPluginName.contains("\\") || trimmedPluginName.contains(".."))
             throw new IllegalArgumentException(
                 "pluginName must be a plain directory name, got '%s'.".formatted(trimmedPluginName));
@@ -628,7 +630,18 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
         ensureOpen();
         if (!minecraftServerProcess.isRunning())
             throw new IllegalStateException("Cannot stop the server because it is not running.");
+        doStopServer();
+    }
 
+    /**
+     * Graceful-stop implementation without the running-state precondition.
+     *
+     * <p>Tolerates a server that died on its own after the caller's running check: player cleanup swallows
+     * per-player failures, the client close is idempotent, and the process stop handles dead processes. This is
+     * what lets {@link #restartServer()} avoid a check-then-act race on the running state.
+     */
+    private void doStopServer()
+    {
         LOG.log(System.Logger.Level.INFO, "LK_FRAMEWORK: Stopping Minecraft server gracefully.");
         try
         {
@@ -653,13 +666,30 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
 
         LOG.log(System.Logger.Level.INFO, "LK_FRAMEWORK: Starting Minecraft server.");
         minecraftServerProcess.start(STARTUP_TIMEOUT);
-        agentClient.rehandshake(
-            AGENT_CONNECT_TIMEOUT,
-            runtimeManifest.agentAuthToken(),
-            runtimeManifest.runtimeProtocolVersion(),
-            Objects.requireNonNullElse(runtimeManifest.agentJarSha256(), "")
-        );
-        preloadConfiguredWorlds();
+        try
+        {
+            agentClient.rehandshake(
+                AGENT_CONNECT_TIMEOUT,
+                runtimeManifest.agentAuthToken(),
+                runtimeManifest.runtimeProtocolVersion(),
+                Objects.requireNonNullElse(runtimeManifest.agentJarSha256(), "")
+            );
+            preloadConfiguredWorlds();
+        }
+        catch (Exception exception)
+        {
+            // Return to a clean 'down' state so a retry of startServer() remains possible; leaving the process
+            // running here would wedge the start path (running + down means only restartServer() could recover).
+            try
+            {
+                minecraftServerProcess.stop(SHUTDOWN_TIMEOUT);
+            }
+            catch (Exception stopException)
+            {
+                exception.addSuppressed(stopException);
+            }
+            throw exception;
+        }
         serverDown.set(false);
     }
 
@@ -669,7 +699,7 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
         ensureOpen();
         LOG.log(System.Logger.Level.INFO, "LK_FRAMEWORK: Restarting Minecraft server.");
         if (minecraftServerProcess.isRunning())
-            stopServer();
+            doStopServer();
         startServer();
     }
 
