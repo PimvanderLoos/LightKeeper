@@ -23,6 +23,13 @@ import java.util.Objects;
 @Mojo(name = "cleanup-server", defaultPhase = LifecyclePhase.POST_INTEGRATION_TEST)
 public final class CleanupServerMojo extends AbstractMojo
 {
+    /**
+     * Skips cleanup entirely when set. Shared with the prepare-server goal so a single
+     * {@code -Dlightkeeper.skip=true} disables a whole LightKeeper lane, e.g. from a CI matrix.
+     */
+    @Parameter(property = "lightkeeper.skip", defaultValue = "false")
+    private boolean skip;
+
     @Parameter(property = "lightkeeper.deleteTargetServerOnSuccess", defaultValue = "false")
     private boolean deleteTargetServerOnSuccess;
 
@@ -64,6 +71,12 @@ public final class CleanupServerMojo extends AbstractMojo
     public void execute()
         throws MojoExecutionException
     {
+        if (skip)
+        {
+            getLog().info("LK_CLEANUP: Skipping cleanup because 'lightkeeper.skip' is set.");
+            return;
+        }
+
         if (!deleteTargetServerOnSuccess)
         {
             getLog().info("LK_CLEANUP: Skipping cleanup because deleteTargetServerOnSuccess=false.");

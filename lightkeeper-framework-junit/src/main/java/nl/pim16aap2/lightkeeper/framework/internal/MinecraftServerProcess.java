@@ -61,6 +61,7 @@ final class MinecraftServerProcess
     private @Nullable Process process;
     private @Nullable Thread outputThread;
     private @Nullable Thread errorThread;
+    private @Nullable Process orphanReaperProcess;
 
     /**
      * A single captured server output line with its file-descriptor provenance.
@@ -110,6 +111,10 @@ final class MinecraftServerProcess
             process = startedProcess;
             outputThread = startedOutputThread;
             errorThread = startedErrorThread;
+            // Safety net for hard kills of this JVM (CI timeout, OOM killer): a separate watchdog
+            // process reaps the server tree. A shutdown hook cannot cover SIGKILL, and the watchdog
+            // detaches into its own session (setsid) so whole-group kills do not take it down too.
+            orphanReaperProcess = OrphanReaperLauncher.launch(ProcessHandle.current().pid(), startedProcess.pid());
             startedOutputThread.start();
             startedErrorThread.start();
             awaitStartupOrFail(startedProcess, startLatch, timeout);
@@ -334,11 +339,27 @@ final class MinecraftServerProcess
     private void clearProcessState(Process completedProcess)
     {
         if (Objects.equals(process, completedProcess) && !completedProcess.isAlive())
+        {
             process = null;
+            stopOrphanReaper();
+        }
         if (outputThread != null && !outputThread.isAlive())
             outputThread = null;
         if (errorThread != null && !errorThread.isAlive())
             errorThread = null;
+    }
+
+    /**
+     * Stops the orphan-reaper watchdog for a server process that is confirmed dead.
+     * <p>
+     * The reaper also exits on its own once it observes the dead server; destroying it here is only for promptness.
+     */
+    private void stopOrphanReaper()
+    {
+        final Process currentOrphanReaperProcess = orphanReaperProcess;
+        orphanReaperProcess = null;
+        if (currentOrphanReaperProcess != null && currentOrphanReaperProcess.isAlive())
+            currentOrphanReaperProcess.destroy();
     }
 
     private void clearStoppedProcessState()

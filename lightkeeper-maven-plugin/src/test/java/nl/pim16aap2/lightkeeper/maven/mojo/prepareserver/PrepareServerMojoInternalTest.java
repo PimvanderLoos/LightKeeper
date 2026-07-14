@@ -664,6 +664,19 @@ class PrepareServerMojoInternalTest
     }
 
     @Test
+    void execute_shouldDoNothingWhenSkipIsSet()
+        throws Exception
+    {
+        // setup
+        // No other configuration: if skip did not short-circuit, validateConfiguration would throw.
+        final PrepareServerMojo mojo = new PrepareServerMojo();
+        setField(mojo, "skip", true);
+
+        // execute + verify
+        mojo.execute();
+    }
+
+    @Test
     void execute_shouldPrepareServerAndWriteRuntimeManifestUsingResolvedSetup(@TempDir Path tempDirectory)
         throws Exception
     {

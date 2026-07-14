@@ -47,6 +47,16 @@ public class PrepareServerMojo extends AbstractMojo
     private static final String SERVER_TYPE_SPIGOT = "spigot";
     private static final List<String> SUPPORTED_SERVER_TYPES = List.of(SERVER_TYPE_PAPER, SERVER_TYPE_SPIGOT);
 
+    /**
+     * Skips server preparation entirely when set. Shared with the cleanup goal so a single
+     * {@code -Dlightkeeper.skip=true} disables a whole LightKeeper lane, e.g. from a CI matrix.
+     * <p>
+     * Note: skipping preparation without also skipping the integration tests (e.g. {@code -DskipITs}) leaves
+     * failsafe without a runtime manifest, so the tests will fail to start.
+     */
+    @Parameter(property = "lightkeeper.skip", defaultValue = "false")
+    private boolean skip;
+
     @Parameter(property = "lightkeeper.serverType", defaultValue = SERVER_TYPE_PAPER)
     @Nullable
     private String serverType;
@@ -179,6 +189,12 @@ public class PrepareServerMojo extends AbstractMojo
     public void execute()
         throws MojoExecutionException
     {
+        if (skip)
+        {
+            getLog().info("Skipping server preparation because 'lightkeeper.skip' is set.");
+            return;
+        }
+
         validateConfiguration();
         final PrepareServerExecutionContext executionContext = buildExecutionContext();
         logPreparationStart(executionContext);

@@ -216,4 +216,42 @@ class CleanupServerMojoTest
         assertThat(unrelatedDirectory).isDirectory();
     }
 
+    @Test
+    void execute_shouldKeepServerDirectoryWhenSkipIsSet(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        // Cleanup is enabled and the summary is successful, so only 'skip' prevents deletion.
+        final Path serverDirectory = tempDirectory.resolve("lightkeeper-server");
+        Files.createDirectories(serverDirectory);
+        Files.writeString(serverDirectory.resolve("marker.txt"), "marker");
+
+        final Path summaryPath = tempDirectory.resolve("failsafe-summary.xml");
+        Files.writeString(summaryPath, """
+            <failsafe-summary result="null" timeout="false">
+                <completed>1</completed>
+                <errors>0</errors>
+                <failures>0</failures>
+                <skipped>0</skipped>
+            </failsafe-summary>
+            """);
+
+        final CleanupServerMojo cleanupServerMojo = new CleanupServerMojo(true, serverDirectory, summaryPath);
+        setField(cleanupServerMojo, "skip", true);
+
+        // execute
+        cleanupServerMojo.execute();
+
+        // verify
+        assertThat(serverDirectory).isDirectory();
+        assertThat(serverDirectory.resolve("marker.txt")).exists();
+    }
+
+    private static void setField(Object target, String fieldName, Object value)
+        throws Exception
+    {
+        final java.lang.reflect.Field field = target.getClass().getDeclaredField(fieldName);
+        field.setAccessible(true);
+        field.set(target, value);
+    }
 }
