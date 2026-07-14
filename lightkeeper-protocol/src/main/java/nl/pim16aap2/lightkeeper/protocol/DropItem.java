@@ -47,13 +47,19 @@ public final class DropItem
     /**
      * Response record for {@code DROP_ITEM}.
      *
-     * @param dropped
-     *     {@code true} when the drop materialised (item entity created, inventory slot consumed);
-     *     {@code false} when the player had nothing in hand, or the {@code PlayerDropItemEvent} was cancelled.
+     * @param result
+     *     The drop outcome, distinguishing a successful drop from a cancelled event and an empty main hand.
      */
     public record Response(
-        boolean dropped
+        DropResult result
     ) implements IAgentResponse
     {
+        /**
+         * Validates response inputs.
+         */
+        public Response
+        {
+            ProtocolPreconditions.requireNonNull(result, "result");
+        }
     }
 }

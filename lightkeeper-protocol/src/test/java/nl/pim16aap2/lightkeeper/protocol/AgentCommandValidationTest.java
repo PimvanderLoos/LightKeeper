@@ -143,6 +143,16 @@ class AgentCommandValidationTest
             .hasMessageContaining("permission");
     }
 
+    @Test
+    @SuppressWarnings("NullAway") // Intentionally crosses the non-null API boundary to verify fail-fast validation.
+    void dropItemResponse_shouldRejectNullResult()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> new DropItem.Response(null))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("result");
+    }
+
     private static Object validDefault(Class<?> type)
     {
         if (type == String.class)
