@@ -14,6 +14,7 @@ import nl.pim16aap2.lightkeeper.protocol.CommandSource;
 import nl.pim16aap2.lightkeeper.protocol.CreatePlayer;
 import nl.pim16aap2.lightkeeper.protocol.DragMenuSlots;
 import nl.pim16aap2.lightkeeper.protocol.DropItem;
+import nl.pim16aap2.lightkeeper.protocol.DropResult;
 import nl.pim16aap2.lightkeeper.protocol.ExecuteCommand;
 import nl.pim16aap2.lightkeeper.protocol.ExecutePlayerCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetCapturedEvents;
@@ -346,7 +347,7 @@ class AgentRequestDispatcherTest
         when(fixture.playerStateActions().handleGetPlayerInventory(any(GetPlayerInventory.Command.class)))
             .thenReturn(new GetPlayerInventory.Response(java.util.List.of()));
         when(fixture.playerStateActions().handleDropItem(any(DropItem.Command.class)))
-            .thenReturn(new DropItem.Response(false));
+            .thenReturn(new DropItem.Response(DropResult.EMPTY_HAND));
         when(fixture.eventActions().handleRegisterEventListener(any(RegisterEventListener.Command.class)))
             .thenReturn(new RegisterEventListener.Response());
         when(fixture.eventActions().handleGetCapturedEvents(any(GetCapturedEvents.Command.class)))

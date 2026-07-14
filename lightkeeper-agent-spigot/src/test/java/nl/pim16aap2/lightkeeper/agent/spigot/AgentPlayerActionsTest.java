@@ -4,6 +4,7 @@ import tools.jackson.databind.ObjectMapper;
 import nl.pim16aap2.lightkeeper.nms.api.IBotPlayerNmsAdapter;
 import nl.pim16aap2.lightkeeper.protocol.CreatePlayer;
 import nl.pim16aap2.lightkeeper.protocol.DropItem;
+import nl.pim16aap2.lightkeeper.protocol.DropResult;
 import nl.pim16aap2.lightkeeper.protocol.ExecutePlayerCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponents;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerInventory;
@@ -158,7 +159,7 @@ class AgentPlayerActionsTest
         }
 
         // verify
-        assertThat(response.dropped()).isTrue();
+        assertThat(response.result()).isEqualTo(DropResult.DROPPED);
         verify(entity, never()).remove();
         verify(item).setAmount(2);
         verify(inventory).setItemInMainHand(item);
@@ -204,7 +205,7 @@ class AgentPlayerActionsTest
         }
 
         // verify
-        assertThat(response.dropped()).isFalse();
+        assertThat(response.result()).isEqualTo(DropResult.CANCELLED);
         verify(entity).remove();
         verify(inventory, never()).setItemInMainHand(any());
     }
@@ -537,8 +538,8 @@ class AgentPlayerActionsTest
             response = fixture.stateActions().handleDropItem(command);
         }
 
-        // verify - no item to drop, so dropped=false
-        assertThat(response.dropped()).isFalse();
+        // verify - no item to drop, so the empty hand is reported distinctly
+        assertThat(response.result()).isEqualTo(DropResult.EMPTY_HAND);
     }
 
     @Test
