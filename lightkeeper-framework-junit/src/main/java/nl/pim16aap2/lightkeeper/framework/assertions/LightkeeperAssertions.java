@@ -100,9 +100,7 @@ public final class LightkeeperAssertions extends Assertions
         if (timeout.isZero() || timeout.isNegative())
             throw new IllegalArgumentException("timeout must be positive.");
         if (Boolean.TRUE.equals(INSIDE_EVENTUALLY.get()))
-            throw new IllegalStateException(
-                "eventually(...) may not be nested inside another eventually(...); retry the whole assertion "
-                    + "in a single call instead.");
+            throw new NestedEventuallyException();
 
         INSIDE_EVENTUALLY.set(Boolean.TRUE);
         try
@@ -132,6 +130,11 @@ public final class LightkeeperAssertions extends Assertions
             catch (AssertionError assertionError)
             {
                 lastFailure = assertionError;
+            }
+            catch (NestedEventuallyException nestedEventuallyException)
+            {
+                // A programmer error, not an evaluation failure: surface the nesting message directly.
+                throw nestedEventuallyException;
             }
             catch (Exception exception)
             {
@@ -172,9 +175,23 @@ public final class LightkeeperAssertions extends Assertions
          * Runs the assertion once.
          *
          * @throws Exception
-         *     Propagates probe failures; assertion failures surface as {@link AssertionError}.
+         *     Assertion failures surface as {@link AssertionError} and are retried; any other failure is
+         *     wrapped in an {@link IllegalStateException} (with the original as its cause) and fails fast.
          */
         void run()
             throws Exception;
+    }
+
+    /**
+     * Thrown when {@code eventually} is nested inside another {@code eventually}; a distinct type so the
+     * outer retry loop can surface the nesting message directly instead of wrapping it.
+     */
+    private static final class NestedEventuallyException extends IllegalStateException
+    {
+        NestedEventuallyException()
+        {
+            super("eventually(...) may not be nested inside another eventually(...); retry the whole "
+                + "assertion in a single call instead.");
+        }
     }
 }

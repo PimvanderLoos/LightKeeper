@@ -43,6 +43,7 @@ public final class WorldHandleAssert extends AbstractAssert<WorldHandleAssert, @
      */
     public WorldBlockAssert hasBlockAt(BlockPos position)
     {
+        java.util.Objects.requireNonNull(position, "position may not be null.");
         return hasBlockAt(
             position.x(),
             position.y(),

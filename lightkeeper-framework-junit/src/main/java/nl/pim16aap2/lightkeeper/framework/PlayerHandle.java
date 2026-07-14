@@ -109,6 +109,7 @@ public final class PlayerHandle
      */
     public PlayerHandle teleport(WorldHandle world, Vec3 position)
     {
+        Objects.requireNonNull(world, "world may not be null.");
         Objects.requireNonNull(position, "position may not be null.");
         return teleport(world, position.x(), position.y(), position.z());
     }
