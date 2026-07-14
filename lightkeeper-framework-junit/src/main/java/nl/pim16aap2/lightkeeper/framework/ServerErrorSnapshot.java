@@ -83,4 +83,36 @@ public record ServerErrorSnapshot(
         Objects.requireNonNull(message, "message may not be null.");
         stackTrace = stackTrace == null ? List.of() : List.copyOf(stackTrace);
     }
+
+    /**
+     * Renders this entry as human-readable text: one header line plus indented stack-trace lines, capped at the
+     * given limit with a {@code "... (N more stack trace lines)"} tail when truncated.
+     *
+     * @param maxStackTraceLines
+     *     Maximum number of stack-trace lines to render; use {@link Integer#MAX_VALUE} for the full trace.
+     * @return The rendered entry, ending with a line separator.
+     */
+    public String toDisplayString(int maxStackTraceLines)
+    {
+        if (maxStackTraceLines < 0)
+            throw new IllegalArgumentException("maxStackTraceLines must be >= 0.");
+
+        final StringBuilder rendered = new StringBuilder(128);
+        rendered
+            .append("[%s] %s (thread: %s): %s".formatted(
+                levelName,
+                loggerName,
+                threadName.isEmpty() ? "?" : threadName,
+                message))
+            .append(System.lineSeparator());
+
+        stackTrace.stream()
+            .limit(maxStackTraceLines)
+            .forEach(line -> rendered.append("    ").append(line).append(System.lineSeparator()));
+        if (stackTrace.size() > maxStackTraceLines)
+            rendered
+                .append("    ... (%d more stack trace lines)".formatted(stackTrace.size() - maxStackTraceLines))
+                .append(System.lineSeparator());
+        return rendered.toString();
+    }
 }

@@ -235,6 +235,8 @@ class MyPluginIT
 - World templates: provision world folders via `<worlds>` and load them with
   `newWorldFromTemplate("name")` — typos fail loudly instead of silently creating a fresh world
 - Received-message assertions with AssertJ string chaining
+- Diagnostics-on-failure: failed tests automatically get a bundle (test outcome, captured server errors,
+  server console output) under `target/lightkeeper-reports/`
 - Graceful server lifecycle control from tests (`stopServer()`, `startServer()`, `restartServer()`), plus
   `crashServer()` for hard-kill scenarios
 - Server directory access (`serverDirectory()`, `pluginDataDirectory(name)`) for seeding files while the
@@ -383,6 +385,11 @@ GitHub Actions can cache URL and Modrinth plugin downloads separately from the n
 
 - Failsafe reports:
     - `lightkeeper-integration-tests/target/failsafe-reports/`
+- Diagnostics bundles (written by the JUnit extension when a test fails):
+    - `target/lightkeeper-reports/<TestClass>/<testMethod>-<timestamp>/` with `outcome.txt`,
+      `server-errors.txt`, and `server-output.log`
+    - Control via system properties: `lightkeeper.diagnostics` = `on-failure` (default) | `always` | `off`,
+      and `lightkeeper.diagnosticsDirectory` to relocate the report root
 - Runtime manifests:
     - `lightkeeper-integration-tests/target/lightkeeper/*-runtime-manifest.json`
 - Prepared server directories:
