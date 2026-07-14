@@ -2,6 +2,7 @@ package nl.pim16aap2.lightkeeper.agent.spigot;
 
 import nl.pim16aap2.lightkeeper.nms.api.IBotPlayerNmsAdapter;
 import nl.pim16aap2.lightkeeper.protocol.DropItem;
+import nl.pim16aap2.lightkeeper.protocol.DropResult;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponents;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerInventory;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerMessages;
@@ -105,12 +106,12 @@ final class AgentPlayerStateActions
         throws Exception
     {
         final UUID uuid = command.uuid();
-        final Boolean dropped = mainThreadExecutor.callOnMainThread(() ->
+        final DropResult result = mainThreadExecutor.callOnMainThread(() ->
         {
             final Player player = playerStore.getRequiredPlayer(uuid);
             final ItemStack item = player.getInventory().getItemInMainHand();
             if (item == null || AgentMaterials.isAir(item.getType()))
-                return Boolean.FALSE;
+                return DropResult.EMPTY_HAND;
 
             final ItemStack singleItem = item.clone();
             singleItem.setAmount(1);
@@ -121,7 +122,7 @@ final class AgentPlayerStateActions
             if (event.isCancelled())
             {
                 droppedItem.remove();
-                return Boolean.FALSE;
+                return DropResult.CANCELLED;
             }
 
             if (item.getAmount() > 1)
@@ -133,8 +134,8 @@ final class AgentPlayerStateActions
             {
                 player.getInventory().setItemInMainHand(null);
             }
-            return Boolean.TRUE;
+            return DropResult.DROPPED;
         });
-        return new DropItem.Response(dropped);
+        return new DropItem.Response(result);
     }
 }

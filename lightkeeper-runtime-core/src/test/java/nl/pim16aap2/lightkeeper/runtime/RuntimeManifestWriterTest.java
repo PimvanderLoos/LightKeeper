@@ -30,7 +30,10 @@ class RuntimeManifestWriterTest
             RuntimeProtocol.VERSION,
             "agent-cache-id",
             "-Dfoo=bar",
-            List.of(new RuntimeManifest.PreloadedWorld("fixture-world", "NORMAL", "FLAT", 42L))
+            List.of(
+                new RuntimeManifest.ProvisionedWorld("fixture-world", "NORMAL", "FLAT", 42L, true),
+                new RuntimeManifest.ProvisionedWorld("template-world", "NORMAL", "NORMAL", 0L, false)
+            )
         );
         final Path manifestPath = tempDirectory.resolve("runtime-manifest.json");
 
@@ -43,7 +46,11 @@ class RuntimeManifestWriterTest
         assertThat(parsedManifest.serverVersion()).isEqualTo("1.21.11");
         assertThat(parsedManifest.paperBuildId()).isEqualTo(116L);
         assertThat(parsedManifest.extraJvmArgs()).isEqualTo("-Dfoo=bar");
-        assertThat(parsedManifest.preloadedWorlds()).hasSize(1);
-        assertThat(parsedManifest.preloadedWorlds().getFirst().name()).isEqualTo("fixture-world");
+        assertThat(parsedManifest.provisionedWorlds()).hasSize(2);
+        assertThat(parsedManifest.provisionedWorlds().get(0).name()).isEqualTo("fixture-world");
+        assertThat(parsedManifest.provisionedWorlds().get(0).worldType()).isEqualTo("FLAT");
+        assertThat(parsedManifest.provisionedWorlds().get(0).loadOnStartup()).isTrue();
+        assertThat(parsedManifest.provisionedWorlds().get(1).name()).isEqualTo("template-world");
+        assertThat(parsedManifest.provisionedWorlds().get(1).loadOnStartup()).isFalse();
     }
 }

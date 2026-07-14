@@ -1,5 +1,7 @@
 package nl.pim16aap2.lightkeeper.framework;
 
+import nl.pim16aap2.lightkeeper.protocol.DropResult;
+
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
@@ -78,13 +80,17 @@ public interface IFrameworkGatewayView
 
     /**
      * Fires a left-click block interaction as a synthetic player.
+     *
+     * @return {@code true} when a plugin cancelled the fired {@code PlayerInteractEvent}.
      */
-    void leftClickBlock(UUID playerId, Vector3Di position, String blockFace);
+    boolean leftClickBlock(UUID playerId, Vector3Di position, String blockFace);
 
     /**
      * Fires a right-click block interaction as a synthetic player.
+     *
+     * @return {@code true} when a plugin cancelled the fired {@code PlayerInteractEvent}.
      */
-    void rightClickBlock(UUID playerId, Vector3Di position, String blockFace);
+    boolean rightClickBlock(UUID playerId, Vector3Di position, String blockFace);
 
     /**
      * Retrieves menu snapshot for a synthetic player.
@@ -133,8 +139,10 @@ public interface IFrameworkGatewayView
 
     /**
      * Drops item from player's main hand.
+     *
+     * @return The drop outcome, distinguishing a successful drop from a cancelled event and an empty hand.
      */
-    boolean dropItem(UUID playerId);
+    DropResult dropItem(UUID playerId);
 
     /**
      * Registers an event listener.

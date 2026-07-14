@@ -4,6 +4,7 @@ import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.time.Duration;
 import java.util.List;
@@ -14,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -56,6 +58,34 @@ class MenuHandleTest
 
         // verify
         assertThat(result).isSameAs(snapshot);
+    }
+
+    @Test
+    void isOpen_shouldReturnTrueWhenSnapshotIsOpen()
+    {
+        // setup
+        when(frameworkGateway.menuSnapshot(PLAYER_UUID))
+            .thenReturn(new MenuSnapshot(true, "Main Menu", List.of()));
+
+        // execute
+        final boolean result = menuHandle.isOpen();
+
+        // verify
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void isOpen_shouldReturnFalseWhenSnapshotIsClosed()
+    {
+        // setup
+        when(frameworkGateway.menuSnapshot(PLAYER_UUID))
+            .thenReturn(new MenuSnapshot(false, "", List.of()));
+
+        // execute
+        final boolean result = menuHandle.isOpen();
+
+        // verify
+        assertThat(result).isFalse();
     }
 
     @Test
@@ -110,6 +140,108 @@ class MenuHandleTest
     }
 
     @Test
+    void clickAtIndex_shouldAutoWaitForOpenMenuUsingDefaultTimeout()
+        throws Exception
+    {
+        // setup
+        when(frameworkGateway.menuSnapshot(PLAYER_UUID))
+            .thenReturn(new MenuSnapshot(true, "Main Menu", List.of()));
+        final ArgumentCaptor<Condition> conditionCaptor = ArgumentCaptor.forClass(Condition.class);
+
+        // execute
+        menuHandle.clickAtIndex(4);
+
+        // verify
+        verify(frameworkGateway).waitUntil(conditionCaptor.capture(), eq(Duration.ofSeconds(10)));
+        assertThat(conditionCaptor.getValue().evaluate()).isEqualTo(menuHandle.snapshot().open());
+    }
+
+    @Test
+    void clickAtIndex_shouldRethrowWithPlayerNameWhenMenuNeverOpensWithinTimeout()
+    {
+        // setup
+        when(frameworkGateway.menuSnapshot(PLAYER_UUID))
+            .thenReturn(new MenuSnapshot(false, "", List.of()));
+        doThrow(new IllegalStateException("Condition did not pass within timeout PT10S."))
+            .when(frameworkGateway).waitUntil(any(Condition.class), eq(Duration.ofSeconds(10)));
+
+        // execute + verify
+        assertThatThrownBy(() -> menuHandle.clickAtIndex(4))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining(playerHandle.name());
+    }
+
+    @Test
+    void clickItem_shouldClickFirstMatchingItemAndReturnSelf()
+    {
+        // setup
+        final MenuItemSnapshot first = new MenuItemSnapshot(1, "minecraft:stone", "Stone Block", List.of());
+        final MenuItemSnapshot second = new MenuItemSnapshot(2, "minecraft:diamond", "Shiny Diamond", List.of());
+        when(frameworkGateway.menuSnapshot(PLAYER_UUID))
+            .thenReturn(new MenuSnapshot(true, "Main Menu", List.of(first, second)));
+
+        // execute
+        final MenuHandle result = menuHandle.clickItem("Diamond");
+
+        // verify
+        assertThat(result).isSameAs(menuHandle);
+        verify(frameworkGateway).clickMenuSlot(PLAYER_UUID, second.slot());
+    }
+
+    @Test
+    void clickItem_shouldThrowExceptionWhenNoItemMatches()
+    {
+        // setup
+        final MenuItemSnapshot first = new MenuItemSnapshot(1, "minecraft:stone", "Stone Block", List.of());
+        final MenuItemSnapshot second = new MenuItemSnapshot(2, "minecraft:diamond", "Shiny Diamond", List.of());
+        when(frameworkGateway.menuSnapshot(PLAYER_UUID))
+            .thenReturn(new MenuSnapshot(true, "Main Menu", List.of(first, second)));
+
+        // execute + verify
+        assertThatThrownBy(() -> menuHandle.clickItem("Emerald"))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("Emerald")
+            .hasMessageContaining("Stone Block")
+            .hasMessageContaining("Shiny Diamond");
+    }
+
+    @Test
+    void clickItem_shouldThrowExceptionWhenFragmentIsBlank()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> menuHandle.clickItem("   "))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("blank");
+    }
+
+    @Test
+    @SuppressWarnings("NullAway") // Intentionally crosses the non-null API boundary to verify fail-fast validation.
+    void clickItem_shouldThrowNullPointerExceptionWhenFragmentIsNull()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> menuHandle.clickItem(null))
+            .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void clickItem_shouldAutoWaitForOpenMenuUsingDefaultTimeout()
+        throws Exception
+    {
+        // setup
+        final MenuItemSnapshot item = new MenuItemSnapshot(1, "minecraft:stone", "Stone Block", List.of());
+        when(frameworkGateway.menuSnapshot(PLAYER_UUID))
+            .thenReturn(new MenuSnapshot(true, "Main Menu", List.of(item)));
+        final ArgumentCaptor<Condition> conditionCaptor = ArgumentCaptor.forClass(Condition.class);
+
+        // execute
+        menuHandle.clickItem("Stone");
+
+        // verify
+        verify(frameworkGateway).waitUntil(conditionCaptor.capture(), eq(Duration.ofSeconds(10)));
+        assertThat(conditionCaptor.getValue().evaluate()).isEqualTo(menuHandle.snapshot().open());
+    }
+
+    @Test
     void dragWithMaterial_shouldDelegateAndReturnSelf()
     {
         // execute
@@ -118,6 +250,23 @@ class MenuHandleTest
         // verify
         assertThat(result).isSameAs(menuHandle);
         verify(frameworkGateway).dragMenuSlots(PLAYER_UUID, "minecraft:stone", 2, 3, 4);
+    }
+
+    @Test
+    void dragWithMaterial_shouldAutoWaitForOpenMenuUsingDefaultTimeout()
+        throws Exception
+    {
+        // setup
+        when(frameworkGateway.menuSnapshot(PLAYER_UUID))
+            .thenReturn(new MenuSnapshot(true, "Main Menu", List.of()));
+        final ArgumentCaptor<Condition> conditionCaptor = ArgumentCaptor.forClass(Condition.class);
+
+        // execute
+        menuHandle.dragWithMaterial("minecraft:stone", 2, 3, 4);
+
+        // verify
+        verify(frameworkGateway).waitUntil(conditionCaptor.capture(), eq(Duration.ofSeconds(10)));
+        assertThat(conditionCaptor.getValue().evaluate()).isEqualTo(menuHandle.snapshot().open());
     }
 
     @Test

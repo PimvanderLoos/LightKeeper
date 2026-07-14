@@ -35,8 +35,10 @@ import java.util.List;
  *     The cache identity for the resolved agent artifact.
  * @param extraJvmArgs
  *     Optional extra JVM arguments that must be applied when launching the test server runtime.
- * @param preloadedWorlds
- *     Worlds that should be loaded by the framework before test execution.
+ * @param provisionedWorlds
+ *     All worlds provisioned into the server directory by {@code prepare-server}, including templates that
+ *     are not loaded on startup. The framework preloads the {@code loadOnStartup} entries before test
+ *     execution and validates template names against the full list.
  */
 public record RuntimeManifest(
     String serverType,
@@ -53,16 +55,16 @@ public record RuntimeManifest(
     int runtimeProtocolVersion,
     String agentCacheIdentity,
     @Nullable String extraJvmArgs,
-    List<PreloadedWorld> preloadedWorlds
+    List<ProvisionedWorld> provisionedWorlds
 )
 {
     public RuntimeManifest
     {
-        preloadedWorlds = preloadedWorlds == null ? List.of() : List.copyOf(preloadedWorlds);
+        provisionedWorlds = provisionedWorlds == null ? List.of() : List.copyOf(provisionedWorlds);
     }
 
     /**
-     * World metadata for framework preloading.
+     * Metadata of a world provisioned into the server directory.
      *
      * @param name
      *     World name.
@@ -72,12 +74,15 @@ public record RuntimeManifest(
      *     World type enum name.
      * @param seed
      *     World seed.
+     * @param loadOnStartup
+     *     Whether the framework loads this world before test execution.
      */
-    public record PreloadedWorld(
+    public record ProvisionedWorld(
         String name,
         String environment,
         String worldType,
-        long seed
+        long seed,
+        boolean loadOnStartup
     )
     {
     }

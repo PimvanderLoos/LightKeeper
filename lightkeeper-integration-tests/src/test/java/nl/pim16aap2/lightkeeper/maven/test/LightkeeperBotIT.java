@@ -1,10 +1,12 @@
 package nl.pim16aap2.lightkeeper.maven.test;
 
 import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
+import nl.pim16aap2.lightkeeper.framework.InteractionResult;
 import nl.pim16aap2.lightkeeper.framework.LightkeeperExtension;
 import nl.pim16aap2.lightkeeper.framework.MenuHandle;
 import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.protocol.CommandSource;
+import nl.pim16aap2.lightkeeper.protocol.DropResult;
 import org.bukkit.Material;
 import org.bukkit.block.BlockFace;
 import org.bukkit.inventory.ItemStack;
@@ -51,7 +53,7 @@ class LightkeeperBotIT
         secondPlayer.executeCommand("lktestgui")
             .andWaitForMenuOpen(10)
             .verifyMenuName("Main Menu")
-            .clickAtIndex(0)
+            .clickItem("Button 1")
             .andWaitTicks(5)
             .verifyMenuName("Sub Menu")
             .dragWithMaterial("minecraft:stone", 3, 4, 5)
@@ -73,11 +75,15 @@ class LightkeeperBotIT
         player.placeBlock("minecraft:stone", 1, 100, 0)
             .andWaitTicks(1);
         world.setBlockAt(new Vector3Di(3, 100, 0), "minecraft:gold_block");
-        player.leftClickBlock(new Vector3Di(3, 100, 0), BlockFace.NORTH)
-            .rightClickBlock(new Vector3Di(3, 100, 0), BlockFace.SOUTH)
-            .andWaitTicks(1);
+        final InteractionResult leftClickResult = player.leftClickBlock(new Vector3Di(3, 100, 0), BlockFace.NORTH);
+        final InteractionResult rightClickResult = player.rightClickBlock(new Vector3Di(3, 100, 0), BlockFace.SOUTH);
+        player.andWaitTicks(1);
+        final DropResult emptyHandDropResult = player.dropMainHandItem();
 
         // verify
+        assertThat(leftClickResult).isEqualTo(new InteractionResult(true, false));
+        assertThat(rightClickResult).isEqualTo(new InteractionResult(true, false));
+        assertThat(emptyHandDropResult).isEqualTo(DropResult.EMPTY_HAND);
         assertThat(world)
             .hasBlockAt(1, 100, 0)
             .ofType(Material.STONE);

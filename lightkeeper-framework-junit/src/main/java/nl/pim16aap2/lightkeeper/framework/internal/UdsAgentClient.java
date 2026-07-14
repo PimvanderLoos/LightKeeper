@@ -14,6 +14,7 @@ import nl.pim16aap2.lightkeeper.protocol.CommandSource;
 import nl.pim16aap2.lightkeeper.protocol.CreatePlayer;
 import nl.pim16aap2.lightkeeper.protocol.DragMenuSlots;
 import nl.pim16aap2.lightkeeper.protocol.DropItem;
+import nl.pim16aap2.lightkeeper.protocol.DropResult;
 import nl.pim16aap2.lightkeeper.protocol.ExecuteCommand;
 import nl.pim16aap2.lightkeeper.protocol.ExecutePlayerCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetCapturedEvents;
@@ -218,7 +219,7 @@ final class UdsAgentClient implements AutoCloseable
         send(command);
     }
 
-    void leftClickBlock(UUID uuid, Vector3Di position, String blockFace)
+    boolean leftClickBlock(UUID uuid, Vector3Di position, String blockFace)
     {
         final LeftClickBlock.Command command = new LeftClickBlock.Command(
             nextRequestId(),
@@ -228,10 +229,10 @@ final class UdsAgentClient implements AutoCloseable
             position.z(),
             blockFace
         );
-        send(command);
+        return send(command).cancelled();
     }
 
-    void rightClickBlock(UUID uuid, Vector3Di position, String blockFace)
+    boolean rightClickBlock(UUID uuid, Vector3Di position, String blockFace)
     {
         final RightClickBlock.Command command = new RightClickBlock.Command(
             nextRequestId(),
@@ -241,7 +242,7 @@ final class UdsAgentClient implements AutoCloseable
             position.z(),
             blockFace
         );
-        send(command);
+        return send(command).cancelled();
     }
 
     MenuSnapshot menuSnapshot(UUID uuid)
@@ -340,10 +341,10 @@ final class UdsAgentClient implements AutoCloseable
         return send(command).items();
     }
 
-    boolean dropItem(UUID uuid)
+    DropResult dropItem(UUID uuid)
     {
         final DropItem.Command command = new DropItem.Command(nextRequestId(), uuid);
-        return send(command).dropped();
+        return send(command).result();
     }
 
     void registerEventListener(String eventClassName)

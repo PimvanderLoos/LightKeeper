@@ -11,10 +11,20 @@ import java.util.Optional;
 
 /**
  * Handle for an open player menu.
+ * <p>
+ * Menu actions ({@link #clickAtIndex(int)}, {@link #clickItem(String)}, {@link #dragWithMaterial}) auto-wait for
+ * an open menu (bounded, default 10 seconds) before acting. This is the one deliberate implicit wait in the
+ * framework API: waiting for the menu is the only correct behavior before interacting with it. Probes and
+ * verifications (e.g. {@link #isOpen()}, {@link #snapshot()}, {@link #verifyMenuName}, {@link #verifyMenuClosed},
+ * {@link #hasTitle}, {@link #hasItemAt}) never wait; the explicit {@link #andWaitForMenuClose()} waits for the
+ * opposite transition.
  */
 public final class MenuHandle
 {
-    private static final Duration DEFAULT_MENU_WAIT_TIMEOUT = Duration.ofSeconds(10);
+    /**
+     * Default bound for menu-related waits; shared with {@link PlayerHandle}'s menu-open waits.
+     */
+    static final Duration DEFAULT_MENU_WAIT_TIMEOUT = Duration.ofSeconds(10);
 
     private final IFrameworkGatewayView frameworkGateway;
     private final PlayerHandle player;
@@ -76,31 +86,148 @@ public final class MenuHandle
     }
 
     /**
-     * Clicks a slot in the open menu.
+     * Checks whether an actionable menu is currently open. An instant probe suitable for
+     * {@code waitUntil(...)} conditions; never waits.
+     *
+     * @return {@code true} when a menu is open.
+     */
+    public boolean isOpen()
+    {
+        return snapshot().open();
+    }
+
+    /**
+     * Clicks a slot in the open menu, auto-waiting for an open menu first (bounded, default 10 seconds).
      *
      * @param slot
      *     Inventory slot index.
      * @return This handle.
+     * @throws IllegalStateException
+     *     When no menu opens within the wait bound.
      */
     public MenuHandle clickAtIndex(int slot)
     {
+        // Validate before the auto-wait so invalid arguments fail immediately instead of after the menu wait.
+        if (slot < 0)
+            throw new IllegalArgumentException("slot must be >= 0.");
+        awaitOpenMenu();
         frameworkGateway.clickMenuSlot(player.uniqueId(), slot);
         return this;
     }
 
     /**
-     * Performs a drag operation using a material over the provided slots.
+     * Retrieves the open menu's snapshot after {@link #awaitOpenMenu()}, distinguishing a menu that closed again
+     * mid-flight from a menu that simply lacks the requested item.
+     *
+     * @return The open menu's snapshot.
+     * @throws IllegalStateException
+     *     When the menu closed between the wait passing and the snapshot.
+     */
+    private MenuSnapshot openSnapshotAfterWait()
+    {
+        final MenuSnapshot openSnapshot = snapshot();
+        if (!openSnapshot.open())
+            throw new IllegalStateException(
+                "The menu for player '%s' closed while it was being interacted with.".formatted(player.name()));
+        return openSnapshot;
+    }
+
+    /**
+     * Clicks the first menu item whose display name contains the given fragment, auto-waiting for an open menu
+     * first (bounded, default 10 seconds).
+     *
+     * @param displayNameFragment
+     *     Fragment to match against item display names (case-sensitive contains).
+     * @return This handle.
+     * @throws IllegalStateException
+     *     When no menu opens within the wait bound, or no item in the open menu matches the fragment.
+     */
+    public MenuHandle clickItem(String displayNameFragment)
+    {
+        final String trimmedFragment =
+            Objects.requireNonNull(displayNameFragment, "displayNameFragment may not be null.").trim();
+        if (trimmedFragment.isEmpty())
+            throw new IllegalArgumentException("displayNameFragment may not be blank.");
+
+        awaitOpenMenu();
+        final MenuSnapshot openSnapshot = openSnapshotAfterWait();
+        final MenuItemSnapshot item = openSnapshot.items().stream()
+            .filter(candidate -> candidate.displayName().contains(trimmedFragment))
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException(
+                "No item with a display name containing '%s' in menu '%s'. Items: %s".formatted(
+                    trimmedFragment,
+                    openSnapshot.title(),
+                    openSnapshot.items().stream()
+                        .map(candidate -> "'" + candidate.displayName() + "'")
+                        .toList()
+                )));
+        frameworkGateway.clickMenuSlot(player.uniqueId(), item.slot());
+        return this;
+    }
+
+    /**
+     * Performs a drag operation using a material over the provided slots, auto-waiting for an open menu first
+     * (bounded, default 10 seconds).
      *
      * @param materialKey
      *     Material identifier.
      * @param slots
      *     Target slot indices.
      * @return This handle.
+     * @throws IllegalStateException
+     *     When no menu opens within the wait bound.
      */
     public MenuHandle dragWithMaterial(String materialKey, int... slots)
     {
-        frameworkGateway.dragMenuSlots(player.uniqueId(), materialKey, slots);
+        // Validate before the auto-wait so invalid arguments fail immediately instead of after the menu wait.
+        final String trimmedMaterialKey =
+            Objects.requireNonNull(materialKey, "materialKey may not be null.").trim();
+        if (trimmedMaterialKey.isEmpty())
+            throw new IllegalArgumentException("materialKey may not be blank.");
+        if (slots.length == 0)
+            throw new IllegalArgumentException("slots may not be empty.");
+        for (final int slot : slots)
+        {
+            if (slot < 0)
+                throw new IllegalArgumentException("slot must be >= 0.");
+        }
+        awaitOpenMenu();
+        frameworkGateway.dragMenuSlots(player.uniqueId(), trimmedMaterialKey, slots);
         return this;
+    }
+
+    /**
+     * Waits for an open menu within the default bound.
+     *
+     * @throws IllegalStateException
+     *     When no menu opens within the wait bound.
+     */
+    private void awaitOpenMenu()
+    {
+        try
+        {
+            frameworkGateway.waitUntil(() -> snapshot().open(), DEFAULT_MENU_WAIT_TIMEOUT);
+        }
+        catch (IllegalStateException exception)
+        {
+            // The diagnostic snapshot is best-effort: if it fails too, the original wait failure must
+            // still surface, with the snapshot failure attached instead of masking it.
+            String menuState = "menu state unavailable";
+            try
+            {
+                final MenuSnapshot lastSnapshot = snapshot();
+                menuState = "open=%s, title='%s'".formatted(lastSnapshot.open(), lastSnapshot.title());
+            }
+            catch (RuntimeException snapshotException)
+            {
+                exception.addSuppressed(snapshotException);
+            }
+            throw new IllegalStateException(
+                "No open menu for player '%s' within %s (%s).".formatted(
+                    player.name(), DEFAULT_MENU_WAIT_TIMEOUT, menuState),
+                exception);
+        }
     }
 
     /**

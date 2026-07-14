@@ -34,7 +34,7 @@ class LightkeeperProvisioningIT
         assertThat(serverDirectory.resolve("plugins/lightkeeper-spigot-test-plugin/test-overlay.yml"))
             .isRegularFile()
             .hasContent("overlay: true\n");
-        assertThat(runtimeManifest.preloadedWorlds()).isEmpty();
+        assertThat(runtimeManifest.provisionedWorlds()).noneMatch(RuntimeManifest.ProvisionedWorld::loadOnStartup);
         assertThat(runtimeManifest.serverType()).isEqualTo(expectedServerType);
     }
 }

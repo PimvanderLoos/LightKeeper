@@ -492,14 +492,44 @@ class AgentCommandSerializationTest
     {
         // setup
         final ObjectMapper mapper = AgentProtocolMapper.create();
-        final DropItem.Response original = new DropItem.Response(true);
+        final DropItem.Response original = new DropItem.Response(DropResult.DROPPED);
 
         // execute
         final String json = mapper.writeValueAsString(original);
         final DropItem.Response result = mapper.readValue(json, DropItem.Response.class);
 
         // verify
-        assertThat(result.dropped()).isTrue();
+        assertThat(result.result()).isEqualTo(DropResult.DROPPED);
+    }
+
+    @Test
+    void serialize_dropItemResponse_withCancelledResult_roundTrips() throws Exception
+    {
+        // setup
+        final ObjectMapper mapper = AgentProtocolMapper.create();
+        final DropItem.Response original = new DropItem.Response(DropResult.CANCELLED);
+
+        // execute
+        final String json = mapper.writeValueAsString(original);
+        final DropItem.Response result = mapper.readValue(json, DropItem.Response.class);
+
+        // verify
+        assertThat(result.result()).isEqualTo(DropResult.CANCELLED);
+    }
+
+    @Test
+    void serialize_dropItemResponse_withEmptyHandResult_roundTrips() throws Exception
+    {
+        // setup
+        final ObjectMapper mapper = AgentProtocolMapper.create();
+        final DropItem.Response original = new DropItem.Response(DropResult.EMPTY_HAND);
+
+        // execute
+        final String json = mapper.writeValueAsString(original);
+        final DropItem.Response result = mapper.readValue(json, DropItem.Response.class);
+
+        // verify
+        assertThat(result.result()).isEqualTo(DropResult.EMPTY_HAND);
     }
 
     // -----------------------------------------------------------------------

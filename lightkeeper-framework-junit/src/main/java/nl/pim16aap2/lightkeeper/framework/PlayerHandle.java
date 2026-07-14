@@ -1,5 +1,6 @@
 package nl.pim16aap2.lightkeeper.framework;
 
+import nl.pim16aap2.lightkeeper.protocol.DropResult;
 import org.bukkit.block.BlockFace;
 import org.jspecify.annotations.Nullable;
 
@@ -16,8 +17,6 @@ import java.util.UUID;
  */
 public final class PlayerHandle
 {
-    private static final Duration DEFAULT_MENU_WAIT_TIMEOUT = Duration.ofSeconds(10);
-
     private final IFrameworkGatewayView frameworkGateway;
     private final UUID uniqueId;
     private final String name;
@@ -125,9 +124,9 @@ public final class PlayerHandle
      *     Y coordinate.
      * @param z
      *     Z coordinate.
-     * @return This handle for fluent chaining.
+     * @return The interaction result; a real {@code PlayerInteractEvent} is always fired.
      */
-    public PlayerHandle leftClickBlock(int x, int y, int z)
+    public InteractionResult leftClickBlock(int x, int y, int z)
     {
         return leftClickBlock(new Vector3Di(x, y, z));
     }
@@ -137,9 +136,9 @@ public final class PlayerHandle
      *
      * @param position
      *     Block coordinates.
-     * @return This handle for fluent chaining.
+     * @return The interaction result; a real {@code PlayerInteractEvent} is always fired.
      */
-    public PlayerHandle leftClickBlock(Vector3Di position)
+    public InteractionResult leftClickBlock(Vector3Di position)
     {
         return leftClickBlock(position, BlockFace.UP);
     }
@@ -151,16 +150,16 @@ public final class PlayerHandle
      *     Block coordinates.
      * @param blockFace
      *     Clicked block face.
-     * @return This handle for fluent chaining.
+     * @return The interaction result; a real {@code PlayerInteractEvent} is always fired.
      */
-    public PlayerHandle leftClickBlock(Vector3Di position, BlockFace blockFace)
+    public InteractionResult leftClickBlock(Vector3Di position, BlockFace blockFace)
     {
-        frameworkGateway.leftClickBlock(
+        final boolean cancelled = frameworkGateway.leftClickBlock(
             uniqueId,
             Objects.requireNonNull(position, "position may not be null."),
             Objects.requireNonNull(blockFace, "blockFace may not be null.").name()
         );
-        return this;
+        return new InteractionResult(true, cancelled);
     }
 
     /**
@@ -172,9 +171,9 @@ public final class PlayerHandle
      *     Y coordinate.
      * @param z
      *     Z coordinate.
-     * @return This handle for fluent chaining.
+     * @return The interaction result; a real {@code PlayerInteractEvent} is always fired.
      */
-    public PlayerHandle rightClickBlock(int x, int y, int z)
+    public InteractionResult rightClickBlock(int x, int y, int z)
     {
         return rightClickBlock(new Vector3Di(x, y, z));
     }
@@ -184,9 +183,9 @@ public final class PlayerHandle
      *
      * @param position
      *     Block coordinates.
-     * @return This handle for fluent chaining.
+     * @return The interaction result; a real {@code PlayerInteractEvent} is always fired.
      */
-    public PlayerHandle rightClickBlock(Vector3Di position)
+    public InteractionResult rightClickBlock(Vector3Di position)
     {
         return rightClickBlock(position, BlockFace.UP);
     }
@@ -198,16 +197,16 @@ public final class PlayerHandle
      *     Block coordinates.
      * @param blockFace
      *     Clicked block face.
-     * @return This handle for fluent chaining.
+     * @return The interaction result; a real {@code PlayerInteractEvent} is always fired.
      */
-    public PlayerHandle rightClickBlock(Vector3Di position, BlockFace blockFace)
+    public InteractionResult rightClickBlock(Vector3Di position, BlockFace blockFace)
     {
-        frameworkGateway.rightClickBlock(
+        final boolean cancelled = frameworkGateway.rightClickBlock(
             uniqueId,
             Objects.requireNonNull(position, "position may not be null."),
             Objects.requireNonNull(blockFace, "blockFace may not be null.").name()
         );
-        return this;
+        return new InteractionResult(true, cancelled);
     }
 
     /**
@@ -236,11 +235,14 @@ public final class PlayerHandle
     /**
      * Simulates the player dropping their main hand item.
      *
-     * @return {@code true} when no plugin cancelled the drop event (i.e., the item would have been dropped
-     *     in production). Note: the item entity is always created and removed to satisfy the Bukkit API
-     *     constraint; this return value reflects whether a plugin would have allowed the drop.
+     * <p>An empty main hand ({@link DropResult#EMPTY_HAND}) is reported distinctly from a plugin cancelling the
+     * drop event ({@link DropResult#CANCELLED}); no event is fired at all for an empty hand. On a cancelled
+     * drop, the item entity is created and removed again to satisfy the Bukkit event contract, and the
+     * inventory is unchanged.
+     *
+     * @return The drop outcome.
      */
-    public boolean dropMainHandItem()
+    public DropResult dropMainHandItem()
     {
         return frameworkGateway.dropItem(uniqueId);
     }
@@ -285,7 +287,7 @@ public final class PlayerHandle
         final MenuHandle menuHandle = FrameworkHandleFactory.menuHandle(frameworkGateway, this);
         frameworkGateway.waitUntil(
             () -> menuHandle.snapshot().open(),
-            DEFAULT_MENU_WAIT_TIMEOUT
+            MenuHandle.DEFAULT_MENU_WAIT_TIMEOUT
         );
         return menuHandle;
     }

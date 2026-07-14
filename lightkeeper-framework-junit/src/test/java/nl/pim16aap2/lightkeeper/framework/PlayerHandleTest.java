@@ -1,5 +1,6 @@
 package nl.pim16aap2.lightkeeper.framework;
 
+import nl.pim16aap2.lightkeeper.protocol.DropResult;
 import org.bukkit.block.BlockFace;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -165,14 +166,14 @@ class PlayerHandleTest
     @Test
     void dropMainHandItem_shouldDelegateToGatewayAndReturnDroppedState()
     {
-        // setup — gateway returns true when the drop was not cancelled by any plugin
-        when(frameworkGateway.dropItem(PLAYER_UUID)).thenReturn(true);
+        // setup
+        when(frameworkGateway.dropItem(PLAYER_UUID)).thenReturn(DropResult.DROPPED);
 
         // execute
-        final boolean result = playerHandle.dropMainHandItem();
+        final DropResult result = playerHandle.dropMainHandItem();
 
         // verify
-        assertThat(result).isTrue();
+        assertThat(result).isEqualTo(DropResult.DROPPED);
         verify(frameworkGateway).dropItem(PLAYER_UUID);
     }
 
@@ -202,30 +203,32 @@ class PlayerHandleTest
     }
 
     @Test
-    void leftClickBlock_shouldDelegateToGatewayAndReturnSelf()
+    void leftClickBlock_shouldDelegateToGatewayAndReturnInteractionResult()
     {
         // setup
         final Vector3Di position = new Vector3Di(1, 64, 2);
+        when(frameworkGateway.leftClickBlock(PLAYER_UUID, position, "NORTH")).thenReturn(true);
 
         // execute
-        final PlayerHandle result = playerHandle.leftClickBlock(position, BlockFace.NORTH);
+        final InteractionResult result = playerHandle.leftClickBlock(position, BlockFace.NORTH);
 
         // verify
-        assertThat(result).isSameAs(playerHandle);
+        assertThat(result).isEqualTo(new InteractionResult(true, true));
         verify(frameworkGateway).leftClickBlock(PLAYER_UUID, position, "NORTH");
     }
 
     @Test
-    void rightClickBlock_shouldDelegateToGatewayAndReturnSelf()
+    void rightClickBlock_shouldDelegateToGatewayAndReturnInteractionResult()
     {
         // setup
         final Vector3Di position = new Vector3Di(1, 64, 2);
+        when(frameworkGateway.rightClickBlock(PLAYER_UUID, position, "SOUTH")).thenReturn(false);
 
         // execute
-        final PlayerHandle result = playerHandle.rightClickBlock(position, BlockFace.SOUTH);
+        final InteractionResult result = playerHandle.rightClickBlock(position, BlockFace.SOUTH);
 
         // verify
-        assertThat(result).isSameAs(playerHandle);
+        assertThat(result).isEqualTo(new InteractionResult(true, false));
         verify(frameworkGateway).rightClickBlock(PLAYER_UUID, position, "SOUTH");
     }
 
@@ -365,10 +368,10 @@ class PlayerHandleTest
         final Vector3Di position = new Vector3Di(3, 70, 4);
 
         // execute
-        final PlayerHandle result = playerHandle.leftClickBlock(position);
+        final InteractionResult result = playerHandle.leftClickBlock(position);
 
         // verify
-        assertThat(result).isSameAs(playerHandle);
+        assertThat(result).isEqualTo(new InteractionResult(true, false));
         verify(frameworkGateway).leftClickBlock(PLAYER_UUID, position, "UP");
     }
 
@@ -376,10 +379,10 @@ class PlayerHandleTest
     void leftClickBlock_shouldDelegateWithCoordinatesUsingDefaultBlockFace()
     {
         // execute
-        final PlayerHandle result = playerHandle.leftClickBlock(5, 64, 6);
+        final InteractionResult result = playerHandle.leftClickBlock(5, 64, 6);
 
         // verify
-        assertThat(result).isSameAs(playerHandle);
+        assertThat(result).isEqualTo(new InteractionResult(true, false));
         verify(frameworkGateway).leftClickBlock(eq(PLAYER_UUID), any(Vector3Di.class), eq("UP"));
     }
 
@@ -390,10 +393,10 @@ class PlayerHandleTest
         final Vector3Di position = new Vector3Di(7, 70, 8);
 
         // execute
-        final PlayerHandle result = playerHandle.rightClickBlock(position);
+        final InteractionResult result = playerHandle.rightClickBlock(position);
 
         // verify
-        assertThat(result).isSameAs(playerHandle);
+        assertThat(result).isEqualTo(new InteractionResult(true, false));
         verify(frameworkGateway).rightClickBlock(PLAYER_UUID, position, "UP");
     }
 
@@ -401,10 +404,10 @@ class PlayerHandleTest
     void rightClickBlock_shouldDelegateWithCoordinatesUsingDefaultBlockFace()
     {
         // execute
-        final PlayerHandle result = playerHandle.rightClickBlock(9, 64, 10);
+        final InteractionResult result = playerHandle.rightClickBlock(9, 64, 10);
 
         // verify
-        assertThat(result).isSameAs(playerHandle);
+        assertThat(result).isEqualTo(new InteractionResult(true, false));
         verify(frameworkGateway).rightClickBlock(eq(PLAYER_UUID), any(Vector3Di.class), eq("UP"));
     }
 }
