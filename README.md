@@ -235,6 +235,8 @@ class MyPluginIT
 - World templates: provision world folders via `<worlds>` and load them with
   `newWorldFromTemplate("name")` — typos fail loudly instead of silently creating a fresh world
 - Received-message assertions with AssertJ string chaining
+- Explicit retrying assertions: `eventually(timeout, () -> assertThat(...))` re-runs a live probe until it
+  passes, and reports the attempt count, elapsed time, and last failure on timeout
 - Diagnostics-on-failure: failed tests automatically get a bundle (test outcome, captured server errors,
   server console output) under `target/lightkeeper-reports/`
 - Graceful server lifecycle control from tests (`stopServer()`, `startServer()`, `restartServer()`), plus

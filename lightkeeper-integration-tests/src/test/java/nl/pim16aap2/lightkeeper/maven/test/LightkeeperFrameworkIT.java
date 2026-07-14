@@ -1,8 +1,8 @@
 package nl.pim16aap2.lightkeeper.maven.test;
 
+import nl.pim16aap2.lightkeeper.framework.BlockPos;
 import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.Lightkeeper;
-import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import nl.pim16aap2.lightkeeper.framework.WorldSpec;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
@@ -49,7 +49,7 @@ class LightkeeperFrameworkIT
         // setup
         final Path runtimeManifestPath = getRuntimeManifestPath();
         final String worldName = "lk_world_" + UUID.randomUUID().toString().replace("-", "");
-        final Vector3Di position = new Vector3Di(1, 70, 1);
+        final BlockPos position = new BlockPos(1, 70, 1);
         final WorldSpec worldSpec = new WorldSpec(
             worldName,
             WorldSpec.WorldType.FLAT,

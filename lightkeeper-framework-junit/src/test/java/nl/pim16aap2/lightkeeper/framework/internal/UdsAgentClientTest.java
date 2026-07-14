@@ -1,8 +1,8 @@
 package nl.pim16aap2.lightkeeper.framework.internal;
 
+import nl.pim16aap2.lightkeeper.framework.BlockPos;
 import nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot;
 import nl.pim16aap2.lightkeeper.framework.Platform;
-import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.protocol.CommandSource;
 import nl.pim16aap2.lightkeeper.protocol.DropResult;
 import nl.pim16aap2.lightkeeper.protocol.ItemSnapshot;
@@ -310,7 +310,7 @@ class UdsAgentClientTest
              UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
         {
             // execute
-            final boolean cancelled = client.leftClickBlock(PLAYER_ID, new Vector3Di(1, 64, 1), "UP");
+            final boolean cancelled = client.leftClickBlock(PLAYER_ID, new BlockPos(1, 64, 1), "UP");
 
             // verify
             assertThat(cancelled).isTrue();
@@ -329,7 +329,7 @@ class UdsAgentClientTest
              UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
         {
             // execute
-            final boolean cancelled = client.rightClickBlock(PLAYER_ID, new Vector3Di(1, 64, 1), "UP");
+            final boolean cancelled = client.rightClickBlock(PLAYER_ID, new BlockPos(1, 64, 1), "UP");
 
             // verify
             assertThat(cancelled).isFalse();

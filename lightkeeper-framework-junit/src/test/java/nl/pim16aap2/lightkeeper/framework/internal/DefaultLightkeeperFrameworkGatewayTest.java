@@ -1,6 +1,6 @@
 package nl.pim16aap2.lightkeeper.framework.internal;
 
-import nl.pim16aap2.lightkeeper.framework.Vector3Di;
+import nl.pim16aap2.lightkeeper.framework.BlockPos;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import nl.pim16aap2.lightkeeper.framework.WorldSpec;
 import nl.pim16aap2.lightkeeper.protocol.DropResult;
@@ -308,7 +308,7 @@ class DefaultLightkeeperFrameworkGatewayTest
         // setup
         final UdsAgentClient agentClient = mock(UdsAgentClient.class);
         final UUID playerId = UUID.randomUUID();
-        final Vector3Di position = new Vector3Di(1, 64, 1);
+        final BlockPos position = new BlockPos(1, 64, 1);
         when(agentClient.leftClickBlock(playerId, position, "UP")).thenReturn(true);
         final DefaultLightkeeperFramework framework = new DefaultLightkeeperFramework(
             runtimeManifest(),
@@ -330,7 +330,7 @@ class DefaultLightkeeperFrameworkGatewayTest
         // setup
         final UdsAgentClient agentClient = mock(UdsAgentClient.class);
         final UUID playerId = UUID.randomUUID();
-        final Vector3Di position = new Vector3Di(1, 64, 1);
+        final BlockPos position = new BlockPos(1, 64, 1);
         when(agentClient.leftClickBlock(playerId, position, "UP")).thenReturn(false);
         final DefaultLightkeeperFramework framework = new DefaultLightkeeperFramework(
             runtimeManifest(),
@@ -352,7 +352,7 @@ class DefaultLightkeeperFrameworkGatewayTest
         // setup
         final UdsAgentClient agentClient = mock(UdsAgentClient.class);
         final UUID playerId = UUID.randomUUID();
-        final Vector3Di position = new Vector3Di(1, 64, 1);
+        final BlockPos position = new BlockPos(1, 64, 1);
         when(agentClient.rightClickBlock(playerId, position, "UP")).thenReturn(true);
         final DefaultLightkeeperFramework framework = new DefaultLightkeeperFramework(
             runtimeManifest(),
@@ -374,7 +374,7 @@ class DefaultLightkeeperFrameworkGatewayTest
         // setup
         final UdsAgentClient agentClient = mock(UdsAgentClient.class);
         final UUID playerId = UUID.randomUUID();
-        final Vector3Di position = new Vector3Di(1, 64, 1);
+        final BlockPos position = new BlockPos(1, 64, 1);
         when(agentClient.rightClickBlock(playerId, position, "UP")).thenReturn(false);
         final DefaultLightkeeperFramework framework = new DefaultLightkeeperFramework(
             runtimeManifest(),

@@ -81,6 +81,22 @@ class PlayerHandleTest
     }
 
     @Test
+    void teleport_shouldDelegateVec3OverloadToGatewayAndReturnSelf()
+    {
+        // setup
+        final WorldHandle world = mock(WorldHandle.class);
+        when(world.name()).thenReturn("world_nether");
+        when(frameworkGateway.teleportPlayer(PLAYER_UUID, "world_nether", 10.5, 64.0, 20.5)).thenReturn(true);
+
+        // execute
+        final PlayerHandle result = playerHandle.teleport(world, new Vec3(10.5, 64.0, 20.5));
+
+        // verify
+        assertThat(result).isSameAs(playerHandle);
+        verify(frameworkGateway).teleportPlayer(PLAYER_UUID, "world_nether", 10.5, 64.0, 20.5);
+    }
+
+    @Test
     void permissions_shouldReturnNonNullPermissionControl()
     {
         // execute
@@ -206,7 +222,7 @@ class PlayerHandleTest
     void leftClickBlock_shouldDelegateToGatewayAndReturnInteractionResult()
     {
         // setup
-        final Vector3Di position = new Vector3Di(1, 64, 2);
+        final BlockPos position = new BlockPos(1, 64, 2);
         when(frameworkGateway.leftClickBlock(PLAYER_UUID, position, "NORTH")).thenReturn(true);
 
         // execute
@@ -218,10 +234,26 @@ class PlayerHandleTest
     }
 
     @Test
-    void rightClickBlock_shouldDelegateToGatewayAndReturnInteractionResult()
+    @SuppressWarnings("removal")
+    void leftClickBlock_shouldDelegateFromDeprecatedVector3DiOverload()
     {
         // setup
         final Vector3Di position = new Vector3Di(1, 64, 2);
+        when(frameworkGateway.leftClickBlock(PLAYER_UUID, position.toBlockPos(), "NORTH")).thenReturn(true);
+
+        // execute
+        final InteractionResult result = playerHandle.leftClickBlock(position, BlockFace.NORTH);
+
+        // verify
+        assertThat(result).isEqualTo(new InteractionResult(true, true));
+        verify(frameworkGateway).leftClickBlock(PLAYER_UUID, position.toBlockPos(), "NORTH");
+    }
+
+    @Test
+    void rightClickBlock_shouldDelegateToGatewayAndReturnInteractionResult()
+    {
+        // setup
+        final BlockPos position = new BlockPos(1, 64, 2);
         when(frameworkGateway.rightClickBlock(PLAYER_UUID, position, "SOUTH")).thenReturn(false);
 
         // execute
@@ -365,7 +397,7 @@ class PlayerHandleTest
     void leftClickBlock_shouldDelegateWithDefaultBlockFaceWhenOnlyPositionGiven()
     {
         // setup
-        final Vector3Di position = new Vector3Di(3, 70, 4);
+        final BlockPos position = new BlockPos(3, 70, 4);
 
         // execute
         final InteractionResult result = playerHandle.leftClickBlock(position);
@@ -383,14 +415,14 @@ class PlayerHandleTest
 
         // verify
         assertThat(result).isEqualTo(new InteractionResult(true, false));
-        verify(frameworkGateway).leftClickBlock(eq(PLAYER_UUID), any(Vector3Di.class), eq("UP"));
+        verify(frameworkGateway).leftClickBlock(PLAYER_UUID, new BlockPos(5, 64, 6), "UP");
     }
 
     @Test
     void rightClickBlock_shouldDelegateWithDefaultBlockFaceWhenOnlyPositionGiven()
     {
         // setup
-        final Vector3Di position = new Vector3Di(7, 70, 8);
+        final BlockPos position = new BlockPos(7, 70, 8);
 
         // execute
         final InteractionResult result = playerHandle.rightClickBlock(position);
@@ -408,6 +440,6 @@ class PlayerHandleTest
 
         // verify
         assertThat(result).isEqualTo(new InteractionResult(true, false));
-        verify(frameworkGateway).rightClickBlock(eq(PLAYER_UUID), any(Vector3Di.class), eq("UP"));
+        verify(frameworkGateway).rightClickBlock(PLAYER_UUID, new BlockPos(9, 64, 10), "UP");
     }
 }

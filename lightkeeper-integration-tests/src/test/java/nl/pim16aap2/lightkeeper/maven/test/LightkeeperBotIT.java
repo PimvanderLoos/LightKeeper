@@ -1,10 +1,10 @@
 package nl.pim16aap2.lightkeeper.maven.test;
 
+import nl.pim16aap2.lightkeeper.framework.BlockPos;
 import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.InteractionResult;
 import nl.pim16aap2.lightkeeper.framework.LightkeeperExtension;
 import nl.pim16aap2.lightkeeper.framework.MenuHandle;
-import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.protocol.CommandSource;
 import nl.pim16aap2.lightkeeper.protocol.DropResult;
 import org.bukkit.Material;
@@ -17,6 +17,7 @@ import java.time.Duration;
 import java.util.UUID;
 
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
+import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.eventually;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -74,9 +75,9 @@ class LightkeeperBotIT
 
         player.placeBlock("minecraft:stone", 1, 100, 0)
             .andWaitTicks(1);
-        world.setBlockAt(new Vector3Di(3, 100, 0), "minecraft:gold_block");
-        final InteractionResult leftClickResult = player.leftClickBlock(new Vector3Di(3, 100, 0), BlockFace.NORTH);
-        final InteractionResult rightClickResult = player.rightClickBlock(new Vector3Di(3, 100, 0), BlockFace.SOUTH);
+        world.setBlockAt(new BlockPos(3, 100, 0), "minecraft:gold_block");
+        final InteractionResult leftClickResult = player.leftClickBlock(new BlockPos(3, 100, 0), BlockFace.NORTH);
+        final InteractionResult rightClickResult = player.rightClickBlock(new BlockPos(3, 100, 0), BlockFace.SOUTH);
         player.andWaitTicks(1);
         final DropResult emptyHandDropResult = player.dropMainHandItem();
 
@@ -140,12 +141,10 @@ class LightkeeperBotIT
         builtPlayer.andWaitTicks(1);
         final MenuHandle noLongerOpenMenu = builtPlayer.getMenu();
         explicitPlayer.placeBlock("STONE", 2, 100, 0);
-        framework.waitUntil(
-            () -> "minecraft:stone".equals(buildWorldResult.blockTypeAt(new Vector3Di(2, 100, 0))),
-            Duration.ofSeconds(20)
-        );
 
         // verify
+        eventually(Duration.ofSeconds(20), () ->
+            assertThat(buildWorldResult).hasBlockAt(new BlockPos(2, 100, 0)).ofType(Material.STONE));
         assertThat(consoleCommandResult.success()).isTrue();
         assertThat(buildWorldResult.name()).isNotBlank();
         assertThat(menu.player()).isEqualTo(builtPlayer);

@@ -1,8 +1,8 @@
 package nl.pim16aap2.lightkeeper.maven.test;
 
+import nl.pim16aap2.lightkeeper.framework.BlockPos;
 import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.LightkeeperExtension;
-import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -28,7 +28,7 @@ class LightkeeperExtensionIT
     {
         // setup
         final var mainWorld = framework.mainWorld();
-        final Vector3Di position = new Vector3Di(2, 70, 2);
+        final BlockPos position = new BlockPos(2, 70, 2);
 
         // execute
         final var world = framework.newWorld();
