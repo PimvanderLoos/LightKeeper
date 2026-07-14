@@ -124,8 +124,8 @@ class RuntimeManifestReaderTest
         assertThatThrownBy(() -> new RuntimeManifestReader().read(manifestPath))
             .isInstanceOf(IOException.class)
             .hasMessageContaining("protocol version mismatch")
-            .hasMessageContaining("expected=3")
-            .hasMessageContaining("actual=4");
+            .hasMessageContaining("expected=%d".formatted(RuntimeProtocol.VERSION))
+            .hasMessageContaining("actual=%d".formatted(RuntimeProtocol.VERSION + 1));
     }
 
     @Test
