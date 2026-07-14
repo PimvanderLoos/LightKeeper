@@ -25,6 +25,7 @@ import nl.pim16aap2.lightkeeper.protocol.GetServerErrors;
 import nl.pim16aap2.lightkeeper.protocol.GetServerPlatform;
 import nl.pim16aap2.lightkeeper.protocol.GetServerTick;
 import nl.pim16aap2.lightkeeper.protocol.Handshake;
+import nl.pim16aap2.lightkeeper.protocol.HasPlayerPermission;
 import nl.pim16aap2.lightkeeper.protocol.IAgentCommand;
 import nl.pim16aap2.lightkeeper.protocol.IAgentResponse;
 import nl.pim16aap2.lightkeeper.protocol.IsChunkLoaded;
@@ -32,6 +33,7 @@ import nl.pim16aap2.lightkeeper.protocol.ItemSnapshot;
 import nl.pim16aap2.lightkeeper.protocol.LeftClickBlock;
 import nl.pim16aap2.lightkeeper.protocol.LoadChunk;
 import nl.pim16aap2.lightkeeper.protocol.MainWorld;
+import nl.pim16aap2.lightkeeper.protocol.MutatePlayerPermission;
 import nl.pim16aap2.lightkeeper.protocol.NewWorld;
 import nl.pim16aap2.lightkeeper.protocol.PlacePlayerBlock;
 import nl.pim16aap2.lightkeeper.protocol.RegisterEventListener;
@@ -194,6 +196,20 @@ final class UdsAgentClient implements AutoCloseable
     {
         final ExecutePlayerCommand.Command cmd = new ExecutePlayerCommand.Command(nextRequestId(), uuid, command);
         send(cmd);
+    }
+
+    void mutatePlayerPermission(UUID uuid, String permission, MutatePlayerPermission.Mode mode)
+    {
+        final MutatePlayerPermission.Command command =
+            new MutatePlayerPermission.Command(nextRequestId(), uuid, permission, mode);
+        send(command);
+    }
+
+    boolean hasPlayerPermission(UUID uuid, String permission)
+    {
+        final HasPlayerPermission.Command command =
+            new HasPlayerPermission.Command(nextRequestId(), uuid, permission);
+        return send(command).value();
     }
 
     void placePlayerBlock(UUID uuid, String material, int x, int y, int z)

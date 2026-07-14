@@ -20,6 +20,7 @@ import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import nl.pim16aap2.lightkeeper.framework.WorldSpec;
 import nl.pim16aap2.lightkeeper.protocol.CommandSource;
 import nl.pim16aap2.lightkeeper.protocol.GetServerErrors;
+import nl.pim16aap2.lightkeeper.protocol.MutatePlayerPermission;
 import nl.pim16aap2.lightkeeper.protocol.ServerErrorEntry;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestReader;
@@ -58,7 +59,11 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     private final UdsAgentClient agentClient;
     private final PlayerScopeRegistry playerScopeRegistry;
     private final AtomicBoolean closed = new AtomicBoolean(false);
-    private final AtomicBoolean serverCrashed = new AtomicBoolean(false);
+    /**
+     * Whether the server was taken down — via {@link #crashServer()} or {@link #stopServer()} — and has not been
+     * started again yet.
+     */
+    private final AtomicBoolean serverDown = new AtomicBoolean(false);
     /**
      * Total-line-count watermark delimiting the raw stderr scan window; advanced on every
      * {@link #clearServerErrors()}.
@@ -281,6 +286,47 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
         if (trimmedCommand.isEmpty())
             throw new IllegalArgumentException("command may not be blank.");
         agentClient.executePlayerCommand(playerId, trimmedCommand);
+    }
+
+    @Override
+    public void grantPermission(UUID playerId, String permission)
+    {
+        mutatePermission(playerId, permission, MutatePlayerPermission.Mode.GRANT);
+    }
+
+    @Override
+    public void revokePermission(UUID playerId, String permission)
+    {
+        mutatePermission(playerId, permission, MutatePlayerPermission.Mode.REVOKE);
+    }
+
+    @Override
+    public void unsetPermission(UUID playerId, String permission)
+    {
+        mutatePermission(playerId, permission, MutatePlayerPermission.Mode.UNSET);
+    }
+
+    @Override
+    public boolean hasPermission(UUID playerId, String permission)
+    {
+        ensureOpen();
+        Objects.requireNonNull(playerId, "playerId may not be null.");
+        return agentClient.hasPlayerPermission(playerId, validatePermission(permission));
+    }
+
+    private void mutatePermission(UUID playerId, String permission, MutatePlayerPermission.Mode mode)
+    {
+        ensureOpen();
+        Objects.requireNonNull(playerId, "playerId may not be null.");
+        agentClient.mutatePlayerPermission(playerId, validatePermission(permission), mode);
+    }
+
+    private static String validatePermission(String permission)
+    {
+        final String trimmedPermission = Objects.requireNonNull(permission, "permission may not be null.").trim();
+        if (trimmedPermission.isEmpty())
+            throw new IllegalArgumentException("permission may not be blank.");
+        return trimmedPermission;
     }
 
     @Override
@@ -545,6 +591,29 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     }
 
     @Override
+    public Path serverDirectory()
+    {
+        ensureOpen();
+        return Path.of(runtimeManifest.serverDirectory());
+    }
+
+    @Override
+    public Path pluginDataDirectory(String pluginName)
+    {
+        ensureOpen();
+        final String trimmedPluginName =
+            Objects.requireNonNull(pluginName, "pluginName may not be null.").trim();
+        if (trimmedPluginName.isEmpty())
+            throw new IllegalArgumentException("pluginName may not be blank.");
+        // The plugin name is authored by the test writer (trusted input); this check catches accidental path
+        // fragments early rather than acting as a security boundary.
+        if (trimmedPluginName.contains("/") || trimmedPluginName.contains("\\") || trimmedPluginName.contains(".."))
+            throw new IllegalArgumentException(
+                "pluginName must be a plain directory name, got '%s'.".formatted(trimmedPluginName));
+        return serverDirectory().resolve("plugins").resolve(trimmedPluginName);
+    }
+
+    @Override
     public void crashServer()
     {
         ensureOpen();
@@ -552,26 +621,86 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
         playerScopeRegistry.invalidateAll();
         agentClient.close();
         minecraftServerProcess.kill();
-        serverCrashed.set(true);
+        serverDown.set(true);
+    }
+
+    @Override
+    public void stopServer()
+    {
+        ensureOpen();
+        if (!minecraftServerProcess.isRunning())
+            throw new IllegalStateException("Cannot stop the server because it is not running.");
+        doStopServer();
+    }
+
+    /**
+     * Graceful-stop implementation without the running-state precondition.
+     *
+     * <p>Tolerates a server that died on its own after the caller's running check: player cleanup swallows
+     * per-player failures, the client close is idempotent, and the process stop handles dead processes. This is
+     * what lets {@link #restartServer()} avoid a check-then-act race on the running state.
+     */
+    private void doStopServer()
+    {
+        LOG.log(System.Logger.Level.INFO, "LK_FRAMEWORK: Stopping Minecraft server gracefully.");
+        try
+        {
+            // Remove synthetic players through the live agent first so they quit cleanly instead of being
+            // persisted as offline players in the world's playerdata by the server's shutdown save.
+            playerScopeRegistry.cleanupAll(agentClient::removePlayer);
+            agentClient.close();
+        }
+        finally
+        {
+            serverDown.set(true);
+            minecraftServerProcess.stop(SHUTDOWN_TIMEOUT);
+        }
+    }
+
+    @Override
+    public void startServer()
+    {
+        ensureOpen();
+        if (minecraftServerProcess.isRunning())
+            throw new IllegalStateException("Cannot start the server because it is already running.");
+
+        LOG.log(System.Logger.Level.INFO, "LK_FRAMEWORK: Starting Minecraft server.");
+        minecraftServerProcess.start(STARTUP_TIMEOUT);
+        try
+        {
+            agentClient.rehandshake(
+                AGENT_CONNECT_TIMEOUT,
+                runtimeManifest.agentAuthToken(),
+                runtimeManifest.runtimeProtocolVersion(),
+                Objects.requireNonNullElse(runtimeManifest.agentJarSha256(), "")
+            );
+            preloadConfiguredWorlds();
+        }
+        catch (Exception exception)
+        {
+            // Return to a clean 'down' state so a retry of startServer() remains possible; leaving the process
+            // running here would wedge the start path (running + down means only restartServer() could recover).
+            try
+            {
+                minecraftServerProcess.stop(SHUTDOWN_TIMEOUT);
+            }
+            catch (Exception stopException)
+            {
+                exception.addSuppressed(stopException);
+            }
+            throw exception;
+        }
+        serverDown.set(false);
     }
 
     @Override
     public void restartServer()
     {
         ensureOpen();
-        if (minecraftServerProcess.isRunning())
-            throw new IllegalStateException("Cannot restart server while it is still running.");
-
         LOG.log(System.Logger.Level.INFO, "LK_FRAMEWORK: Restarting Minecraft server.");
-        minecraftServerProcess.start(STARTUP_TIMEOUT);
-        agentClient.rehandshake(
-            AGENT_CONNECT_TIMEOUT,
-            runtimeManifest.agentAuthToken(),
-            runtimeManifest.runtimeProtocolVersion(),
-            Objects.requireNonNullElse(runtimeManifest.agentJarSha256(), "")
-        );
-        preloadConfiguredWorlds();
-        serverCrashed.set(false);
+        if (minecraftServerProcess.isRunning())
+            doStopServer();
+        startServer();
     }
 
     private void clickBlock(UUID playerId, Vector3Di position, String blockFace, BlockClickOperation operation)
@@ -619,11 +748,11 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     public void beginMethodScope(String methodExecutionId)
     {
         ensureOpen();
-        if (serverCrashed.get())
+        if (serverDown.get())
             throw new IllegalStateException(
-                "A previous test crashed the shared Minecraft server via crashServer() without calling "
-                    + "restartServer(). Restart the server after crashing it, or annotate the crashing test "
-                    + "with @FreshServer so each method receives a fresh server.");
+                "A previous test took down the shared Minecraft server via crashServer() or stopServer() "
+                    + "without starting it again. Call startServer() (or restartServer()) before the test ends, "
+                    + "or annotate the test with @FreshServer so each method receives a fresh server.");
         playerScopeRegistry.beginMethodScope(methodExecutionId);
     }
 
@@ -633,8 +762,8 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
         playerScopeRegistry.endMethodScope(methodExecutionId, agentClient::removePlayer);
         // Clear captured server errors at the END of each method (not the start): boot-window errors stay
         // visible to the first test's assertions, and every later test only observes its own window. Skipped
-        // after a crash, when the agent connection is gone.
-        if (!serverCrashed.get())
+        // while the server is down (crashed or stopped), when the agent connection is gone.
+        if (!serverDown.get())
             clearServerErrors();
     }
 

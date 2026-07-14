@@ -8,6 +8,7 @@ import java.lang.reflect.RecordComponent;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
 /**
@@ -56,6 +57,90 @@ class AgentCommandValidationTest
                     .isInstanceOf(IllegalArgumentException.class);
             }
         }
+    }
+
+    @Test
+    void mutatePlayerPermissionCommand_shouldRejectBlankRequestId()
+    {
+        // setup
+        final UUID uuid = UUID.randomUUID();
+
+        // execute + verify
+        assertThatThrownBy(() -> new MutatePlayerPermission.Command(
+            "   ", uuid, "some.permission", MutatePlayerPermission.Mode.GRANT))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("requestId");
+    }
+
+    @Test
+    @SuppressWarnings("NullAway") // Intentionally crosses the non-null API boundary to verify fail-fast validation.
+    void mutatePlayerPermissionCommand_shouldRejectNullUuid()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> new MutatePlayerPermission.Command(
+            "request-1", null, "some.permission", MutatePlayerPermission.Mode.GRANT))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("uuid");
+    }
+
+    @Test
+    void mutatePlayerPermissionCommand_shouldRejectBlankPermission()
+    {
+        // setup
+        final UUID uuid = UUID.randomUUID();
+
+        // execute + verify
+        assertThatThrownBy(() -> new MutatePlayerPermission.Command(
+            "request-1", uuid, "   ", MutatePlayerPermission.Mode.GRANT))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("permission");
+    }
+
+    @Test
+    @SuppressWarnings("NullAway") // Intentionally crosses the non-null API boundary to verify fail-fast validation.
+    void mutatePlayerPermissionCommand_shouldRejectNullMode()
+    {
+        // setup
+        final UUID uuid = UUID.randomUUID();
+
+        // execute + verify
+        assertThatThrownBy(() -> new MutatePlayerPermission.Command("request-1", uuid, "some.permission", null))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("mode");
+    }
+
+    @Test
+    void hasPlayerPermissionCommand_shouldRejectBlankRequestId()
+    {
+        // setup
+        final UUID uuid = UUID.randomUUID();
+
+        // execute + verify
+        assertThatThrownBy(() -> new HasPlayerPermission.Command("   ", uuid, "some.permission"))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("requestId");
+    }
+
+    @Test
+    @SuppressWarnings("NullAway") // Intentionally crosses the non-null API boundary to verify fail-fast validation.
+    void hasPlayerPermissionCommand_shouldRejectNullUuid()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> new HasPlayerPermission.Command("request-1", null, "some.permission"))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("uuid");
+    }
+
+    @Test
+    void hasPlayerPermissionCommand_shouldRejectBlankPermission()
+    {
+        // setup
+        final UUID uuid = UUID.randomUUID();
+
+        // execute + verify
+        assertThatThrownBy(() -> new HasPlayerPermission.Command("request-1", uuid, "   "))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("permission");
     }
 
     private static Object validDefault(Class<?> type)

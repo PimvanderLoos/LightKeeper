@@ -2,6 +2,7 @@ package nl.pim16aap2.lightkeeper.framework;
 
 import nl.pim16aap2.lightkeeper.protocol.CommandSource;
 
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
@@ -108,24 +109,71 @@ public interface ILightkeeperFramework extends AutoCloseable
     Platform platform();
 
     /**
+     * Gets the Minecraft server's working directory.
+     *
+     * <p>Filesystem contract: reading is safe at any time; writing (e.g. seeding database files or patching
+     * plugin configurations) is only safe while the server is stopped — between {@link #stopServer()} and
+     * {@link #startServer()} — because the server reads most files once at boot and may overwrite them on
+     * shutdown.
+     *
+     * @return The server directory.
+     */
+    Path serverDirectory();
+
+    /**
+     * Gets the data directory of a plugin inside the server's {@code plugins} directory.
+     *
+     * <p>The directory may not exist yet, e.g. before the plugin's first boot. The filesystem contract of
+     * {@link #serverDirectory()} applies.
+     *
+     * @param pluginName
+     *     The plugin's name, as used for its data directory (usually the {@code name} from its
+     *     {@code plugin.yml}).
+     * @return The plugin data directory.
+     */
+    Path pluginDataDirectory(String pluginName);
+
+    /**
      * Crashes the Minecraft server immediately by force-killing the process.
      *
      * <p>All fixtures created before the crash are invalidated: player and world handles obtained earlier no
-     * longer refer to live server state. In shared-server mode the server must be restarted via
-     * {@link #restartServer()} before the next test method runs, otherwise that method fails fast; annotate the
-     * test with {@code @FreshServer} to receive a new server per method instead.
+     * longer refer to live server state. In shared-server mode the server must be started again via
+     * {@link #startServer()} or {@link #restartServer()} before the next test method runs, otherwise that method
+     * fails fast; annotate the test with {@code @FreshServer} to receive a new server per method instead.
      */
     void crashServer();
 
     /**
-     * Restarts the Minecraft server after a {@link #crashServer()} call.
+     * Stops the Minecraft server gracefully via the console {@code stop} command, force-killing it only when it
+     * does not exit within the shutdown timeout.
      *
-     * <p>Only worlds configured in the runtime manifest are preloaded again. Players and worlds created at
-     * runtime before the crash are <strong>not</strong> recreated; tests must re-establish their own fixtures
-     * after restarting.
+     * <p>Synthetic players are removed before the server shuts down so they quit cleanly. All fixtures created
+     * before the stop are invalidated, exactly as documented on {@link #crashServer()}. While the server is
+     * stopped, the server directory may be modified freely — see {@link #serverDirectory()}.
      *
      * @throws IllegalStateException
-     *     If the server is still running, since a restart is only valid after a crash.
+     *     If the server is not running.
+     */
+    void stopServer();
+
+    /**
+     * Starts the Minecraft server after a {@link #stopServer()} or {@link #crashServer()} call.
+     *
+     * <p>Only worlds configured in the runtime manifest are preloaded again. Players and worlds created at
+     * runtime before the server went down are <strong>not</strong> recreated; tests must re-establish their own
+     * fixtures after starting.
+     *
+     * @throws IllegalStateException
+     *     If the server is already running.
+     */
+    void startServer();
+
+    /**
+     * Restarts the Minecraft server: a graceful {@link #stopServer()} when it is running, followed by
+     * {@link #startServer()}.
+     *
+     * <p>Also valid when the server is already down (after {@link #stopServer()} or {@link #crashServer()}), in
+     * which case it only starts the server. See {@link #startServer()} for what is — and is not — restored.
      */
     void restartServer();
 

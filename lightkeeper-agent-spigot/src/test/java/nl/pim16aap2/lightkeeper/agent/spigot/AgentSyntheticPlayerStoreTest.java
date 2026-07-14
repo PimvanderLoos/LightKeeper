@@ -67,6 +67,149 @@ class AgentSyntheticPlayerStoreTest
     }
 
     @Test
+    void setPermission_shouldThrowExceptionWhenPlayerIsNotRegistered()
+    {
+        // setup
+        final AgentSyntheticPlayerStore store = new AgentSyntheticPlayerStore();
+        final JavaPlugin plugin = mock();
+        final Player player = mock();
+        final UUID uuid = UUID.randomUUID();
+
+        // execute + verify
+        assertThatThrownBy(() -> store.setPermission(plugin, uuid, player, "perm.one", true))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining(uuid.toString());
+    }
+
+    @Test
+    void setPermission_shouldGrantPermissionWhenValueIsTrue()
+    {
+        // setup
+        final AgentSyntheticPlayerStore store = new AgentSyntheticPlayerStore();
+        final JavaPlugin plugin = mock();
+        final Player player = mock();
+        final PermissionAttachment attachment = mock();
+        final UUID uuid = UUID.randomUUID();
+        when(player.addAttachment(plugin)).thenReturn(attachment);
+        store.registerSyntheticPlayer(uuid, player);
+
+        // execute
+        store.setPermission(plugin, uuid, player, "perm.one", true);
+
+        // verify
+        verify(attachment).setPermission("perm.one", true);
+    }
+
+    @Test
+    void setPermission_shouldRevokePermissionWhenValueIsFalse()
+    {
+        // setup
+        final AgentSyntheticPlayerStore store = new AgentSyntheticPlayerStore();
+        final JavaPlugin plugin = mock();
+        final Player player = mock();
+        final PermissionAttachment attachment = mock();
+        final UUID uuid = UUID.randomUUID();
+        when(player.addAttachment(plugin)).thenReturn(attachment);
+        store.registerSyntheticPlayer(uuid, player);
+
+        // execute
+        store.setPermission(plugin, uuid, player, "perm.one", false);
+
+        // verify
+        verify(attachment).setPermission("perm.one", false);
+    }
+
+    @Test
+    void setPermission_shouldCreateAttachmentOnceWhenCalledTwice()
+    {
+        // setup
+        final AgentSyntheticPlayerStore store = new AgentSyntheticPlayerStore();
+        final JavaPlugin plugin = mock();
+        final Player player = mock();
+        final PermissionAttachment attachment = mock();
+        final UUID uuid = UUID.randomUUID();
+        when(player.addAttachment(plugin)).thenReturn(attachment);
+        store.registerSyntheticPlayer(uuid, player);
+
+        // execute
+        store.setPermission(plugin, uuid, player, "perm.one", true);
+        store.setPermission(plugin, uuid, player, "perm.two", false);
+
+        // verify - the attachment created on the first call is reused, not re-created
+        verify(player, times(1)).addAttachment(plugin);
+        verify(attachment).setPermission("perm.one", true);
+        verify(attachment).setPermission("perm.two", false);
+    }
+
+    @Test
+    void setPermission_shouldReuseAttachmentCreatedBySetPermissions()
+    {
+        // setup
+        final AgentSyntheticPlayerStore store = new AgentSyntheticPlayerStore();
+        final JavaPlugin plugin = mock();
+        final Player player = mock();
+        final PermissionAttachment attachment = mock();
+        final UUID uuid = UUID.randomUUID();
+        when(player.addAttachment(plugin)).thenReturn(attachment);
+        store.registerSyntheticPlayer(uuid, player);
+        store.setPermissions(plugin, uuid, player, "perm.bulk");
+
+        // execute
+        store.setPermission(plugin, uuid, player, "perm.single", true);
+
+        // verify - the attachment created by the bulk CSV method is reused, not re-created
+        verify(player, times(1)).addAttachment(plugin);
+        verify(attachment).setPermission("perm.single", true);
+    }
+
+    @Test
+    void unsetPermission_shouldThrowExceptionWhenPlayerIsNotRegistered()
+    {
+        // setup
+        final AgentSyntheticPlayerStore store = new AgentSyntheticPlayerStore();
+        final UUID uuid = UUID.randomUUID();
+
+        // execute + verify
+        assertThatThrownBy(() -> store.unsetPermission(uuid, "perm.one"))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining(uuid.toString());
+    }
+
+    @Test
+    void unsetPermission_shouldBeNoOpWhenNoAttachmentWasSet()
+    {
+        // setup
+        final AgentSyntheticPlayerStore store = new AgentSyntheticPlayerStore();
+        final Player player = mock();
+        final UUID uuid = UUID.randomUUID();
+        store.registerSyntheticPlayer(uuid, player);
+
+        // execute + verify - should not throw
+        store.unsetPermission(uuid, "perm.one");
+        verifyNoInteractions(player);
+    }
+
+    @Test
+    void unsetPermission_shouldCallUnsetPermissionOnStoredAttachment()
+    {
+        // setup
+        final AgentSyntheticPlayerStore store = new AgentSyntheticPlayerStore();
+        final JavaPlugin plugin = mock();
+        final Player player = mock();
+        final PermissionAttachment attachment = mock();
+        final UUID uuid = UUID.randomUUID();
+        when(player.addAttachment(plugin)).thenReturn(attachment);
+        store.registerSyntheticPlayer(uuid, player);
+        store.setPermission(plugin, uuid, player, "perm.one", true);
+
+        // execute
+        store.unsetPermission(uuid, "perm.one");
+
+        // verify
+        verify(attachment).unsetPermission("perm.one");
+    }
+
+    @Test
     void removePermissionAttachment_shouldDetachStoredAttachment()
     {
         // setup

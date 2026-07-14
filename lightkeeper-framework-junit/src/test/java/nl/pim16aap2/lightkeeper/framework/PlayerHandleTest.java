@@ -80,6 +80,72 @@ class PlayerHandleTest
     }
 
     @Test
+    void permissions_shouldReturnNonNullPermissionControl()
+    {
+        // execute
+        final PermissionControl permissionControl = playerHandle.permissions();
+
+        // verify
+        assertThat(permissionControl).isNotNull();
+    }
+
+    @Test
+    void permissions_grantShouldDelegateToGatewayWithPlayerUuidAndReturnSameInstance()
+    {
+        // setup
+        final PermissionControl permissionControl = playerHandle.permissions();
+
+        // execute
+        final PermissionControl result = permissionControl.grant("lightkeeper.fly");
+
+        // verify
+        assertThat(result).isSameAs(permissionControl);
+        verify(frameworkGateway).grantPermission(PLAYER_UUID, "lightkeeper.fly");
+    }
+
+    @Test
+    void permissions_revokeShouldDelegateToGatewayWithPlayerUuidAndReturnSameInstance()
+    {
+        // setup
+        final PermissionControl permissionControl = playerHandle.permissions();
+
+        // execute
+        final PermissionControl result = permissionControl.revoke("lightkeeper.fly");
+
+        // verify
+        assertThat(result).isSameAs(permissionControl);
+        verify(frameworkGateway).revokePermission(PLAYER_UUID, "lightkeeper.fly");
+    }
+
+    @Test
+    void permissions_unsetShouldDelegateToGatewayWithPlayerUuidAndReturnSameInstance()
+    {
+        // setup
+        final PermissionControl permissionControl = playerHandle.permissions();
+
+        // execute
+        final PermissionControl result = permissionControl.unset("lightkeeper.fly");
+
+        // verify
+        assertThat(result).isSameAs(permissionControl);
+        verify(frameworkGateway).unsetPermission(PLAYER_UUID, "lightkeeper.fly");
+    }
+
+    @Test
+    void permissions_hasShouldReturnGatewayValue()
+    {
+        // setup
+        final PermissionControl permissionControl = playerHandle.permissions();
+        when(frameworkGateway.hasPermission(PLAYER_UUID, "lightkeeper.fly")).thenReturn(true);
+
+        // execute
+        final boolean result = permissionControl.has("lightkeeper.fly");
+
+        // verify
+        assertThat(result).isTrue();
+    }
+
+    @Test
     void inventory_shouldReturnInventorySnapshotFromGateway()
     {
         // setup

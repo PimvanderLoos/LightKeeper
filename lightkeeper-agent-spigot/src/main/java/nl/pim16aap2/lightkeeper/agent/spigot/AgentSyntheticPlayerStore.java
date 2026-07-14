@@ -85,6 +85,63 @@ final class AgentSyntheticPlayerStore
     }
 
     /**
+     * Sets a single permission node on a synthetic player's attachment, creating and storing the attachment
+     * first when the player does not have one yet.
+     *
+     * <p>Unlike {@link #setPermissions}, this reuses the stored attachment so repeated mutations never leak
+     * additional attachments on the player.
+     *
+     * @param plugin
+     *     Plugin context for attachment ownership when a new attachment is needed.
+     * @param uuid
+     *     Synthetic player UUID.
+     * @param player
+     *     Target player instance.
+     * @param permission
+     *     The permission node to set.
+     * @param value
+     *     The value to set the node to: {@code true} grants, {@code false} revokes.
+     * @throws IllegalArgumentException
+     *     When the UUID is unknown.
+     */
+    void setPermission(JavaPlugin plugin, UUID uuid, Player player, String permission, boolean value)
+    {
+        final SyntheticPlayerState state = players.get(uuid);
+        if (state == null)
+            throw new IllegalArgumentException("Synthetic player '%s' is not registered.".formatted(uuid));
+
+        PermissionAttachment attachment = state.permissionAttachment;
+        if (attachment == null)
+        {
+            attachment = player.addAttachment(plugin);
+            state.permissionAttachment = attachment;
+        }
+        attachment.setPermission(permission, value);
+    }
+
+    /**
+     * Removes a single permission node from a synthetic player's attachment, restoring the player's default
+     * for that node. A no-op when the player has no attachment or the node is not on it.
+     *
+     * @param uuid
+     *     Synthetic player UUID.
+     * @param permission
+     *     The permission node to remove from the attachment.
+     * @throws IllegalArgumentException
+     *     When the UUID is unknown.
+     */
+    void unsetPermission(UUID uuid, String permission)
+    {
+        final SyntheticPlayerState state = players.get(uuid);
+        if (state == null)
+            throw new IllegalArgumentException("Synthetic player '%s' is not registered.".formatted(uuid));
+
+        final PermissionAttachment attachment = state.permissionAttachment;
+        if (attachment != null)
+            attachment.unsetPermission(permission);
+    }
+
+    /**
      * Removes and detaches permission attachment state for a synthetic player.
      *
      * @param uuid

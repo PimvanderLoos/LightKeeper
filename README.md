@@ -227,8 +227,13 @@ class MyPluginIT
 - Plugin provisioning (filesystem path or Maven coordinates, optional transitive resolution)
 - Config overlay support (copy tree into prepared server directory)
 - Synthetic players and fluent interaction API
+- Runtime permission control per player (`player.permissions().grant/revoke/unset/has`)
 - Menu interaction and assertions
 - Received-message assertions with AssertJ string chaining
+- Graceful server lifecycle control from tests (`stopServer()`, `startServer()`, `restartServer()`), plus
+  `crashServer()` for hard-kill scenarios
+- Server directory access (`serverDirectory()`, `pluginDataDirectory(name)`) for seeding files while the
+  server is stopped
 
 ## World and Plugin Provisioning
 

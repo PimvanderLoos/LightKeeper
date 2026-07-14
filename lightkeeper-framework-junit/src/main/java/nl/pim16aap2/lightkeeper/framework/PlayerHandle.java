@@ -211,6 +211,19 @@ public final class PlayerHandle
     }
 
     /**
+     * Gets the permission control handle for this player.
+     *
+     * <p>Mutations apply to LightKeeper's own permission attachment and bypass permission plugins; see
+     * {@link PermissionControl} for the full contract.
+     *
+     * @return A permission control handle bound to this player.
+     */
+    public PermissionControl permissions()
+    {
+        return new PermissionControl(frameworkGateway, uniqueId);
+    }
+
+    /**
      * Gets a snapshot of this player's inventory.
      *
      * @return Inventory snapshot.

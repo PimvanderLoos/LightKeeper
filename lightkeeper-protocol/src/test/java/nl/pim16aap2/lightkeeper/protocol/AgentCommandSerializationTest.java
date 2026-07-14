@@ -172,6 +172,105 @@ class AgentCommandSerializationTest
     }
 
     // -----------------------------------------------------------------------
+    // Round-trip: MutatePlayerPermission.Command (one per Mode value)
+    // -----------------------------------------------------------------------
+
+    @Test
+    void serialize_mutatePlayerPermissionCommand_withGrantMode_roundTrips() throws Exception
+    {
+        // setup
+        final ObjectMapper mapper = AgentProtocolMapper.create();
+        final UUID uuid = UUID.fromString("00000000-0000-0000-0000-000000000005");
+        final MutatePlayerPermission.Command original = new MutatePlayerPermission.Command(
+            "req-11", uuid, "some.permission", MutatePlayerPermission.Mode.GRANT);
+
+        // execute
+        final String json = mapper.writeValueAsString(original);
+        @SuppressWarnings("rawtypes")
+        final IAgentCommand deserialized = mapper.readValue(json, IAgentCommand.class);
+
+        // verify
+        assertThat(deserialized).isInstanceOf(MutatePlayerPermission.Command.class);
+        final MutatePlayerPermission.Command result = (MutatePlayerPermission.Command) deserialized;
+        assertThat(result.requestId()).isEqualTo("req-11");
+        assertThat(result.uuid()).isEqualTo(uuid);
+        assertThat(result.permission()).isEqualTo("some.permission");
+        assertThat(result.mode()).isEqualTo(MutatePlayerPermission.Mode.GRANT);
+    }
+
+    @Test
+    void serialize_mutatePlayerPermissionCommand_withRevokeMode_roundTrips() throws Exception
+    {
+        // setup
+        final ObjectMapper mapper = AgentProtocolMapper.create();
+        final UUID uuid = UUID.fromString("00000000-0000-0000-0000-000000000006");
+        final MutatePlayerPermission.Command original = new MutatePlayerPermission.Command(
+            "req-12", uuid, "some.permission", MutatePlayerPermission.Mode.REVOKE);
+
+        // execute
+        final String json = mapper.writeValueAsString(original);
+        @SuppressWarnings("rawtypes")
+        final IAgentCommand deserialized = mapper.readValue(json, IAgentCommand.class);
+
+        // verify
+        assertThat(deserialized).isInstanceOf(MutatePlayerPermission.Command.class);
+        final MutatePlayerPermission.Command result = (MutatePlayerPermission.Command) deserialized;
+        assertThat(result.requestId()).isEqualTo("req-12");
+        assertThat(result.uuid()).isEqualTo(uuid);
+        assertThat(result.permission()).isEqualTo("some.permission");
+        assertThat(result.mode()).isEqualTo(MutatePlayerPermission.Mode.REVOKE);
+    }
+
+    @Test
+    void serialize_mutatePlayerPermissionCommand_withUnsetMode_roundTrips() throws Exception
+    {
+        // setup
+        final ObjectMapper mapper = AgentProtocolMapper.create();
+        final UUID uuid = UUID.fromString("00000000-0000-0000-0000-000000000007");
+        final MutatePlayerPermission.Command original = new MutatePlayerPermission.Command(
+            "req-13", uuid, "some.permission", MutatePlayerPermission.Mode.UNSET);
+
+        // execute
+        final String json = mapper.writeValueAsString(original);
+        @SuppressWarnings("rawtypes")
+        final IAgentCommand deserialized = mapper.readValue(json, IAgentCommand.class);
+
+        // verify
+        assertThat(deserialized).isInstanceOf(MutatePlayerPermission.Command.class);
+        final MutatePlayerPermission.Command result = (MutatePlayerPermission.Command) deserialized;
+        assertThat(result.requestId()).isEqualTo("req-13");
+        assertThat(result.uuid()).isEqualTo(uuid);
+        assertThat(result.permission()).isEqualTo("some.permission");
+        assertThat(result.mode()).isEqualTo(MutatePlayerPermission.Mode.UNSET);
+    }
+
+    // -----------------------------------------------------------------------
+    // Round-trip: HasPlayerPermission.Command
+    // -----------------------------------------------------------------------
+
+    @Test
+    void serialize_hasPlayerPermissionCommand_roundTrips() throws Exception
+    {
+        // setup
+        final ObjectMapper mapper = AgentProtocolMapper.create();
+        final UUID uuid = UUID.fromString("00000000-0000-0000-0000-000000000008");
+        final HasPlayerPermission.Command original =
+            new HasPlayerPermission.Command("req-14", uuid, "some.permission");
+
+        // execute
+        final String json = mapper.writeValueAsString(original);
+        @SuppressWarnings("rawtypes")
+        final IAgentCommand deserialized = mapper.readValue(json, IAgentCommand.class);
+
+        // verify
+        assertThat(deserialized).isInstanceOf(HasPlayerPermission.Command.class);
+        final HasPlayerPermission.Command result = (HasPlayerPermission.Command) deserialized;
+        assertThat(result.requestId()).isEqualTo("req-14");
+        assertThat(result.uuid()).isEqualTo(uuid);
+        assertThat(result.permission()).isEqualTo("some.permission");
+    }
+
+    // -----------------------------------------------------------------------
     // Deserialization from raw JSON: discriminator field selects subtype
     // -----------------------------------------------------------------------
 
@@ -401,6 +500,25 @@ class AgentCommandSerializationTest
 
         // verify
         assertThat(result.dropped()).isTrue();
+    }
+
+    // -----------------------------------------------------------------------
+    // Round-trip: HasPlayerPermission.Response
+    // -----------------------------------------------------------------------
+
+    @Test
+    void serialize_hasPlayerPermissionResponse_roundTrips() throws Exception
+    {
+        // setup
+        final ObjectMapper mapper = AgentProtocolMapper.create();
+        final HasPlayerPermission.Response original = new HasPlayerPermission.Response(true);
+
+        // execute
+        final String json = mapper.writeValueAsString(original);
+        final HasPlayerPermission.Response result = mapper.readValue(json, HasPlayerPermission.Response.class);
+
+        // verify
+        assertThat(result.value()).isTrue();
     }
 
     // -----------------------------------------------------------------------
