@@ -46,5 +46,6 @@ class RuntimeManifestWriterTest
         assertThat(parsedManifest.extraJvmArgs()).isEqualTo("-Dfoo=bar");
         assertThat(parsedManifest.preloadedWorlds()).hasSize(1);
         assertThat(parsedManifest.preloadedWorlds().getFirst().name()).isEqualTo("fixture-world");
+        assertThat(parsedManifest.provisionedWorldNames()).containsExactly("fixture-world", "template-world");
     }
 }

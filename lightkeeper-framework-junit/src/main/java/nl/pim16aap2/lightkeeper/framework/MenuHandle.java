@@ -15,8 +15,9 @@ import java.util.Optional;
  * Menu actions ({@link #clickAtIndex(int)}, {@link #clickItem(String)}, {@link #dragWithMaterial}) auto-wait for
  * an open menu (bounded, default 10 seconds) before acting. This is the one deliberate implicit wait in the
  * framework API: waiting for the menu is the only correct behavior before interacting with it. Probes and
- * verifications ({@link #isOpen()}, {@link #snapshot()}, {@link #verifyMenuName}, {@link #hasTitle},
- * {@link #hasItemAt}) never wait.
+ * verifications (e.g. {@link #isOpen()}, {@link #snapshot()}, {@link #verifyMenuName}, {@link #verifyMenuClosed},
+ * {@link #hasTitle}, {@link #hasItemAt}) never wait; the explicit {@link #andWaitForMenuClose()} waits for the
+ * opposite transition.
  */
 public final class MenuHandle
 {
@@ -112,6 +113,23 @@ public final class MenuHandle
     }
 
     /**
+     * Retrieves the open menu's snapshot after {@link #awaitOpenMenu()}, distinguishing a menu that closed again
+     * mid-flight from a menu that simply lacks the requested item.
+     *
+     * @return The open menu's snapshot.
+     * @throws IllegalStateException
+     *     When the menu closed between the wait passing and the snapshot.
+     */
+    private MenuSnapshot openSnapshotAfterWait()
+    {
+        final MenuSnapshot openSnapshot = snapshot();
+        if (!openSnapshot.open())
+            throw new IllegalStateException(
+                "The menu for player '%s' closed while it was being interacted with.".formatted(player.name()));
+        return openSnapshot;
+    }
+
+    /**
      * Clicks the first menu item whose display name contains the given fragment, auto-waiting for an open menu
      * first (bounded, default 10 seconds).
      *
@@ -128,7 +146,8 @@ public final class MenuHandle
         if (trimmedFragment.isEmpty())
             throw new IllegalArgumentException("displayNameFragment may not be blank.");
 
-        final MenuSnapshot openSnapshot = awaitOpenMenu();
+        awaitOpenMenu();
+        final MenuSnapshot openSnapshot = openSnapshotAfterWait();
         final MenuItemSnapshot item = openSnapshot.items().stream()
             .filter(candidate -> candidate.displayName().contains(trimmedFragment))
             .findFirst()
@@ -164,13 +183,12 @@ public final class MenuHandle
     }
 
     /**
-     * Waits for an open menu within the default bound and returns its snapshot.
+     * Waits for an open menu within the default bound.
      *
-     * @return The open menu's snapshot.
      * @throws IllegalStateException
      *     When no menu opens within the wait bound.
      */
-    private MenuSnapshot awaitOpenMenu()
+    private void awaitOpenMenu()
     {
         try
         {
@@ -184,7 +202,6 @@ public final class MenuHandle
                     player.name(), DEFAULT_MENU_WAIT_TIMEOUT, lastSnapshot.open(), lastSnapshot.title()),
                 exception);
         }
-        return snapshot();
     }
 
     /**

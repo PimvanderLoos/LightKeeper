@@ -43,6 +43,9 @@ public interface ILightkeeperFramework extends AutoCloseable
      * against the runtime manifest's provisioned-template list <em>before</em> touching the server: a typo
      * fails loudly instead of silently creating a fresh world.
      *
+     * <p>A provisioned world that is already loaded (e.g. one with {@code loadOnStartup=true}) is returned
+     * as-is rather than reloaded.
+     *
      * @param templateName
      *     The provisioned world folder's name.
      * @return A handle for the loaded world.

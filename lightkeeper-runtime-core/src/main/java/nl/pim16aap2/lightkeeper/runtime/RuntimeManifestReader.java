@@ -78,9 +78,11 @@ public final class RuntimeManifestReader
                     .formatted(preloadedWorld.name()));
         }
 
+        // Null elements cannot reach this point: the record's compact constructor copies the list via
+        // List.copyOf, which rejects them during deserialization.
         for (final String provisionedWorldName : manifest.provisionedWorldNames())
         {
-            if (provisionedWorldName == null || provisionedWorldName.isBlank())
+            if (provisionedWorldName.isBlank())
                 throw new IOException("Runtime manifest contains a provisioned world with a missing name.");
         }
     }
