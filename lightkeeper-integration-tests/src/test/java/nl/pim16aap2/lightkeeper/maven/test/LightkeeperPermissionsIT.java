@@ -2,6 +2,7 @@ package nl.pim16aap2.lightkeeper.maven.test;
 
 import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.LightkeeperExtension;
+import nl.pim16aap2.lightkeeper.framework.MenuHandle;
 import nl.pim16aap2.lightkeeper.framework.PermissionControl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,28 +23,34 @@ class LightkeeperPermissionsIT
         final var player = framework.createPlayer("lkperm001", world);
         final PermissionControl permissions = player.permissions();
 
-        // execute + verify: the default-false node is not granted at spawn and the gated command is denied
-        assertThat(permissions.has(TEST_GUI_PERMISSION)).isFalse();
+        // execute
+        final boolean hasNodeAtSpawn = permissions.has(TEST_GUI_PERMISSION);
         player.executeCommand("lktestgui").andWaitTicks(1);
-        assertThat(player).receivedMessage(NO_PERMISSION_MESSAGE);
-        assertThat(player.getMenu()).isNull();
+        final MenuHandle menuWithoutPermission = player.getMenu();
 
-        // execute + verify: a runtime grant opens the gate
         permissions.grant(TEST_GUI_PERMISSION);
-        assertThat(permissions.has(TEST_GUI_PERMISSION)).isTrue();
+        final boolean hasNodeAfterGrant = permissions.has(TEST_GUI_PERMISSION);
         player.executeCommand("lktestgui")
             .andWaitForMenuOpen()
             .verifyMenuName("Main Menu");
 
-        // execute + verify: a runtime revoke closes the gate again
         permissions.revoke(TEST_GUI_PERMISSION);
-        assertThat(permissions.has(TEST_GUI_PERMISSION)).isFalse();
+        final boolean hasNodeAfterRevoke = permissions.has(TEST_GUI_PERMISSION);
 
-        // execute + verify: unset restores the node's default (false), and a fresh grant still works after it
         permissions.unset(TEST_GUI_PERMISSION);
-        assertThat(permissions.has(TEST_GUI_PERMISSION)).isFalse();
+        final boolean hasNodeAfterUnset = permissions.has(TEST_GUI_PERMISSION);
+
         permissions.grant(TEST_GUI_PERMISSION);
-        assertThat(permissions.has(TEST_GUI_PERMISSION)).isTrue();
+        final boolean hasNodeAfterRegrant = permissions.has(TEST_GUI_PERMISSION);
+
+        // verify
+        assertThat(hasNodeAtSpawn).isFalse();
+        assertThat(player).receivedMessage(NO_PERMISSION_MESSAGE);
+        assertThat(menuWithoutPermission).isNull();
+        assertThat(hasNodeAfterGrant).isTrue();
+        assertThat(hasNodeAfterRevoke).isFalse();
+        assertThat(hasNodeAfterUnset).isFalse();
+        assertThat(hasNodeAfterRegrant).isTrue();
     }
 
     @Test
@@ -57,15 +64,16 @@ class LightkeeperPermissionsIT
             .withPermissions(TEST_GUI_PERMISSION)
             .build();
 
-        // execute + verify: the spawn-time grant is visible to live queries
-        assertThat(player.permissions().has(TEST_GUI_PERMISSION)).isTrue();
-
-        // execute + verify: a runtime revoke overrides the spawn-time grant on the same attachment
+        // execute
+        final boolean hasSpawnTimeGrant = player.permissions().has(TEST_GUI_PERMISSION);
         player.permissions().revoke(TEST_GUI_PERMISSION);
-        assertThat(player.permissions().has(TEST_GUI_PERMISSION)).isFalse();
-
-        // execute + verify: unset removes the node entirely, restoring the default (false)
+        final boolean hasAfterRevoke = player.permissions().has(TEST_GUI_PERMISSION);
         player.permissions().unset(TEST_GUI_PERMISSION);
-        assertThat(player.permissions().has(TEST_GUI_PERMISSION)).isFalse();
+        final boolean hasAfterUnset = player.permissions().has(TEST_GUI_PERMISSION);
+
+        // verify
+        assertThat(hasSpawnTimeGrant).isTrue();
+        assertThat(hasAfterRevoke).isFalse();
+        assertThat(hasAfterUnset).isFalse();
     }
 }
