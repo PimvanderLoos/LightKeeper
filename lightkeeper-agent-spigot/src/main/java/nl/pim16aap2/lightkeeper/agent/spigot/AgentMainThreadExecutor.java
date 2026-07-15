@@ -77,6 +77,20 @@ final class AgentMainThreadExecutor
      *     {@link AgentProtocolException} with {@link AgentErrorCode#TIMEOUT} when the operation exceeds the
      *     configured timeout, or {@link AgentErrorCode#INTERRUPTED} when the waiting thread is interrupted.
      */
+    /**
+     * Returns the configured maximum wait, in seconds, for a scheduled synchronous server operation.
+     *
+     * <p>Reused by long-running orchestration (such as awaiting a full-login {@code PlayerJoinEvent}) so a
+     * single, configurable bound governs how long the agent blocks before reporting a timeout to the client.
+     *
+     * @return
+     *     Positive timeout in seconds.
+     */
+    long syncOperationTimeoutSeconds()
+    {
+        return syncOperationTimeoutSeconds;
+    }
+
     <T> T callOnMainThread(Callable<T> callable)
         throws Exception
     {

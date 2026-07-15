@@ -1,7 +1,12 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
 import tools.jackson.databind.ObjectMapper;
+import nl.pim16aap2.lightkeeper.nms.api.BotJoinPhase;
+import nl.pim16aap2.lightkeeper.nms.api.IBotLoginDriver;
+import nl.pim16aap2.lightkeeper.nms.api.IBotLoginOutcome;
 import nl.pim16aap2.lightkeeper.nms.api.IBotPlayerNmsAdapter;
+import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
+import nl.pim16aap2.lightkeeper.protocol.AgentProtocolException;
 import nl.pim16aap2.lightkeeper.protocol.CreatePlayer;
 import nl.pim16aap2.lightkeeper.protocol.DropItem;
 import nl.pim16aap2.lightkeeper.protocol.DropResult;
@@ -10,6 +15,7 @@ import nl.pim16aap2.lightkeeper.protocol.GetPlayerChatComponents;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerInventory;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerMessages;
 import nl.pim16aap2.lightkeeper.protocol.HasPlayerPermission;
+import nl.pim16aap2.lightkeeper.protocol.JoinMode;
 import nl.pim16aap2.lightkeeper.protocol.LeftClickBlock;
 import nl.pim16aap2.lightkeeper.protocol.MutatePlayerPermission;
 import nl.pim16aap2.lightkeeper.protocol.PlacePlayerBlock;
@@ -557,7 +563,8 @@ class AgentPlayerActionsTest
         final PermissionAttachment attachment = mock();
         when(player.addAttachment(any())).thenReturn(attachment);
         final CreatePlayer.Command command = new CreatePlayer.Command(
-            "request-create", "testbot", uuid, "world", 10.0, 64.0, 20.0, null, "test.perm"
+            "request-create", "testbot", uuid, "world", 10.0, 64.0, 20.0, null, "test.perm",
+            JoinMode.LEGACY_SPAWN, null
         );
 
         // execute
@@ -577,6 +584,35 @@ class AgentPlayerActionsTest
         // is dropped and removePermissionAttachment finds nothing to detach.
         fixture.playerStore().removePermissionAttachment(uuid, player);
         verify(player).removeAttachment(attachment);
+    }
+
+    @Test
+    void handleCreatePlayer_shouldSurfaceFullLoginDenialAsTypedError()
+    {
+        // setup
+        final PlayerActionsFixture fixture = createPlayerActionsFixture();
+        final IBotLoginDriver loginDriver = mock();
+        when(fixture.nmsAdapter().loginDriver()).thenReturn(loginDriver);
+        when(loginDriver.login(any())).thenReturn(new IBotLoginOutcome.Denied(BotJoinPhase.LOGIN, "Banned"));
+        final org.bukkit.Server server = mock();
+        when(server.getPort()).thenReturn(25_565);
+        final PluginManager pluginManager = mock();
+        final CreatePlayer.Command command = new CreatePlayer.Command(
+            "request-full", "fullbot", null, "world", null, null, null, null, null, JoinMode.FULL_LOGIN, "en_us");
+
+        // execute + verify
+        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class))
+        {
+            bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
+            bukkit.when(Bukkit::getServer).thenReturn(server);
+            bukkit.when(Bukkit::getPluginManager).thenReturn(pluginManager);
+
+            assertThatThrownBy(() -> fixture.playerActions().handleCreatePlayer(command))
+                .isInstanceOf(AgentProtocolException.class)
+                .satisfies(thrown -> assertThat(((AgentProtocolException) thrown).errorCode())
+                    .isEqualTo(AgentErrorCode.PLAYER_JOIN_DENIED))
+                .hasMessageContaining("Banned");
+        }
     }
 
     @Test

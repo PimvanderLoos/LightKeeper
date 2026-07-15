@@ -30,6 +30,7 @@ import nl.pim16aap2.lightkeeper.protocol.Handshake;
 import nl.pim16aap2.lightkeeper.protocol.HasPlayerPermission;
 import nl.pim16aap2.lightkeeper.protocol.IAgentCommand;
 import nl.pim16aap2.lightkeeper.protocol.IsChunkLoaded;
+import nl.pim16aap2.lightkeeper.protocol.JoinMode;
 import nl.pim16aap2.lightkeeper.protocol.LeftClickBlock;
 import nl.pim16aap2.lightkeeper.protocol.LoadChunk;
 import nl.pim16aap2.lightkeeper.protocol.MainWorld;
@@ -380,7 +381,7 @@ class AgentRequestDispatcherTest
         dispatchExpectingSuccess(fixture, toJson(new ExecuteCommand.Command("request-2", CommandSource.CONSOLE, "time set day")));
         dispatchExpectingSuccess(fixture, toJson(new BlockType.Command("request-3", "world", 0, 64, 0)));
         dispatchExpectingSuccess(fixture, toJson(new SetBlock.Command("request-4", "world", 0, 64, 0, "stone", null)));
-        dispatchExpectingSuccess(fixture, toJson(new CreatePlayer.Command("request-5", "bot", uuid, "world", null, null, null, null, null)));
+        dispatchExpectingSuccess(fixture, toJson(new CreatePlayer.Command("request-5", "bot", uuid, "world", null, null, null, null, null, JoinMode.LEGACY_SPAWN, null)));
         dispatchExpectingSuccess(fixture, toJson(new RemovePlayer.Command("request-6", uuid)));
         dispatchExpectingSuccess(fixture, toJson(new ExecutePlayerCommand.Command("request-7", uuid, "gamemode creative")));
         dispatchExpectingSuccess(fixture, toJson(new PlacePlayerBlock.Command("request-8", uuid, "stone", 0, 64, 0)));
