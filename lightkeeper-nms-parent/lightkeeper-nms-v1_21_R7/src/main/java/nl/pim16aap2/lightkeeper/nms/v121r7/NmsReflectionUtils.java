@@ -190,6 +190,10 @@ final class NmsReflectionUtils
      * not found. Unlike {@link #resolveFieldByNameOrType}, the fallback checks whether the field's type is
      * assignable <em>from</em> {@code acceptedType} (i.e., the field is a supertype of the accepted type).
      *
+     * <p>The fallback skips static fields and fields declared as {@code Object}: an {@code Object}-typed field is
+     * a supertype of everything, so accepting it would make resolution depend on declaration order instead of on
+     * a meaningful type match.
+     *
      * @param ownerClass
      *     Class to search (including superclass chain).
      * @param preferredName
@@ -220,7 +224,9 @@ final class NmsReflectionUtils
             {
                 for (final Field field : cursor.getDeclaredFields())
                 {
-                    if (!field.getType().isAssignableFrom(acceptedType))
+                    if (Modifier.isStatic(field.getModifiers()))
+                        continue;
+                    if (field.getType() == Object.class || !field.getType().isAssignableFrom(acceptedType))
                         continue;
                     field.setAccessible(true);
                     return field;
@@ -386,6 +392,136 @@ final class NmsReflectionUtils
                 + " with parameter types "
                 + List.of(argumentTypes)
         );
+    }
+
+    /**
+     * Resolves an enum constant by its {@link Enum#name() name}, falling back to the constant's known
+     * declaration ordinal when the runtime names are obfuscated.
+     *
+     * <p>Both distributions currently keep Mojang constant names at runtime (verified against the 1.21.11
+     * jars: Spigot's remapper obfuscates the enum <em>fields</em> but preserves the name string passed to the
+     * enum constructor), so the name lookup is expected to succeed. Should a future remapper obfuscate the
+     * names too, obfuscation preserves declaration order, so the per-version ordinal recorded by the calling
+     * adapter remains a correct identifier; the fallback is logged so its use is visible.
+     *
+     * @param enumClass
+     *     Enum class to search.
+     * @param name
+     *     Unobfuscated constant name (e.g. {@code "CLIENTBOUND"}).
+     * @param expectedOrdinal
+     *     Declaration ordinal of the constant for the server version this adapter targets.
+     * @return
+     *     Matching enum constant.
+     * @throws IllegalStateException
+     *     When no constant with that name exists and the expected ordinal is out of range.
+     */
+    static Object resolveEnumConstant(Class<?> enumClass, String name, int expectedOrdinal)
+    {
+        final Object[] constants = Objects.requireNonNull(
+            enumClass.getEnumConstants(), "Expected enum constants for " + enumClass.getName());
+        for (final Object constant : constants)
+        {
+            if (((Enum<?>) constant).name().equals(name))
+                return constant;
+        }
+
+        if (expectedOrdinal < 0 || expectedOrdinal >= constants.length)
+            throw new IllegalStateException(
+                "No enum constant '" + name + "' found in " + enumClass.getName()
+                    + " and ordinal " + expectedOrdinal + " is out of range (0.." + (constants.length - 1) + ").");
+
+        System.getLogger(NmsReflectionUtils.class.getName()).log(
+            System.Logger.Level.DEBUG,
+            () -> "Enum constant '%s' not found by name in %s; falling back to declaration ordinal %d ('%s')."
+                .formatted(name, enumClass.getName(), expectedOrdinal, constants[expectedOrdinal]));
+        return constants[expectedOrdinal];
+    }
+
+    /**
+     * Finds a public, non-static method by return type and parameter types, tolerating obfuscated method
+     * names. Parameters and the return type are matched by assignability.
+     *
+     * @param type
+     *     Class to search (including superclasses).
+     * @param returnType
+     *     Required return type (supertype match accepted; use {@code void.class} for void).
+     * @param parameterTypes
+     *     Required parameter types (each matched by assignability from the declared parameter).
+     * @return
+     *     Found method with accessibility set.
+     * @throws NoSuchMethodException
+     *     When no matching public method exists.
+     */
+    static Method findPublicMethod(Class<?> type, Class<?> returnType, Class<?>... parameterTypes)
+        throws NoSuchMethodException
+    {
+        for (Class<?> cursor = type; cursor != null; cursor = cursor.getSuperclass())
+        {
+            for (final Method method : cursor.getDeclaredMethods())
+            {
+                if (!Modifier.isPublic(method.getModifiers()) || Modifier.isStatic(method.getModifiers()))
+                    continue;
+                if (!returnType.isAssignableFrom(method.getReturnType()))
+                    continue;
+                if (!parametersAssignable(method, parameterTypes))
+                    continue;
+
+                method.setAccessible(true);
+                return method;
+            }
+        }
+        throw new NoSuchMethodException(
+            "Failed to resolve public method on " + type.getName() + " returning " + returnType.getName()
+                + " with parameters " + List.of(parameterTypes) + ".");
+    }
+
+    private static boolean parametersAssignable(Method method, Class<?>... parameterTypes)
+    {
+        final Class<?>[] declared = method.getParameterTypes();
+        if (declared.length != parameterTypes.length)
+            return false;
+        for (int idx = 0; idx < declared.length; ++idx)
+        {
+            if (!declared[idx].isAssignableFrom(parameterTypes[idx]))
+                return false;
+        }
+        return true;
+    }
+
+    /**
+     * Finds a non-static, no-argument method whose return type is assignable to the given type.
+     *
+     * <p>Unlike {@link #findNoArgMethodByReturnType}, static methods are skipped so an instance accessor is
+     * preferred over a static default/factory of the same return type.
+     *
+     * @param type
+     *     Root class to search.
+     * @param returnType
+     *     Expected return type (supertype match accepted).
+     * @return
+     *     Found method with accessibility set.
+     * @throws NoSuchMethodException
+     *     When no matching instance method exists.
+     */
+    static Method findInstanceNoArgMethodByReturnType(Class<?> type, Class<?> returnType)
+        throws NoSuchMethodException
+    {
+        for (Class<?> cursor = type; cursor != null; cursor = cursor.getSuperclass())
+        {
+            for (final Method method : cursor.getDeclaredMethods())
+            {
+                if (Modifier.isStatic(method.getModifiers()) || method.getParameterCount() != 0)
+                    continue;
+                if (!returnType.isAssignableFrom(method.getReturnType()))
+                    continue;
+
+                method.setAccessible(true);
+                return method;
+            }
+        }
+        throw new NoSuchMethodException(
+            "Failed to resolve instance no-arg method on " + type.getName() + " returning "
+                + returnType.getName() + ".");
     }
 
     /**

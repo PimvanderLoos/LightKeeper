@@ -3,6 +3,7 @@ package nl.pim16aap2.lightkeeper.framework.internal;
 import nl.pim16aap2.lightkeeper.framework.IPlayerBuilder;
 import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
+import nl.pim16aap2.lightkeeper.protocol.JoinMode;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Arrays;
@@ -23,6 +24,8 @@ final class DefaultPlayerBuilder implements IPlayerBuilder
     private @Nullable Double z;
     private @Nullable Double health;
     private final Set<String> permissions = new HashSet<>();
+    private JoinMode joinMode = JoinMode.LEGACY_SPAWN;
+    private @Nullable String locale;
 
     DefaultPlayerBuilder(DefaultLightkeeperFramework framework)
     {
@@ -97,6 +100,23 @@ final class DefaultPlayerBuilder implements IPlayerBuilder
     }
 
     @Override
+    public IPlayerBuilder withLocale(String locale)
+    {
+        final String trimmedLocale = Objects.requireNonNull(locale, "locale may not be null.").trim();
+        if (trimmedLocale.isEmpty())
+            throw new IllegalArgumentException("locale may not be blank.");
+        this.locale = trimmedLocale;
+        return this;
+    }
+
+    @Override
+    public IPlayerBuilder fullLogin()
+    {
+        this.joinMode = JoinMode.FULL_LOGIN;
+        return this;
+    }
+
+    @Override
     public PlayerHandle build()
     {
         framework.ensureOpen();
@@ -113,7 +133,9 @@ final class DefaultPlayerBuilder implements IPlayerBuilder
             y,
             z,
             health,
-            permissions
+            permissions,
+            joinMode,
+            locale
         );
     }
 }

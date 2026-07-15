@@ -263,6 +263,39 @@ class MyPluginIT
 - Server directory access (`server().directory()`, `server().pluginDataDirectory(name)`) for seeding files
   while the server is stopped
 
+### Full-login bots
+
+By default, `bots().join(...)` and `bots().builder()...build()` spawn a synthetic player through a fast
+internal path that fires `PlayerJoinEvent` but skips the login handshake. For tests that need a *real* login,
+call `.fullLogin()` on the builder:
+
+```java
+final PlayerHandle bot = framework.bots().builder()
+    .withName("realbot")
+    .atSpawn(framework.worlds().main())
+    .withLocale("en_us")   // optional client locale (LK-12), sent during the configuration phase
+    .fullLogin()
+    .build();
+```
+
+A full-login bot connects over a real loopback TCP connection and drives the entire vanilla login pipeline
+(handshake → login → the 1.20.2+ configuration phase → play), so it behaves like a genuine client. This differs
+from the default spawn in three ways:
+
+- **Real login events fire.** `AsyncPlayerPreLoginEvent`, `PlayerLoginEvent`, and `PlayerJoinEvent` all fire, in
+  each platform's own order. This is what makes permission plugins such as LuckPerms (which load a user at
+  pre-login and inject their `Permissible` at login) behave correctly for the bot.
+- **The offline UUID is server-derived.** The server derives the bot's UUID from its name
+  (`UUID.nameUUIDFromBytes("OfflinePlayer:<name>")`); any UUID passed to the builder is ignored under
+  `fullLogin()`. The returned handle carries the server-assigned UUID.
+- **The join can be denied.** Because it is a genuine login, a full-login bot is subject to the whitelist, bans,
+  the max-player limit, and plugin denials. A denial is surfaced as a `BotJoinDeniedException` (carrying the
+  server's kick reason); a login that does not complete in time throws a `BotJoinTimeoutException`. The call
+  blocks until the bot has fully joined (or is denied/times out).
+
+Full-login joins require the server to run in offline mode with proxy forwarding off (both are the provisioner's
+defaults).
+
 ## World and Plugin Provisioning
 
 `prepare-server` supports custom worlds and plugins in plugin configuration:

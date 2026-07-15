@@ -1,6 +1,10 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
+import nl.pim16aap2.lightkeeper.nms.api.BotLoginRequest;
+import nl.pim16aap2.lightkeeper.nms.api.IBotLoginOutcome;
 import nl.pim16aap2.lightkeeper.nms.api.IBotPlayerNmsAdapter;
+import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
+import nl.pim16aap2.lightkeeper.protocol.AgentProtocolException;
 import nl.pim16aap2.lightkeeper.protocol.CreatePlayer;
 import nl.pim16aap2.lightkeeper.protocol.ExecutePlayerCommand;
 import nl.pim16aap2.lightkeeper.protocol.HasPlayerPermission;
@@ -18,13 +22,25 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.HandlerList;
+import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.EventExecutor;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jspecify.annotations.Nullable;
+
+import java.time.Duration;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
 
 /**
  * Protocol action handler for synthetic player lifecycle, movement, and world interactions.
@@ -74,20 +90,41 @@ final class AgentPlayerActions
     }
 
     /**
-     * Handles {@code CREATE_PLAYER} by spawning a synthetic player and registering it in the store.
+     * Handles {@code CREATE_PLAYER} by routing to the full-login pipeline or the legacy spawn path.
      *
      * @param command
-     *     Typed command carrying player name, UUID, world, spawn coordinates, health, and permissions.
+     *     Typed command carrying player name, UUID, world, spawn coordinates, health, permissions, join mode,
+     *     and locale.
+     * @return Response containing the created player's UUID and name.
+     *
+     * @throws Exception
+     *     Propagates validation, login, and main-thread execution failures.
+     */
+    CreatePlayer.Response handleCreatePlayer(CreatePlayer.Command command)
+        throws Exception
+    {
+        return switch (command.joinMode())
+        {
+            case FULL_LOGIN -> handleFullLoginPlayer(command);
+            case LEGACY_SPAWN -> handleLegacySpawnPlayer(command);
+        };
+    }
+
+    /**
+     * Spawns a synthetic player through the internal legacy spawn path (main thread).
+     *
+     * @param command
+     *     Typed create-player command in {@code LEGACY_SPAWN} mode (a non-null UUID is guaranteed by validation).
      * @return Response containing the created player's UUID and name.
      *
      * @throws Exception
      *     Propagates validation and main-thread execution failures.
      */
-    CreatePlayer.Response handleCreatePlayer(CreatePlayer.Command command)
+    private CreatePlayer.Response handleLegacySpawnPlayer(CreatePlayer.Command command)
         throws Exception
     {
         final String name = command.name();
-        final UUID uuid = command.uuid();
+        final UUID uuid = Objects.requireNonNull(command.uuid(), "uuid may not be null under LEGACY_SPAWN.");
         final String worldName = command.worldName();
         final Double x = command.x();
         final Double y = command.y();
@@ -120,10 +157,223 @@ final class AgentPlayerActions
         });
 
         plugin.getLogger().info(
-            "LK_AGENT: Created synthetic player '%s' (%s) in world '%s'."
+            "LK_AGENT: Spawned synthetic player '%s' (%s) in world '%s'."
                 .formatted(player.getName(), player.getUniqueId(), worldName)
         );
         return new CreatePlayer.Response(player.getUniqueId(), player.getName());
+    }
+
+    /**
+     * Joins a synthetic player through the full vanilla login pipeline.
+     *
+     * <p>The driver runs off the main thread (it fires {@code AsyncPlayerPreLoginEvent} on the connection
+     * thread; the join completes on the main thread), so this method blocks the calling connection thread — not
+     * the server main thread — while awaiting the {@code PlayerJoinEvent} for the bot's name. Whitelist/ban/full/
+     * plugin denials and timeouts are surfaced as typed {@link AgentProtocolException}s.
+     *
+     * <p>The driver wait and the join-event wait share ONE deadline bounded by the agent's sync-operation
+     * timeout, preserving the {@code RuntimeProtocol} invariant that the agent reports its own detailed
+     * {@code TIMEOUT} before the client watchdog (timeout + margin) gives up.
+     *
+     * @param command
+     *     Typed create-player command in {@code FULL_LOGIN} mode.
+     * @return Response containing the server-assigned offline UUID and name.
+     *
+     * @throws Exception
+     *     Propagates login failures and main-thread execution failures.
+     */
+    private CreatePlayer.Response handleFullLoginPlayer(CreatePlayer.Command command)
+        throws Exception
+    {
+        if (Bukkit.isPrimaryThread())
+            throw new IllegalStateException(
+                "FULL_LOGIN joins must not run on the server main thread: the join blocks on PlayerJoinEvent, "
+                    + "which fires on the main thread, so this would deadlock.");
+
+        final String name = command.name();
+        final @Nullable String locale = command.locale();
+        final long timeoutSeconds = mainThreadExecutor.syncOperationTimeoutSeconds();
+        // One shared deadline for the whole FULL_LOGIN join: listener registration (first, so it naturally has
+        // the full budget), the driver, the join-event wait, and the post-join placement all draw from it.
+        final long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(timeoutSeconds);
+
+        final CountDownLatch joinLatch = new CountDownLatch(1);
+        final AtomicReference<Player> joinedPlayer = new AtomicReference<>();
+        final Listener listener = new Listener()
+        {
+        };
+        final EventExecutor executor = (ignoredListener, event) ->
+        {
+            if (event instanceof PlayerJoinEvent joinEvent && joinEvent.getPlayer().getName().equals(name))
+            {
+                joinedPlayer.set(joinEvent.getPlayer());
+                joinLatch.countDown();
+            }
+        };
+        mainThreadExecutor.callOnMainThread(() ->
+        {
+            // Fail fast on an unknown world before opening any connection.
+            if (Bukkit.getWorld(command.worldName()) == null)
+                throw new IllegalArgumentException("World '%s' does not exist.".formatted(command.worldName()));
+            Bukkit.getPluginManager().registerEvent(
+                PlayerJoinEvent.class, listener, EventPriority.MONITOR, executor, plugin);
+            return Boolean.TRUE;
+        });
+
+        Exception primaryFailure = null;
+        try
+        {
+            final int port = Bukkit.getServer().getPort();
+            final IBotLoginOutcome outcome = botPlayerNmsAdapter.loginDriver().login(
+                new BotLoginRequest(name, port, locale, Duration.ofSeconds(timeoutSeconds)));
+
+            if (outcome instanceof IBotLoginOutcome.Denied denied)
+                throw new AgentProtocolException(
+                    AgentErrorCode.PLAYER_JOIN_DENIED,
+                    "Bot '%s' was denied during %s: %s".formatted(name, denied.phase(), denied.reason()));
+            if (outcome instanceof IBotLoginOutcome.TimedOut timedOut)
+                throw new AgentProtocolException(
+                    AgentErrorCode.PLAYER_JOIN_TIMEOUT,
+                    "Bot '%s' did not complete the login pipeline within %d seconds (stalled in the %s phase)."
+                        .formatted(name, timeoutSeconds, timedOut.phase()));
+
+            awaitJoinEvent(joinLatch, deadlineNanos, name, timeoutSeconds);
+
+            final Player player = Objects.requireNonNull(joinedPlayer.get(), "joined player");
+            registerJoinedPlayer(player, command);
+
+            plugin.getLogger().info(
+                "LK_AGENT: Full-login player '%s' (%s) joined.".formatted(player.getName(), player.getUniqueId()));
+            return new CreatePlayer.Response(player.getUniqueId(), player.getName());
+        }
+        catch (Exception exception)
+        {
+            primaryFailure = exception;
+            throw exception;
+        }
+        finally
+        {
+            unregisterJoinListener(listener, deadlineNanos, primaryFailure);
+        }
+    }
+
+    /**
+     * Awaits the join event on the residual of the shared deadline.
+     *
+     * <p>The join event gets only the time remaining, never a fresh budget: the driver has already reached the
+     * play phase, so this wait is normally near-instant.
+     *
+     * @param joinLatch
+     *     Latch tripped by the one-shot {@code PlayerJoinEvent} listener.
+     * @param deadlineNanos
+     *     The shared join deadline ({@link System#nanoTime()} based).
+     * @param name
+     *     Bot name, for error messages.
+     * @param timeoutSeconds
+     *     Total join budget, for error messages.
+     * @throws AgentProtocolException
+     *     With {@code PLAYER_JOIN_TIMEOUT} when the deadline expires, or {@code INTERRUPTED} when the waiting
+     *     thread is interrupted (matching {@link AgentMainThreadExecutor}'s contract).
+     */
+    private static void awaitJoinEvent(CountDownLatch joinLatch, long deadlineNanos, String name, long timeoutSeconds)
+        throws AgentProtocolException
+    {
+        final long remainingNanos = deadlineNanos - System.nanoTime();
+        try
+        {
+            if (remainingNanos <= 0L || !joinLatch.await(remainingNanos, TimeUnit.NANOSECONDS))
+                throw new AgentProtocolException(
+                    AgentErrorCode.PLAYER_JOIN_TIMEOUT,
+                    "Bot '%s' completed login but no PlayerJoinEvent fired within the %d-second join budget."
+                        .formatted(name, timeoutSeconds));
+        }
+        catch (InterruptedException exception)
+        {
+            Thread.currentThread().interrupt();
+            throw new AgentProtocolException(
+                AgentErrorCode.INTERRUPTED,
+                "Interrupted while awaiting PlayerJoinEvent for bot '%s'.".formatted(name),
+                exception);
+        }
+    }
+
+    /**
+     * Unregisters the one-shot join listener without masking a primary failure or blowing the shared deadline.
+     *
+     * <p>The cleanup gets {@code min(remaining, 10s)} of the deadline with a 2-second floor: enough to run a
+     * trivial main-thread task even when the budget is exhausted, but never a fresh full budget. A cleanup
+     * failure is suppressed onto the primary failure when one exists, and logged otherwise.
+     *
+     * @param listener
+     *     The listener to unregister.
+     * @param deadlineNanos
+     *     The shared join deadline ({@link System#nanoTime()} based).
+     * @param primaryFailure
+     *     The failure currently propagating out of the join, or {@code null} when the join succeeded.
+     */
+    private void unregisterJoinListener(Listener listener, long deadlineNanos, @Nullable Exception primaryFailure)
+    {
+        final long remainingSeconds = TimeUnit.NANOSECONDS.toSeconds(deadlineNanos - System.nanoTime());
+        final long cleanupBudgetSeconds = Math.max(2L, Math.min(10L, remainingSeconds));
+        try
+        {
+            mainThreadExecutor.callOnMainThread(() ->
+            {
+                HandlerList.unregisterAll(listener);
+                return Boolean.TRUE;
+            }, cleanupBudgetSeconds);
+        }
+        catch (Exception cleanupFailure)
+        {
+            if (primaryFailure != null)
+                primaryFailure.addSuppressed(cleanupFailure);
+            else
+                plugin.getLogger().log(
+                    Level.WARNING, "Failed to unregister the full-login join listener.", cleanupFailure);
+        }
+    }
+
+    /**
+     * Registers a freshly joined full-login player in the store and applies the requested placement, health,
+     * and permissions on the main thread.
+     *
+     * <p>Placement honors the command's world and, when present, its explicit coordinates; a command that only
+     * names a world places the bot at that world's spawn. This mirrors the legacy-spawn semantics for both the
+     * {@code join(name, world)} wire shape (world only) and the builder's {@code atLocation} shape (world +
+     * coordinates).
+     *
+     * @param player
+     *     The joined Bukkit player.
+     * @param command
+     *     The originating create-player command carrying world, coordinates, health, and permissions.
+     *
+     * @throws Exception
+     *     Propagates main-thread execution failures.
+     */
+    private void registerJoinedPlayer(Player player, CreatePlayer.Command command)
+        throws Exception
+    {
+        final UUID uuid = player.getUniqueId();
+        final Double health = command.health();
+        final String permissionsCsv = command.permissionsCsv();
+        mainThreadExecutor.callOnMainThread(() ->
+        {
+            final World world = Bukkit.getWorld(command.worldName());
+            if (world == null)
+                throw new IllegalArgumentException("World '%s' does not exist.".formatted(command.worldName()));
+
+            final Location target = command.x() == null || command.y() == null || command.z() == null
+                ? world.getSpawnLocation()
+                : new Location(world, command.x(), command.y(), command.z());
+            player.teleport(target);
+
+            playerStore.registerSyntheticPlayer(uuid, player);
+            if (health != null)
+                player.setHealth(Math.min(player.getMaxHealth(), health));
+            if (permissionsCsv != null && !permissionsCsv.isBlank())
+                playerStore.setPermissions(plugin, uuid, player, permissionsCsv);
+            return Boolean.TRUE;
+        });
     }
 
     /**

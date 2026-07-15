@@ -22,6 +22,8 @@ public enum AgentErrorCode
     INVALID_ARGUMENT,
     TIMEOUT,
     INTERRUPTED,
+    PLAYER_JOIN_DENIED,
+    PLAYER_JOIN_TIMEOUT,
     UNKNOWN;
 
     private static final Map<String, AgentErrorCode> BY_WIRE_CODE = Arrays.stream(values())

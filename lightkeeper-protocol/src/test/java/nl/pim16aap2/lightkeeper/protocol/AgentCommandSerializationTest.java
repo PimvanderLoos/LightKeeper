@@ -74,11 +74,11 @@ class AgentCommandSerializationTest
     }
 
     // -----------------------------------------------------------------------
-    // Round-trip: CreatePlayer.Command with null optional fields
+    // Round-trip: CreatePlayer.Command (LEGACY_SPAWN) with null optional fields
     // -----------------------------------------------------------------------
 
     @Test
-    void serialize_createPlayerCommand_withNullOptionals_roundTrips() throws Exception
+    void serialize_createPlayerCommand_legacySpawnWithNullOptionals_roundTrips() throws Exception
     {
         // setup
         final ObjectMapper mapper = AgentProtocolMapper.create();
@@ -86,7 +86,8 @@ class AgentCommandSerializationTest
         final CreatePlayer.Command original = new CreatePlayer.Command(
             "req-3", "Alice", uuid, "world",
             null, null, null,
-            null, null
+            null, null,
+            JoinMode.LEGACY_SPAWN, null
         );
 
         // execute
@@ -106,14 +107,16 @@ class AgentCommandSerializationTest
         assertThat(result.z()).isNull();
         assertThat(result.health()).isNull();
         assertThat(result.permissionsCsv()).isNull();
+        assertThat(result.joinMode()).isEqualTo(JoinMode.LEGACY_SPAWN);
+        assertThat(result.locale()).isNull();
     }
 
     // -----------------------------------------------------------------------
-    // Round-trip: CreatePlayer.Command with all fields present
+    // Round-trip: CreatePlayer.Command (LEGACY_SPAWN) with all fields present
     // -----------------------------------------------------------------------
 
     @Test
-    void serialize_createPlayerCommand_withAllFields_roundTrips() throws Exception
+    void serialize_createPlayerCommand_legacySpawnWithAllFields_roundTrips() throws Exception
     {
         // setup
         final ObjectMapper mapper = AgentProtocolMapper.create();
@@ -121,7 +124,8 @@ class AgentCommandSerializationTest
         final CreatePlayer.Command original = new CreatePlayer.Command(
             "req-4", "Bob", uuid, "nether",
             10.0, 64.0, -5.0,
-            20.0, "minecraft.command.tp,some.other.node"
+            20.0, "minecraft.command.tp,some.other.node",
+            JoinMode.LEGACY_SPAWN, null
         );
 
         // execute
@@ -141,6 +145,40 @@ class AgentCommandSerializationTest
         assertThat(result.z()).isEqualTo(-5.0);
         assertThat(result.health()).isEqualTo(20.0);
         assertThat(result.permissionsCsv()).isEqualTo("minecraft.command.tp,some.other.node");
+        assertThat(result.joinMode()).isEqualTo(JoinMode.LEGACY_SPAWN);
+        assertThat(result.locale()).isNull();
+    }
+
+    // -----------------------------------------------------------------------
+    // Round-trip: CreatePlayer.Command (FULL_LOGIN) with null uuid and a locale
+    // -----------------------------------------------------------------------
+
+    @Test
+    void serialize_createPlayerCommand_fullLoginWithLocale_roundTrips() throws Exception
+    {
+        // setup
+        final ObjectMapper mapper = AgentProtocolMapper.create();
+        final CreatePlayer.Command original = new CreatePlayer.Command(
+            "req-4b", "Carol", null, "world",
+            null, null, null,
+            null, null,
+            JoinMode.FULL_LOGIN, "en_us"
+        );
+
+        // execute
+        final String json = mapper.writeValueAsString(original);
+        @SuppressWarnings("rawtypes")
+        final IAgentCommand deserialized = mapper.readValue(json, IAgentCommand.class);
+
+        // verify
+        assertThat(deserialized).isInstanceOf(CreatePlayer.Command.class);
+        final CreatePlayer.Command result = (CreatePlayer.Command) deserialized;
+        assertThat(result.requestId()).isEqualTo("req-4b");
+        assertThat(result.name()).isEqualTo("Carol");
+        assertThat(result.uuid()).isNull();
+        assertThat(result.worldName()).isEqualTo("world");
+        assertThat(result.joinMode()).isEqualTo(JoinMode.FULL_LOGIN);
+        assertThat(result.locale()).isEqualTo("en_us");
     }
 
     // -----------------------------------------------------------------------
