@@ -1,5 +1,6 @@
 package nl.pim16aap2.lightkeeper.nms.v121r7;
 
+import nl.pim16aap2.lightkeeper.nms.api.IBotLoginDriver;
 import nl.pim16aap2.lightkeeper.nms.api.IBotPlayerNmsAdapter;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -63,6 +64,12 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
     private final Method dataResultResultMethod;
     private final Method dataResultErrorMethod;
     private final Object serverboundPacketFlow;
+
+    /**
+     * Full-login driver, resolved lazily so the (larger) login reflection surface is only touched when a
+     * {@code FULL_LOGIN} join is actually requested; legacy-spawn-only usage never pays for it.
+     */
+    private volatile @Nullable IBotLoginDriver botLoginDriver;
 
     /**
      * Initializes reflective handles for the Paper 1.21.11 server internals.
@@ -398,6 +405,30 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
                 exception
             );
         }
+    }
+
+    /**
+     * Returns the full-login driver, resolving its reflection surface on first use.
+     *
+     * @return The full-login driver for this server.
+     */
+    @Override
+    public IBotLoginDriver loginDriver()
+    {
+        IBotLoginDriver driver = botLoginDriver;
+        if (driver == null)
+        {
+            synchronized (this)
+            {
+                driver = botLoginDriver;
+                if (driver == null)
+                {
+                    driver = new BotLoginPipelineDriver();
+                    botLoginDriver = driver;
+                }
+            }
+        }
+        return driver;
     }
 
     /**
