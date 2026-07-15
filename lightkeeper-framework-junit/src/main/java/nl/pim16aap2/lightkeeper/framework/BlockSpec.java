@@ -31,17 +31,24 @@ public record BlockSpec(
     public BlockSpec
     {
         materialKey = MaterialKeys.normalize(materialKey);
-        properties = properties == null
-            ? Map.of()
-            : Collections.unmodifiableMap(new LinkedHashMap<>(properties));
-        for (final Map.Entry<String, String> property : properties.entrySet())
+        // Vanilla block-state tokens are all lowercase; normalizing here (like the material key) keeps a
+        // spec written as 'powered=TRUE' from silently failing to match instead of erroring or working.
+        final Map<String, String> normalizedProperties = new LinkedHashMap<>();
+        if (properties != null)
         {
-            if (property.getKey() == null || property.getKey().isBlank())
-                throw new IllegalArgumentException("Property names may not be blank.");
-            if (property.getValue() == null || property.getValue().isBlank())
-                throw new IllegalArgumentException(
-                    "Property '%s' may not have a blank value.".formatted(property.getKey()));
+            for (final Map.Entry<String, String> property : properties.entrySet())
+            {
+                if (property.getKey() == null || property.getKey().isBlank())
+                    throw new IllegalArgumentException("Property names may not be blank.");
+                if (property.getValue() == null || property.getValue().isBlank())
+                    throw new IllegalArgumentException(
+                        "Property '%s' may not have a blank value.".formatted(property.getKey()));
+                normalizedProperties.put(
+                    property.getKey().trim().toLowerCase(java.util.Locale.ROOT),
+                    property.getValue().trim().toLowerCase(java.util.Locale.ROOT));
+            }
         }
+        properties = Collections.unmodifiableMap(normalizedProperties);
     }
 
     /**

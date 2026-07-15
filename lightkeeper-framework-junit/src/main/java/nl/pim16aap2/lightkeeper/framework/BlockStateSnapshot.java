@@ -28,7 +28,10 @@ public record BlockStateSnapshot(
     {
         materialKey = MaterialKeys.normalize(materialKey);
         Objects.requireNonNull(blockData, "blockData may not be null.");
-        properties = properties == null ? Map.of() : Map.copyOf(properties);
+        // An order-preserving copy keeps the documented server rendering order observable.
+        properties = properties == null
+            ? Map.of()
+            : java.util.Collections.unmodifiableMap(new java.util.LinkedHashMap<>(properties));
     }
 
     /**

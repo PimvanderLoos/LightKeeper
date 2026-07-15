@@ -46,6 +46,9 @@ public final class WorldHandle
     /**
      * Sets the block at a position from a block spec, applying type and state properties atomically.
      *
+     * <p>Placement applies a physics update: attachable or gravity-affected blocks (levers, torches, sand)
+     * need a valid supporting block in place first, or they break or fall immediately.
+     *
      * @param position
      *     The block position.
      * @param spec
