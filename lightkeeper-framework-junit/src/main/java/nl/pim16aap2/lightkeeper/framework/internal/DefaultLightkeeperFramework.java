@@ -3,24 +3,20 @@ package nl.pim16aap2.lightkeeper.framework.internal;
 import nl.pim16aap2.lightkeeper.framework.BlockPos;
 import nl.pim16aap2.lightkeeper.framework.CapturedEventSnapshot;
 import nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot;
-import nl.pim16aap2.lightkeeper.framework.CommandResult;
 import nl.pim16aap2.lightkeeper.framework.Condition;
 import nl.pim16aap2.lightkeeper.framework.EntitySnapshot;
-import nl.pim16aap2.lightkeeper.framework.EventCaptureHandle;
-import nl.pim16aap2.lightkeeper.framework.FrameworkHandleFactory;
+import nl.pim16aap2.lightkeeper.framework.IBots;
+import nl.pim16aap2.lightkeeper.framework.IEvents;
 import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
-import nl.pim16aap2.lightkeeper.framework.IPlayerBuilder;
-import nl.pim16aap2.lightkeeper.framework.IWorldBuilder;
+import nl.pim16aap2.lightkeeper.framework.IServerControl;
+import nl.pim16aap2.lightkeeper.framework.IWorlds;
 import nl.pim16aap2.lightkeeper.framework.InventorySnapshot;
 import nl.pim16aap2.lightkeeper.framework.MenuSnapshot;
-import nl.pim16aap2.lightkeeper.framework.Platform;
 import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
 import nl.pim16aap2.lightkeeper.framework.ServerErrorSnapshot;
-import nl.pim16aap2.lightkeeper.framework.ServerErrorsHandle;
 import nl.pim16aap2.lightkeeper.framework.Vec3;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import nl.pim16aap2.lightkeeper.framework.WorldSpec;
-import nl.pim16aap2.lightkeeper.protocol.CommandSource;
 import nl.pim16aap2.lightkeeper.protocol.DropResult;
 import nl.pim16aap2.lightkeeper.protocol.GetServerErrors;
 import nl.pim16aap2.lightkeeper.protocol.MutatePlayerPermission;
@@ -45,14 +41,18 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Default LightKeeper framework implementation.
+ *
+ * <p>Public API surface is delegated to the facet facades ({@link ServerControlFacade}, {@link WorldsFacade},
+ * {@link BotsFacade}, {@link EventsFacade}); this class owns the shared runtime internals and the lifecycle/close
+ * plumbing, and implements the internal {@link IFrameworkGateway} seam consumed by handles.
  */
 public final class DefaultLightkeeperFramework implements ILightkeeperFramework, IFrameworkGateway
 {
     private static final System.Logger LOG = System.getLogger(DefaultLightkeeperFramework.class.getName());
 
-    private static final Duration STARTUP_TIMEOUT = Duration.ofMinutes(2);
-    private static final Duration AGENT_CONNECT_TIMEOUT = Duration.ofSeconds(45);
-    private static final Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(45);
+    static final Duration STARTUP_TIMEOUT = Duration.ofMinutes(2);
+    static final Duration AGENT_CONNECT_TIMEOUT = Duration.ofSeconds(45);
+    static final Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(45);
     private static final String DEFAULT_WORLD_NAME_PREFIX = "lk_world_";
     static final WorldSpec.WorldType DEFAULT_WORLD_TYPE = WorldSpec.WorldType.NORMAL;
     static final WorldSpec.WorldEnvironment DEFAULT_WORLD_ENVIRONMENT = WorldSpec.WorldEnvironment.NORMAL;
@@ -64,8 +64,8 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     private final PlayerScopeRegistry playerScopeRegistry;
     private final AtomicBoolean closed = new AtomicBoolean(false);
     /**
-     * Whether the server was taken down — via {@link #crashServer()} or {@link #stopServer()} — and has not been
-     * started again yet.
+     * Whether the server was taken down — via {@link IServerControl#crash()} or {@link IServerControl#stop()} — and
+     * has not been started again yet.
      */
     private final AtomicBoolean serverDown = new AtomicBoolean(false);
     /**
@@ -73,6 +73,11 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
      * {@link #clearServerErrors()}.
      */
     private final AtomicLong stderrScanWatermark = new AtomicLong(0L);
+
+    private final ServerControlFacade serverControlFacade;
+    private final WorldsFacade worldsFacade;
+    private final BotsFacade botsFacade;
+    private final EventsFacade eventsFacade;
 
     @Inject
     DefaultLightkeeperFramework(
@@ -86,6 +91,12 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
             Objects.requireNonNull(minecraftServerProcess, "minecraftServerProcess may not be null.");
         this.agentClient = Objects.requireNonNull(agentClient, "agentClient may not be null.");
         this.playerScopeRegistry = Objects.requireNonNull(playerScopeRegistry, "playerScopeRegistry may not be null.");
+
+        this.serverControlFacade = new ServerControlFacade(
+            this, runtimeManifest, minecraftServerProcess, agentClient, playerScopeRegistry);
+        this.worldsFacade = new WorldsFacade(this, runtimeManifest, agentClient);
+        this.botsFacade = new BotsFacade(this, agentClient, playerScopeRegistry);
+        this.eventsFacade = new EventsFacade(this, agentClient);
     }
 
     /**
@@ -146,123 +157,27 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     }
 
     @Override
-    public WorldHandle mainWorld()
+    public IServerControl server()
     {
-        ensureOpen();
-        return FrameworkHandleFactory.worldHandle(this, agentClient.mainWorld());
+        return serverControlFacade;
     }
 
     @Override
-    public WorldHandle newWorld()
+    public IWorlds worlds()
     {
-        return newWorld(defaultWorldSpec());
+        return worldsFacade;
     }
 
     @Override
-    public WorldHandle newWorld(WorldSpec worldSpec)
+    public IBots bots()
     {
-        ensureOpen();
-        final WorldSpec validatedWorldSpec = validateWorldSpec(worldSpec);
-        final String worldName = agentClient.newWorld(validatedWorldSpec);
-        LOG.log(
-            System.Logger.Level.INFO,
-            () -> "LK_FRAMEWORK: Created world '" + worldName + "'."
-        );
-        return FrameworkHandleFactory.worldHandle(this, worldName);
+        return botsFacade;
     }
 
     @Override
-    public WorldHandle newWorldFromTemplate(String templateName)
+    public IEvents events()
     {
-        ensureOpen();
-        final String trimmedTemplateName =
-            Objects.requireNonNull(templateName, "templateName may not be null.").trim();
-        if (trimmedTemplateName.isEmpty())
-            throw new IllegalArgumentException("templateName may not be blank.");
-        final RuntimeManifest.ProvisionedWorld template = runtimeManifest.provisionedWorlds().stream()
-            .filter(provisionedWorld -> provisionedWorld.name().equals(trimmedTemplateName))
-            .findFirst()
-            .orElseThrow(() -> new IllegalArgumentException(
-                "No world template named '%s' was provisioned. Provisioned templates: %s".formatted(
-                    trimmedTemplateName,
-                    runtimeManifest.provisionedWorlds().stream()
-                        .map(RuntimeManifest.ProvisionedWorld::name)
-                        .toList())));
-
-        // Pass the template's own provisioned spec: folders that lack complete world data are generated with
-        // the configured settings, while folders with real world data load from their own files and ignore it.
-        final String worldName = agentClient.newWorld(toWorldSpec(template));
-        LOG.log(
-            System.Logger.Level.INFO,
-            () -> "LK_FRAMEWORK: Loaded world '" + worldName + "' from a provisioned template."
-        );
-        return FrameworkHandleFactory.worldHandle(this, worldName);
-    }
-
-    private static WorldSpec toWorldSpec(RuntimeManifest.ProvisionedWorld provisionedWorld)
-    {
-        return new WorldSpec(
-            provisionedWorld.name(),
-            WorldSpec.WorldType.valueOf(provisionedWorld.worldType()),
-            WorldSpec.WorldEnvironment.valueOf(provisionedWorld.environment()),
-            provisionedWorld.seed()
-        );
-    }
-
-    @Override
-    public PlayerHandle createPlayer(String name, WorldHandle world)
-    {
-        return createPlayer(name, UUID.randomUUID(), world);
-    }
-
-    @Override
-    public PlayerHandle createPlayer(String name, UUID uuid, WorldHandle world)
-    {
-        ensureOpen();
-        final String trimmedName = validatePlayerName(name);
-        Objects.requireNonNull(uuid, "uuid may not be null.");
-        Objects.requireNonNull(world, "world may not be null.");
-        final String worldName = Objects.requireNonNull(world.name(), "world.name may not be null.");
-
-        final AgentPlayerData createdPlayer = agentClient.createPlayer(
-            trimmedName,
-            uuid,
-            worldName,
-            null,
-            null,
-            null,
-            null,
-            null
-        );
-        playerScopeRegistry.register(createdPlayer.uniqueId());
-        LOG.log(
-            System.Logger.Level.INFO,
-            () -> "LK_FRAMEWORK: Created player '%s' (%s) in world '%s'."
-                .formatted(createdPlayer.name(), createdPlayer.uniqueId(), worldName)
-        );
-        return FrameworkHandleFactory.playerHandle(this, createdPlayer.uniqueId(), createdPlayer.name());
-    }
-
-    @Override
-    public IPlayerBuilder buildPlayer()
-    {
-        ensureOpen();
-        return new DefaultPlayerBuilder(this);
-    }
-
-    @Override
-    public IWorldBuilder buildWorld()
-    {
-        ensureOpen();
-        return new DefaultWorldBuilder(this);
-    }
-
-    @Override
-    public CommandResult executeCommand(CommandSource source, String command)
-    {
-        ensureOpen();
-        final boolean success = agentClient.executeCommand(source, command);
-        return new CommandResult(success, success ? "Command succeeded." : "Command failed.");
+        return eventsFacade;
     }
 
     @Override
@@ -526,15 +441,6 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     }
 
     @Override
-    public EventCaptureHandle captureEvents(String eventClassName)
-    {
-        ensureOpen();
-        Objects.requireNonNull(eventClassName, "eventClassName may not be null.");
-        agentClient.registerEventListener(eventClassName);
-        return FrameworkHandleFactory.eventCaptureHandle(this, eventClassName);
-    }
-
-    @Override
     public InventorySnapshot playerInventory(UUID playerId)
     {
         ensureOpen();
@@ -671,20 +577,6 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     }
 
     @Override
-    public List<String> serverOutput()
-    {
-        ensureOpen();
-        return minecraftServerProcess.snapshotOutputLines();
-    }
-
-    @Override
-    public ServerErrorsHandle serverErrors()
-    {
-        ensureOpen();
-        return FrameworkHandleFactory.serverErrorsHandle(this);
-    }
-
-    @Override
     public List<ServerErrorSnapshot> capturedServerErrors()
     {
         ensureOpen();
@@ -734,126 +626,6 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
             entry.throwableMessage(),
             entry.stackTrace()
         );
-    }
-
-    @Override
-    public Platform platform()
-    {
-        ensureOpen();
-        return agentClient.serverPlatform();
-    }
-
-    @Override
-    public Path serverDirectory()
-    {
-        ensureOpen();
-        return Path.of(runtimeManifest.serverDirectory());
-    }
-
-    @Override
-    public Path pluginDataDirectory(String pluginName)
-    {
-        ensureOpen();
-        final String trimmedPluginName =
-            Objects.requireNonNull(pluginName, "pluginName may not be null.").trim();
-        if (trimmedPluginName.isEmpty())
-            throw new IllegalArgumentException("pluginName may not be blank.");
-        // The plugin name is authored by the test writer (trusted input); this check catches accidental path
-        // fragments early rather than acting as a security boundary.
-        if (trimmedPluginName.contains("/") || trimmedPluginName.contains("\\") || trimmedPluginName.contains(".."))
-            throw new IllegalArgumentException(
-                "pluginName must be a plain directory name, got '%s'.".formatted(trimmedPluginName));
-        return serverDirectory().resolve("plugins").resolve(trimmedPluginName);
-    }
-
-    @Override
-    public void crashServer()
-    {
-        ensureOpen();
-        LOG.log(System.Logger.Level.INFO, "LK_FRAMEWORK: Crashing Minecraft server.");
-        playerScopeRegistry.invalidateAll();
-        agentClient.close();
-        minecraftServerProcess.kill();
-        serverDown.set(true);
-    }
-
-    @Override
-    public void stopServer()
-    {
-        ensureOpen();
-        if (!minecraftServerProcess.isRunning())
-            throw new IllegalStateException("Cannot stop the server because it is not running.");
-        doStopServer();
-    }
-
-    /**
-     * Graceful-stop implementation without the running-state precondition.
-     *
-     * <p>Tolerates a server that died on its own after the caller's running check: player cleanup swallows
-     * per-player failures, the client close is idempotent, and the process stop handles dead processes. This is
-     * what lets {@link #restartServer()} avoid a check-then-act race on the running state.
-     */
-    private void doStopServer()
-    {
-        LOG.log(System.Logger.Level.INFO, "LK_FRAMEWORK: Stopping Minecraft server gracefully.");
-        try
-        {
-            // Remove synthetic players through the live agent first so they quit cleanly instead of being
-            // persisted as offline players in the world's playerdata by the server's shutdown save.
-            playerScopeRegistry.cleanupAll(agentClient::removePlayer);
-            agentClient.close();
-        }
-        finally
-        {
-            serverDown.set(true);
-            minecraftServerProcess.stop(SHUTDOWN_TIMEOUT);
-        }
-    }
-
-    @Override
-    public void startServer()
-    {
-        ensureOpen();
-        if (minecraftServerProcess.isRunning())
-            throw new IllegalStateException("Cannot start the server because it is already running.");
-
-        LOG.log(System.Logger.Level.INFO, "LK_FRAMEWORK: Starting Minecraft server.");
-        minecraftServerProcess.start(STARTUP_TIMEOUT);
-        try
-        {
-            agentClient.rehandshake(
-                AGENT_CONNECT_TIMEOUT,
-                runtimeManifest.agentAuthToken(),
-                runtimeManifest.runtimeProtocolVersion(),
-                Objects.requireNonNullElse(runtimeManifest.agentJarSha256(), "")
-            );
-            preloadConfiguredWorlds();
-        }
-        catch (Exception exception)
-        {
-            // Return to a clean 'down' state so a retry of startServer() remains possible; leaving the process
-            // running here would wedge the start path (running + down means only restartServer() could recover).
-            try
-            {
-                minecraftServerProcess.stop(SHUTDOWN_TIMEOUT);
-            }
-            catch (Exception stopException)
-            {
-                exception.addSuppressed(stopException);
-            }
-            throw exception;
-        }
-        serverDown.set(false);
-    }
-
-    @Override
-    public void restartServer()
-    {
-        ensureOpen();
-        LOG.log(System.Logger.Level.INFO, "LK_FRAMEWORK: Restarting Minecraft server.");
-        if (minecraftServerProcess.isRunning())
-            doStopServer();
-        startServer();
     }
 
     private boolean clickBlock(UUID playerId, BlockPos position, String blockFace, BlockClickOperation operation)
@@ -920,7 +692,13 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
             clearServerErrors();
     }
 
-    private void preloadConfiguredWorlds()
+    /**
+     * Preloads the worlds configured in the runtime manifest with {@code loadOnStartup=true}.
+     *
+     * <p>Shared by the initial boot path ({@link #start(Path)}) and the server-control restart path
+     * ({@link IServerControl#start()}).
+     */
+    void preloadConfiguredWorlds()
     {
         for (final RuntimeManifest.ProvisionedWorld provisionedWorld : runtimeManifest.provisionedWorlds())
         {
@@ -932,6 +710,22 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
                 () -> "LK_FRAMEWORK: Preloaded world '%s' from runtime manifest.".formatted(worldName)
             );
         }
+    }
+
+    /**
+     * Marks the shared Minecraft server as taken down (crashed or stopped) and not yet restarted.
+     */
+    void markServerDown()
+    {
+        serverDown.set(true);
+    }
+
+    /**
+     * Marks the shared Minecraft server as running again after a successful start.
+     */
+    void markServerUp()
+    {
+        serverDown.set(false);
     }
 
     void ensureOpen()
@@ -955,33 +749,19 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
         }
     }
 
-    private static WorldSpec validateWorldSpec(WorldSpec worldSpec)
+    static WorldSpec toWorldSpec(RuntimeManifest.ProvisionedWorld provisionedWorld)
     {
-        Objects.requireNonNull(worldSpec, "worldSpec may not be null.");
-        final String worldName = Objects.requireNonNull(worldSpec.name(), "worldSpec.name may not be null.").trim();
-        if (worldName.isEmpty())
-            throw new IllegalArgumentException("worldSpec.name may not be blank.");
-
-        final WorldSpec.WorldType worldType =
-            Objects.requireNonNull(worldSpec.worldType(), "worldSpec.worldType may not be null.");
-        final WorldSpec.WorldEnvironment worldEnvironment =
-            Objects.requireNonNull(worldSpec.environment(), "worldSpec.environment may not be null.");
-        return new WorldSpec(worldName, worldType, worldEnvironment, worldSpec.seed());
+        return new WorldSpec(
+            provisionedWorld.name(),
+            WorldSpec.WorldType.valueOf(provisionedWorld.worldType()),
+            WorldSpec.WorldEnvironment.valueOf(provisionedWorld.environment()),
+            provisionedWorld.seed()
+        );
     }
 
     static String createDefaultWorldName()
     {
         return DEFAULT_WORLD_NAME_PREFIX + UUID.randomUUID().toString().replace("-", "");
-    }
-
-    private static WorldSpec defaultWorldSpec()
-    {
-        return new WorldSpec(
-            createDefaultWorldName(),
-            DEFAULT_WORLD_TYPE,
-            DEFAULT_WORLD_ENVIRONMENT,
-            DEFAULT_WORLD_SEED
-        );
     }
 
     static String validatePlayerName(String name)
@@ -996,7 +776,7 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
 
     WorldHandle createWorldFromBuilder(WorldSpec worldSpec)
     {
-        return newWorld(worldSpec);
+        return worldsFacade.create(worldSpec);
     }
 
     PlayerHandle createPlayerFromBuilder(
@@ -1009,17 +789,6 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
         @Nullable Double health,
         java.util.Set<String> permissions)
     {
-        final AgentPlayerData createdPlayer = agentClient.createPlayer(
-            name,
-            uuid,
-            worldHandle.name(),
-            x,
-            y,
-            z,
-            health,
-            permissions
-        );
-        playerScopeRegistry.register(createdPlayer.uniqueId());
-        return FrameworkHandleFactory.playerHandle(this, createdPlayer.uniqueId(), createdPlayer.name());
+        return botsFacade.createFromBuilder(name, uuid, worldHandle, x, y, z, health, permissions);
     }
 }

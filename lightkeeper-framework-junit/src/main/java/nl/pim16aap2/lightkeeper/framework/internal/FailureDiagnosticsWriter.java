@@ -140,7 +140,7 @@ public final class FailureDiagnosticsWriter
 
     private static String renderServerErrors(ILightkeeperFramework framework)
     {
-        final List<ServerErrorSnapshot> capturedErrors = framework.serverErrors().getCaptured();
+        final List<ServerErrorSnapshot> capturedErrors = framework.server().errors().getCaptured();
         if (capturedErrors.isEmpty())
             return "No captured server errors." + System.lineSeparator();
 
@@ -152,7 +152,7 @@ public final class FailureDiagnosticsWriter
 
     private static String renderServerOutput(ILightkeeperFramework framework)
     {
-        return String.join(System.lineSeparator(), framework.serverOutput()) + System.lineSeparator();
+        return String.join(System.lineSeparator(), framework.server().output()) + System.lineSeparator();
     }
 
     /**
