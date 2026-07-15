@@ -330,6 +330,71 @@ class AgentCommandValidationTest
     }
 
     // -----------------------------------------------------------------------
+    // CreatePlayer.Command validation
+    // -----------------------------------------------------------------------
+
+    @Test
+    void createPlayerCommand_shouldRejectNonNullUuidUnderFullLogin()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> new CreatePlayer.Command(
+            "request-1", "Alice", UUID.randomUUID(), "world",
+            null, null, null, null, null, JoinMode.FULL_LOGIN, null))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("uuid")
+            .hasMessageContaining("FULL_LOGIN");
+    }
+
+    @Test
+    @SuppressWarnings("NullAway") // Intentionally crosses the non-null API boundary to verify fail-fast validation.
+    void createPlayerCommand_shouldRejectNullUuidUnderLegacySpawn()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> new CreatePlayer.Command(
+            "request-1", "Alice", null, "world",
+            null, null, null, null, null, JoinMode.LEGACY_SPAWN, null))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("uuid");
+    }
+
+    @Test
+    void createPlayerCommand_shouldAllowNullUuidUnderFullLogin()
+    {
+        // setup + execute
+        final CreatePlayer.Command command = new CreatePlayer.Command(
+            "request-1", "Alice", null, "world",
+            null, null, null, null, null, JoinMode.FULL_LOGIN, "en_us");
+
+        // verify
+        assertThat(command.uuid()).isNull();
+        assertThat(command.joinMode()).isEqualTo(JoinMode.FULL_LOGIN);
+        assertThat(command.locale()).isEqualTo("en_us");
+    }
+
+    @Test
+    @SuppressWarnings("NullAway") // Intentionally crosses the non-null API boundary to verify fail-fast validation.
+    void createPlayerCommand_shouldRejectNullJoinMode()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> new CreatePlayer.Command(
+            "request-1", "Alice", UUID.randomUUID(), "world",
+            null, null, null, null, null, null, null))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("joinMode");
+    }
+
+    @Test
+    void createPlayerCommand_shouldRejectBlankLocaleWhenPresent()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> new CreatePlayer.Command(
+            "request-1", "Alice", null, "world",
+            null, null, null, null, null, JoinMode.FULL_LOGIN, "   "))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("locale");
+    }
+
+    // -----------------------------------------------------------------------
     // IProtocolValue leaf validation
     // -----------------------------------------------------------------------
 
