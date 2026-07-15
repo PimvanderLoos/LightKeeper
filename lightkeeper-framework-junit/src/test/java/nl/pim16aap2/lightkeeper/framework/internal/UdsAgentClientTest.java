@@ -770,6 +770,48 @@ class UdsAgentClientTest
     }
 
     @Test
+    void setBlockData_shouldSendSetBlockRequestWithBlockDataAndDerivedMaterialKey(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("set-block-data.sock");
+        final String responseJson = "{\"requestId\":\"1\",\"success\":true,\"material\":\"LEVER\"}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            client.setBlockData("world", new BlockPos(1, 64, 1), "minecraft:lever[powered=true]");
+
+            // verify
+            assertThat(server.capturedRequest())
+                .contains("\"action\":\"SET_BLOCK\"")
+                .contains("\"materialKey\":\"minecraft:lever\"")
+                .contains("\"blockData\":\"minecraft:lever[powered=true]\"");
+        }
+    }
+
+    @Test
+    void blockData_shouldReturnBlockDataFieldFromResponse(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("block-data.sock");
+        final String responseJson =
+            "{\"requestId\":\"1\",\"success\":true,\"material\":\"minecraft:lever\","
+                + "\"blockData\":\"minecraft:lever[face=floor,facing=north,powered=true]\"}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            final String blockData = client.blockData("world", new BlockPos(1, 64, 1));
+
+            // verify
+            assertThat(blockData).isEqualTo("minecraft:lever[face=floor,facing=north,powered=true]");
+            assertThat(server.capturedRequest()).contains("\"action\":\"BLOCK_TYPE\"");
+        }
+    }
+
+    @Test
     void hasPlayerPermission_shouldReturnFalseFromResponse(@TempDir Path tempDirectory)
         throws Exception
     {

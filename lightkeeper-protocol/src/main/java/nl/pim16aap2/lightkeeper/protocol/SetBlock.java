@@ -1,5 +1,7 @@
 package nl.pim16aap2.lightkeeper.protocol;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Sets the block at the given position.
  */
@@ -25,6 +27,10 @@ public final class SetBlock
      * @param materialKey
      *     Namespaced key (e.g. {@code minecraft:stone}) or plain Bukkit {@code Material} enum name identifying
      *     the block type to place.
+     * @param blockData
+     *     Optional full block-data string (e.g. {@code minecraft:lever[powered=true,facing=north]}); when
+     *     present it takes precedence over {@code materialKey} and is applied via Bukkit's block-data parser,
+     *     so state properties are set atomically with the type.
      */
     public record Command(
         String requestId,
@@ -32,7 +38,8 @@ public final class SetBlock
         int x,
         int y,
         int z,
-        String materialKey
+        String materialKey,
+        @Nullable String blockData
     ) implements IAgentCommand<Response>
     {
         /**
@@ -43,6 +50,8 @@ public final class SetBlock
             ProtocolPreconditions.requireNonBlank(requestId, "requestId");
             ProtocolPreconditions.requireNonBlank(worldName, "worldName");
             ProtocolPreconditions.requireNonBlank(materialKey, "materialKey");
+            if (blockData != null && blockData.isBlank())
+                throw new IllegalArgumentException("'blockData' must not be blank when present.");
         }
 
         @Override

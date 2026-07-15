@@ -25,6 +25,16 @@ public interface IFrameworkGatewayView
     void setBlock(String worldName, BlockPos position, String material);
 
     /**
+     * Gets the full block-data string at a position (every state property included).
+     */
+    String getBlockData(String worldName, BlockPos position);
+
+    /**
+     * Sets a block from a full block-data string, applying type and state properties atomically.
+     */
+    void setBlockData(String worldName, BlockPos position, String blockData);
+
+    /**
      * Executes a command as a synthetic player.
      */
     void executePlayerCommand(UUID playerId, String command);

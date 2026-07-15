@@ -52,9 +52,13 @@ public final class BlockType
      *
      * @param material
      *     Namespaced material key of the block at the requested position.
+     * @param blockData
+     *     Full block-data string of the block (Bukkit {@code BlockData#getAsString()}), carrying every state
+     *     property, e.g. {@code minecraft:lever[face=floor,facing=north,powered=true]}.
      */
     public record Response(
-        String material
+        String material,
+        String blockData
     ) implements IAgentResponse
     {
     }

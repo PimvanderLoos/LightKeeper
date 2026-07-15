@@ -1,6 +1,9 @@
 package nl.pim16aap2.lightkeeper.framework.assertions;
 
 import nl.pim16aap2.lightkeeper.framework.BlockPos;
+import nl.pim16aap2.lightkeeper.framework.BlockRef;
+import nl.pim16aap2.lightkeeper.framework.BlockSpec;
+import nl.pim16aap2.lightkeeper.framework.BlockStateSnapshot;
 import nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot;
 import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.InventorySnapshot;
@@ -16,6 +19,7 @@ import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -312,5 +316,45 @@ class HandleAssertionsTest
 
         // execute + verify
         LightkeeperAssertions.assertThat(handle).hasBlockAt(new Vector3Di(1, 2, 3)).ofType(Material.STONE);
+    }
+
+    @Test
+    void worldBlockAssert_withState_shouldPassWhenStateMatchesSpec()
+    {
+        // setup
+        final WorldHandle handle = mock(WorldHandle.class);
+        final BlockPos position = new BlockPos(1, 2, 3);
+        final BlockRef blockRef = mock(BlockRef.class);
+        when(handle.blockAt(position)).thenReturn(blockRef);
+        when(blockRef.state()).thenReturn(new BlockStateSnapshot(
+            "minecraft:lever",
+            "minecraft:lever[face=floor,facing=north,powered=true]",
+            Map.of("face", "floor", "facing", "north", "powered", "true")));
+
+        // execute + verify
+        LightkeeperAssertions.assertThat(handle).hasBlockAt(1, 2, 3)
+            .withState(BlockSpec.parse("minecraft:lever[powered=true]"));
+    }
+
+    @Test
+    void worldBlockAssert_withState_shouldFailWhenStateDoesNotMatchSpec()
+    {
+        // setup
+        final WorldHandle handle = mock(WorldHandle.class);
+        final BlockPos position = new BlockPos(0, 0, 0);
+        final BlockRef blockRef = mock(BlockRef.class);
+        when(handle.blockAt(position)).thenReturn(blockRef);
+        when(blockRef.state()).thenReturn(new BlockStateSnapshot(
+            "minecraft:lever",
+            "minecraft:lever[face=floor,facing=north,powered=false]",
+            Map.of("face", "floor", "facing", "north", "powered", "false")));
+        final BlockSpec expected = BlockSpec.parse("minecraft:lever[powered=true]");
+
+        // execute + verify
+        assertThatThrownBy(() ->
+            LightkeeperAssertions.assertThat(handle).hasBlockAt(0, 0, 0).withState(expected))
+            .isInstanceOf(AssertionError.class)
+            .hasMessageContaining(expected.asString())
+            .hasMessageContaining("minecraft:lever[face=floor,facing=north,powered=false]");
     }
 }

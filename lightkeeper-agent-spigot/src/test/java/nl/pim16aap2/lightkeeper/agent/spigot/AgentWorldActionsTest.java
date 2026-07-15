@@ -2,6 +2,7 @@ package nl.pim16aap2.lightkeeper.agent.spigot;
 
 import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
 import nl.pim16aap2.lightkeeper.protocol.AgentProtocolException;
+import nl.pim16aap2.lightkeeper.protocol.BlockType;
 import nl.pim16aap2.lightkeeper.protocol.CommandSource;
 import nl.pim16aap2.lightkeeper.protocol.ExecuteCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetServerTick;
@@ -14,6 +15,8 @@ import nl.pim16aap2.lightkeeper.protocol.WaitTicks;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -291,7 +294,7 @@ class AgentWorldActionsTest
     {
         // setup + execute + verify — validation is enforced by the command's compact constructor
         assertThatThrownBy(() ->
-            new SetBlock.Command("request-blank-mat", "world", 0, 64, 0, "   "))
+            new SetBlock.Command("request-blank-mat", "world", 0, 64, 0, "   ", null))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("material");
     }
@@ -303,7 +306,7 @@ class AgentWorldActionsTest
         final AgentWorldActions worldActions = createWorldActions(new AtomicLong());
 
         final SetBlock.Command command =
-            new SetBlock.Command("request-unknown-mat", "world", 0, 64, 0, "not_a_material");
+            new SetBlock.Command("request-unknown-mat", "world", 0, 64, 0, "not_a_material", null);
 
         // execute + verify
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class);
@@ -314,6 +317,91 @@ class AgentWorldActionsTest
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Unknown material");
         }
+    }
+
+    @Test
+    void handleBlockType_shouldReturnMaterialAndBlockDataFromBlock()
+        throws Exception
+    {
+        // setup
+        final AgentWorldActions worldActions = createWorldActions(new AtomicLong());
+        final World world = mock();
+        final Block block = mock();
+        final BlockData blockData = mock();
+        when(block.getType()).thenReturn(Material.STONE);
+        when(block.getBlockData()).thenReturn(blockData);
+        when(blockData.getAsString()).thenReturn("minecraft:stone");
+        when(world.getBlockAt(0, 64, 0)).thenReturn(block);
+
+        // execute
+        final BlockType.Response response;
+        try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
+        {
+            bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
+            bukkitMockedStatic.when(() -> Bukkit.getWorld("world")).thenReturn(world);
+            response = worldActions.handleBlockType(new BlockType.Command("request-blocktype", "world", 0, 64, 0));
+        }
+
+        // verify
+        assertThat(response.material()).isEqualTo(Material.STONE.getKey().toString());
+        assertThat(response.blockData()).isEqualTo("minecraft:stone");
+    }
+
+    @Test
+    void handleSetBlock_shouldApplyBlockDataWhenPresent()
+        throws Exception
+    {
+        // setup
+        final AgentWorldActions worldActions = createWorldActions(new AtomicLong());
+        final World world = mock();
+        final Block block = mock();
+        final BlockData blockData = mock();
+        when(block.getType()).thenReturn(Material.LEVER);
+        when(world.getBlockAt(0, 64, 0)).thenReturn(block);
+        final SetBlock.Command command = new SetBlock.Command(
+            "request-blockdata", "world", 0, 64, 0, "lever", "minecraft:lever[powered=true]");
+
+        // execute
+        final SetBlock.Response response;
+        try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
+        {
+            bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
+            bukkitMockedStatic.when(() -> Bukkit.getWorld("world")).thenReturn(world);
+            bukkitMockedStatic.when(() -> Bukkit.createBlockData("minecraft:lever[powered=true]"))
+                .thenReturn(blockData);
+            response = worldActions.handleSetBlock(command);
+        }
+
+        // verify
+        assertThat(response.material()).isEqualTo("LEVER");
+        verify(block).setBlockData(blockData);
+        verify(block, never()).setType(any());
+    }
+
+    @Test
+    void handleSetBlock_shouldPropagateIllegalArgumentExceptionWhenBlockDataIsMalformed()
+    {
+        // setup
+        final AgentWorldActions worldActions = createWorldActions(new AtomicLong());
+        final World world = mock();
+        final Block block = mock();
+        when(world.getBlockAt(0, 64, 0)).thenReturn(block);
+        final SetBlock.Command command = new SetBlock.Command(
+            "request-malformed", "world", 0, 64, 0, "lever", "not valid block data");
+
+        // execute + verify
+        try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
+        {
+            bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
+            bukkitMockedStatic.when(() -> Bukkit.getWorld("world")).thenReturn(world);
+            bukkitMockedStatic.when(() -> Bukkit.createBlockData("not valid block data"))
+                .thenThrow(new IllegalArgumentException("Unknown block data"));
+
+            assertThatThrownBy(() -> worldActions.handleSetBlock(command))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Unknown block data");
+        }
+        verify(block, never()).setType(any());
     }
 
     private static AgentWorldActions createWorldActions(AtomicLong tickCounter)

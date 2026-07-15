@@ -30,6 +30,38 @@ public final class WorldHandle
     }
 
     /**
+     * Gets a live reference to the block at a position.
+     *
+     * <p>The reference stores only the address; every read through it re-queries the server.
+     *
+     * @param position
+     *     The block position.
+     * @return A live block reference.
+     */
+    public BlockRef blockAt(BlockPos position)
+    {
+        return new BlockRef(frameworkGateway, name, Objects.requireNonNull(position, "position may not be null."));
+    }
+
+    /**
+     * Sets the block at a position from a block spec, applying type and state properties atomically.
+     *
+     * <p>Placement applies a physics update: attachable or gravity-affected blocks (levers, torches, sand)
+     * need a valid supporting block in place first, or they break or fall immediately.
+     *
+     * @param position
+     *     The block position.
+     * @param spec
+     *     The block spec, e.g. {@code BlockSpec.parse("minecraft:lever[face=floor,powered=true]")}.
+     */
+    public void setBlockAt(BlockPos position, BlockSpec spec)
+    {
+        Objects.requireNonNull(position, "position may not be null.");
+        Objects.requireNonNull(spec, "spec may not be null.");
+        frameworkGateway.setBlockData(name, position, spec.asString());
+    }
+
+    /**
      * Retrieves the block type at a position.
      *
      * @param position

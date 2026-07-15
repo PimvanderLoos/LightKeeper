@@ -411,6 +411,100 @@ class DefaultLightkeeperFrameworkGatewayTest
         assertThat(result).isEqualTo(DropResult.EMPTY_HAND);
     }
 
+    @Test
+    void getBlockData_shouldReturnValueFromAgentClient()
+    {
+        // setup
+        final UdsAgentClient agentClient = mock(UdsAgentClient.class);
+        final BlockPos position = new BlockPos(1, 64, 1);
+        when(agentClient.blockData("world", position)).thenReturn("minecraft:lever[powered=true]");
+        final DefaultLightkeeperFramework framework = new DefaultLightkeeperFramework(
+            runtimeManifest(),
+            mock(MinecraftServerProcess.class),
+            agentClient,
+            new PlayerScopeRegistry()
+        );
+
+        // execute
+        final String result = framework.getBlockData("world", position);
+
+        // verify
+        assertThat(result).isEqualTo("minecraft:lever[powered=true]");
+    }
+
+    @Test
+    @SuppressWarnings("NullAway") // Intentionally crosses the non-null API boundary to verify fail-fast validation.
+    void getBlockData_shouldThrowNullPointerExceptionWhenWorldNameIsNull()
+    {
+        // setup
+        final DefaultLightkeeperFramework framework = new DefaultLightkeeperFramework(
+            runtimeManifest(),
+            mock(MinecraftServerProcess.class),
+            mock(UdsAgentClient.class),
+            new PlayerScopeRegistry()
+        );
+
+        // execute + verify
+        assertThatThrownBy(() -> framework.getBlockData(null, new BlockPos(0, 0, 0)))
+            .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void setBlockData_shouldDelegateToAgentClientWithTrimmedBlockData()
+    {
+        // setup
+        final UdsAgentClient agentClient = mock(UdsAgentClient.class);
+        final BlockPos position = new BlockPos(1, 64, 1);
+        final DefaultLightkeeperFramework framework = new DefaultLightkeeperFramework(
+            runtimeManifest(),
+            mock(MinecraftServerProcess.class),
+            agentClient,
+            new PlayerScopeRegistry()
+        );
+
+        // execute
+        framework.setBlockData("world", position, "  minecraft:lever[powered=true]  ");
+
+        // verify
+        verify(agentClient).setBlockData("world", position, "minecraft:lever[powered=true]");
+    }
+
+    @Test
+    void setBlockData_shouldThrowExceptionWhenBlockDataIsBlank()
+    {
+        // setup
+        final DefaultLightkeeperFramework framework = new DefaultLightkeeperFramework(
+            runtimeManifest(),
+            mock(MinecraftServerProcess.class),
+            mock(UdsAgentClient.class),
+            new PlayerScopeRegistry()
+        );
+        final BlockPos position = new BlockPos(1, 64, 1);
+
+        // execute + verify
+        assertThatThrownBy(() -> framework.setBlockData("world", position, "   "))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("blank");
+    }
+
+    @Test
+    @SuppressWarnings("NullAway") // Intentionally crosses the non-null API boundary to verify fail-fast validation.
+    void setBlockData_shouldThrowNullPointerExceptionWhenBlockDataIsNull()
+    {
+        // setup
+        final DefaultLightkeeperFramework framework = new DefaultLightkeeperFramework(
+            runtimeManifest(),
+            mock(MinecraftServerProcess.class),
+            mock(UdsAgentClient.class),
+            new PlayerScopeRegistry()
+        );
+        final BlockPos position = new BlockPos(1, 64, 1);
+
+        // execute + verify
+        assertThatThrownBy(() -> framework.setBlockData("world", position, null))
+            .isInstanceOf(NullPointerException.class);
+    }
+
     private static RuntimeManifest runtimeManifest()
     {
         return new RuntimeManifest(

@@ -154,9 +154,38 @@ final class UdsAgentClient implements AutoCloseable
             position.x(),
             position.y(),
             position.z(),
-            material
+            material,
+            null
         );
         send(command);
+    }
+
+    void setBlockData(String worldName, BlockPos position, String blockData)
+    {
+        final int bracketStart = blockData.indexOf('[');
+        final String materialKey = bracketStart < 0 ? blockData : blockData.substring(0, bracketStart);
+        final SetBlock.Command command = new SetBlock.Command(
+            nextRequestId(),
+            worldName,
+            position.x(),
+            position.y(),
+            position.z(),
+            materialKey,
+            blockData
+        );
+        send(command);
+    }
+
+    String blockData(String worldName, BlockPos position)
+    {
+        final BlockType.Command command = new BlockType.Command(
+            nextRequestId(),
+            worldName,
+            position.x(),
+            position.y(),
+            position.z()
+        );
+        return send(command).blockData();
     }
 
     AgentPlayerData createPlayer(

@@ -240,6 +240,10 @@ class MyPluginIT
 - Typed event payloads: captured events carry real types (numbers, booleans, UUIDs, enums, entity/world
   references, nested records) — values the agent cannot encode appear as explicit `DROPPED` markers instead
   of being silently absent
+- Block state as a first-class value: place blocks with full state via
+  `world.setBlockAt(pos, BlockSpec.parse("minecraft:lever[face=floor,powered=true]"))` and assert partially
+  via `world.blockAt(pos).is(BlockSpec.parse("minecraft:lever[powered=true]"))` — only named properties
+  are compared
 - Diagnostics-on-failure: failed tests automatically get a bundle (test outcome, captured server errors,
   server console output) under `target/lightkeeper-reports/`
 - Graceful server lifecycle control from tests (`stopServer()`, `startServer()`, `restartServer()`), plus
