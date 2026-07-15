@@ -34,6 +34,10 @@ public final class EventCaptureHandle implements AutoCloseable
      * MONITOR listener — observe the cancelled state. Deterministic only: exactly the next {@code count}
      * events are cancelled, with no predicate filtering. The event class must implement {@code Cancellable}.
      *
+     * <p>Only one cancellation may be armed per event class at a time; arming again while one is active
+     * fails. Closing this handle disarms any remaining budget, so unexhausted cancellations never leak into
+     * later tests on a shared server.
+     *
      * @param count
      *     How many upcoming events to cancel; must be positive.
      * @return This handle for fluent chaining.

@@ -202,6 +202,11 @@ final class AgentEventCapture
     {
         final Listener listener = activeListeners.remove(eventClassName);
         capturedEvents.remove(eventClassName);
+        // Closing a capture also disarms any pending cancellation for the class: a leftover LOWEST-priority
+        // cancel listener would silently cancel later tests' events on the shared server.
+        final CancelNextState armedCancellation = cancelListeners.remove(eventClassName);
+        if (armedCancellation != null)
+            Bukkit.getScheduler().runTask(plugin, () -> HandlerList.unregisterAll(armedCancellation.marker()));
         if (listener == null)
             return;
 

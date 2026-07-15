@@ -96,6 +96,14 @@ final class AgentEventActions
         {
             throw new IllegalArgumentException("Event class not found: " + command.eventClassName(), exception);
         }
+        catch (IllegalStateException exception)
+        {
+            // Re-arming while a cancellation is active is caller error, not a server failure: surface it as
+            // INVALID_ARGUMENT instead of REQUEST_FAILED + a SEVERE log the error capture would pick up.
+            throw new IllegalArgumentException(
+                Objects.requireNonNullElse(exception.getMessage(), exception.getClass().getName()),
+                exception);
+        }
         return new CancelNextEvents.Response();
     }
 

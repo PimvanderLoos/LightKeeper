@@ -621,4 +621,35 @@ class AgentEventCaptureTest
             return HANDLERS;
         }
     }
+
+    @Test
+    void unregisterListener_shouldDisarmPendingCancellation()
+        throws Exception
+    {
+        // setup
+        final JavaPlugin plugin = mock();
+        when(plugin.getLogger()).thenReturn(java.util.logging.Logger.getLogger("test-close-disarm"));
+        final PluginManager pluginManager = mock();
+        final org.bukkit.scheduler.BukkitScheduler scheduler = mock();
+        final AgentEventCapture eventCapture =
+            new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin), new AtomicLong(0L));
+
+        try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class);
+             MockedStatic<HandlerList> handlerListMockedStatic = mockStatic(HandlerList.class))
+        {
+            bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
+            when(pluginManager.getPlugins()).thenReturn(new Plugin[0]);
+            bukkitMockedStatic.when(Bukkit::getPluginManager).thenReturn(pluginManager);
+            bukkitMockedStatic.when(Bukkit::getScheduler).thenReturn(scheduler);
+            eventCapture.registerListener(CancellableTestEvent.class.getName());
+            eventCapture.cancelNextEvents(CancellableTestEvent.class.getName(), 5);
+
+            // execute - closing the capture must also disarm the unexhausted cancellation
+            eventCapture.unregisterListener(CancellableTestEvent.class.getName());
+
+            // verify - the disarm schedules the cancel marker's unregistration and frees the class for re-arm
+            verify(scheduler, org.mockito.Mockito.times(1)).runTask(eq(plugin), any(Runnable.class));
+            eventCapture.cancelNextEvents(CancellableTestEvent.class.getName(), 1);
+        }
+    }
 }
