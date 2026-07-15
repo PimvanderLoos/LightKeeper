@@ -7,7 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 /**
  * Unit tests for the pure, server-decoupled reflection helpers the full-login driver relies on to resolve the
@@ -47,20 +47,44 @@ class BotLoginReflectionHelpersTest
     @Test
     void resolveEnumConstant_shouldFindConstantByName()
     {
+        // setup — the ordinal deliberately points at the OTHER constant, so a name hit must win.
+        final int misleadingOrdinal = 0;
+
         // execute
-        final Object constant = NmsReflectionUtils.resolveEnumConstant(SampleEnum.class, "BETA");
+        final Object constant = NmsReflectionUtils.resolveEnumConstant(SampleEnum.class, "BETA", misleadingOrdinal);
 
         // verify
         assertThat(constant).isEqualTo(SampleEnum.BETA);
     }
 
     @Test
-    void resolveEnumConstant_shouldThrowWhenNameIsUnknown()
+    void resolveEnumConstant_shouldFallBackToOrdinalWhenNameIsUnknown()
     {
-        // execute + verify
-        assertThatThrownBy(() -> NmsReflectionUtils.resolveEnumConstant(SampleEnum.class, "GAMMA"))
+        // setup — an obfuscated-name miss must resolve via the recorded declaration ordinal.
+        final String obfuscatedName = "GAMMA";
+
+        // execute
+        final Object constant = NmsReflectionUtils.resolveEnumConstant(SampleEnum.class, obfuscatedName, 1);
+
+        // verify
+        assertThat(constant).isEqualTo(SampleEnum.BETA);
+    }
+
+    @Test
+    void resolveEnumConstant_shouldThrowWhenNameIsUnknownAndOrdinalOutOfRange()
+    {
+        // setup
+        final int outOfRangeOrdinal = 2;
+
+        // execute
+        final Throwable thrown = catchThrowable(
+            () -> NmsReflectionUtils.resolveEnumConstant(SampleEnum.class, "GAMMA", outOfRangeOrdinal));
+
+        // verify
+        assertThat(thrown)
             .isInstanceOf(IllegalStateException.class)
-            .hasMessageContaining("GAMMA");
+            .hasMessageContaining("GAMMA")
+            .hasMessageContaining("out of range");
     }
 
     @Test

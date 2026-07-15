@@ -51,8 +51,19 @@ public sealed interface IBotLoginOutcome
 
     /**
      * The login pipeline did not reach the play phase within the requested timeout.
+     *
+     * @param phase
+     *     Protocol phase the pipeline was stalled in when the timeout expired, so a timeout report names where
+     *     the login stopped making progress.
      */
-    record TimedOut() implements IBotLoginOutcome
+    record TimedOut(BotJoinPhase phase) implements IBotLoginOutcome
     {
+        /**
+         * Validates the outcome inputs.
+         */
+        public TimedOut
+        {
+            Objects.requireNonNull(phase, "phase");
+        }
     }
 }

@@ -1,5 +1,6 @@
 package nl.pim16aap2.lightkeeper.maven.test;
 
+import nl.pim16aap2.lightkeeper.framework.BlockPos;
 import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.LightkeeperExtension;
 import org.junit.jupiter.api.Test;
@@ -37,10 +38,11 @@ class LightkeeperFullLoginIT
              var joinCapture =
                  framework.events().capture("org.bukkit.event.player.PlayerJoinEvent"))
         {
-            // execute — a full-login join drives the real handshake/login/configuration/play pipeline.
+            // execute — a full-login join drives the real handshake/login/configuration/play pipeline; the
+            // explicit location must be honored even though the server chooses the initial spawn point.
             final var player = framework.bots().builder()
                 .withName(name)
-                .atSpawn(world)
+                .atLocation(world, 8, 100, 8)
                 .withLocale("en_us")
                 .fullLogin()
                 .build();
@@ -48,6 +50,13 @@ class LightkeeperFullLoginIT
             // verify — the bot exists with the server-derived offline UUID (FULL_LOGIN ignores any builder UUID).
             assertThat(player.name()).isEqualTo(name);
             assertThat(player.uniqueId()).isEqualTo(offlineUuid(name));
+
+            // The bot stands at the requested coordinates (placement happens before the join call returns).
+            assertThat(world.entities()
+                .ofType("minecraft:player")
+                .within(new BlockPos(7, 99, 7), new BlockPos(9, 101, 9))
+                .count())
+                .isEqualTo(1);
 
             // Both the async pre-login and the (main-thread) join events must have fired for a real login.
             framework.waitUntil(() -> !joinCapture.getCapturedEvents().isEmpty(), Duration.ofSeconds(10));

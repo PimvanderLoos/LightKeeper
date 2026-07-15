@@ -55,6 +55,9 @@ final class BotLoginReflection
         /** Common ping. */ PING,
         /** Play teleport/position. */ TELEPORT,
         /** Play login (join confirmation). */ GAME_LOGIN,
+        /** Login-phase plugin custom query (answered "unknown"). */ CUSTOM_QUERY,
+        /** Cookie request (answered with an absent payload). */ COOKIE_REQUEST,
+        /** Resource-pack push (declined). */ RESOURCE_PACK_PUSH,
         /** Login-phase disconnect. */ LOGIN_DISCONNECT,
         /** Common disconnect. */ DISCONNECT,
         /** Known informational packet requiring no response. */ CONSUME,
@@ -89,6 +92,9 @@ final class BotLoginReflection
     private final Class<?> disconnectClass;
     private final Class<?> playerPositionClass;
     private final Class<?> gameLoginClass;
+    private final Class<?> customQueryClass;
+    private final Class<?> cookieRequestClass;
+    private final Class<?> resourcePackPushClass;
 
     /**
      * Clientbound packets that are expected in the login/configuration phase and require no response; kept
@@ -131,6 +137,26 @@ final class BotLoginReflection
     private final Constructor<?> clientInformationPacketConstructor;
     private final Class<?> clientInformationClass;
     private final Method clientInformationCreateDefaultMethod;
+    private final Constructor<?> customQueryAnswerConstructor;
+    private final Constructor<?> cookieResponseConstructor;
+    /**
+     * Key type of a cookie request/response ({@code ResourceLocation} on Paper 1.21.11 — surfaced there as
+     * {@code Identifier} — and {@code MinecraftKey} on Spigot); taken structurally from the cookie-response
+     * constructor so no per-distro name entry is needed.
+     */
+    private final Class<?> cookieKeyClass;
+    private final Constructor<?> resourcePackResponseConstructor;
+    /**
+     * {@code ServerboundResourcePackPacket.Action.DECLINED}. The nested action enum's binary name differs per
+     * distribution ({@code $Action} on Paper, {@code $a} on Spigot), so the class is taken structurally from
+     * the response constructor's second parameter.
+     */
+    private final Object resourcePackDeclinedAction;
+
+    // ---- Channel close-notification plumbing (see registerCloseListener). ----
+    private final Method channelCloseFutureMethod;
+    private final Method futureAddListenerMethod;
+    private final Class<?> futureListenerInterface;
 
     private final Map<AccessorKey, Method> accessorCache = new ConcurrentHashMap<>();
 
@@ -157,11 +183,16 @@ final class BotLoginReflection
             final Class<?> packetListenerClass =
                 NmsReflectionUtils.resolveClass("net.minecraft.network.PacketListener", serverClassLoader);
 
-            clientboundFlow = NmsReflectionUtils.resolveEnumConstant(packetFlowClass, "CLIENTBOUND");
-            final Object serverboundFlow = NmsReflectionUtils.resolveEnumConstant(packetFlowClass, "SERVERBOUND");
-            protocolLogin = NmsReflectionUtils.resolveEnumConstant(connectionProtocolClass, "LOGIN");
-            protocolConfiguration = NmsReflectionUtils.resolveEnumConstant(connectionProtocolClass, "CONFIGURATION");
-            protocolPlay = NmsReflectionUtils.resolveEnumConstant(connectionProtocolClass, "PLAY");
+            // Ordinal fallbacks record the 1.21.11 declaration orders, verified against both jars (javap on
+            // Paper; runtime probe on Spigot, whose fields are obfuscated but whose Enum.name() is preserved):
+            // PacketFlow: SERVERBOUND=0, CLIENTBOUND=1.
+            // ConnectionProtocol: HANDSHAKING=0, PLAY=1, STATUS=2, LOGIN=3, CONFIGURATION=4.
+            clientboundFlow = NmsReflectionUtils.resolveEnumConstant(packetFlowClass, "CLIENTBOUND", 1);
+            final Object serverboundFlow = NmsReflectionUtils.resolveEnumConstant(packetFlowClass, "SERVERBOUND", 0);
+            protocolLogin = NmsReflectionUtils.resolveEnumConstant(connectionProtocolClass, "LOGIN", 3);
+            protocolConfiguration =
+                NmsReflectionUtils.resolveEnumConstant(connectionProtocolClass, "CONFIGURATION", 4);
+            protocolPlay = NmsReflectionUtils.resolveEnumConstant(connectionProtocolClass, "PLAY", 1);
 
             loginListenerInterface = NmsReflectionUtils.resolveFirstClass(
                 serverClassLoader,
@@ -198,6 +229,13 @@ final class BotLoginReflection
             gameLoginClass = resolveFirst(
                 "net.minecraft.network.protocol.game.ClientboundLoginPacket",
                 "net.minecraft.network.protocol.game.PacketPlayOutLogin");
+            customQueryClass = resolveFirst(
+                "net.minecraft.network.protocol.login.ClientboundCustomQueryPacket",
+                "net.minecraft.network.protocol.login.PacketLoginOutCustomPayload");
+            cookieRequestClass = resolveFirst(
+                "net.minecraft.network.protocol.cookie.ClientboundCookieRequestPacket");
+            resourcePackPushClass = resolveFirst(
+                "net.minecraft.network.protocol.common.ClientboundResourcePackPushPacket");
 
             consumeClasses = resolveConsumeClasses();
 
@@ -227,6 +265,12 @@ final class BotLoginReflection
                 connectionClass, "channel", channelClass);
             channelCloseMethod = channelClass.getMethod("close");
             paperPacketLimiterField = resolvePaperPacketLimiterField(connectionClass);
+            channelCloseFutureMethod = channelClass.getMethod("closeFuture");
+            futureListenerInterface = NmsReflectionUtils.resolveClass(
+                "io.netty.util.concurrent.GenericFutureListener", serverClassLoader);
+            futureAddListenerMethod = NmsReflectionUtils.resolveClass(
+                "io.netty.util.concurrent.Future", serverClassLoader)
+                .getMethod("addListener", futureListenerInterface);
 
             // Bound protocol infos for the configuration and play phases.
             final ProtocolInfos protocolInfos = resolveProtocolInfos(minecraftServer);
@@ -268,6 +312,28 @@ final class BotLoginReflection
                 "net.minecraft.network.protocol.common.ServerboundClientInformationPacket")
                 .getConstructor(clientInformationClass);
 
+            // Reply factories for server-initiated requests (constructions verified against both jars):
+            // ServerboundCustomQueryAnswerPacket(int, @Nullable CustomQueryAnswerPayload) — shared names.
+            final Class<?> customQueryAnswerPayloadClass = NmsReflectionUtils.resolveClass(
+                "net.minecraft.network.protocol.login.custom.CustomQueryAnswerPayload", serverClassLoader);
+            customQueryAnswerConstructor = resolveFirst(
+                "net.minecraft.network.protocol.login.ServerboundCustomQueryAnswerPacket")
+                .getConstructor(int.class, customQueryAnswerPayloadClass);
+            // ServerboundCookieResponsePacket(<key>, byte @Nullable []) — the key class differs per distro, so
+            // it is taken from the constructor itself.
+            cookieResponseConstructor = resolveSingleTwoArgConstructor(
+                resolveFirst("net.minecraft.network.protocol.cookie.ServerboundCookieResponsePacket"),
+                byte[].class);
+            cookieKeyClass = cookieResponseConstructor.getParameterTypes()[0];
+            // ServerboundResourcePackPacket(UUID, Action) — the nested Action enum's binary name differs per
+            // distro ($Action vs $a), so it too is taken from the constructor. DECLINED ordinal verified as 1
+            // on both jars (order: SUCCESSFULLY_LOADED, DECLINED, FAILED_DOWNLOAD, ACCEPTED, ...).
+            resourcePackResponseConstructor = resolveSingleTwoArgConstructorByFirstParameter(
+                resolveFirst("net.minecraft.network.protocol.common.ServerboundResourcePackPacket"),
+                UUID.class);
+            resourcePackDeclinedAction = NmsReflectionUtils.resolveEnumConstant(
+                resourcePackResponseConstructor.getParameterTypes()[1], "DECLINED", 1);
+
             // Keep the serverbound flow reachable so a future distro rename is caught at init, not at first send.
             Objects.requireNonNull(serverboundFlow, "SERVERBOUND packet flow constant.");
         }
@@ -306,9 +372,66 @@ final class BotLoginReflection
     {
         final InetSocketAddress address = new InetSocketAddress(InetAddress.getLoopbackAddress(), port);
         final Object connection = connectToServerMethod.invoke(null, address, eventLoopGroupHolder, null);
-        disarmPaperPacketLimiter(connection);
-        initiateLoginConnectionMethod.invoke(connection, "127.0.0.1", port, listenerProxy);
+        try
+        {
+            disarmPaperPacketLimiter(connection);
+            initiateLoginConnectionMethod.invoke(connection, "127.0.0.1", port, listenerProxy);
+        }
+        catch (ReflectiveOperationException | RuntimeException exception)
+        {
+            // The TCP connection is already open; without this close it would leak on the error path.
+            closeConnection(connection);
+            throw exception;
+        }
         return connection;
+    }
+
+    /**
+     * Invokes {@code callback} as soon as the connection's channel closes — locally or remotely.
+     *
+     * <p>This is the only reliable close signal the driver gets: the vanilla {@code Connection} surfaces
+     * closures through {@code PacketListener.onDisconnect}, but only from {@code handleDisconnection()}, which
+     * is driven by the client/server tick loops — and this client connection is in neither. Without this
+     * listener, a raw remote close (e.g. the server's 30-second {@code ReadTimeoutHandler} abandoning a stalled
+     * login, which sends no disconnect packet) would be invisible and the join would silently burn its entire
+     * timeout budget.
+     *
+     * @param connection
+     *     The connection whose channel to observe.
+     * @param callback
+     *     Invoked once (on the channel's event loop) when the channel closes.
+     * @throws ReflectiveOperationException
+     *     When the reflective wiring fails.
+     */
+    void registerCloseListener(Object connection, Runnable callback)
+        throws ReflectiveOperationException
+    {
+        final Object channel = Objects.requireNonNull(
+            channelField.get(connection), "Connection channel is not initialized.");
+        final Object closeFuture = channelCloseFutureMethod.invoke(channel);
+        final Object listener = Proxy.newProxyInstance(
+            serverClassLoader,
+            new Class<?>[]{futureListenerInterface},
+            (proxy, method, args) ->
+            {
+                if (method.getDeclaringClass() == Object.class)
+                    return invokeObjectIdentityMethod(proxy, method, args);
+                callback.run();
+                return null;
+            });
+        futureAddListenerMethod.invoke(closeFuture, listener);
+    }
+
+    @SuppressWarnings({"PMD.UseVarargs", "PMD.CompareObjectsWithEquals"}) // InvocationHandler contract; identity.
+    private static @Nullable Object invokeObjectIdentityMethod(Object proxy, Method method, Object @Nullable [] args)
+    {
+        return switch (method.getName())
+        {
+            case "equals" -> args != null && args.length == 1 && proxy == args[0];
+            case "hashCode" -> System.identityHashCode(proxy);
+            case "toString" -> "BotLoginReflection$CloseListener";
+            default -> null;
+        };
     }
 
     /**
@@ -450,6 +573,42 @@ final class BotLoginReflection
     }
 
     /**
+     * Answers a login-phase plugin custom query with the "unknown" answer (a {@code null} payload), exactly as
+     * a vanilla client answers queries it does not understand, so the login is never stalled by one.
+     */
+    void answerCustomQuery(Object connection, Object customQueryPacket)
+        throws ReflectiveOperationException
+    {
+        final int transactionId = ((Number) readNoArg(customQueryPacket, int.class)).intValue();
+        sendMethod.invoke(connection, customQueryAnswerConstructor.newInstance(transactionId, null));
+    }
+
+    /**
+     * Answers a cookie request with an absent payload ({@code null} bytes), exactly as a vanilla client
+     * answers for a cookie it has never stored.
+     */
+    void answerCookieRequest(Object connection, Object cookieRequestPacket)
+        throws ReflectiveOperationException
+    {
+        final Object key = readNoArg(cookieRequestPacket, cookieKeyClass);
+        sendMethod.invoke(connection, cookieResponseConstructor.newInstance(key, null));
+    }
+
+    /**
+     * Declines a pushed resource pack.
+     *
+     * <p>A server configured to <em>require</em> its resource pack will respond to the decline by kicking the
+     * bot — which then surfaces loudly as a typed join denial carrying the kick reason, rather than a silent
+     * stall.
+     */
+    void declineResourcePack(Object connection, Object resourcePackPushPacket)
+        throws ReflectiveOperationException
+    {
+        final Object id = readNoArg(resourcePackPushPacket, UUID.class);
+        sendMethod.invoke(connection, resourcePackResponseConstructor.newInstance(id, resourcePackDeclinedAction));
+    }
+
+    /**
      * Extracts a best-effort plain-text kick reason from a disconnect packet.
      */
     String disconnectReason(Object disconnectPacket)
@@ -523,6 +682,12 @@ final class BotLoginReflection
             return PacketKind.TELEPORT;
         if (clientboundPacketClass == gameLoginClass)
             return PacketKind.GAME_LOGIN;
+        if (clientboundPacketClass == customQueryClass)
+            return PacketKind.CUSTOM_QUERY;
+        if (clientboundPacketClass == cookieRequestClass)
+            return PacketKind.COOKIE_REQUEST;
+        if (clientboundPacketClass == resourcePackPushClass)
+            return PacketKind.RESOURCE_PACK_PUSH;
         if (clientboundPacketClass == loginDisconnectClass)
             return PacketKind.LOGIN_DISCONNECT;
         if (clientboundPacketClass == disconnectClass)
@@ -609,13 +774,11 @@ final class BotLoginReflection
     private Set<Class<?>> resolveConsumeClasses()
     {
         final Set<Class<?>> classes = new HashSet<>();
-        // Login-phase informational packets (offline mode never sends encryption/custom-query, but tolerate).
+        // Login-phase encryption request: never sent in offline mode, but tolerated. (Custom queries are a
+        // dedicated PacketKind and get a real "unknown" answer.)
         addOptional(classes,
             "net.minecraft.network.protocol.login.ClientboundHelloPacket",
             "net.minecraft.network.protocol.login.PacketLoginOutEncryptionBegin");
-        addOptional(classes,
-            "net.minecraft.network.protocol.login.ClientboundCustomQueryPacket",
-            "net.minecraft.network.protocol.login.PacketLoginOutCustomPayload");
         // Configuration/common informational packets that require no response (Mojang names on both distros).
         for (final String className : new String[]{
             "net.minecraft.network.protocol.configuration.ClientboundRegistryDataPacket",
@@ -623,17 +786,15 @@ final class BotLoginReflection
             "net.minecraft.network.protocol.configuration.ClientboundResetChatPacket",
             "net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket",
             "net.minecraft.network.protocol.common.ClientboundUpdateTagsPacket",
-            // Limitation: consumed without a response — a server that requires a resource-pack answer stalls (PR2).
-            "net.minecraft.network.protocol.common.ClientboundResourcePackPushPacket",
+            // Resource-pack pushes and cookie requests get real replies (declined / absent payload) via their
+            // dedicated PacketKinds; only the pop (which a vanilla client never answers) is consumed here.
             "net.minecraft.network.protocol.common.ClientboundResourcePackPopPacket",
             "net.minecraft.network.protocol.common.ClientboundStoreCookiePacket",
             "net.minecraft.network.protocol.common.ClientboundTransferPacket",
             "net.minecraft.network.protocol.common.ClientboundCustomReportDetailsPacket",
             "net.minecraft.network.protocol.common.ClientboundServerLinksPacket",
             "net.minecraft.network.protocol.common.ClientboundClearDialogPacket",
-            "net.minecraft.network.protocol.common.ClientboundShowDialogPacket",
-            // Limitation: consumed without a cookie response — a server that awaits one stalls the join (PR2).
-            "net.minecraft.network.protocol.cookie.ClientboundCookieRequestPacket"})
+            "net.minecraft.network.protocol.common.ClientboundShowDialogPacket"})
         {
             addOptional(classes, className);
         }
@@ -690,6 +851,43 @@ final class BotLoginReflection
         }
         throw new NoSuchFieldException(
             "No static singleton instance field of type " + className + " found on itself.");
+    }
+
+    /**
+     * Resolves the single public two-argument constructor whose <em>second</em> parameter is exactly
+     * {@code secondParameterType}; the first parameter's (per-distro) type is then read off the constructor.
+     */
+    private static Constructor<?> resolveSingleTwoArgConstructor(Class<?> owner, Class<?> secondParameterType)
+        throws NoSuchMethodException
+    {
+        for (final Constructor<?> constructor : owner.getConstructors())
+        {
+            final Class<?>[] parameterTypes = constructor.getParameterTypes();
+            if (parameterTypes.length == 2 && parameterTypes[1].equals(secondParameterType))
+                return constructor;
+        }
+        throw new NoSuchMethodException(
+            "No public 2-arg constructor with second parameter " + secondParameterType.getName()
+                + " on " + owner.getName() + ".");
+    }
+
+    /**
+     * Resolves the single public two-argument constructor whose <em>first</em> parameter is exactly
+     * {@code firstParameterType}; the second parameter's (per-distro) type is then read off the constructor.
+     */
+    private static Constructor<?> resolveSingleTwoArgConstructorByFirstParameter(
+        Class<?> owner, Class<?> firstParameterType)
+        throws NoSuchMethodException
+    {
+        for (final Constructor<?> constructor : owner.getConstructors())
+        {
+            final Class<?>[] parameterTypes = constructor.getParameterTypes();
+            if (parameterTypes.length == 2 && parameterTypes[0].equals(firstParameterType))
+                return constructor;
+        }
+        throw new NoSuchMethodException(
+            "No public 2-arg constructor with first parameter " + firstParameterType.getName()
+                + " on " + owner.getName() + ".");
     }
 
     private ProtocolInfos resolveProtocolInfos(Object minecraftServer)

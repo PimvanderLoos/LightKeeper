@@ -395,18 +395,27 @@ final class NmsReflectionUtils
     }
 
     /**
-     * Resolves an enum constant by its {@link Enum#name() name}, tolerating obfuscated field names.
+     * Resolves an enum constant by its {@link Enum#name() name}, falling back to the constant's known
+     * declaration ordinal when the runtime names are obfuscated.
+     *
+     * <p>Both distributions currently keep Mojang constant names at runtime (verified against the 1.21.11
+     * jars: Spigot's remapper obfuscates the enum <em>fields</em> but preserves the name string passed to the
+     * enum constructor), so the name lookup is expected to succeed. Should a future remapper obfuscate the
+     * names too, obfuscation preserves declaration order, so the per-version ordinal recorded by the calling
+     * adapter remains a correct identifier; the fallback is logged so its use is visible.
      *
      * @param enumClass
      *     Enum class to search.
      * @param name
      *     Unobfuscated constant name (e.g. {@code "CLIENTBOUND"}).
+     * @param expectedOrdinal
+     *     Declaration ordinal of the constant for the server version this adapter targets.
      * @return
      *     Matching enum constant.
      * @throws IllegalStateException
-     *     When no constant with that name exists.
+     *     When no constant with that name exists and the expected ordinal is out of range.
      */
-    static Object resolveEnumConstant(Class<?> enumClass, String name)
+    static Object resolveEnumConstant(Class<?> enumClass, String name, int expectedOrdinal)
     {
         final Object[] constants = Objects.requireNonNull(
             enumClass.getEnumConstants(), "Expected enum constants for " + enumClass.getName());
@@ -415,8 +424,17 @@ final class NmsReflectionUtils
             if (((Enum<?>) constant).name().equals(name))
                 return constant;
         }
-        throw new IllegalStateException(
-            "No enum constant '" + name + "' found in " + enumClass.getName() + ".");
+
+        if (expectedOrdinal < 0 || expectedOrdinal >= constants.length)
+            throw new IllegalStateException(
+                "No enum constant '" + name + "' found in " + enumClass.getName()
+                    + " and ordinal " + expectedOrdinal + " is out of range (0.." + (constants.length - 1) + ").");
+
+        System.getLogger(NmsReflectionUtils.class.getName()).log(
+            System.Logger.Level.DEBUG,
+            () -> "Enum constant '%s' not found by name in %s; falling back to declaration ordinal %d ('%s')."
+                .formatted(name, enumClass.getName(), expectedOrdinal, constants[expectedOrdinal]));
+        return constants[expectedOrdinal];
     }
 
     /**

@@ -64,20 +64,6 @@ final class AgentMainThreadExecutor
     }
 
     /**
-     * Submits the callable to the Bukkit main thread and waits for completion.
-     *
-     * @param callable
-     *     Operation to execute synchronously on the server thread.
-     * @param <T>
-     *     Callable return type.
-     * @return
-     *     Result returned by the callable.
-     * @throws Exception
-     *     Propagates the callable's own failure (unwrapped from {@link ExecutionException}); throws
-     *     {@link AgentProtocolException} with {@link AgentErrorCode#TIMEOUT} when the operation exceeds the
-     *     configured timeout, or {@link AgentErrorCode#INTERRUPTED} when the waiting thread is interrupted.
-     */
-    /**
      * Returns the configured maximum wait, in seconds, for a scheduled synchronous server operation.
      *
      * <p>Reused by long-running orchestration (such as awaiting a full-login {@code PlayerJoinEvent}) so a
@@ -91,9 +77,51 @@ final class AgentMainThreadExecutor
         return syncOperationTimeoutSeconds;
     }
 
+    /**
+     * Submits the callable to the Bukkit main thread and waits for completion, bounded by the configured
+     * sync-operation timeout.
+     *
+     * @param callable
+     *     Operation to execute synchronously on the server thread.
+     * @param <T>
+     *     Callable return type.
+     * @return
+     *     Result returned by the callable.
+     * @throws Exception
+     *     Propagates the callable's own failure (unwrapped from {@link ExecutionException}); throws
+     *     {@link AgentProtocolException} with {@link AgentErrorCode#TIMEOUT} when the operation exceeds the
+     *     configured timeout, or {@link AgentErrorCode#INTERRUPTED} when the waiting thread is interrupted.
+     */
     <T> T callOnMainThread(Callable<T> callable)
         throws Exception
     {
+        return callOnMainThread(callable, syncOperationTimeoutSeconds);
+    }
+
+    /**
+     * Submits the callable to the Bukkit main thread and waits for completion, bounded by an explicit timeout.
+     *
+     * <p>Used where a caller must stay inside an outer deadline (such as the full-login listener cleanup)
+     * instead of drawing a fresh full sync-operation budget.
+     *
+     * @param callable
+     *     Operation to execute synchronously on the server thread.
+     * @param timeoutSeconds
+     *     Maximum time to wait for the operation, in seconds; must be positive.
+     * @param <T>
+     *     Callable return type.
+     * @return
+     *     Result returned by the callable.
+     * @throws Exception
+     *     Propagates the callable's own failure (unwrapped from {@link ExecutionException}); throws
+     *     {@link AgentProtocolException} with {@link AgentErrorCode#TIMEOUT} when the operation exceeds the
+     *     given timeout, or {@link AgentErrorCode#INTERRUPTED} when the waiting thread is interrupted.
+     */
+    <T> T callOnMainThread(Callable<T> callable, long timeoutSeconds)
+        throws Exception
+    {
+        if (timeoutSeconds <= 0L)
+            throw new IllegalArgumentException("timeoutSeconds must be > 0 but was " + timeoutSeconds + ".");
         if (Bukkit.isPrimaryThread())
             return callable.call();
 
@@ -101,7 +129,7 @@ final class AgentMainThreadExecutor
         final Throwable callableFailure;
         try
         {
-            return future.get(syncOperationTimeoutSeconds, TimeUnit.SECONDS);
+            return future.get(timeoutSeconds, TimeUnit.SECONDS);
         }
         catch (ExecutionException exception)
         {
@@ -115,7 +143,7 @@ final class AgentMainThreadExecutor
             future.cancel(true);
             throw new AgentProtocolException(
                 AgentErrorCode.TIMEOUT,
-                "Server operation did not complete within %d seconds.".formatted(syncOperationTimeoutSeconds),
+                "Server operation did not complete within %d seconds.".formatted(timeoutSeconds),
                 exception
             );
         }

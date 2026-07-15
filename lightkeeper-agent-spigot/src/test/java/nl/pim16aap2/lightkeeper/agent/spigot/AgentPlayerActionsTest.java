@@ -600,14 +600,17 @@ class AgentPlayerActionsTest
         final CreatePlayer.Command command = new CreatePlayer.Command(
             "request-full", "fullbot", null, "world", null, null, null, null, null, JoinMode.FULL_LOGIN, "en_us");
 
-        // execute + verify
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class))
         {
             stubFullLoginBukkitStatics(bukkit);
 
-            assertThatThrownBy(() -> fixture.playerActions().handleCreatePlayer(command))
+            // execute
+            final Throwable thrown = catchThrowable(() -> fixture.playerActions().handleCreatePlayer(command));
+
+            // verify
+            assertThat(thrown)
                 .isInstanceOf(AgentProtocolException.class)
-                .satisfies(thrown -> assertThat(((AgentProtocolException) thrown).errorCode())
+                .satisfies(failure -> assertThat(((AgentProtocolException) failure).errorCode())
                     .isEqualTo(AgentErrorCode.PLAYER_JOIN_DENIED))
                 .hasMessageContaining("Banned");
         }
@@ -620,20 +623,24 @@ class AgentPlayerActionsTest
         final PlayerActionsFixture fixture = createPlayerActionsFixture();
         final IBotLoginDriver loginDriver = mock();
         when(fixture.nmsAdapter().loginDriver()).thenReturn(loginDriver);
-        when(loginDriver.login(any())).thenReturn(new IBotLoginOutcome.TimedOut());
+        when(loginDriver.login(any())).thenReturn(new IBotLoginOutcome.TimedOut(BotJoinPhase.LOGIN));
         final CreatePlayer.Command command = new CreatePlayer.Command(
             "request-full-to", "fullbot", null, "world", null, null, null, null, null, JoinMode.FULL_LOGIN, null);
 
-        // execute + verify
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class))
         {
             stubFullLoginBukkitStatics(bukkit);
 
-            assertThatThrownBy(() -> fixture.playerActions().handleCreatePlayer(command))
+            // execute
+            final Throwable thrown = catchThrowable(() -> fixture.playerActions().handleCreatePlayer(command));
+
+            // verify
+            assertThat(thrown)
                 .isInstanceOf(AgentProtocolException.class)
-                .satisfies(thrown -> assertThat(((AgentProtocolException) thrown).errorCode())
+                .satisfies(failure -> assertThat(((AgentProtocolException) failure).errorCode())
                     .isEqualTo(AgentErrorCode.PLAYER_JOIN_TIMEOUT))
-                .hasMessageContaining("did not complete the login pipeline");
+                .hasMessageContaining("did not complete the login pipeline")
+                .hasMessageContaining("LOGIN");
         }
     }
 
@@ -649,14 +656,17 @@ class AgentPlayerActionsTest
         final CreatePlayer.Command command = new CreatePlayer.Command(
             "request-full-nj", "fullbot", null, "world", null, null, null, null, null, JoinMode.FULL_LOGIN, null);
 
-        // execute + verify
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class))
         {
             stubFullLoginBukkitStatics(bukkit);
 
-            assertThatThrownBy(() -> fixture.playerActions().handleCreatePlayer(command))
+            // execute
+            final Throwable thrown = catchThrowable(() -> fixture.playerActions().handleCreatePlayer(command));
+
+            // verify
+            assertThat(thrown)
                 .isInstanceOf(AgentProtocolException.class)
-                .satisfies(thrown -> assertThat(((AgentProtocolException) thrown).errorCode())
+                .satisfies(failure -> assertThat(((AgentProtocolException) failure).errorCode())
                     .isEqualTo(AgentErrorCode.PLAYER_JOIN_TIMEOUT))
                 .hasMessageContaining("no PlayerJoinEvent fired");
         }
@@ -664,13 +674,14 @@ class AgentPlayerActionsTest
 
     /**
      * Stubs the Bukkit statics a FULL_LOGIN join touches: NOT the primary thread (the handler rejects
-     * main-thread execution), a server exposing a port, a no-op plugin manager, and a scheduler that runs
-     * main-thread callables inline.
+     * main-thread execution), a server exposing a port, a known world named {@code "world"}, a no-op plugin
+     * manager, and a scheduler that runs main-thread callables inline.
      */
     private static void stubFullLoginBukkitStatics(MockedStatic<Bukkit> bukkit)
     {
         final org.bukkit.Server server = mock();
         when(server.getPort()).thenReturn(25_565);
+        final World world = mock();
         final PluginManager pluginManager = mock();
         final BukkitScheduler scheduler = mock();
         when(scheduler.callSyncMethod(any(), any())).thenAnswer(invocation ->
@@ -681,6 +692,7 @@ class AgentPlayerActionsTest
 
         bukkit.when(Bukkit::isPrimaryThread).thenReturn(false);
         bukkit.when(Bukkit::getServer).thenReturn(server);
+        bukkit.when(() -> Bukkit.getWorld("world")).thenReturn(world);
         bukkit.when(Bukkit::getPluginManager).thenReturn(pluginManager);
         bukkit.when(Bukkit::getScheduler).thenReturn(scheduler);
     }
