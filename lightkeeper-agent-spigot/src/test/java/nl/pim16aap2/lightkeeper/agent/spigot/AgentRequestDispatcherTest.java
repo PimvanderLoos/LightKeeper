@@ -309,7 +309,7 @@ class AgentRequestDispatcherTest
         when(fixture.worldActions().handleExecuteCommand(any(ExecuteCommand.Command.class)))
             .thenReturn(new ExecuteCommand.Response(true));
         when(fixture.worldActions().handleBlockType(any(BlockType.Command.class)))
-            .thenReturn(new BlockType.Response("STONE"));
+            .thenReturn(new BlockType.Response("STONE", "minecraft:stone"));
         when(fixture.worldActions().handleSetBlock(any(SetBlock.Command.class)))
             .thenReturn(new SetBlock.Response("STONE"));
         when(fixture.playerActions().handleCreatePlayer(any(CreatePlayer.Command.class)))
@@ -373,7 +373,7 @@ class AgentRequestDispatcherTest
         dispatchExpectingSuccess(fixture, toJson(new NewWorld.Command("request-1", "w", "NORMAL", "NORMAL", 0L)));
         dispatchExpectingSuccess(fixture, toJson(new ExecuteCommand.Command("request-2", CommandSource.CONSOLE, "time set day")));
         dispatchExpectingSuccess(fixture, toJson(new BlockType.Command("request-3", "world", 0, 64, 0)));
-        dispatchExpectingSuccess(fixture, toJson(new SetBlock.Command("request-4", "world", 0, 64, 0, "stone")));
+        dispatchExpectingSuccess(fixture, toJson(new SetBlock.Command("request-4", "world", 0, 64, 0, "stone", null)));
         dispatchExpectingSuccess(fixture, toJson(new CreatePlayer.Command("request-5", "bot", uuid, "world", null, null, null, null, null)));
         dispatchExpectingSuccess(fixture, toJson(new RemovePlayer.Command("request-6", uuid)));
         dispatchExpectingSuccess(fixture, toJson(new ExecutePlayerCommand.Command("request-7", uuid, "gamemode creative")));

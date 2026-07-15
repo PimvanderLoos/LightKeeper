@@ -170,15 +170,17 @@ final class AgentWorldActions
         final int y = command.y();
         final int z = command.z();
 
-        final String materialName = mainThreadExecutor.callOnMainThread(() ->
+        return mainThreadExecutor.callOnMainThread(() ->
         {
             final World world = Bukkit.getWorld(worldName);
             if (world == null)
                 throw new IllegalArgumentException("World '%s' does not exist.".formatted(worldName));
-            return world.getBlockAt(x, y, z).getType().getKey().toString();
+            final var block = world.getBlockAt(x, y, z);
+            return new BlockType.Response(
+                block.getType().getKey().toString(),
+                block.getBlockData().getAsString()
+            );
         });
-
-        return new BlockType.Response(materialName);
     }
 
     /**
@@ -199,9 +201,10 @@ final class AgentWorldActions
         final int y = command.y();
         final int z = command.z();
         final String materialKey = command.materialKey();
+        final String blockData = command.blockData();
 
-        final Material material = AgentRequestParsers.parseMaterial(materialKey);
-        if (material == null)
+        final Material material = blockData != null ? null : AgentRequestParsers.parseMaterial(materialKey);
+        if (blockData == null && material == null)
             throw new IllegalArgumentException("Unknown material '%s'.".formatted(materialKey));
 
         final String setMaterial = mainThreadExecutor.callOnMainThread(() ->
@@ -209,8 +212,13 @@ final class AgentWorldActions
             final World world = Bukkit.getWorld(worldName);
             if (world == null)
                 throw new IllegalArgumentException("World '%s' does not exist.".formatted(worldName));
-            world.getBlockAt(x, y, z).setType(material);
-            return world.getBlockAt(x, y, z).getType().name();
+            final var block = world.getBlockAt(x, y, z);
+            if (blockData != null)
+                // Throws IllegalArgumentException on malformed input, surfacing as INVALID_ARGUMENT.
+                block.setBlockData(Bukkit.createBlockData(blockData));
+            else
+                block.setType(material);
+            return block.getType().name();
         });
 
         return new SetBlock.Response(setMaterial);
