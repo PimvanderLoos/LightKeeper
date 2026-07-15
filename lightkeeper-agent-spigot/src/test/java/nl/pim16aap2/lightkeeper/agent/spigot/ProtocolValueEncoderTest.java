@@ -1,11 +1,13 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
 import nl.pim16aap2.lightkeeper.protocol.IProtocolValue;
+import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -20,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -85,7 +88,7 @@ class ProtocolValueEncoderTest
     }
 
     @Test
-    void encodeAccessors_shouldEncodeLocationAsPVecLeafWithoutWalkingAccessors()
+    void encodeAccessors_shouldEncodeWorldlessLocationAsPositionOnlyRecordWithoutWalkingAccessors()
     {
         // setup — a null world verifies the leaf never touches getWorld()/getChunk()/getBlock()
         final org.bukkit.Location location = new org.bukkit.Location(null, 1.5, 64.0, -2.25);
@@ -95,11 +98,39 @@ class ProtocolValueEncoderTest
         final Map<String, IProtocolValue> result = encoder.encodeAccessors(new LocationHolder(location), "ctx");
 
         // verify
-        assertThat(result).containsEntry("getLocation", new IProtocolValue.PVec(1.5, 64.0, -2.25));
+        assertThat(result).containsEntry("getLocation", new IProtocolValue.PRecord(
+            new java.util.LinkedHashMap<>(Map.of("position", new IProtocolValue.PVec(1.5, 64.0, -2.25)))));
     }
 
     @Test
-    void encodeAccessors_shouldEncodeLocationAsPVecEvenWhenDepthIsExhausted()
+    void encodeAccessors_shouldPreserveWorldIdentityWhenLocationHasLoadedWorld()
+    {
+        // setup — cross-world events at equal coordinates must stay distinguishable in payloads;
+        // Location#isWorldLoaded resolves the world through Bukkit#getWorld(UUID), hence the static mock.
+        final World world = mock();
+        final UUID worldId = UUID.randomUUID();
+        when(world.getUID()).thenReturn(worldId);
+        when(world.getName()).thenReturn("world_nether");
+        final org.bukkit.Location location = new org.bukkit.Location(world, 1.5, 64.0, -2.25);
+        final ProtocolValueEncoder encoder = createEncoder(mock());
+
+        // execute
+        final Map<String, IProtocolValue> result;
+        try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
+        {
+            bukkitMockedStatic.when(() -> Bukkit.getWorld(worldId)).thenReturn(world);
+            result = encoder.encodeAccessors(new LocationHolder(location), "ctx");
+        }
+
+        // verify
+        final java.util.LinkedHashMap<String, IProtocolValue> expectedFields = new java.util.LinkedHashMap<>();
+        expectedFields.put("world", new IProtocolValue.PRef(world.getClass().getName(), "world_nether"));
+        expectedFields.put("position", new IProtocolValue.PVec(1.5, 64.0, -2.25));
+        assertThat(result).containsEntry("getLocation", new IProtocolValue.PRecord(expectedFields));
+    }
+
+    @Test
+    void encodeAccessors_shouldEncodeLocationEvenWhenDepthIsExhausted()
     {
         // setup — a self-nesting fixture forces the walk past MAX_DEPTH; a sibling getChild() at the same,
         // depth-exhausted level is dropped (see encodeAccessors_shouldDropValueBeyondMaxDepth), but the
@@ -123,7 +154,8 @@ class ProtocolValueEncoderTest
         assertThat(current).isInstanceOfSatisfying(IProtocolValue.PRecord.class, record ->
         {
             assertThat(record.fields().get("getChild")).isInstanceOf(IProtocolValue.PDropped.class);
-            assertThat(record.fields().get("getLocation")).isEqualTo(new IProtocolValue.PVec(7.0, 8.0, 9.0));
+            assertThat(record.fields().get("getLocation")).isEqualTo(new IProtocolValue.PRecord(
+                new java.util.LinkedHashMap<>(Map.of("position", new IProtocolValue.PVec(7.0, 8.0, 9.0)))));
         });
     }
 
