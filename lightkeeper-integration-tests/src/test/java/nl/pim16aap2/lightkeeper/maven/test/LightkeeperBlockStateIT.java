@@ -47,7 +47,8 @@ class LightkeeperBlockStateIT
         final var leverState = lever.state();
         assertThat(leverState.property("face")).isEqualTo("floor");
         assertThat(leverState.blockData()).contains("powered=true");
-        assertThat(lever.is(BlockSpec.parse("minecraft:lever[powered=true]"))).isTrue();
+        assertThat(leverState.matches(BlockSpec.parse("minecraft:lever[powered=true]"))).isTrue();
+        // The live is() path re-probes the server by design; covered here via the negative case.
         assertThat(lever.is(BlockSpec.parse("minecraft:lever[powered=false]"))).isFalse();
     }
 

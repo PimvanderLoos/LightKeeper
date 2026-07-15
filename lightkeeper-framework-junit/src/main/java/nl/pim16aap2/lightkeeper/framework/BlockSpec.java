@@ -43,9 +43,14 @@ public record BlockSpec(
                 if (property.getValue() == null || property.getValue().isBlank())
                     throw new IllegalArgumentException(
                         "Property '%s' may not have a blank value.".formatted(property.getKey()));
-                normalizedProperties.put(
-                    property.getKey().trim().toLowerCase(java.util.Locale.ROOT),
+                final String normalizedKey = property.getKey().trim().toLowerCase(java.util.Locale.ROOT);
+                final String previous = normalizedProperties.put(
+                    normalizedKey,
                     property.getValue().trim().toLowerCase(java.util.Locale.ROOT));
+                if (previous != null)
+                    throw new IllegalArgumentException(
+                        "Duplicate property '%s' (property names are case-insensitive)."
+                            .formatted(normalizedKey));
             }
         }
         properties = Collections.unmodifiableMap(normalizedProperties);
@@ -106,13 +111,16 @@ public record BlockSpec(
                     throw new IllegalArgumentException(
                         "Malformed block data '%s': property '%s' is not a key=value pair."
                             .formatted(blockData, entry.trim()));
+                // Lowercase before the duplicate check so case-variant duplicates (POWERED vs powered)
+                // cannot bypass it and silently merge in the constructor's normalization.
+                final String key =
+                    entry.substring(0, equalsIndex).trim().toLowerCase(java.util.Locale.ROOT);
                 final String previous = parsedProperties.put(
-                    entry.substring(0, equalsIndex).trim(),
-                    entry.substring(equalsIndex + 1).trim());
+                    key,
+                    entry.substring(equalsIndex + 1).trim().toLowerCase(java.util.Locale.ROOT));
                 if (previous != null)
                     throw new IllegalArgumentException(
-                        "Malformed block data '%s': duplicate property '%s'."
-                            .formatted(blockData, entry.substring(0, equalsIndex).trim()));
+                        "Malformed block data '%s': duplicate property '%s'.".formatted(blockData, key));
             }
         }
         return new BlockSpec(materialPart, parsedProperties);

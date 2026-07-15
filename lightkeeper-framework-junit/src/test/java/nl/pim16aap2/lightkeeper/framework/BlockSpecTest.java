@@ -90,6 +90,29 @@ class BlockSpecTest
     }
 
     @Test
+    void parse_shouldThrowIllegalArgumentExceptionWhenPropertyIsDuplicatedWithDifferentCase()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> BlockSpec.parse("minecraft:lever[POWERED=true,powered=false]"))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("duplicate property 'powered'");
+    }
+
+    @Test
+    void constructor_shouldThrowIllegalArgumentExceptionWhenNormalizedPropertyNamesCollide()
+    {
+        // setup
+        final java.util.Map<String, String> collidingProperties = new java.util.LinkedHashMap<>();
+        collidingProperties.put("powered", "true");
+        collidingProperties.put("POWERED", "false");
+
+        // execute + verify
+        assertThatThrownBy(() -> new BlockSpec("minecraft:lever", collidingProperties))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("case-insensitive");
+    }
+
+    @Test
     void of_shouldCreateMaterialOnlySpecFromBukkitMaterial()
     {
         // execute
