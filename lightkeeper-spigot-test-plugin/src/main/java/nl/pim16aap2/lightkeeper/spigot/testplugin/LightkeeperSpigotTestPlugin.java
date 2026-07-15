@@ -33,6 +33,10 @@ public final class LightkeeperSpigotTestPlugin extends JavaPlugin implements Lis
      */
     private static final String ERROR_COMMAND_NAME = "lktesterror";
     /**
+     * Command name used to log the invoking player's client locale for full-login locale integration tests.
+     */
+    private static final String LOCALE_COMMAND_NAME = "lktestlocale";
+    /**
      * Prefix used for deterministic block interaction messages.
      */
     static final String BLOCK_CLICK_MESSAGE_PREFIX = "LK_BLOCK_CLICK";
@@ -57,8 +61,14 @@ public final class LightkeeperSpigotTestPlugin extends JavaPlugin implements Lis
             throw new IllegalStateException(
                 "Required command '/%s' is not declared in plugin metadata.".formatted(ERROR_COMMAND_NAME));
 
+        final PluginCommand localeCommand = getCommand(LOCALE_COMMAND_NAME);
+        if (localeCommand == null)
+            throw new IllegalStateException(
+                "Required command '/%s' is not declared in plugin metadata.".formatted(LOCALE_COMMAND_NAME));
+
         pluginCommand.setExecutor(new LkTestGuiCommandExecutor(guiMenuService));
         errorCommand.setExecutor(new LkTestErrorCommandExecutor(getLogger()));
+        localeCommand.setExecutor(new LkTestLocaleCommandExecutor(getLogger()));
         Bukkit.getPluginManager().registerEvents(this, this);
     }
 

@@ -12,6 +12,9 @@ commands:
   lktesterror:
     description: Emits a SEVERE or WARNING log event for LightKeeper error-capture integration tests
     usage: /lktesterror <severe|warning>
+  lktestlocale:
+    description: Logs the invoking player's client locale for LightKeeper full-login locale integration tests
+    usage: /lktestlocale
 permissions:
   lightkeeper.testplugin.lktestgui:
     description: Allows opening the LightKeeper test GUI.
