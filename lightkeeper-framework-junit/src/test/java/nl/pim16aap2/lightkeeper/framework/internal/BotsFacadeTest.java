@@ -4,6 +4,7 @@ import nl.pim16aap2.lightkeeper.framework.FrameworkHandleFactory;
 import nl.pim16aap2.lightkeeper.framework.IPlayerBuilder;
 import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
+import nl.pim16aap2.lightkeeper.protocol.JoinMode;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
 import org.junit.jupiter.api.Test;
 
@@ -28,7 +29,8 @@ class BotsFacadeTest
         final UdsAgentClient agentClient = mock(UdsAgentClient.class);
         final PlayerScopeRegistry playerScopeRegistry = mock(PlayerScopeRegistry.class);
         final UUID uuid = UUID.randomUUID();
-        when(agentClient.createPlayer("lkbot001", uuid, "world", null, null, null, null, null))
+        when(agentClient.createPlayer(
+            "lkbot001", uuid, "world", null, null, null, null, null, JoinMode.LEGACY_SPAWN, null))
             .thenReturn(new AgentPlayerData(uuid, "lkbot001"));
         final DefaultLightkeeperFramework framework = framework(agentClient, playerScopeRegistry);
         final WorldHandle world = FrameworkHandleFactory.worldHandle(framework, "world");
@@ -50,7 +52,8 @@ class BotsFacadeTest
         final PlayerScopeRegistry playerScopeRegistry = mock(PlayerScopeRegistry.class);
         final UUID generatedUuid = UUID.randomUUID();
         when(agentClient.createPlayer(
-            eq("lkbot002"), any(UUID.class), eq("world"), isNull(), isNull(), isNull(), isNull(), isNull()))
+            eq("lkbot002"), any(UUID.class), eq("world"), isNull(), isNull(), isNull(), isNull(), isNull(),
+            eq(JoinMode.LEGACY_SPAWN), isNull()))
             .thenReturn(new AgentPlayerData(generatedUuid, "lkbot002"));
         final DefaultLightkeeperFramework framework = framework(agentClient, playerScopeRegistry);
         final WorldHandle world = FrameworkHandleFactory.worldHandle(framework, "world");

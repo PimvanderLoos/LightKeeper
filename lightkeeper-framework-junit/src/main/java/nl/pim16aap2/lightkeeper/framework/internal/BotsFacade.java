@@ -5,6 +5,7 @@ import nl.pim16aap2.lightkeeper.framework.IBots;
 import nl.pim16aap2.lightkeeper.framework.IPlayerBuilder;
 import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
+import nl.pim16aap2.lightkeeper.protocol.JoinMode;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Objects;
@@ -59,6 +60,8 @@ final class BotsFacade implements IBots
             null,
             null,
             null,
+            null,
+            JoinMode.LEGACY_SPAWN,
             null
         );
         final PlayerHandle handle = registerAndWrap(createdPlayer);
@@ -91,7 +94,9 @@ final class BotsFacade implements IBots
         @Nullable Double y,
         @Nullable Double z,
         @Nullable Double health,
-        Set<String> permissions)
+        Set<String> permissions,
+        JoinMode joinMode,
+        @Nullable String locale)
     {
         final AgentPlayerData createdPlayer = agentClient.createPlayer(
             name,
@@ -101,7 +106,9 @@ final class BotsFacade implements IBots
             y,
             z,
             health,
-            permissions
+            permissions,
+            joinMode,
+            locale
         );
         return registerAndWrap(createdPlayer);
     }

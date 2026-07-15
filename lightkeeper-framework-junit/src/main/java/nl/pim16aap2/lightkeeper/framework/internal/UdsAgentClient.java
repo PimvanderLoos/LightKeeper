@@ -32,6 +32,7 @@ import nl.pim16aap2.lightkeeper.protocol.IAgentCommand;
 import nl.pim16aap2.lightkeeper.protocol.IAgentResponse;
 import nl.pim16aap2.lightkeeper.protocol.IsChunkLoaded;
 import nl.pim16aap2.lightkeeper.protocol.ItemSnapshot;
+import nl.pim16aap2.lightkeeper.protocol.JoinMode;
 import nl.pim16aap2.lightkeeper.protocol.LeftClickBlock;
 import nl.pim16aap2.lightkeeper.protocol.LoadChunk;
 import nl.pim16aap2.lightkeeper.protocol.MainWorld;
@@ -197,22 +198,30 @@ final class UdsAgentClient implements AutoCloseable
         @Nullable Double y,
         @Nullable Double z,
         @Nullable Double health,
-        @Nullable Set<String> permissions)
+        @Nullable Set<String> permissions,
+        JoinMode joinMode,
+        @Nullable String locale)
     {
         final String permissionsCsv = permissions == null || permissions.isEmpty()
             ? null
             : String.join(",", permissions);
 
+        // Under FULL_LOGIN the server derives the offline UUID from the name, so the wire command carries no
+        // UUID (the protocol rejects a non-null UUID in that mode); LEGACY_SPAWN keeps the caller's UUID.
+        final UUID commandUuid = joinMode == JoinMode.FULL_LOGIN ? null : uuid;
+
         final CreatePlayer.Command command = new CreatePlayer.Command(
             nextRequestId(),
             name,
-            uuid,
+            commandUuid,
             worldName,
             x,
             y,
             z,
             health,
-            permissionsCsv
+            permissionsCsv,
+            joinMode,
+            locale
         );
         final CreatePlayer.Response response = send(command);
         return new AgentPlayerData(response.uuid(), response.name());

@@ -1,5 +1,7 @@
 package nl.pim16aap2.lightkeeper.framework.internal;
 
+import nl.pim16aap2.lightkeeper.framework.BotJoinDeniedException;
+import nl.pim16aap2.lightkeeper.framework.BotJoinTimeoutException;
 import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
 import nl.pim16aap2.lightkeeper.protocol.AgentProtocolMapper;
 import nl.pim16aap2.lightkeeper.protocol.IAgentCommand;
@@ -157,10 +159,18 @@ final class UdsAgentTransport implements AutoCloseable
             return;
 
         final String wireErrorCode = root.path("errorCode").asString();
-        final String displayedErrorCode = AgentErrorCode.fromWireCode(wireErrorCode)
-            .map(AgentErrorCode::wireCode)
-            .orElseGet(() -> "UNKNOWN (wire='%s')".formatted(wireErrorCode));
+        final AgentErrorCode errorCode = AgentErrorCode.fromWireCode(wireErrorCode).orElse(null);
         final String errorMessage = root.path("errorMessage").asString("");
+
+        // Full-login join failures are surfaced as typed framework exceptions so tests can assert on them.
+        if (errorCode == AgentErrorCode.PLAYER_JOIN_DENIED)
+            throw new BotJoinDeniedException(errorMessage);
+        if (errorCode == AgentErrorCode.PLAYER_JOIN_TIMEOUT)
+            throw new BotJoinTimeoutException(errorMessage);
+
+        final String displayedErrorCode = errorCode != null
+            ? errorCode.wireCode()
+            : "UNKNOWN (wire='%s')".formatted(wireErrorCode);
         throw new IllegalStateException(
             "Agent request failed. code=%s message=%s".formatted(displayedErrorCode, errorMessage));
     }
