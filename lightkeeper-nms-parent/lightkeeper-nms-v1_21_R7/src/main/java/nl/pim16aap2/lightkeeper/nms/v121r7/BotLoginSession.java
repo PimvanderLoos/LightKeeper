@@ -256,13 +256,15 @@ final class BotLoginSession implements InvocationHandler
         catch (ReflectiveOperationException | RuntimeException exception)
         {
             // Any servicing failure (reflective or runtime, e.g. a missing structural accessor) means the
-            // driver can no longer run this connection reliably: stop servicing, close the channel, and make
-            // sure the outcome can never be left pending.
-            terminate();
+            // driver can no longer run this connection reliably: resolve the outcome so it can never be left
+            // pending, then stop servicing and close the channel. Completion MUST precede terminate():
+            // closing the channel fires the close listener inline, whose generic transport-close denial
+            // would otherwise win the completion race and mask the real failure.
             final IllegalStateException failure = new IllegalStateException(
                 "Failed to handle %s packet %s.".formatted(phase, packetClass.getName()), exception);
             if (!outcome.completeExceptionally(failure))
                 LOG.log(System.Logger.Level.WARNING, "Full-login packet servicing failed after join.", failure);
+            terminate();
         }
     }
 
@@ -275,18 +277,19 @@ final class BotLoginSession implements InvocationHandler
             return;
         }
 
-        // Fail-loud: an unhandled login/configuration packet would silently stall the join.
-        terminate();
+        // Fail-loud: an unhandled login/configuration packet would silently stall the join. Completion MUST
+        // precede terminate() so the close listener's generic denial cannot mask the named error.
         outcome.completeExceptionally(new IllegalStateException(
             "Unhandled %s packet from server: %s. Add it to the login driver's packet table."
                 .formatted(phase, packetClass.getName())));
+        terminate();
     }
 
     private void handleTransportDisconnect()
     {
-        terminate();
         if (!outcome.isDone())
             outcome.complete(new IBotLoginOutcome.Denied(phase, "Connection closed during " + phase + "."));
+        terminate();
     }
 
     private void completeJoined()
@@ -297,9 +300,13 @@ final class BotLoginSession implements InvocationHandler
 
     private void completeDenied(Object disconnectPacket)
     {
-        terminate();
+        // Complete with the packet's kick reason BEFORE terminating: terminate() closes the channel, which
+        // fires the registered close listener inline (handleTransportDisconnect), and its generic
+        // "Connection closed" denial would otherwise win the one-shot completion race and discard the
+        // server's actual denial reason (whitelist/ban kick text).
         if (!outcome.isDone())
             outcome.complete(new IBotLoginOutcome.Denied(phase, reflection.disconnectReason(disconnectPacket)));
+        terminate();
     }
 
     private Object connection()
