@@ -100,6 +100,19 @@ class WorldsFacadeTest
         assertThat(builder).isNotNull();
     }
 
+    @Test
+    @SuppressWarnings("NullAway") // Intentionally crosses the non-null API boundary to verify fail-fast validation.
+    void create_shouldThrowNullPointerExceptionWhenWorldSpecIsNull()
+    {
+        // setup
+        final DefaultLightkeeperFramework framework = framework(mock(UdsAgentClient.class));
+
+        // execute + verify
+        assertThatThrownBy(() -> framework.worlds().create(null))
+            .isInstanceOf(NullPointerException.class)
+            .hasMessageContaining("worldSpec");
+    }
+
     private static DefaultLightkeeperFramework framework(UdsAgentClient agentClient)
     {
         return new DefaultLightkeeperFramework(

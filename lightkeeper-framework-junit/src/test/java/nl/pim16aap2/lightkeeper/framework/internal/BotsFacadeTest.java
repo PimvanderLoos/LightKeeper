@@ -105,6 +105,35 @@ class BotsFacadeTest
         assertThat(builder).isNotNull();
     }
 
+    @Test
+    @SuppressWarnings("NullAway") // Intentionally crosses the non-null API boundary to verify fail-fast validation.
+    void join_shouldThrowNullPointerExceptionWhenUuidIsNull()
+    {
+        // setup
+        final DefaultLightkeeperFramework framework =
+            framework(mock(UdsAgentClient.class), mock(PlayerScopeRegistry.class));
+        final WorldHandle world = FrameworkHandleFactory.worldHandle(framework, "world");
+
+        // execute + verify
+        assertThatThrownBy(() -> framework.bots().join("lkbot001", null, world))
+            .isInstanceOf(NullPointerException.class)
+            .hasMessageContaining("uuid");
+    }
+
+    @Test
+    @SuppressWarnings("NullAway") // Intentionally crosses the non-null API boundary to verify fail-fast validation.
+    void join_shouldThrowNullPointerExceptionWhenWorldIsNull()
+    {
+        // setup
+        final DefaultLightkeeperFramework framework =
+            framework(mock(UdsAgentClient.class), mock(PlayerScopeRegistry.class));
+
+        // execute + verify
+        assertThatThrownBy(() -> framework.bots().join("lkbot001", UUID.randomUUID(), null))
+            .isInstanceOf(NullPointerException.class)
+            .hasMessageContaining("world");
+    }
+
     private static DefaultLightkeeperFramework framework(
         UdsAgentClient agentClient, PlayerScopeRegistry playerScopeRegistry)
     {
