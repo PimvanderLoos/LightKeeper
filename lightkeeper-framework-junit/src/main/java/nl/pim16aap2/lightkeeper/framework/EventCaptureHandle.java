@@ -28,6 +28,27 @@ public final class EventCaptureHandle implements AutoCloseable
     }
 
     /**
+     * Arms cancellation of the next {@code count} fired events of this capture's class.
+     *
+     * <p>The agent registers a LOWEST-priority listener, so regular plugin listeners — and this capture's
+     * MONITOR listener — observe the cancelled state. Deterministic only: exactly the next {@code count}
+     * events are cancelled, with no predicate filtering. The event class must implement {@code Cancellable}.
+     *
+     * <p>Only one cancellation may be armed per event class at a time; arming again while one is active
+     * fails. Closing this handle disarms any remaining budget, so unexhausted cancellations never leak into
+     * later tests on a shared server.
+     *
+     * @param count
+     *     How many upcoming events to cancel; must be positive.
+     * @return This handle for fluent chaining.
+     */
+    public EventCaptureHandle cancelNext(int count)
+    {
+        frameworkGateway.cancelNextEvents(eventClassName, count);
+        return this;
+    }
+
+    /**
      * Clears all captured events for this session.
      *
      * @return This handle for fluent chaining.

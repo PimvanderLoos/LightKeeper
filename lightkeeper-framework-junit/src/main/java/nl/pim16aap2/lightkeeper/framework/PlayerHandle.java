@@ -292,6 +292,20 @@ public final class PlayerHandle
     }
 
     /**
+     * Makes this player say a chat message, firing the real chat event (synchronously, as with any
+     * plugin-triggered chat).
+     *
+     * @param message
+     *     The chat message.
+     * @return This handle for fluent chaining.
+     */
+    public PlayerHandle chat(String message)
+    {
+        frameworkGateway.playerChat(uniqueId, message);
+        return this;
+    }
+
+    /**
      * Gets the permission control handle for this player.
      *
      * <p>Mutations apply to LightKeeper's own permission attachment and bypass permission plugins; see

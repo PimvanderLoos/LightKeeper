@@ -1,15 +1,19 @@
 package nl.pim16aap2.lightkeeper.framework.internal;
 
 import nl.pim16aap2.lightkeeper.framework.BlockPos;
+import nl.pim16aap2.lightkeeper.framework.CapturedEventSnapshot;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import nl.pim16aap2.lightkeeper.framework.WorldSpec;
 import nl.pim16aap2.lightkeeper.protocol.DropResult;
+import nl.pim16aap2.lightkeeper.protocol.GetCapturedEvents;
+import nl.pim16aap2.lightkeeper.protocol.IProtocolValue;
 import nl.pim16aap2.lightkeeper.protocol.MutatePlayerPermission;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -503,6 +507,126 @@ class DefaultLightkeeperFrameworkGatewayTest
         // execute + verify
         assertThatThrownBy(() -> framework.setBlockData("world", position, null))
             .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void cancelNextEvents_shouldDelegateToAgentClient()
+    {
+        // setup
+        final UdsAgentClient agentClient = mock(UdsAgentClient.class);
+        final DefaultLightkeeperFramework framework = new DefaultLightkeeperFramework(
+            runtimeManifest(),
+            mock(MinecraftServerProcess.class),
+            agentClient,
+            new PlayerScopeRegistry()
+        );
+
+        // execute
+        framework.cancelNextEvents("org.bukkit.event.player.PlayerJoinEvent", 3);
+
+        // verify
+        verify(agentClient).cancelNextEvents("org.bukkit.event.player.PlayerJoinEvent", 3);
+    }
+
+    @Test
+    void cancelNextEvents_shouldThrowExceptionWhenCountIsNotPositive()
+    {
+        // setup
+        final DefaultLightkeeperFramework framework = new DefaultLightkeeperFramework(
+            runtimeManifest(),
+            mock(MinecraftServerProcess.class),
+            mock(UdsAgentClient.class),
+            new PlayerScopeRegistry()
+        );
+
+        // execute + verify
+        assertThatThrownBy(() -> framework.cancelNextEvents("org.bukkit.event.player.PlayerJoinEvent", 0))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("positive");
+    }
+
+    @Test
+    void playerChat_shouldDelegateToAgentClientPreservingWhitespace()
+    {
+        // setup
+        final UdsAgentClient agentClient = mock(UdsAgentClient.class);
+        final DefaultLightkeeperFramework framework = new DefaultLightkeeperFramework(
+            runtimeManifest(),
+            mock(MinecraftServerProcess.class),
+            agentClient,
+            new PlayerScopeRegistry()
+        );
+        final java.util.UUID playerId = java.util.UUID.randomUUID();
+
+        // execute
+        framework.playerChat(playerId, "  spaced message  ");
+
+        // verify - intentional whitespace reaches the agent unchanged
+        verify(agentClient).playerChat(playerId, "  spaced message  ");
+    }
+
+    @Test
+    void playerChat_shouldThrowExceptionWhenMessageIsBlank()
+    {
+        // setup
+        final DefaultLightkeeperFramework framework = new DefaultLightkeeperFramework(
+            runtimeManifest(),
+            mock(MinecraftServerProcess.class),
+            mock(UdsAgentClient.class),
+            new PlayerScopeRegistry()
+        );
+
+        // execute + verify
+        assertThatThrownBy(() -> framework.playerChat(UUID.randomUUID(), "   "))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("blank");
+    }
+
+    @Test
+    void currentServerTick_shouldReturnValueFromAgentClient()
+    {
+        // setup
+        final UdsAgentClient agentClient = mock(UdsAgentClient.class);
+        when(agentClient.getServerTick()).thenReturn(123L);
+        final DefaultLightkeeperFramework framework = new DefaultLightkeeperFramework(
+            runtimeManifest(),
+            mock(MinecraftServerProcess.class),
+            agentClient,
+            new PlayerScopeRegistry()
+        );
+
+        // execute
+        final long result = framework.currentServerTick();
+
+        // verify
+        assertThat(result).isEqualTo(123L);
+    }
+
+    @Test
+    void getCapturedEvents_shouldMapTickIntoSnapshot()
+    {
+        // setup
+        final UdsAgentClient agentClient = mock(UdsAgentClient.class);
+        final Map<String, IProtocolValue> values = Map.of("isCancelled", new IProtocolValue.PBool(true));
+        final GetCapturedEvents.CapturedEvent capturedEvent = new GetCapturedEvents.CapturedEvent(9L, values);
+        when(agentClient.getCapturedEvents("org.bukkit.event.player.PlayerJoinEvent"))
+            .thenReturn(List.of(capturedEvent));
+        final DefaultLightkeeperFramework framework = new DefaultLightkeeperFramework(
+            runtimeManifest(),
+            mock(MinecraftServerProcess.class),
+            agentClient,
+            new PlayerScopeRegistry()
+        );
+
+        // execute
+        final List<CapturedEventSnapshot> result =
+            framework.getCapturedEvents("org.bukkit.event.player.PlayerJoinEvent");
+
+        // verify
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().eventClassName()).isEqualTo("org.bukkit.event.player.PlayerJoinEvent");
+        assertThat(result.getFirst().tick()).isEqualTo(9L);
+        assertThat(result.getFirst().values()).isEqualTo(values);
     }
 
     private static RuntimeManifest runtimeManifest()

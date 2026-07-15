@@ -559,8 +559,37 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     {
         ensureOpen();
         return agentClient.getCapturedEvents(eventClassName).stream()
-            .map(data -> new CapturedEventSnapshot(eventClassName, data))
+            .map(event -> new CapturedEventSnapshot(eventClassName, event.tick(), event.values()))
             .toList();
+    }
+
+    @Override
+    public void cancelNextEvents(String eventClassName, int count)
+    {
+        ensureOpen();
+        Objects.requireNonNull(eventClassName, "eventClassName may not be null.");
+        if (count <= 0)
+            throw new IllegalArgumentException("count must be positive.");
+        agentClient.cancelNextEvents(eventClassName, count);
+    }
+
+    @Override
+    public void playerChat(UUID playerId, String message)
+    {
+        ensureOpen();
+        Objects.requireNonNull(playerId, "playerId may not be null.");
+        Objects.requireNonNull(message, "message may not be null.");
+        if (message.isBlank())
+            throw new IllegalArgumentException("message may not be blank.");
+        // Deliberately NOT trimmed: intentional whitespace must reach the fired chat event unchanged.
+        agentClient.playerChat(playerId, message);
+    }
+
+    @Override
+    public long currentServerTick()
+    {
+        ensureOpen();
+        return agentClient.getServerTick();
     }
 
     @Override

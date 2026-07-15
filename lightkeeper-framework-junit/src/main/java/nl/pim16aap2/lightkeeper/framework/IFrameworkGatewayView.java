@@ -175,6 +175,21 @@ public interface IFrameworkGatewayView
     void unregisterEventListener(String eventClassName);
 
     /**
+     * Arms cancellation of the next N fired events of a class (LOWEST-priority listener).
+     */
+    void cancelNextEvents(String eventClassName, int count);
+
+    /**
+     * Makes a synthetic player say a chat message, firing the real chat event.
+     */
+    void playerChat(UUID playerId, String message);
+
+    /**
+     * Gets the server's current tick.
+     */
+    long currentServerTick();
+
+    /**
      * Gets all captured server errors: structured log events plus raw stderr stack-trace detections.
      */
     List<ServerErrorSnapshot> capturedServerErrors();

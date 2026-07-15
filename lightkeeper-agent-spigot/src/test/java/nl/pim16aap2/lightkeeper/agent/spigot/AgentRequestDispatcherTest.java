@@ -7,6 +7,7 @@ import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
 import nl.pim16aap2.lightkeeper.protocol.AgentProtocolException;
 import nl.pim16aap2.lightkeeper.protocol.AgentProtocolMapper;
 import nl.pim16aap2.lightkeeper.protocol.BlockType;
+import nl.pim16aap2.lightkeeper.protocol.CancelNextEvents;
 import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEvents;
 import nl.pim16aap2.lightkeeper.protocol.ClearServerErrors;
 import nl.pim16aap2.lightkeeper.protocol.ClickMenuSlot;
@@ -35,6 +36,7 @@ import nl.pim16aap2.lightkeeper.protocol.MainWorld;
 import nl.pim16aap2.lightkeeper.protocol.MutatePlayerPermission;
 import nl.pim16aap2.lightkeeper.protocol.NewWorld;
 import nl.pim16aap2.lightkeeper.protocol.PlacePlayerBlock;
+import nl.pim16aap2.lightkeeper.protocol.PlayerChat;
 import nl.pim16aap2.lightkeeper.protocol.RegisterEventListener;
 import nl.pim16aap2.lightkeeper.protocol.RemovePlayer;
 import nl.pim16aap2.lightkeeper.protocol.RightClickBlock;
@@ -368,6 +370,10 @@ class AgentRequestDispatcherTest
             .thenReturn(new MutatePlayerPermission.Response());
         when(fixture.playerActions().handleHasPlayerPermission(any(HasPlayerPermission.Command.class)))
             .thenReturn(new HasPlayerPermission.Response(true));
+        when(fixture.eventActions().handleCancelNextEvents(any(CancelNextEvents.Command.class)))
+            .thenReturn(new CancelNextEvents.Response());
+        when(fixture.playerActions().handlePlayerChat(any(PlayerChat.Command.class)))
+            .thenReturn(new PlayerChat.Response());
 
         // execute
         dispatchExpectingSuccess(fixture, toJson(new NewWorld.Command("request-1", "w", "NORMAL", "NORMAL", 0L)));
@@ -403,6 +409,9 @@ class AgentRequestDispatcherTest
         dispatchExpectingSuccess(fixture, toJson(new MutatePlayerPermission.Command(
             "request-31", uuid, "test.perm", MutatePlayerPermission.Mode.GRANT)));
         dispatchExpectingSuccess(fixture, toJson(new HasPlayerPermission.Command("request-32", uuid, "test.perm")));
+        dispatchExpectingSuccess(fixture, toJson(new CancelNextEvents.Command(
+            "request-33", "org.bukkit.event.player.PlayerJoinEvent", 1)));
+        dispatchExpectingSuccess(fixture, toJson(new PlayerChat.Command("request-34", uuid, "hello")));
 
         // verify
         verify(fixture.worldActions()).handleNewWorld(any(NewWorld.Command.class));
@@ -437,6 +446,8 @@ class AgentRequestDispatcherTest
         verify(fixture.serverErrorActions()).handleClearServerErrors(any(ClearServerErrors.Command.class));
         verify(fixture.playerActions()).handleMutatePlayerPermission(any(MutatePlayerPermission.Command.class));
         verify(fixture.playerActions()).handleHasPlayerPermission(any(HasPlayerPermission.Command.class));
+        verify(fixture.eventActions()).handleCancelNextEvents(any(CancelNextEvents.Command.class));
+        verify(fixture.playerActions()).handlePlayerChat(any(PlayerChat.Command.class));
     }
 
     @Test

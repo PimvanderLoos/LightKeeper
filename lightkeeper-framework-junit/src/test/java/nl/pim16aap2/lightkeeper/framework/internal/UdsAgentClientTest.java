@@ -5,6 +5,7 @@ import nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot;
 import nl.pim16aap2.lightkeeper.framework.Platform;
 import nl.pim16aap2.lightkeeper.protocol.CommandSource;
 import nl.pim16aap2.lightkeeper.protocol.DropResult;
+import nl.pim16aap2.lightkeeper.protocol.GetCapturedEvents;
 import nl.pim16aap2.lightkeeper.protocol.IProtocolValue;
 import nl.pim16aap2.lightkeeper.protocol.ItemSnapshot;
 import nl.pim16aap2.lightkeeper.protocol.MutatePlayerPermission;
@@ -25,7 +26,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -370,17 +370,59 @@ class UdsAgentClientTest
         final Path socketPath = tempDirectory.resolve("events.sock");
         final String responseJson =
             "{\"requestId\":\"1\",\"success\":true,"
-                + "\"events\":[{\"player\":{\"type\":\"STRING\",\"value\":\"Steve\"}}]}";
+                + "\"events\":[{\"tick\":7,\"values\":{\"player\":{\"type\":\"STRING\",\"value\":\"Steve\"}}}]}";
         try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
              UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
         {
             // execute
-            final List<Map<String, IProtocolValue>> events =
+            final List<GetCapturedEvents.CapturedEvent> events =
                 client.getCapturedEvents("org.bukkit.event.player.PlayerJoinEvent");
 
             // verify
             assertThat(events).hasSize(1);
-            assertThat(events.getFirst()).containsEntry("player", new IProtocolValue.PString("Steve"));
+            assertThat(events.getFirst().tick()).isEqualTo(7L);
+            assertThat(events.getFirst().values()).containsEntry("player", new IProtocolValue.PString("Steve"));
+        }
+    }
+
+    @Test
+    void cancelNextEvents_shouldSendCancelRequest(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("cancel-next-events.sock");
+        final String responseJson = "{\"requestId\":\"1\",\"success\":true}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            client.cancelNextEvents("org.bukkit.event.player.PlayerJoinEvent", 3);
+
+            // verify
+            assertThat(server.capturedRequest())
+                .contains("\"action\":\"CANCEL_NEXT_EVENTS\"")
+                .contains("PlayerJoinEvent")
+                .contains("\"count\":3");
+        }
+    }
+
+    @Test
+    void playerChat_shouldSendChatRequest(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("player-chat.sock");
+        final String responseJson = "{\"requestId\":\"1\",\"success\":true}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            client.playerChat(PLAYER_ID, "hello world");
+
+            // verify
+            assertThat(server.capturedRequest())
+                .contains("\"action\":\"PLAYER_CHAT\"")
+                .contains("\"message\":\"hello world\"");
         }
     }
 

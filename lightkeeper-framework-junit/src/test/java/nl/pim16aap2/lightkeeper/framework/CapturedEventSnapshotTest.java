@@ -16,6 +16,7 @@ class CapturedEventSnapshotTest
         // setup
         final CapturedEventSnapshot snapshot = new CapturedEventSnapshot(
             "org.bukkit.event.player.PlayerJoinEvent",
+            1L,
             Map.of("isCancelled", new IProtocolValue.PBool(true)));
 
         // execute
@@ -31,6 +32,7 @@ class CapturedEventSnapshotTest
         // setup
         final CapturedEventSnapshot snapshot = new CapturedEventSnapshot(
             "org.bukkit.event.player.PlayerJoinEvent",
+            1L,
             Map.of("isCancelled", new IProtocolValue.PBool(true)));
 
         // execute
@@ -49,7 +51,7 @@ class CapturedEventSnapshotTest
         values.put("getName", new IProtocolValue.PString("Steve"));
         values.put("isCancelled", new IProtocolValue.PBool(false));
         values.put("getCount", new IProtocolValue.PNumber(3));
-        final CapturedEventSnapshot snapshot = new CapturedEventSnapshot("event.Class", values);
+        final CapturedEventSnapshot snapshot = new CapturedEventSnapshot("event.Class", 1L, values);
 
         // execute
         final Map<String, String> rendered = snapshot.data();
@@ -66,7 +68,7 @@ class CapturedEventSnapshotTest
     void constructor_shouldDefaultToEmptyMapWhenValuesIsNull()
     {
         // setup + execute
-        final CapturedEventSnapshot snapshot = new CapturedEventSnapshot("event.Class", null);
+        final CapturedEventSnapshot snapshot = new CapturedEventSnapshot("event.Class", 1L, null);
 
         // verify
         assertThat(snapshot.values()).isEmpty();

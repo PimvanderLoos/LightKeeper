@@ -268,7 +268,9 @@ class ProtocolValueSerializationTest
         eventValues.put(
             "getDrops",
             new IProtocolValue.PList(List.of(new IProtocolValue.PString("minecraft:stone"))));
-        final GetCapturedEvents.Response original = new GetCapturedEvents.Response(List.of(eventValues));
+        final GetCapturedEvents.CapturedEvent capturedEvent =
+            new GetCapturedEvents.CapturedEvent(5L, eventValues);
+        final GetCapturedEvents.Response original = new GetCapturedEvents.Response(List.of(capturedEvent));
 
         // execute
         final String json = mapper.writeValueAsString(original);
@@ -276,7 +278,8 @@ class ProtocolValueSerializationTest
 
         // verify
         assertThat(result.events()).hasSize(1);
-        assertThat(result.events().getFirst()).containsExactlyEntriesOf(eventValues);
+        assertThat(result.events().getFirst().tick()).isEqualTo(5L);
+        assertThat(result.events().getFirst().values()).containsExactlyEntriesOf(eventValues);
         assertThat(result).isEqualTo(original);
     }
 }

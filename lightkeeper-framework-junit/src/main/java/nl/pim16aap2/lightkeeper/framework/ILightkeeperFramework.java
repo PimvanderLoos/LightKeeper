@@ -206,6 +206,17 @@ public interface ILightkeeperFramework extends AutoCloseable
     EventCaptureHandle captureEvents(String eventClassName);
 
     /**
+     * Gets the agent's monotonic tick counter, for correlating against {@link CapturedEventSnapshot#tick()}
+     * stamps.
+     *
+     * <p>This is an agent-relative counter (ticks since the agent enabled), not the server's absolute game
+     * tick: it resets on every server start, so values are only comparable within one server session.
+     *
+     * @return The monotonic, session-relative server tick.
+     */
+    long currentServerTick();
+
+    /**
      * Gets a handle over the always-on server-error capture.
      *
      * <p>The agent captures every WARN-or-worse log event inside the server as a structured snapshot — with the

@@ -13,6 +13,7 @@ import nl.pim16aap2.lightkeeper.protocol.HasPlayerPermission;
 import nl.pim16aap2.lightkeeper.protocol.LeftClickBlock;
 import nl.pim16aap2.lightkeeper.protocol.MutatePlayerPermission;
 import nl.pim16aap2.lightkeeper.protocol.PlacePlayerBlock;
+import nl.pim16aap2.lightkeeper.protocol.PlayerChat;
 import nl.pim16aap2.lightkeeper.protocol.RightClickBlock;
 import nl.pim16aap2.lightkeeper.protocol.TeleportPlayer;
 import org.bukkit.Bukkit;
@@ -576,6 +577,48 @@ class AgentPlayerActionsTest
         // is dropped and removePermissionAttachment finds nothing to detach.
         fixture.playerStore().removePermissionAttachment(uuid, player);
         verify(player).removeAttachment(attachment);
+    }
+
+    @Test
+    void handlePlayerChat_shouldInvokePlayerChatOnMainThread()
+        throws Exception
+    {
+        // setup
+        final PlayerActionsFixture fixture = createPlayerActionsFixture();
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mock();
+        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        final PlayerChat.Command command = new PlayerChat.Command("request-chat", uuid, "hello world");
+
+        // execute
+        final PlayerChat.Response response;
+        try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
+        {
+            bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
+            response = fixture.playerActions().handlePlayerChat(command);
+        }
+
+        // verify
+        assertThat(response).isNotNull();
+        verify(player).chat("hello world");
+    }
+
+    @Test
+    void handlePlayerChat_shouldPropagateWhenPlayerUnknown()
+    {
+        // setup
+        final AgentPlayerActions playerActions = createPlayerActions();
+        final PlayerChat.Command command =
+            new PlayerChat.Command("request-chat-unknown", UUID.randomUUID(), "hello");
+
+        // execute + verify
+        try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
+        {
+            bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
+            assertThatThrownBy(() -> playerActions.handlePlayerChat(command))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("not registered");
+        }
     }
 
     private static AgentPlayerActions createPlayerActions()

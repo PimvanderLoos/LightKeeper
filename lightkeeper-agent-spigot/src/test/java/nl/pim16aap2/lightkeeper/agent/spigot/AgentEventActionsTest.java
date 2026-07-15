@@ -1,5 +1,6 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
+import nl.pim16aap2.lightkeeper.protocol.CancelNextEvents;
 import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEvents;
 import nl.pim16aap2.lightkeeper.protocol.GetCapturedEvents;
 import nl.pim16aap2.lightkeeper.protocol.IProtocolValue;
@@ -11,7 +12,9 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -105,15 +108,71 @@ class AgentEventActionsTest
         // setup
         final AgentEventCapture eventCapture = mock();
         final AgentEventActions actions = createEventActions(eventCapture);
+        final GetCapturedEvents.CapturedEvent capturedEvent = new GetCapturedEvents.CapturedEvent(
+            3L, Map.of("isCancelled", new IProtocolValue.PBool(true)));
         when(eventCapture.getCapturedEvents("org.bukkit.event.Event"))
-            .thenReturn(List.of(Map.of("isCancelled", new IProtocolValue.PBool(true))));
+            .thenReturn(List.of(capturedEvent));
 
         // execute
         final GetCapturedEvents.Response response = actions.handleGetCapturedEvents(
             new GetCapturedEvents.Command("req-5", "org.bukkit.event.Event"));
 
         // verify
-        assertThat(response.events()).containsExactly(Map.of("isCancelled", new IProtocolValue.PBool(true)));
+        assertThat(response.events()).containsExactly(capturedEvent);
+    }
+
+    @Test
+    void handleCancelNextEvents_shouldSucceedAndDelegateToEventCapture()
+        throws Exception
+    {
+        // setup
+        final AgentEventCapture eventCapture = mock();
+        final AgentEventActions actions = createEventActions(eventCapture);
+
+        // execute
+        final CancelNextEvents.Response response = actions.handleCancelNextEvents(
+            new CancelNextEvents.Command("req-cancel", "org.bukkit.event.Event", 2));
+
+        // verify
+        assertThat(response).isNotNull();
+        verify(eventCapture).cancelNextEvents("org.bukkit.event.Event", 2);
+    }
+
+    @Test
+    void handleCancelNextEvents_shouldMapRearmToInvalidArgument()
+        throws Exception
+    {
+        // setup
+        final AgentEventCapture eventCapture = mock(AgentEventCapture.class);
+        doThrow(new IllegalStateException("already armed"))
+            .when(eventCapture).cancelNextEvents("org.example.Evt", 2);
+        final AgentEventActions eventActions = new AgentEventActions(eventCapture);
+        final CancelNextEvents.Command command = new CancelNextEvents.Command("req-1", "org.example.Evt", 2);
+
+        // execute
+        final Throwable thrown = catchThrowable(() -> eventActions.handleCancelNextEvents(command));
+
+        // verify - caller error surfaces as IllegalArgumentException (INVALID_ARGUMENT), not a server failure
+        assertThat(thrown)
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("already armed");
+    }
+
+    @Test
+    void handleCancelNextEvents_shouldThrowWhenClassIsNotFound()
+        throws Exception
+    {
+        // setup
+        final AgentEventCapture eventCapture = mock();
+        final AgentEventActions actions = createEventActions(eventCapture);
+        org.mockito.Mockito.doThrow(new ClassNotFoundException("com.example.NonExistent"))
+            .when(eventCapture).cancelNextEvents("com.example.NonExistent", 1);
+
+        // execute + verify
+        assertThatThrownBy(() -> actions.handleCancelNextEvents(
+            new CancelNextEvents.Command("req-cancel-cnf", "com.example.NonExistent", 1)))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Event class not found: com.example.NonExistent");
     }
 
     @Test

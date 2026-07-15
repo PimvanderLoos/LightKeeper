@@ -42,14 +42,37 @@ public final class GetCapturedEvents
     }
 
     /**
+     * A single captured event instance: its typed property values plus the server tick it fired on.
+     *
+     * @param tick
+     *     The server tick at capture time.
+     * @param values
+     *     Accessor name to typed value, in encoding order.
+     */
+    public record CapturedEvent(
+        long tick,
+        Map<String, IProtocolValue> values
+    )
+    {
+        /**
+         * Validates and defensively copies the values, preserving their order.
+         */
+        public CapturedEvent
+        {
+            values = values == null
+                ? Map.of()
+                : java.util.Collections.unmodifiableMap(new java.util.LinkedHashMap<>(values));
+        }
+    }
+
+    /**
      * Response record for {@code GET_CAPTURED_EVENTS}.
      *
      * @param events
-     *     Captured event property snapshots, one map of accessor name to typed {@link IProtocolValue} per
-     *     captured event instance.
+     *     Captured event instances, oldest first.
      */
     public record Response(
-        List<Map<String, IProtocolValue>> events
+        List<CapturedEvent> events
     ) implements IAgentResponse
     {
         /**

@@ -17,11 +17,15 @@ import java.util.Map;
  *
  * @param eventClassName
  *     The full class name of the event.
+ * @param tick
+ *     The server tick the event fired on, for correlating events with each other and with
+ *     {@code ILightkeeperFramework#currentServerTick()}.
  * @param values
  *     The captured event values keyed by accessor name (getter/is-method or record component).
  */
 public record CapturedEventSnapshot(
     String eventClassName,
+    long tick,
     Map<String, IProtocolValue> values
 )
 {

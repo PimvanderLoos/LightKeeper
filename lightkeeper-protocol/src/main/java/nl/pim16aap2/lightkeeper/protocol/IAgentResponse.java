@@ -14,6 +14,7 @@ package nl.pim16aap2.lightkeeper.protocol;
 public sealed interface IAgentResponse
     permits
     BlockType.Response,
+    CancelNextEvents.Response,
     ClearCapturedEvents.Response,
     ClearServerErrors.Response,
     ClickMenuSlot.Response,
@@ -39,6 +40,7 @@ public sealed interface IAgentResponse
     MutatePlayerPermission.Response,
     NewWorld.Response,
     PlacePlayerBlock.Response,
+    PlayerChat.Response,
     RegisterEventListener.Response,
     RemovePlayer.Response,
     RightClickBlock.Response,

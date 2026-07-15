@@ -240,6 +240,9 @@ class MyPluginIT
 - Typed event payloads: captured events carry real types (numbers, booleans, UUIDs, enums, entity/world
   references, nested records) — values the agent cannot encode appear as explicit `DROPPED` markers instead
   of being silently absent
+- Bot chat and deterministic cancellation: `player.chat("...")` fires the real chat event;
+  `capture.cancelNext(n)` cancels exactly the next N events of a captured class (LOWEST priority, so the
+  capture still records the final cancelled state); captured events carry the server tick they fired on
 - Block state as a first-class value: place blocks with full state via
   `world.setBlockAt(pos, BlockSpec.parse("minecraft:lever[face=floor,powered=true]"))` and assert partially
   via `world.blockAt(pos).is(BlockSpec.parse("minecraft:lever[powered=true]"))` — only named properties
