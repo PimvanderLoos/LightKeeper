@@ -25,6 +25,11 @@ import java.util.concurrent.TimeoutException;
  * <p>Dispatch keys on the packet <em>class</em> ({@code method.getParameterTypes()[0]}), never the method name,
  * because Spigot obfuscates every listener method to {@code a}. Unhandled packets are fail-loud in the
  * login/configuration phase (they would silently stall the join) and warn-once in the play phase.
+ *
+ * <p>Packet servicing outlives the {@code Joined} outcome: once the play phase is reached, the session keeps
+ * answering keep-alives/pings and acknowledging teleports for the lifetime of the connection — otherwise the
+ * server's keep-alive watchdog would kick the bot shortly after joining. Servicing stops only when the
+ * session is {@link #terminated} (denial, disconnect, transport close, or an internal failure).
  */
 final class BotLoginSession implements InvocationHandler
 {
@@ -39,6 +44,12 @@ final class BotLoginSession implements InvocationHandler
     private volatile @Nullable Object listenerProxy;
     private volatile @Nullable String locale;
     private volatile String playerName = "";
+    /**
+     * Set when the connection is no longer live (denied, disconnected, timed out, or failed). Gates packet
+     * servicing instead of {@code outcome.isDone()}, which flips on a successful join while the connection —
+     * and its keep-alive obligations — very much lives on.
+     */
+    private volatile boolean terminated;
 
     BotLoginSession(BotLoginReflection reflection)
     {
@@ -63,30 +74,40 @@ final class BotLoginSession implements InvocationHandler
         try
         {
             openedConnection = reflection.openConnection(request.port(), proxy);
-            this.connection = openedConnection;
-            reflection.sendHello(openedConnection, request.name());
         }
         catch (ReflectiveOperationException exception)
         {
             throw new IllegalStateException(
                 "Failed to open full-login connection for bot '%s'.".formatted(request.name()), exception);
         }
+        this.connection = openedConnection;
+
+        try
+        {
+            reflection.sendHello(openedConnection, request.name());
+        }
+        catch (ReflectiveOperationException exception)
+        {
+            terminate(openedConnection);
+            throw new IllegalStateException(
+                "Failed to start login for bot '%s'.".formatted(request.name()), exception);
+        }
 
         try
         {
             final IBotLoginOutcome result = outcome.get(request.timeout().toMillis(), TimeUnit.MILLISECONDS);
             if (!(result instanceof IBotLoginOutcome.Joined))
-                reflection.closeConnection(openedConnection);
+                terminate(openedConnection);
             return result;
         }
         catch (TimeoutException exception)
         {
-            reflection.closeConnection(openedConnection);
+            terminate(openedConnection);
             return new IBotLoginOutcome.TimedOut();
         }
         catch (ExecutionException exception)
         {
-            reflection.closeConnection(openedConnection);
+            terminate(openedConnection);
             throw new IllegalStateException(
                 "Full-login pipeline failed for bot '%s': %s".formatted(request.name(), rootMessage(exception)),
                 exception);
@@ -94,10 +115,22 @@ final class BotLoginSession implements InvocationHandler
         catch (InterruptedException exception)
         {
             Thread.currentThread().interrupt();
-            reflection.closeConnection(openedConnection);
+            terminate(openedConnection);
             throw new IllegalStateException(
                 "Interrupted while awaiting full-login of bot '%s'.".formatted(request.name()), exception);
         }
+    }
+
+    /**
+     * Stops packet servicing and closes the connection; used on every terminal path except a successful join.
+     *
+     * @param liveConnection
+     *     The connection to close.
+     */
+    private void terminate(Object liveConnection)
+    {
+        terminated = true;
+        reflection.closeConnection(liveConnection);
     }
 
     // -------------------------------------------------------------------------------------------------------
@@ -176,7 +209,9 @@ final class BotLoginSession implements InvocationHandler
 
     private void dispatchPacket(@Nullable Object packet)
     {
-        if (packet == null || outcome.isDone())
+        // Gate on connection liveness, NOT on outcome completion: after a successful join the outcome is done
+        // but keep-alives/pings/teleports must keep being serviced or the server's watchdog kicks the bot.
+        if (packet == null || terminated)
             return;
 
         final Class<?> packetClass = packet.getClass();
@@ -213,8 +248,12 @@ final class BotLoginSession implements InvocationHandler
         }
         catch (ReflectiveOperationException exception)
         {
-            outcome.completeExceptionally(new IllegalStateException(
-                "Failed to handle %s packet %s.".formatted(phase, packetClass.getName()), exception));
+            // A reflective failure means the driver can no longer service the connection reliably; stop.
+            terminated = true;
+            final IllegalStateException failure = new IllegalStateException(
+                "Failed to handle %s packet %s.".formatted(phase, packetClass.getName()), exception);
+            if (!outcome.completeExceptionally(failure))
+                LOG.log(System.Logger.Level.WARNING, "Full-login packet servicing failed after join.", failure);
         }
     }
 
@@ -228,6 +267,7 @@ final class BotLoginSession implements InvocationHandler
         }
 
         // Fail-loud: an unhandled login/configuration packet would silently stall the join.
+        terminated = true;
         outcome.completeExceptionally(new IllegalStateException(
             "Unhandled %s packet from server: %s. Add it to the login driver's packet table."
                 .formatted(phase, packetClass.getName())));
@@ -235,6 +275,7 @@ final class BotLoginSession implements InvocationHandler
 
     private void handleTransportDisconnect()
     {
+        terminated = true;
         if (!outcome.isDone())
             outcome.complete(new IBotLoginOutcome.Denied(phase, "Connection closed during " + phase + "."));
     }
@@ -247,6 +288,7 @@ final class BotLoginSession implements InvocationHandler
 
     private void completeDenied(Object disconnectPacket)
     {
+        terminated = true;
         if (!outcome.isDone())
             outcome.complete(new IBotLoginOutcome.Denied(phase, reflection.disconnectReason(disconnectPacket)));
     }

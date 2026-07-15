@@ -107,6 +107,13 @@ final class BotLoginReflection
     private final Method setupCompressionMethod;
     private final Field channelField;
     private final Method channelCloseMethod;
+    /**
+     * Paper's per-connection inbound packet-rate counter ({@code Connection.allPacketCounts}), or {@code null}
+     * on distributions without it (Spigot). Paper initializes it from config on EVERY {@code Connection} —
+     * including our client-side one, which legitimately receives thousands of packets per second (chunks,
+     * entity movement), so left armed it kills the bot's own connection for "packet spam" shortly after join.
+     */
+    private final @Nullable Field paperPacketLimiterField;
 
     private final Object configurationClientboundInfo;
     private final Object configurationServerboundInfo;
@@ -219,6 +226,7 @@ final class BotLoginReflection
             channelField = NmsReflectionUtils.resolveFieldByNameOrAcceptedType(
                 connectionClass, "channel", channelClass);
             channelCloseMethod = channelClass.getMethod("close");
+            paperPacketLimiterField = resolvePaperPacketLimiterField(connectionClass);
 
             // Bound protocol infos for the configuration and play phases.
             final ProtocolInfos protocolInfos = resolveProtocolInfos(minecraftServer);
@@ -298,8 +306,46 @@ final class BotLoginReflection
     {
         final InetSocketAddress address = new InetSocketAddress(InetAddress.getLoopbackAddress(), port);
         final Object connection = connectToServerMethod.invoke(null, address, eventLoopGroupHolder, null);
+        disarmPaperPacketLimiter(connection);
         initiateLoginConnectionMethod.invoke(connection, "127.0.0.1", port, listenerProxy);
         return connection;
+    }
+
+    /**
+     * Disarms Paper's inbound packet-rate limiter on the bot's own client-side connection.
+     *
+     * <p>Paper arms {@code Connection.allPacketCounts} from server config on every {@code Connection} instance,
+     * client-side ones included. The bot's connection legitimately receives thousands of clientbound packets per
+     * second (chunk data, entity movement), so an armed limiter makes the connection kill <em>itself</em> for
+     * "packet spam" within seconds of joining. Nulling the counter only affects this bot's client connection;
+     * the server's per-player connection (and its protections) is a separate instance and stays untouched.
+     * Called before the handshake is initiated, so no inbound packet can race the write. No-op on Spigot.
+     *
+     * @param connection
+     *     The freshly created client connection.
+     * @throws ReflectiveOperationException
+     *     When clearing the counter field fails.
+     */
+    private void disarmPaperPacketLimiter(Object connection)
+        throws ReflectiveOperationException
+    {
+        if (paperPacketLimiterField != null)
+            paperPacketLimiterField.set(connection, null);
+    }
+
+    private @Nullable Field resolvePaperPacketLimiterField(Class<?> connectionClass)
+    {
+        try
+        {
+            final Class<?> counterClass = NmsReflectionUtils.resolveClass(
+                "io.papermc.paper.util.IntervalledCounter", serverClassLoader);
+            return NmsReflectionUtils.findFieldByType(connectionClass, counterClass);
+        }
+        catch (ClassNotFoundException ignored)
+        {
+            // Not a Paper server; there is no packet limiter to disarm.
+            return null;
+        }
     }
 
     /**
@@ -577,6 +623,7 @@ final class BotLoginReflection
             "net.minecraft.network.protocol.configuration.ClientboundResetChatPacket",
             "net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket",
             "net.minecraft.network.protocol.common.ClientboundUpdateTagsPacket",
+            // Limitation: consumed without a response — a server that requires a resource-pack answer stalls (PR2).
             "net.minecraft.network.protocol.common.ClientboundResourcePackPushPacket",
             "net.minecraft.network.protocol.common.ClientboundResourcePackPopPacket",
             "net.minecraft.network.protocol.common.ClientboundStoreCookiePacket",
@@ -585,6 +632,7 @@ final class BotLoginReflection
             "net.minecraft.network.protocol.common.ClientboundServerLinksPacket",
             "net.minecraft.network.protocol.common.ClientboundClearDialogPacket",
             "net.minecraft.network.protocol.common.ClientboundShowDialogPacket",
+            // Limitation: consumed without a cookie response — a server that awaits one stalls the join (PR2).
             "net.minecraft.network.protocol.cookie.ClientboundCookieRequestPacket"})
         {
             addOptional(classes, className);

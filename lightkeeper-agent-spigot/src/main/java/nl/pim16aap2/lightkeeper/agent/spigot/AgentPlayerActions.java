@@ -170,6 +170,10 @@ final class AgentPlayerActions
      * the server main thread — while awaiting the {@code PlayerJoinEvent} for the bot's name. Whitelist/ban/full/
      * plugin denials and timeouts are surfaced as typed {@link AgentProtocolException}s.
      *
+     * <p>The driver wait and the join-event wait share ONE deadline bounded by the agent's sync-operation
+     * timeout, preserving the {@code RuntimeProtocol} invariant that the agent reports its own detailed
+     * {@code TIMEOUT} before the client watchdog (timeout + margin) gives up.
+     *
      * @param command
      *     Typed create-player command in {@code FULL_LOGIN} mode.
      * @return Response containing the server-assigned offline UUID and name.
@@ -180,11 +184,18 @@ final class AgentPlayerActions
     private CreatePlayer.Response handleFullLoginPlayer(CreatePlayer.Command command)
         throws Exception
     {
+        if (Bukkit.isPrimaryThread())
+            throw new IllegalStateException(
+                "FULL_LOGIN joins must not run on the server main thread: the join blocks on PlayerJoinEvent, "
+                    + "which fires on the main thread, so this would deadlock.");
+
         final String name = command.name();
         final String locale = command.locale();
         final Double health = command.health();
         final String permissionsCsv = command.permissionsCsv();
         final long timeoutSeconds = mainThreadExecutor.syncOperationTimeoutSeconds();
+        // One shared deadline for the whole FULL_LOGIN join (driver + join-event wait).
+        final long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(timeoutSeconds);
 
         final CountDownLatch joinLatch = new CountDownLatch(1);
         final AtomicReference<Player> joinedPlayer = new AtomicReference<>();
@@ -221,10 +232,13 @@ final class AgentPlayerActions
                     AgentErrorCode.PLAYER_JOIN_TIMEOUT,
                     "Bot '%s' did not complete the login pipeline within %d seconds.".formatted(name, timeoutSeconds));
 
-            if (!joinLatch.await(timeoutSeconds, TimeUnit.SECONDS))
+            // The join event gets only the time remaining on the shared deadline, never a fresh budget: the
+            // driver has already reached the play phase, so the event wait is normally near-instant.
+            final long remainingNanos = deadlineNanos - System.nanoTime();
+            if (remainingNanos <= 0L || !joinLatch.await(remainingNanos, TimeUnit.NANOSECONDS))
                 throw new AgentProtocolException(
                     AgentErrorCode.PLAYER_JOIN_TIMEOUT,
-                    "Bot '%s' completed login but no PlayerJoinEvent fired within %d seconds."
+                    "Bot '%s' completed login but no PlayerJoinEvent fired within the %d-second join budget."
                         .formatted(name, timeoutSeconds));
 
             final Player player = Objects.requireNonNull(joinedPlayer.get(), "joined player");

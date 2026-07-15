@@ -190,6 +190,10 @@ final class NmsReflectionUtils
      * not found. Unlike {@link #resolveFieldByNameOrType}, the fallback checks whether the field's type is
      * assignable <em>from</em> {@code acceptedType} (i.e., the field is a supertype of the accepted type).
      *
+     * <p>The fallback skips static fields and fields declared as {@code Object}: an {@code Object}-typed field is
+     * a supertype of everything, so accepting it would make resolution depend on declaration order instead of on
+     * a meaningful type match.
+     *
      * @param ownerClass
      *     Class to search (including superclass chain).
      * @param preferredName
@@ -220,7 +224,9 @@ final class NmsReflectionUtils
             {
                 for (final Field field : cursor.getDeclaredFields())
                 {
-                    if (!field.getType().isAssignableFrom(acceptedType))
+                    if (Modifier.isStatic(field.getModifiers()))
+                        continue;
+                    if (field.getType() == Object.class || !field.getType().isAssignableFrom(acceptedType))
                         continue;
                     field.setAccessible(true);
                     return field;

@@ -59,6 +59,35 @@ class LightkeeperFullLoginIT
     }
 
     @Test
+    void fullLogin_shouldSurviveKeepAliveCycleWhileIdle(ILightkeeperFramework framework)
+    {
+        // setup — capture quit events BEFORE joining so a keep-alive kick cannot slip past the assertion.
+        final var world = framework.worlds().main();
+        final String name = "lkkeepalive";
+
+        try (var quitCapture = framework.events().capture("org.bukkit.event.player.PlayerQuitEvent"))
+        {
+            final var player = framework.bots().builder()
+                .withName(name)
+                .atSpawn(world)
+                .fullLogin()
+                .build();
+
+            // execute — idle past a full keep-alive interval (15s) plus the server's pending-kick window,
+            // during which the driver must keep answering keep-alives for the already-joined bot.
+            final long idleDeadlineNanos = System.nanoTime() + Duration.ofSeconds(35).toNanos();
+            framework.waitUntil(() -> System.nanoTime() - idleDeadlineNanos >= 0, Duration.ofSeconds(60));
+
+            // verify — the bot was not kicked while idle and still responds to interactions (the teleport's
+            // position packet must be acknowledged by the driver post-join).
+            assertThat(quitCapture.getCapturedEvents()).isEmpty();
+            player.teleport(world, 1, 101, 1);
+
+            player.remove();
+        }
+    }
+
+    @Test
     void legacySpawn_shouldStillSpawnBotsAfterDriverIntroduction(ILightkeeperFramework framework)
     {
         // setup
