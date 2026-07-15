@@ -88,7 +88,8 @@ final class BotLoginSession implements InvocationHandler
         {
             reflection.closeConnection(openedConnection);
             throw new IllegalStateException(
-                "Full-login pipeline failed for bot '%s'.".formatted(request.name()), exception);
+                "Full-login pipeline failed for bot '%s': %s".formatted(request.name(), rootMessage(exception)),
+                exception);
         }
         catch (InterruptedException exception)
         {
@@ -163,6 +164,16 @@ final class BotLoginSession implements InvocationHandler
         return args == null || args.length == 0 ? null : args[0];
     }
 
+    private static String rootMessage(Throwable throwable)
+    {
+        Throwable cursor = throwable;
+        // Depth-capped so a self-referential cause chain cannot loop forever.
+        for (int depth = 0; depth < 32 && cursor.getCause() != null; ++depth)
+            cursor = cursor.getCause();
+        final String message = cursor.getMessage();
+        return message != null ? message : cursor.getClass().getName();
+    }
+
     private void dispatchPacket(@Nullable Object packet)
     {
         if (packet == null || outcome.isDone())
@@ -176,15 +187,17 @@ final class BotLoginSession implements InvocationHandler
                 case COMPRESSION -> reflection.applyCompression(connection(), packet);
                 case LOGIN_FINISHED ->
                 {
-                    reflection.enterConfigurationPhase(connection(), proxy(), locale);
+                    // Advance the phase before the transition: setupInboundProtocol validates that the listener's
+                    // protocol() already matches the configuration protocol it is being switched to.
                     phase = BotJoinPhase.CONFIGURATION;
+                    reflection.enterConfigurationPhase(connection(), proxy(), locale);
                 }
                 case KNOWN_PACKS -> reflection.echoKnownPacks(connection(), packet);
                 case CODE_OF_CONDUCT -> reflection.acceptCodeOfConduct(connection());
                 case FINISH_CONFIGURATION ->
                 {
-                    reflection.enterPlayPhase(connection(), proxy());
                     phase = BotJoinPhase.PLAY;
+                    reflection.enterPlayPhase(connection(), proxy());
                 }
                 case KEEP_ALIVE -> reflection.answerKeepAlive(connection(), packet);
                 case PING -> reflection.answerPing(connection(), packet);

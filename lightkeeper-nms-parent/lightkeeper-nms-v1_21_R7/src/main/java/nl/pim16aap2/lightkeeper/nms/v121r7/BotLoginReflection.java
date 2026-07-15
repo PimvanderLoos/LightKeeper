@@ -232,11 +232,14 @@ final class BotLoginReflection
                 "net.minecraft.network.protocol.login.ServerboundHelloPacket",
                 "net.minecraft.network.protocol.login.PacketLoginInStart");
             helloPacketConstructor = helloClass.getConstructor(String.class, UUID.class);
-            loginAcknowledgedPacket = newNoArgPacket(
+            // These are codec singletons: the IdDispatchCodec encodes them by identity against the registered
+            // INSTANCE, so a freshly constructed instance fails to encode. Resolve the INSTANCE field by type
+            // (its name is obfuscated on Spigot).
+            loginAcknowledgedPacket = resolveSingletonInstance(
                 "net.minecraft.network.protocol.login.ServerboundLoginAcknowledgedPacket");
-            finishConfigurationPacket = newNoArgPacket(
+            finishConfigurationPacket = resolveSingletonInstance(
                 "net.minecraft.network.protocol.configuration.ServerboundFinishConfigurationPacket");
-            acceptCodeOfConductPacket = newNoArgPacket(
+            acceptCodeOfConductPacket = resolveSingletonInstance(
                 "net.minecraft.network.protocol.configuration.ServerboundAcceptCodeOfConductPacket");
             selectKnownPacksConstructor = resolveFirst(
                 "net.minecraft.network.protocol.configuration.ServerboundSelectKnownPacks")
@@ -626,13 +629,19 @@ final class BotLoginReflection
                 + connectionClass.getName() + ".");
     }
 
-    private Object newNoArgPacket(String className)
+    private Object resolveSingletonInstance(String className)
         throws ReflectiveOperationException
     {
-        final Constructor<?> constructor =
-            NmsReflectionUtils.resolveClass(className, serverClassLoader).getDeclaredConstructor();
-        constructor.setAccessible(true);
-        return constructor.newInstance();
+        final Class<?> packetType = NmsReflectionUtils.resolveClass(className, serverClassLoader);
+        for (final Field field : packetType.getDeclaredFields())
+        {
+            if (!Modifier.isStatic(field.getModifiers()) || !packetType.equals(field.getType()))
+                continue;
+            field.setAccessible(true);
+            return Objects.requireNonNull(field.get(null), "Singleton field on " + className + " was null.");
+        }
+        throw new NoSuchFieldException(
+            "No static singleton instance field of type " + className + " found on itself.");
     }
 
     private ProtocolInfos resolveProtocolInfos(Object minecraftServer)
