@@ -72,6 +72,10 @@ public final class EntityQuery
     /**
      * Returns a copy of this query restricted to a block-aligned bounding box (inclusive on every axis).
      *
+     * <p>An entity matches when its hitbox intersects the box (the Bukkit nearby-entities semantic), not
+     * only when its position lies inside it — a large entity standing just outside the box whose hitbox
+     * overlaps it still counts.
+     *
      * @param min
      *     Minimum corner.
      * @param max

@@ -104,35 +104,6 @@ class ProtocolValueSerializationTest
     }
 
     @Test
-    void serialize_pPos_roundTrips() throws Exception
-    {
-        // setup
-        final ObjectMapper mapper = AgentProtocolMapper.create();
-        final IProtocolValue.PPos original = new IProtocolValue.PPos(1, -64, 3);
-
-        // execute
-        final String json = mapper.writeValueAsString(original);
-        final IProtocolValue deserialized = mapper.readValue(json, IProtocolValue.class);
-
-        // verify
-        assertThat(json).contains("\"type\":\"POS\"");
-        assertThat(deserialized).isEqualTo(original);
-    }
-
-    @Test
-    void pPos_toDisplayString_shouldRenderCommaSeparatedCoordinates()
-    {
-        // setup
-        final IProtocolValue.PPos pos = new IProtocolValue.PPos(1, -64, 3);
-
-        // execute
-        final String result = pos.toDisplayString();
-
-        // verify
-        assertThat(result).isEqualTo("(1, -64, 3)");
-    }
-
-    @Test
     void serialize_pVec_roundTrips() throws Exception
     {
         // setup

@@ -909,24 +909,23 @@ class UdsAgentClientTest
     }
 
     @Test
-    void queryEntities_shouldTreatOneNullBoundAsUnbounded(@TempDir Path tempDirectory)
+    void queryEntities_shouldRejectMixedBounds(@TempDir Path tempDirectory)
         throws Exception
     {
-        // setup — only one of the two bounds present must not be sent as a bounded query
+        // setup — a lone bound is a caller bug and must fail fast instead of silently querying unbounded
         final Path socketPath = tempDirectory.resolve("query-entities-partial-bounds.sock");
         final String responseJson = "{\"requestId\":\"1\",\"success\":true,\"tick\":1,\"count\":0,\"entities\":[]}";
         try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
              UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
         {
             // execute
-            client.queryEntities("world", null, new BlockPos(0, 1, 2), null, false);
+            final Throwable thrown =
+                catchThrowable(() -> client.queryEntities("world", null, new BlockPos(0, 1, 2), null, false));
 
             // verify
-            assertThat(server.capturedRequest())
-                .contains("\"bounded\":false")
-                .contains("\"minX\":0")
-                .contains("\"minY\":0")
-                .contains("\"minZ\":0");
+            assertThat(thrown)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("both present or both absent");
         }
     }
 

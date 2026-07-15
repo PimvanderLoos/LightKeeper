@@ -26,7 +26,6 @@ import java.util.stream.Collectors;
     @JsonSubTypes.Type(value = IProtocolValue.PBool.class, name = "BOOL"),
     @JsonSubTypes.Type(value = IProtocolValue.PUuid.class, name = "UUID"),
     @JsonSubTypes.Type(value = IProtocolValue.PEnum.class, name = "ENUM"),
-    @JsonSubTypes.Type(value = IProtocolValue.PPos.class, name = "POS"),
     @JsonSubTypes.Type(value = IProtocolValue.PVec.class, name = "VEC"),
     @JsonSubTypes.Type(value = IProtocolValue.PList.class, name = "LIST"),
     @JsonSubTypes.Type(value = IProtocolValue.PRecord.class, name = "RECORD"),
@@ -35,7 +34,7 @@ import java.util.stream.Collectors;
 })
 public sealed interface IProtocolValue
     permits IProtocolValue.PString, IProtocolValue.PNumber, IProtocolValue.PBool, IProtocolValue.PUuid,
-            IProtocolValue.PEnum, IProtocolValue.PPos, IProtocolValue.PVec,
+            IProtocolValue.PEnum, IProtocolValue.PVec,
             IProtocolValue.PList, IProtocolValue.PRecord, IProtocolValue.PRef,
             IProtocolValue.PDropped
 {
@@ -163,25 +162,6 @@ public sealed interface IProtocolValue
         public String toDisplayString()
         {
             return name;
-        }
-    }
-
-    /**
-     * Integer block coordinates.
-     *
-     * @param x
-     *     X coordinate.
-     * @param y
-     *     Y coordinate.
-     * @param z
-     *     Z coordinate.
-     */
-    record PPos(int x, int y, int z) implements IProtocolValue
-    {
-        @Override
-        public String toDisplayString()
-        {
-            return "(%d, %d, %d)".formatted(x, y, z);
         }
     }
 

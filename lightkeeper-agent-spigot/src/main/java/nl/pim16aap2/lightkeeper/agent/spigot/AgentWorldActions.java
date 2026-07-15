@@ -239,6 +239,10 @@ final class AgentWorldActions
      * Handles {@code QUERY_ENTITIES} by reading all matching entities in one main-thread burst, so the
      * returned states are internally consistent and share one tick stamp.
      *
+     * <p>Bounded queries match by hitbox intersection with the block-inclusive box (each max axis is
+     * extended by one so block coordinates span their full world-space cell), per the Bukkit
+     * nearby-entities semantic — not by position containment.
+     *
      * @param command
      *     Typed command carrying world name, optional type filter, optional bounds, and the count-only flag.
      * @return
@@ -270,6 +274,8 @@ final class AgentWorldActions
             int count = 0;
             for (final Entity entity : candidates)
             {
+                // getKey(), not getKeyOrThrow(): the latter exists only in the Spigot API jar; Paper's
+                // EntityType lacks it at runtime and the agent must run on both.
                 if (entityTypeKey != null
                     && !entity.getType().getKey().toString().equals(entityTypeKey))
                     continue;
@@ -284,7 +290,7 @@ final class AgentWorldActions
     private static String normalizeEntityTypeKey(String entityTypeKey)
     {
         final String trimmed = entityTypeKey.trim().toLowerCase(Locale.ROOT);
-        return trimmed.startsWith("minecraft:") ? trimmed : "minecraft:" + trimmed;
+        return trimmed.indexOf(':') < 0 ? "minecraft:" + trimmed : trimmed;
     }
 
     private static QueryEntities.EntityData toEntityData(Entity entity)

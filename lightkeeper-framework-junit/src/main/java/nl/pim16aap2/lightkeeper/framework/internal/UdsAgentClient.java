@@ -411,6 +411,8 @@ final class UdsAgentClient implements AutoCloseable
         @Nullable BlockPos boundsMax,
         boolean countOnly)
     {
+        if ((boundsMin == null) != (boundsMax == null))
+            throw new IllegalArgumentException("Bounds must be both present or both absent.");
         if (boundsMin != null && boundsMax != null)
         {
             return send(new QueryEntities.Command(
