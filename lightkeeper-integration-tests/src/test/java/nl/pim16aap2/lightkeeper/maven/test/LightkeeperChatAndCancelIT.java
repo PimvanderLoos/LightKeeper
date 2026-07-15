@@ -67,4 +67,23 @@ class LightkeeperChatAndCancelIT
                 .isEqualTo(new IProtocolValue.PBool(false));
         }
     }
+
+    @Test
+    void cancelNext_shouldRejectNonCancellableEventClassWithTypedError(ILightkeeperFramework framework)
+        throws Exception
+    {
+        // setup — PlayerJoinEvent does not implement Cancellable, so arming must fail loudly
+        try (var joinCapture = framework.captureEvents("org.bukkit.event.player.PlayerJoinEvent"))
+        {
+            // execute
+            final Throwable thrown =
+                nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.catchThrowable(
+                    () -> joinCapture.cancelNext(1));
+
+            // verify
+            assertThat(thrown)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("INVALID_ARGUMENT");
+        }
+    }
 }

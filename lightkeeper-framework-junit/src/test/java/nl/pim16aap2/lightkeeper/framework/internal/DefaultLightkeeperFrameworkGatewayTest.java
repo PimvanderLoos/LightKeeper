@@ -546,23 +546,23 @@ class DefaultLightkeeperFrameworkGatewayTest
     }
 
     @Test
-    void playerChat_shouldDelegateToAgentClientWithTrimmedMessage()
+    void playerChat_shouldDelegateToAgentClientPreservingWhitespace()
     {
         // setup
         final UdsAgentClient agentClient = mock(UdsAgentClient.class);
-        final UUID playerId = UUID.randomUUID();
         final DefaultLightkeeperFramework framework = new DefaultLightkeeperFramework(
             runtimeManifest(),
             mock(MinecraftServerProcess.class),
             agentClient,
             new PlayerScopeRegistry()
         );
+        final java.util.UUID playerId = java.util.UUID.randomUUID();
 
         // execute
-        framework.playerChat(playerId, "  hello world  ");
+        framework.playerChat(playerId, "  spaced message  ");
 
-        // verify
-        verify(agentClient).playerChat(playerId, "hello world");
+        // verify - intentional whitespace reaches the agent unchanged
+        verify(agentClient).playerChat(playerId, "  spaced message  ");
     }
 
     @Test

@@ -578,10 +578,11 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     {
         ensureOpen();
         Objects.requireNonNull(playerId, "playerId may not be null.");
-        final String trimmedMessage = Objects.requireNonNull(message, "message may not be null.").trim();
-        if (trimmedMessage.isEmpty())
+        Objects.requireNonNull(message, "message may not be null.");
+        if (message.isBlank())
             throw new IllegalArgumentException("message may not be blank.");
-        agentClient.playerChat(playerId, trimmedMessage);
+        // Deliberately NOT trimmed: intentional whitespace must reach the fired chat event unchanged.
+        agentClient.playerChat(playerId, message);
     }
 
     @Override

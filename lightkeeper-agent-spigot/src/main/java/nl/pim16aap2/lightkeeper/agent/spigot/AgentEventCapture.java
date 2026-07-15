@@ -206,7 +206,12 @@ final class AgentEventCapture
         // cancel listener would silently cancel later tests' events on the shared server.
         final CancelNextState armedCancellation = cancelListeners.remove(eventClassName);
         if (armedCancellation != null)
+        {
+            // Zero the budget immediately: the marker stays registered until the scheduled unregister runs,
+            // and events fired in that window must not be cancelled after close() promised a disarm.
+            armedCancellation.remaining().set(0);
             Bukkit.getScheduler().runTask(plugin, () -> HandlerList.unregisterAll(armedCancellation.marker()));
+        }
         if (listener == null)
             return;
 
