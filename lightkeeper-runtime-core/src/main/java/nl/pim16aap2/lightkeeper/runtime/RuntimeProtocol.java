@@ -20,7 +20,7 @@ public final class RuntimeProtocol
      * in a backward-incompatible way. Both the framework and the agent must agree on this value;
      * a mismatch causes an {@code HANDSHAKE} failure.
      */
-    public static final int VERSION = 5;
+    public static final int VERSION = 6;
 
     /**
      * Minecraft server version supported by this LightKeeper build.

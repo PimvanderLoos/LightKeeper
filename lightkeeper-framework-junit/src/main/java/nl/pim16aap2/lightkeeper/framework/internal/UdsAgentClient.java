@@ -37,6 +37,7 @@ import nl.pim16aap2.lightkeeper.protocol.MainWorld;
 import nl.pim16aap2.lightkeeper.protocol.MutatePlayerPermission;
 import nl.pim16aap2.lightkeeper.protocol.NewWorld;
 import nl.pim16aap2.lightkeeper.protocol.PlacePlayerBlock;
+import nl.pim16aap2.lightkeeper.protocol.IProtocolValue;
 import nl.pim16aap2.lightkeeper.protocol.RegisterEventListener;
 import nl.pim16aap2.lightkeeper.protocol.RemovePlayer;
 import nl.pim16aap2.lightkeeper.protocol.RightClickBlock;
@@ -354,7 +355,7 @@ final class UdsAgentClient implements AutoCloseable
         send(command);
     }
 
-    List<Map<String, String>> getCapturedEvents(String eventClassName)
+    List<Map<String, IProtocolValue>> getCapturedEvents(String eventClassName)
     {
         final GetCapturedEvents.Command command = new GetCapturedEvents.Command(nextRequestId(), eventClassName);
         return send(command).events();

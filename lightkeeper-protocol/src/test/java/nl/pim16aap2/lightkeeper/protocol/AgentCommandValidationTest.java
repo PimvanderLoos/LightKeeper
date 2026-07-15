@@ -153,6 +153,84 @@ class AgentCommandValidationTest
             .hasMessageContaining("result");
     }
 
+    // -----------------------------------------------------------------------
+    // IProtocolValue leaf validation
+    // -----------------------------------------------------------------------
+
+    @Test
+    @SuppressWarnings("NullAway") // Intentionally crosses the non-null API boundary to verify fail-fast validation.
+    void pStringConstructor_shouldRejectNullValue()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> new IProtocolValue.PString(null))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("value");
+    }
+
+    @Test
+    @SuppressWarnings("NullAway") // Intentionally crosses the non-null API boundary to verify fail-fast validation.
+    void pNumberConstructor_shouldRejectNullValue()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> new IProtocolValue.PNumber(null))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("value");
+    }
+
+    @Test
+    void pEnumConstructor_shouldRejectBlankEnumClass()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> new IProtocolValue.PEnum("   ", "ALPHA"))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("enumClass");
+    }
+
+    @Test
+    void pEnumConstructor_shouldRejectBlankName()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> new IProtocolValue.PEnum("com.example.SomeEnum", "   "))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("name");
+    }
+
+    @Test
+    void pRefConstructor_shouldRejectBlankClassName()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> new IProtocolValue.PRef("   ", "id-1"))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("className");
+    }
+
+    @Test
+    void pRefConstructor_shouldRejectBlankId()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> new IProtocolValue.PRef("com.example.Thing", "   "))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("id");
+    }
+
+    @Test
+    void pDroppedConstructor_shouldRejectBlankAccessorName()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> new IProtocolValue.PDropped("   ", "capture-failed: Boom"))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("accessorName");
+    }
+
+    @Test
+    void pDroppedConstructor_shouldRejectBlankRuntimeType()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> new IProtocolValue.PDropped("getBroken", "   "))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("runtimeType");
+    }
+
     private static Object validDefault(Class<?> type)
     {
         if (type == String.class)

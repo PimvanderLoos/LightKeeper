@@ -1,5 +1,6 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
+import nl.pim16aap2.lightkeeper.protocol.IProtocolValue;
 import org.bukkit.Bukkit;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventException;
@@ -32,8 +33,10 @@ class AgentEventCaptureTest
     void registerListener_shouldCaptureCancelledEventsIntoRegisteredEventList()
         throws Exception
     {
-        // setup
+        // setup — every Bukkit Event exposes a static getHandlerList(), which the encoder also walks and
+        // eventually drops past MAX_DEPTH, so the logger must be stubbed whenever a real event is captured.
         final JavaPlugin plugin = mock();
+        when(plugin.getLogger()).thenReturn(java.util.logging.Logger.getLogger("test"));
         final PluginManager pluginManager = mock();
         final AgentEventCapture eventCapture = new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin));
         final ArgumentCaptor<EventExecutor> executorCaptor = ArgumentCaptor.forClass(EventExecutor.class);
@@ -57,11 +60,12 @@ class AgentEventCaptureTest
         executorCaptor.getValue().execute(mock(Listener.class), new TestCaptureEvent("value", true));
 
         // verify
-        final List<Map<String, String>> events = eventCapture.getCapturedEvents(TestCaptureEvent.class.getName());
+        final List<Map<String, IProtocolValue>> events =
+            eventCapture.getCapturedEvents(TestCaptureEvent.class.getName());
         assertThat(events).hasSize(1);
         assertThat(events.getFirst())
-            .containsEntry("getValue", "value")
-            .containsEntry("isCancelled", "true");
+            .containsEntry("getValue", new IProtocolValue.PString("value"))
+            .containsEntry("isCancelled", new IProtocolValue.PBool(true));
     }
 
     @Test
@@ -94,13 +98,11 @@ class AgentEventCaptureTest
         executorCaptor.getValue().execute(mock(Listener.class), new ThrowingGetterEvent());
 
         // verify — a throwing getter must not be dropped silently; it is recorded as a visible sentinel
-        final List<Map<String, String>> events =
+        final List<Map<String, IProtocolValue>> events =
             eventCapture.getCapturedEvents(ThrowingGetterEvent.class.getName());
         assertThat(events).hasSize(1);
         assertThat(events.getFirst().get("getBroken"))
-            .isNotNull()
-            .contains("capture-failed")
-            .contains("IllegalStateException");
+            .isEqualTo(new IProtocolValue.PDropped("getBroken", "capture-failed: IllegalStateException"));
     }
 
     @Test
@@ -127,8 +129,9 @@ class AgentEventCaptureTest
     void clearCapturedEvents_shouldRemoveCapturedData()
         throws Exception
     {
-        // setup
+        // setup — see the getHandlerList() note above
         final JavaPlugin plugin = mock();
+        when(plugin.getLogger()).thenReturn(java.util.logging.Logger.getLogger("test"));
         final PluginManager pluginManager = mock();
         final AgentEventCapture eventCapture = new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin));
 
@@ -151,8 +154,9 @@ class AgentEventCaptureTest
     void unregisterListener_shouldRemoveCapturedData()
         throws Exception
     {
-        // setup
+        // setup — see the getHandlerList() note above
         final JavaPlugin plugin = mock();
+        when(plugin.getLogger()).thenReturn(java.util.logging.Logger.getLogger("test"));
         final PluginManager pluginManager = mock();
         final AgentEventCapture eventCapture = new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin));
 
@@ -236,11 +240,12 @@ class AgentEventCaptureTest
     }
 
     @Test
-    void captureEventForList_shouldSkipNullAndNonPrintableFieldValues()
+    void captureEventForList_shouldOmitOnlyNullFieldValues()
         throws Exception
     {
-        // setup
+        // setup — see the getHandlerList() note above
         final JavaPlugin plugin = mock();
+        when(plugin.getLogger()).thenReturn(java.util.logging.Logger.getLogger("test"));
         final PluginManager pluginManager = mock();
         final AgentEventCapture eventCapture = new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin));
         final ArgumentCaptor<EventExecutor> executorCaptor = ArgumentCaptor.forClass(EventExecutor.class);
@@ -261,14 +266,55 @@ class AgentEventCaptureTest
             eq(false)
         );
 
-        // execute - fire event with string (printable) and list (not printable)
+        // execute - fire event with a string field and a null-valued field
         executorCaptor.getValue().execute(mock(Listener.class), new MixedFieldsEvent("hello", null));
 
-        // verify - only the string field should be captured
-        final List<Map<String, String>> events = eventCapture.getCapturedEvents(MixedFieldsEvent.class.getName());
+        // verify - the string field is captured; the null field is absent (null is data loss, not a marker)
+        final List<Map<String, IProtocolValue>> events =
+            eventCapture.getCapturedEvents(MixedFieldsEvent.class.getName());
         assertThat(events).hasSize(1);
-        assertThat(events.getFirst()).containsKey("getLabel");
+        assertThat(events.getFirst()).containsEntry("getLabel", new IProtocolValue.PString("hello"));
         assertThat(events.getFirst()).doesNotContainKey("getNullValue");
+    }
+
+    @Test
+    void captureEventForList_shouldEncodeNonNullNonPrintableFieldAsPList()
+        throws Exception
+    {
+        // setup — see the getHandlerList() note above
+        final JavaPlugin plugin = mock();
+        when(plugin.getLogger()).thenReturn(java.util.logging.Logger.getLogger("test"));
+        final PluginManager pluginManager = mock();
+        final AgentEventCapture eventCapture = new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin));
+        final ArgumentCaptor<EventExecutor> executorCaptor = ArgumentCaptor.forClass(EventExecutor.class);
+
+        try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
+        {
+            bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
+            when(pluginManager.getPlugins()).thenReturn(new Plugin[0]);
+            bukkitMockedStatic.when(Bukkit::getPluginManager).thenReturn(pluginManager);
+            eventCapture.registerListener(MixedFieldsEvent.class.getName());
+        }
+        verify(pluginManager).registerEvent(
+            eq(MixedFieldsEvent.class),
+            any(Listener.class),
+            eq(EventPriority.MONITOR),
+            executorCaptor.capture(),
+            eq(plugin),
+            eq(false)
+        );
+
+        // execute - fire event with a non-null List value, which is no longer silently skipped
+        executorCaptor.getValue().execute(
+            mock(Listener.class), new MixedFieldsEvent("hello", List.of("a", "b")));
+
+        // verify - the list field is now encoded as a PList instead of being dropped
+        final List<Map<String, IProtocolValue>> events =
+            eventCapture.getCapturedEvents(MixedFieldsEvent.class.getName());
+        assertThat(events).hasSize(1);
+        assertThat(events.getFirst()).containsEntry(
+            "getNullValue",
+            new IProtocolValue.PList(List.of(new IProtocolValue.PString("a"), new IProtocolValue.PString("b"))));
     }
 
     private static void fireOneTestCaptureEvent(

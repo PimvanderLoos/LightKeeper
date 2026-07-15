@@ -6,6 +6,7 @@ import nl.pim16aap2.lightkeeper.framework.InteractionResult;
 import nl.pim16aap2.lightkeeper.framework.LightkeeperExtension;
 import nl.pim16aap2.lightkeeper.framework.MenuHandle;
 import nl.pim16aap2.lightkeeper.protocol.CommandSource;
+import nl.pim16aap2.lightkeeper.protocol.IProtocolValue;
 import nl.pim16aap2.lightkeeper.protocol.DropResult;
 import org.bukkit.Material;
 import org.bukkit.block.BlockFace;
@@ -205,7 +206,12 @@ class LightkeeperBotIT
 
             // verify
             assertThat(loadedAfterLoad).isTrue();
-            assertThat(eventCapture.getCapturedEvents()).isNotEmpty();
+            final var capturedEvents = eventCapture.getCapturedEvents();
+            assertThat(capturedEvents).isNotEmpty();
+            // The typed envelope carries the acting player as a reference, not a stringified object.
+            assertThat(capturedEvents.getFirst().value("getPlayer"))
+                .isInstanceOfSatisfying(IProtocolValue.PRef.class, playerRef ->
+                    assertThat(playerRef.id()).isEqualTo(player.uniqueId().toString()));
         }
     }
 }

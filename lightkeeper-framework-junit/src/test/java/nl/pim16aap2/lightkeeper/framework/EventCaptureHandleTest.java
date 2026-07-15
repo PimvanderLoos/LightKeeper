@@ -1,5 +1,6 @@
 package nl.pim16aap2.lightkeeper.framework;
 
+import nl.pim16aap2.lightkeeper.protocol.IProtocolValue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -30,7 +31,7 @@ class EventCaptureHandleTest
     {
         // setup
         final List<CapturedEventSnapshot> events = List.of(
-            new CapturedEventSnapshot(EVENT_CLASS_NAME, Map.of("isCancelled", "true"))
+            new CapturedEventSnapshot(EVENT_CLASS_NAME, Map.of("isCancelled", new IProtocolValue.PBool(true)))
         );
         when(frameworkGateway.getCapturedEvents(EVENT_CLASS_NAME)).thenReturn(events);
 

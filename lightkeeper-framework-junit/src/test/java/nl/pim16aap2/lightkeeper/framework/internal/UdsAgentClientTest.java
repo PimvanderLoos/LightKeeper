@@ -5,6 +5,7 @@ import nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot;
 import nl.pim16aap2.lightkeeper.framework.Platform;
 import nl.pim16aap2.lightkeeper.protocol.CommandSource;
 import nl.pim16aap2.lightkeeper.protocol.DropResult;
+import nl.pim16aap2.lightkeeper.protocol.IProtocolValue;
 import nl.pim16aap2.lightkeeper.protocol.ItemSnapshot;
 import nl.pim16aap2.lightkeeper.protocol.MutatePlayerPermission;
 import nl.pim16aap2.lightkeeper.protocol.WaitTicks;
@@ -368,17 +369,18 @@ class UdsAgentClientTest
         // setup
         final Path socketPath = tempDirectory.resolve("events.sock");
         final String responseJson =
-            "{\"requestId\":\"1\",\"success\":true,\"events\":[{\"player\":\"Steve\"}]}";
+            "{\"requestId\":\"1\",\"success\":true,"
+                + "\"events\":[{\"player\":{\"type\":\"STRING\",\"value\":\"Steve\"}}]}";
         try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
              UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
         {
             // execute
-            final List<Map<String, String>> events =
+            final List<Map<String, IProtocolValue>> events =
                 client.getCapturedEvents("org.bukkit.event.player.PlayerJoinEvent");
 
             // verify
             assertThat(events).hasSize(1);
-            assertThat(events.getFirst()).containsEntry("player", "Steve");
+            assertThat(events.getFirst()).containsEntry("player", new IProtocolValue.PString("Steve"));
         }
     }
 

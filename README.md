@@ -237,6 +237,9 @@ class MyPluginIT
 - Received-message assertions with AssertJ string chaining
 - Explicit retrying assertions: `eventually(timeout, () -> assertThat(...))` re-runs a live probe until it
   passes, and reports the attempt count, elapsed time, and last failure on timeout
+- Typed event payloads: captured events carry real types (numbers, booleans, UUIDs, enums, entity/world
+  references, nested records) — values the agent cannot encode appear as explicit `DROPPED` markers instead
+  of being silently absent
 - Diagnostics-on-failure: failed tests automatically get a bundle (test outcome, captured server errors,
   server console output) under `target/lightkeeper-reports/`
 - Graceful server lifecycle control from tests (`stopServer()`, `startServer()`, `restartServer()`), plus

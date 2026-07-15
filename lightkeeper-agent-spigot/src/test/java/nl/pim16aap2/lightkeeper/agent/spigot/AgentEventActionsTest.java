@@ -2,6 +2,7 @@ package nl.pim16aap2.lightkeeper.agent.spigot;
 
 import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEvents;
 import nl.pim16aap2.lightkeeper.protocol.GetCapturedEvents;
+import nl.pim16aap2.lightkeeper.protocol.IProtocolValue;
 import nl.pim16aap2.lightkeeper.protocol.RegisterEventListener;
 import nl.pim16aap2.lightkeeper.protocol.UnregisterEventListener;
 import org.junit.jupiter.api.Test;
@@ -105,14 +106,14 @@ class AgentEventActionsTest
         final AgentEventCapture eventCapture = mock();
         final AgentEventActions actions = createEventActions(eventCapture);
         when(eventCapture.getCapturedEvents("org.bukkit.event.Event"))
-            .thenReturn(List.of(Map.of("isCancelled", "true")));
+            .thenReturn(List.of(Map.of("isCancelled", new IProtocolValue.PBool(true))));
 
         // execute
         final GetCapturedEvents.Response response = actions.handleGetCapturedEvents(
             new GetCapturedEvents.Command("req-5", "org.bukkit.event.Event"));
 
         // verify
-        assertThat(response.events()).containsExactly(Map.of("isCancelled", "true"));
+        assertThat(response.events()).containsExactly(Map.of("isCancelled", new IProtocolValue.PBool(true)));
     }
 
     @Test
