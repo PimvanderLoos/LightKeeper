@@ -153,6 +153,79 @@ class AgentCommandValidationTest
             .hasMessageContaining("result");
     }
 
+    @Test
+    void cancelNextEventsCommand_shouldRejectBlankRequestId()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> new CancelNextEvents.Command(
+            "   ", "org.bukkit.event.player.PlayerMoveEvent", 1))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("requestId");
+    }
+
+    @Test
+    void cancelNextEventsCommand_shouldRejectBlankEventClassName()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> new CancelNextEvents.Command("request-1", "   ", 1))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("eventClassName");
+    }
+
+    @Test
+    void cancelNextEventsCommand_shouldRejectZeroCount()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> new CancelNextEvents.Command(
+            "request-1", "org.bukkit.event.player.PlayerMoveEvent", 0))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("count");
+    }
+
+    @Test
+    void cancelNextEventsCommand_shouldRejectNegativeCount()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> new CancelNextEvents.Command(
+            "request-1", "org.bukkit.event.player.PlayerMoveEvent", -1))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("count");
+    }
+
+    @Test
+    void playerChatCommand_shouldRejectBlankRequestId()
+    {
+        // setup
+        final UUID uuid = UUID.randomUUID();
+
+        // execute + verify
+        assertThatThrownBy(() -> new PlayerChat.Command("   ", uuid, "hello"))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("requestId");
+    }
+
+    @Test
+    @SuppressWarnings("NullAway") // Intentionally crosses the non-null API boundary to verify fail-fast validation.
+    void playerChatCommand_shouldRejectNullUuid()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> new PlayerChat.Command("request-1", null, "hello"))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("uuid");
+    }
+
+    @Test
+    void playerChatCommand_shouldRejectBlankMessage()
+    {
+        // setup
+        final UUID uuid = UUID.randomUUID();
+
+        // execute + verify
+        assertThatThrownBy(() -> new PlayerChat.Command("request-1", uuid, "   "))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("message");
+    }
+
     // -----------------------------------------------------------------------
     // IProtocolValue leaf validation
     // -----------------------------------------------------------------------

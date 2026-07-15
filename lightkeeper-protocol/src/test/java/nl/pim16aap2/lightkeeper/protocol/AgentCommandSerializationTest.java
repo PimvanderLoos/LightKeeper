@@ -271,6 +271,90 @@ class AgentCommandSerializationTest
     }
 
     // -----------------------------------------------------------------------
+    // Round-trip: CancelNextEvents.Command
+    // -----------------------------------------------------------------------
+
+    @Test
+    void serialize_cancelNextEventsCommand_roundTrips() throws Exception
+    {
+        // setup
+        final ObjectMapper mapper = AgentProtocolMapper.create();
+        final CancelNextEvents.Command original = new CancelNextEvents.Command(
+            "req-15", "org.bukkit.event.player.PlayerMoveEvent", 3);
+
+        // execute
+        final String json = mapper.writeValueAsString(original);
+        @SuppressWarnings("rawtypes")
+        final IAgentCommand deserialized = mapper.readValue(json, IAgentCommand.class);
+
+        // verify
+        assertThat(deserialized).isInstanceOf(CancelNextEvents.Command.class);
+        final CancelNextEvents.Command result = (CancelNextEvents.Command) deserialized;
+        assertThat(result.requestId()).isEqualTo("req-15");
+        assertThat(result.eventClassName()).isEqualTo("org.bukkit.event.player.PlayerMoveEvent");
+        assertThat(result.count()).isEqualTo(3);
+    }
+
+    // -----------------------------------------------------------------------
+    // Round-trip: PlayerChat.Command
+    // -----------------------------------------------------------------------
+
+    @Test
+    void serialize_playerChatCommand_roundTrips() throws Exception
+    {
+        // setup
+        final ObjectMapper mapper = AgentProtocolMapper.create();
+        final UUID uuid = UUID.fromString("00000000-0000-0000-0000-000000000009");
+        final PlayerChat.Command original = new PlayerChat.Command("req-16", uuid, "hello world");
+
+        // execute
+        final String json = mapper.writeValueAsString(original);
+        @SuppressWarnings("rawtypes")
+        final IAgentCommand deserialized = mapper.readValue(json, IAgentCommand.class);
+
+        // verify
+        assertThat(deserialized).isInstanceOf(PlayerChat.Command.class);
+        final PlayerChat.Command result = (PlayerChat.Command) deserialized;
+        assertThat(result.requestId()).isEqualTo("req-16");
+        assertThat(result.uuid()).isEqualTo(uuid);
+        assertThat(result.message()).isEqualTo("hello world");
+    }
+
+    // -----------------------------------------------------------------------
+    // Round-trip: CancelNextEvents.Response / PlayerChat.Response (empty records)
+    // -----------------------------------------------------------------------
+
+    @Test
+    void serialize_cancelNextEventsResponse_roundTrips() throws Exception
+    {
+        // setup
+        final ObjectMapper mapper = AgentProtocolMapper.create();
+        final CancelNextEvents.Response original = new CancelNextEvents.Response();
+
+        // execute
+        final String json = mapper.writeValueAsString(original);
+        final CancelNextEvents.Response result = mapper.readValue(json, CancelNextEvents.Response.class);
+
+        // verify
+        assertThat(result).isEqualTo(original);
+    }
+
+    @Test
+    void serialize_playerChatResponse_roundTrips() throws Exception
+    {
+        // setup
+        final ObjectMapper mapper = AgentProtocolMapper.create();
+        final PlayerChat.Response original = new PlayerChat.Response();
+
+        // execute
+        final String json = mapper.writeValueAsString(original);
+        final PlayerChat.Response result = mapper.readValue(json, PlayerChat.Response.class);
+
+        // verify
+        assertThat(result).isEqualTo(original);
+    }
+
+    // -----------------------------------------------------------------------
     // Deserialization from raw JSON: discriminator field selects subtype
     // -----------------------------------------------------------------------
 
