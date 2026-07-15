@@ -5,6 +5,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.exc.ValueInstantiationException;
 import nl.pim16aap2.lightkeeper.protocol.BlockType;
+import nl.pim16aap2.lightkeeper.protocol.CancelNextEvents;
 import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEvents;
 import nl.pim16aap2.lightkeeper.protocol.ClearServerErrors;
 import nl.pim16aap2.lightkeeper.protocol.ClickMenuSlot;
@@ -34,6 +35,7 @@ import nl.pim16aap2.lightkeeper.protocol.MainWorld;
 import nl.pim16aap2.lightkeeper.protocol.MutatePlayerPermission;
 import nl.pim16aap2.lightkeeper.protocol.NewWorld;
 import nl.pim16aap2.lightkeeper.protocol.PlacePlayerBlock;
+import nl.pim16aap2.lightkeeper.protocol.PlayerChat;
 import nl.pim16aap2.lightkeeper.protocol.RegisterEventListener;
 import nl.pim16aap2.lightkeeper.protocol.RemovePlayer;
 import nl.pim16aap2.lightkeeper.protocol.RightClickBlock;
@@ -275,6 +277,8 @@ final class AgentRequestDispatcher
                 case ClearServerErrors.Command c -> handle(c, serverErrorActions::handleClearServerErrors);
                 case MutatePlayerPermission.Command c -> handle(c, playerActions::handleMutatePlayerPermission);
                 case HasPlayerPermission.Command c -> handle(c, playerActions::handleHasPlayerPermission);
+                case CancelNextEvents.Command c -> handle(c, eventActions::handleCancelNextEvents);
+                case PlayerChat.Command c -> handle(c, playerActions::handlePlayerChat);
                 case Handshake.Command ignored ->
                     throw new IllegalStateException("Unreachable HANDSHAKE dispatch branch.");
             };

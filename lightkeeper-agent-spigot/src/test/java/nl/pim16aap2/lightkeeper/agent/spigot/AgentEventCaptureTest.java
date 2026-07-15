@@ -1,7 +1,9 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
+import nl.pim16aap2.lightkeeper.protocol.GetCapturedEvents;
 import nl.pim16aap2.lightkeeper.protocol.IProtocolValue;
 import org.bukkit.Bukkit;
+import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventException;
 import org.bukkit.event.EventPriority;
@@ -11,12 +13,13 @@ import org.bukkit.plugin.EventExecutor;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitScheduler;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -24,6 +27,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -38,7 +42,8 @@ class AgentEventCaptureTest
         final JavaPlugin plugin = mock();
         when(plugin.getLogger()).thenReturn(java.util.logging.Logger.getLogger("test"));
         final PluginManager pluginManager = mock();
-        final AgentEventCapture eventCapture = new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin));
+        final AgentEventCapture eventCapture =
+            new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin), new AtomicLong(0L));
         final ArgumentCaptor<EventExecutor> executorCaptor = ArgumentCaptor.forClass(EventExecutor.class);
 
         // execute
@@ -60,10 +65,10 @@ class AgentEventCaptureTest
         executorCaptor.getValue().execute(mock(Listener.class), new TestCaptureEvent("value", true));
 
         // verify
-        final List<Map<String, IProtocolValue>> events =
+        final List<GetCapturedEvents.CapturedEvent> events =
             eventCapture.getCapturedEvents(TestCaptureEvent.class.getName());
         assertThat(events).hasSize(1);
-        assertThat(events.getFirst())
+        assertThat(events.getFirst().values())
             .containsEntry("getValue", new IProtocolValue.PString("value"))
             .containsEntry("isCancelled", new IProtocolValue.PBool(true));
     }
@@ -76,7 +81,8 @@ class AgentEventCaptureTest
         final JavaPlugin plugin = mock();
         when(plugin.getLogger()).thenReturn(java.util.logging.Logger.getLogger("test"));
         final PluginManager pluginManager = mock();
-        final AgentEventCapture eventCapture = new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin));
+        final AgentEventCapture eventCapture =
+            new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin), new AtomicLong(0L));
         final ArgumentCaptor<EventExecutor> executorCaptor = ArgumentCaptor.forClass(EventExecutor.class);
 
         // execute
@@ -98,10 +104,10 @@ class AgentEventCaptureTest
         executorCaptor.getValue().execute(mock(Listener.class), new ThrowingGetterEvent());
 
         // verify — a throwing getter must not be dropped silently; it is recorded as a visible sentinel
-        final List<Map<String, IProtocolValue>> events =
+        final List<GetCapturedEvents.CapturedEvent> events =
             eventCapture.getCapturedEvents(ThrowingGetterEvent.class.getName());
         assertThat(events).hasSize(1);
-        assertThat(events.getFirst().get("getBroken"))
+        assertThat(events.getFirst().values().get("getBroken"))
             .isEqualTo(new IProtocolValue.PDropped("getBroken", "capture-failed: IllegalStateException"));
     }
 
@@ -110,7 +116,8 @@ class AgentEventCaptureTest
     {
         // setup
         final JavaPlugin plugin = mock();
-        final AgentEventCapture eventCapture = new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin));
+        final AgentEventCapture eventCapture =
+            new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin), new AtomicLong(0L));
         final PluginManager pluginManager = mock();
 
         // execute + verify
@@ -133,7 +140,8 @@ class AgentEventCaptureTest
         final JavaPlugin plugin = mock();
         when(plugin.getLogger()).thenReturn(java.util.logging.Logger.getLogger("test"));
         final PluginManager pluginManager = mock();
-        final AgentEventCapture eventCapture = new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin));
+        final AgentEventCapture eventCapture =
+            new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin), new AtomicLong(0L));
 
         try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
         {
@@ -158,7 +166,8 @@ class AgentEventCaptureTest
         final JavaPlugin plugin = mock();
         when(plugin.getLogger()).thenReturn(java.util.logging.Logger.getLogger("test"));
         final PluginManager pluginManager = mock();
-        final AgentEventCapture eventCapture = new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin));
+        final AgentEventCapture eventCapture =
+            new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin), new AtomicLong(0L));
 
         try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
         {
@@ -183,7 +192,8 @@ class AgentEventCaptureTest
         // setup
         final JavaPlugin plugin = mock();
         final PluginManager pluginManager = mock();
-        final AgentEventCapture eventCapture = new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin));
+        final AgentEventCapture eventCapture =
+            new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin), new AtomicLong(0L));
 
         try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
         {
@@ -212,7 +222,8 @@ class AgentEventCaptureTest
     {
         // setup
         final JavaPlugin plugin = mock();
-        final AgentEventCapture eventCapture = new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin));
+        final AgentEventCapture eventCapture =
+            new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin), new AtomicLong(0L));
 
         // execute + verify — a typo'd/unregistered class must fail rather than masquerade as "no events fired"
         assertThatThrownBy(() -> eventCapture.getCapturedEvents("com.example.NonExistentEvent"))
@@ -225,7 +236,8 @@ class AgentEventCaptureTest
     {
         // setup
         final JavaPlugin plugin = mock();
-        final AgentEventCapture eventCapture = new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin));
+        final AgentEventCapture eventCapture =
+            new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin), new AtomicLong(0L));
         final PluginManager pluginManager = mock();
 
         // execute + verify
@@ -240,6 +252,152 @@ class AgentEventCaptureTest
     }
 
     @Test
+    void registerListener_shouldStampCapturedEventWithCurrentTick()
+        throws Exception
+    {
+        // setup — see the getHandlerList() note above
+        final JavaPlugin plugin = mock();
+        when(plugin.getLogger()).thenReturn(java.util.logging.Logger.getLogger("test"));
+        final PluginManager pluginManager = mock();
+        final AtomicLong tickCounter = new AtomicLong(42L);
+        final AgentEventCapture eventCapture =
+            new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin), tickCounter);
+        final ArgumentCaptor<EventExecutor> executorCaptor = ArgumentCaptor.forClass(EventExecutor.class);
+
+        try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
+        {
+            bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
+            when(pluginManager.getPlugins()).thenReturn(new Plugin[0]);
+            bukkitMockedStatic.when(Bukkit::getPluginManager).thenReturn(pluginManager);
+            eventCapture.registerListener(TestCaptureEvent.class.getName());
+        }
+        verify(pluginManager).registerEvent(
+            eq(TestCaptureEvent.class),
+            any(Listener.class),
+            eq(EventPriority.MONITOR),
+            executorCaptor.capture(),
+            eq(plugin),
+            eq(false)
+        );
+
+        // execute
+        executorCaptor.getValue().execute(mock(Listener.class), new TestCaptureEvent("value", false));
+
+        // verify
+        final List<GetCapturedEvents.CapturedEvent> events =
+            eventCapture.getCapturedEvents(TestCaptureEvent.class.getName());
+        assertThat(events).hasSize(1);
+        assertThat(events.getFirst().tick()).isEqualTo(42L);
+    }
+
+    @Test
+    void cancelNextEvents_shouldCancelUpToBudgetThenScheduleUnregisterOnExhaustion()
+        throws Exception
+    {
+        // setup
+        final JavaPlugin plugin = mock();
+        final PluginManager pluginManager = mock();
+        final BukkitScheduler scheduler = mock();
+        final AgentEventCapture eventCapture =
+            new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin), new AtomicLong(0L));
+        final ArgumentCaptor<EventExecutor> executorCaptor = ArgumentCaptor.forClass(EventExecutor.class);
+
+        try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
+        {
+            bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
+            when(pluginManager.getPlugins()).thenReturn(new Plugin[0]);
+            bukkitMockedStatic.when(Bukkit::getPluginManager).thenReturn(pluginManager);
+            bukkitMockedStatic.when(Bukkit::getScheduler).thenReturn(scheduler);
+
+            // execute
+            eventCapture.cancelNextEvents(CancellableTestEvent.class.getName(), 2);
+
+            verify(pluginManager).registerEvent(
+                eq(CancellableTestEvent.class),
+                any(Listener.class),
+                eq(EventPriority.LOWEST),
+                executorCaptor.capture(),
+                eq(plugin),
+                eq(false)
+            );
+
+            final EventExecutor executor = executorCaptor.getValue();
+            final CancellableTestEvent first = mock(CancellableTestEvent.class);
+            final CancellableTestEvent second = mock(CancellableTestEvent.class);
+            final CancellableTestEvent third = mock(CancellableTestEvent.class);
+
+            executor.execute(mock(Listener.class), first);
+            executor.execute(mock(Listener.class), second);
+            executor.execute(mock(Listener.class), third);
+
+            // verify — the budget of 2 cancels the first two events; the third (count+1) is left alone, and
+            // exhaustion schedules the marker listener's removal via the Bukkit scheduler
+            verify(first).setCancelled(true);
+            verify(second).setCancelled(true);
+            verify(third, never()).setCancelled(true);
+            verify(scheduler).runTask(eq(plugin), any(Runnable.class));
+        }
+    }
+
+    @Test
+    void cancelNextEvents_shouldThrowExceptionWhenClassIsNotCancellable()
+    {
+        // setup
+        final JavaPlugin plugin = mock();
+        final AgentEventCapture eventCapture =
+            new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin), new AtomicLong(0L));
+
+        // execute + verify
+        assertThatThrownBy(() -> eventCapture.cancelNextEvents(TestCaptureEvent.class.getName(), 1))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("not Cancellable");
+    }
+
+    @Test
+    void cancelNextEvents_shouldThrowExceptionWhenClassIsNotFound()
+    {
+        // setup
+        final JavaPlugin plugin = mock();
+        final AgentEventCapture eventCapture =
+            new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin), new AtomicLong(0L));
+        final PluginManager pluginManager = mock();
+
+        // execute + verify
+        try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
+        {
+            bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
+            when(pluginManager.getPlugins()).thenReturn(new Plugin[0]);
+            bukkitMockedStatic.when(Bukkit::getPluginManager).thenReturn(pluginManager);
+            assertThatThrownBy(() -> eventCapture.cancelNextEvents("com.example.NonExistentEvent", 1))
+                .isInstanceOf(ClassNotFoundException.class);
+        }
+    }
+
+    @Test
+    void cancelNextEvents_shouldThrowIllegalStateExceptionWhenAlreadyArmed()
+        throws Exception
+    {
+        // setup
+        final JavaPlugin plugin = mock();
+        final PluginManager pluginManager = mock();
+        final AgentEventCapture eventCapture =
+            new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin), new AtomicLong(0L));
+
+        // execute + verify
+        try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
+        {
+            bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
+            when(pluginManager.getPlugins()).thenReturn(new Plugin[0]);
+            bukkitMockedStatic.when(Bukkit::getPluginManager).thenReturn(pluginManager);
+            eventCapture.cancelNextEvents(CancellableTestEvent.class.getName(), 1);
+
+            assertThatThrownBy(() -> eventCapture.cancelNextEvents(CancellableTestEvent.class.getName(), 1))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("already armed");
+        }
+    }
+
+    @Test
     void captureEventForList_shouldOmitOnlyNullFieldValues()
         throws Exception
     {
@@ -247,7 +405,8 @@ class AgentEventCaptureTest
         final JavaPlugin plugin = mock();
         when(plugin.getLogger()).thenReturn(java.util.logging.Logger.getLogger("test"));
         final PluginManager pluginManager = mock();
-        final AgentEventCapture eventCapture = new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin));
+        final AgentEventCapture eventCapture =
+            new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin), new AtomicLong(0L));
         final ArgumentCaptor<EventExecutor> executorCaptor = ArgumentCaptor.forClass(EventExecutor.class);
 
         try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
@@ -270,11 +429,11 @@ class AgentEventCaptureTest
         executorCaptor.getValue().execute(mock(Listener.class), new MixedFieldsEvent("hello", null));
 
         // verify - the string field is captured; the null field is absent (null is data loss, not a marker)
-        final List<Map<String, IProtocolValue>> events =
+        final List<GetCapturedEvents.CapturedEvent> events =
             eventCapture.getCapturedEvents(MixedFieldsEvent.class.getName());
         assertThat(events).hasSize(1);
-        assertThat(events.getFirst()).containsEntry("getLabel", new IProtocolValue.PString("hello"));
-        assertThat(events.getFirst()).doesNotContainKey("getNullValue");
+        assertThat(events.getFirst().values()).containsEntry("getLabel", new IProtocolValue.PString("hello"));
+        assertThat(events.getFirst().values()).doesNotContainKey("getNullValue");
     }
 
     @Test
@@ -285,7 +444,8 @@ class AgentEventCaptureTest
         final JavaPlugin plugin = mock();
         when(plugin.getLogger()).thenReturn(java.util.logging.Logger.getLogger("test"));
         final PluginManager pluginManager = mock();
-        final AgentEventCapture eventCapture = new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin));
+        final AgentEventCapture eventCapture =
+            new AgentEventCapture(plugin, new AgentMainThreadExecutor(plugin), new AtomicLong(0L));
         final ArgumentCaptor<EventExecutor> executorCaptor = ArgumentCaptor.forClass(EventExecutor.class);
 
         try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
@@ -309,10 +469,10 @@ class AgentEventCaptureTest
             mock(Listener.class), new MixedFieldsEvent("hello", List.of("a", "b")));
 
         // verify - the list field is now encoded as a PList instead of being dropped
-        final List<Map<String, IProtocolValue>> events =
+        final List<GetCapturedEvents.CapturedEvent> events =
             eventCapture.getCapturedEvents(MixedFieldsEvent.class.getName());
         assertThat(events).hasSize(1);
-        assertThat(events.getFirst()).containsEntry(
+        assertThat(events.getFirst().values()).containsEntry(
             "getNullValue",
             new IProtocolValue.PList(List.of(new IProtocolValue.PString("a"), new IProtocolValue.PString("b"))));
     }
@@ -332,6 +492,36 @@ class AgentEventCaptureTest
             eq(false)
         );
         executorCaptor.getValue().execute(mock(Listener.class), new TestCaptureEvent("value", false));
+    }
+
+    public static class CancellableTestEvent extends Event implements Cancellable
+    {
+        private static final HandlerList HANDLERS = new HandlerList();
+        private boolean cancelled;
+
+        @Override
+        public boolean isCancelled()
+        {
+            return cancelled;
+        }
+
+        @Override
+        public void setCancelled(boolean cancel)
+        {
+            this.cancelled = cancel;
+        }
+
+        @Override
+        public HandlerList getHandlers()
+        {
+            return HANDLERS;
+        }
+
+        @SuppressWarnings("unused")
+        public static HandlerList getHandlerList()
+        {
+            return HANDLERS;
+        }
     }
 
     public static final class TestCaptureEvent extends Event

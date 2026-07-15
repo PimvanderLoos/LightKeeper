@@ -7,6 +7,7 @@ import nl.pim16aap2.lightkeeper.protocol.HasPlayerPermission;
 import nl.pim16aap2.lightkeeper.protocol.LeftClickBlock;
 import nl.pim16aap2.lightkeeper.protocol.MutatePlayerPermission;
 import nl.pim16aap2.lightkeeper.protocol.PlacePlayerBlock;
+import nl.pim16aap2.lightkeeper.protocol.PlayerChat;
 import nl.pim16aap2.lightkeeper.protocol.RemovePlayer;
 import nl.pim16aap2.lightkeeper.protocol.RightClickBlock;
 import nl.pim16aap2.lightkeeper.protocol.TeleportPlayer;
@@ -345,6 +346,34 @@ final class AgentPlayerActions
         );
 
         return new HasPlayerPermission.Response(value);
+    }
+
+    /**
+     * Handles {@code PLAYER_CHAT} by making the player say a chat message on the main thread.
+     *
+     * <p>A plugin-triggered {@code Player#chat} fires the chat event synchronously, so routing through the
+     * main thread satisfies Bukkit's sync-event threading rule.
+     *
+     * @param command
+     *     Typed command carrying player UUID and message.
+     * @return Response when the chat has been dispatched.
+     *
+     * @throws Exception
+     *     Propagates validation and main-thread execution failures.
+     */
+    PlayerChat.Response handlePlayerChat(PlayerChat.Command command)
+        throws Exception
+    {
+        final UUID uuid = command.uuid();
+        final String message = command.message();
+
+        mainThreadExecutor.callOnMainThread(() ->
+        {
+            playerStore.getRequiredPlayer(uuid).chat(message);
+            return Boolean.TRUE;
+        });
+
+        return new PlayerChat.Response();
     }
 
     /**

@@ -1,13 +1,12 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
+import nl.pim16aap2.lightkeeper.protocol.CancelNextEvents;
 import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEvents;
 import nl.pim16aap2.lightkeeper.protocol.GetCapturedEvents;
-import nl.pim16aap2.lightkeeper.protocol.IProtocolValue;
 import nl.pim16aap2.lightkeeper.protocol.RegisterEventListener;
 import nl.pim16aap2.lightkeeper.protocol.UnregisterEventListener;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -74,8 +73,30 @@ final class AgentEventActions
     GetCapturedEvents.Response handleGetCapturedEvents(GetCapturedEvents.Command command)
     {
         final String eventClassName = command.eventClassName();
-        final List<Map<String, IProtocolValue>> events = eventCapture.getCapturedEvents(eventClassName);
+        final List<GetCapturedEvents.CapturedEvent> events = eventCapture.getCapturedEvents(eventClassName);
         return new GetCapturedEvents.Response(events);
+    }
+
+    /**
+     * Handles {@code CANCEL_NEXT_EVENTS} by arming a LOWEST-priority listener that cancels the next N fired
+     * events of the class.
+     *
+     * @param command
+     *     Typed cancel-next-events command.
+     * @return
+     *     Success response, or {@code INVALID_ARGUMENT} when the class is unknown or not Cancellable.
+     */
+    CancelNextEvents.Response handleCancelNextEvents(CancelNextEvents.Command command)
+    {
+        try
+        {
+            eventCapture.cancelNextEvents(command.eventClassName(), command.count());
+        }
+        catch (ClassNotFoundException exception)
+        {
+            throw new IllegalArgumentException("Event class not found: " + command.eventClassName(), exception);
+        }
+        return new CancelNextEvents.Response();
     }
 
     /**

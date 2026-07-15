@@ -133,10 +133,11 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin
                 mainThreadExecutor,
                 playerStore
             );
+            final AtomicLong tickCounter = new AtomicLong(0L);
             final AgentWorldActions worldActions = new AgentWorldActions(
                 this,
                 mainThreadExecutor,
-                new AtomicLong(0L)
+                tickCounter
             );
             final AgentPlayerActions playerActions = new AgentPlayerActions(
                 this,
@@ -150,7 +151,7 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin
                 objectMapper,
                 botPlayerNmsAdapter
             );
-            final AgentEventCapture eventCapture = new AgentEventCapture(this, mainThreadExecutor);
+            final AgentEventCapture eventCapture = new AgentEventCapture(this, mainThreadExecutor, tickCounter);
             final AgentEventActions eventActions = new AgentEventActions(eventCapture);
 
             final AgentServerErrorCapture errorCapture = serverErrorCapture;

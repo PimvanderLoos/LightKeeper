@@ -1,6 +1,6 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
-import nl.pim16aap2.lightkeeper.protocol.IProtocolValue;
+import nl.pim16aap2.lightkeeper.protocol.GetCapturedEvents;
 import org.bukkit.Bukkit;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
@@ -16,6 +16,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 
@@ -47,13 +49,23 @@ final class AgentEventCapture
      */
     private final ProtocolValueEncoder protocolValueEncoder;
     /**
+     * Shared monotonic server-tick counter, read (thread-safely) at capture time to stamp events.
+     */
+    private final AtomicLong tickCounter;
+    /**
      * Captured event payloads keyed by fully qualified event class name.
      */
-    private final Map<String, List<Map<String, IProtocolValue>>> capturedEvents = new ConcurrentHashMap<>();
+    private final Map<String, List<GetCapturedEvents.CapturedEvent>> capturedEvents = new ConcurrentHashMap<>();
     /**
      * Active marker listeners keyed by fully qualified event class name.
      */
     private final Map<String, Listener> activeListeners = new ConcurrentHashMap<>();
+    /**
+     * Active cancel-next marker listeners keyed by fully qualified event class name. Kept separate from the
+     * MONITOR capture listeners: cancellation acts at LOWEST priority so the capture listener observes the
+     * final cancelled state.
+     */
+    private final Map<String, CancelNextState> cancelListeners = new ConcurrentHashMap<>();
     /**
      * Event class names whose capture cap has already been warned about, so hitting the cap is reported once
      * rather than silently discarding every subsequent event.
@@ -66,10 +78,11 @@ final class AgentEventCapture
      * @param mainThreadExecutor
      *     Main-thread executor used to route Bukkit listener (un)registration onto the server thread.
      */
-    AgentEventCapture(JavaPlugin plugin, AgentMainThreadExecutor mainThreadExecutor)
+    AgentEventCapture(JavaPlugin plugin, AgentMainThreadExecutor mainThreadExecutor, AtomicLong tickCounter)
     {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
         this.mainThreadExecutor = Objects.requireNonNull(mainThreadExecutor, "mainThreadExecutor");
+        this.tickCounter = Objects.requireNonNull(tickCounter, "tickCounter");
         this.protocolValueEncoder = new ProtocolValueEncoder(plugin);
     }
 
@@ -100,7 +113,7 @@ final class AgentEventCapture
                 throw new IllegalArgumentException("Class '%s' is not a Bukkit Event.".formatted(eventClassName));
 
             final Class<? extends Event> eventClass = resolvedClass.asSubclass(Event.class);
-            final List<Map<String, IProtocolValue>> events =
+            final List<GetCapturedEvents.CapturedEvent> events =
                 capturedEvents.computeIfAbsent(eventClassName, ignored -> new CopyOnWriteArrayList<>());
 
             mainThreadExecutor.callOnMainThread(() ->
@@ -219,9 +232,9 @@ final class AgentEventCapture
      * @return
      *     Snapshot list of captured event payloads, or an empty list when nothing has been captured.
      */
-    List<Map<String, IProtocolValue>> getCapturedEvents(String eventClassName)
+    List<GetCapturedEvents.CapturedEvent> getCapturedEvents(String eventClassName)
     {
-        final List<Map<String, IProtocolValue>> events = capturedEvents.get(eventClassName);
+        final List<GetCapturedEvents.CapturedEvent> events = capturedEvents.get(eventClassName);
         if (events == null)
             throw new IllegalArgumentException(
                 ("No capture listener is registered for event class '%s'; register it before querying captured "
@@ -238,7 +251,7 @@ final class AgentEventCapture
      */
     void clearCapturedEvents(String eventClassName)
     {
-        final List<Map<String, IProtocolValue>> events = capturedEvents.get(eventClassName);
+        final List<GetCapturedEvents.CapturedEvent> events = capturedEvents.get(eventClassName);
         if (events == null)
             throw new IllegalArgumentException(
                 "No capture listener is registered for event class '%s'; register it before clearing events."
@@ -246,7 +259,7 @@ final class AgentEventCapture
         events.clear();
     }
 
-    private void captureEventForList(Event event, List<Map<String, IProtocolValue>> targetList)
+    private void captureEventForList(Event event, List<GetCapturedEvents.CapturedEvent> targetList)
     {
         if (targetList.size() >= MAX_CAPTURED_EVENTS_PER_CLASS)
         {
@@ -258,6 +271,97 @@ final class AgentEventCapture
             return;
         }
 
-        targetList.add(protocolValueEncoder.encodeAccessors(event, event.getClass().getName()));
+        targetList.add(new GetCapturedEvents.CapturedEvent(
+            tickCounter.get(),
+            protocolValueEncoder.encodeAccessors(event, event.getClass().getName())));
+    }
+
+    /**
+     * Arms cancellation of the next {@code count} fired events of the class via a LOWEST-priority listener,
+     * so regular plugin listeners (and the MONITOR capture listener) observe the cancelled state.
+     *
+     * <p>One armed cancellation per event class at a time; arming again while one is active throws. The
+     * listener unregisters itself (on the next tick) once its count is exhausted.
+     *
+     * @param eventClassName
+     *     Fully qualified Bukkit event class; must implement {@code Cancellable}.
+     * @param count
+     *     How many upcoming events to cancel.
+     * @throws ClassNotFoundException
+     *     When the class cannot be resolved by any reachable class loader.
+     */
+    void cancelNextEvents(String eventClassName, int count)
+        throws ClassNotFoundException
+    {
+        final Class<?> resolvedClass = resolveEventClass(eventClassName);
+        if (!Event.class.isAssignableFrom(resolvedClass))
+            throw new IllegalArgumentException("Class '%s' is not a Bukkit Event.".formatted(eventClassName));
+        if (!org.bukkit.event.Cancellable.class.isAssignableFrom(resolvedClass))
+            throw new IllegalArgumentException(
+                "Class '%s' is not Cancellable; cancelNext cannot apply.".formatted(eventClassName));
+
+        final CancelNextState state = new CancelNextState(new Listener() {}, new AtomicInteger(count));
+        final CancelNextState previous = cancelListeners.putIfAbsent(eventClassName, state);
+        if (previous != null)
+            throw new IllegalStateException(
+                "A cancelNext for '%s' is already armed with %d remaining."
+                    .formatted(eventClassName, previous.remaining().get()));
+
+        boolean registered = false;
+        try
+        {
+            final Class<? extends Event> eventClass = resolvedClass.asSubclass(Event.class);
+            mainThreadExecutor.callOnMainThread(() ->
+            {
+                Bukkit.getPluginManager().registerEvent(
+                    eventClass,
+                    state.marker(),
+                    EventPriority.LOWEST,
+                    (listenerInstance, event) -> cancelEvent(eventClassName, state, event),
+                    plugin,
+                    false
+                );
+                return Boolean.TRUE;
+            });
+            registered = true;
+        }
+        catch (ClassNotFoundException | RuntimeException exception)
+        {
+            throw exception;
+        }
+        catch (Exception exception)
+        {
+            throw new IllegalStateException(
+                "Failed to register the cancelNext listener for '%s' on the main thread."
+                    .formatted(eventClassName), exception);
+        }
+        finally
+        {
+            if (!registered)
+                cancelListeners.remove(eventClassName, state);
+        }
+    }
+
+    private void cancelEvent(String eventClassName, CancelNextState state, Event event)
+    {
+        final int before = state.remaining().getAndDecrement();
+        if (before <= 0)
+            return;
+        if (event instanceof org.bukkit.event.Cancellable cancellable)
+            cancellable.setCancelled(true);
+        if (before == 1)
+        {
+            // Exhausted: detach on the next tick (unregistering mid-dispatch from inside the handler is
+            // avoided deliberately), and drop the bookkeeping so a new cancelNext can be armed.
+            cancelListeners.remove(eventClassName, state);
+            Bukkit.getScheduler().runTask(plugin, () -> HandlerList.unregisterAll(state.marker()));
+        }
+    }
+
+    /**
+     * Bookkeeping for one armed cancellation: its marker listener and the remaining cancel budget.
+     */
+    private record CancelNextState(Listener marker, AtomicInteger remaining)
+    {
     }
 }
