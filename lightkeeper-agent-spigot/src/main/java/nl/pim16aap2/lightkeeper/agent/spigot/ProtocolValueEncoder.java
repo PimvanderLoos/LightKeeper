@@ -1,9 +1,11 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
 import nl.pim16aap2.lightkeeper.protocol.IProtocolValue;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.util.Vector;
 import org.jspecify.annotations.Nullable;
 
 import java.lang.reflect.Array;
@@ -201,6 +203,12 @@ final class ProtocolValueEncoder
             return new IProtocolValue.PRef(entity.getClass().getName(), entity.getUniqueId().toString());
         if (value instanceof World world)
             return new IProtocolValue.PRef(world.getClass().getName(), world.getName());
+        // Positions are identity-shaped leaves like refs: a Location's getChunk()/getBlock() accessors would
+        // otherwise drag world geometry into the payload through the generic walk. Orientation is dropped.
+        if (value instanceof Location location)
+            return new IProtocolValue.PVec(location.getX(), location.getY(), location.getZ());
+        if (value instanceof Vector vector)
+            return new IProtocolValue.PVec(vector.getX(), vector.getY(), vector.getZ());
 
         if (remainingDepth <= 0)
             return dropped(context, accessorName, value.getClass().getName());
