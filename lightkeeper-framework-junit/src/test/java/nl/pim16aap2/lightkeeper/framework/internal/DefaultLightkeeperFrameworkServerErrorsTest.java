@@ -52,7 +52,7 @@ class DefaultLightkeeperFrameworkServerErrorsTest
         when(minecraftServerProcess.snapshotStderrLinesFrom(0L)).thenReturn(List.of());
 
         // execute
-        final ServerErrorsHandle handle = framework.serverErrors();
+        final ServerErrorsHandle handle = framework.server().errors();
 
         // verify
         assertThat(handle.getCaptured()).isEmpty();
@@ -184,7 +184,7 @@ class DefaultLightkeeperFrameworkServerErrorsTest
         // setup
         final DefaultLightkeeperFramework framework = framework();
         framework.beginMethodScope("method-1");
-        framework.crashServer();
+        framework.server().crash();
 
         // execute
         framework.endMethodScope("method-1");

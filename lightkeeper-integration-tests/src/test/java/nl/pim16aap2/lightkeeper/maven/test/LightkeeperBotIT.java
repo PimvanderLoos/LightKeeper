@@ -31,10 +31,10 @@ class LightkeeperBotIT
     void playerBots_shouldExecuteCommandsAndInteractWithMenusAndBlocks(ILightkeeperFramework framework)
     {
         // setup
-        final var world = framework.mainWorld();
+        final var world = framework.worlds().main();
 
-        final var player = framework.createPlayer("lkplayer001", world);
-        final var secondPlayer = framework.buildPlayer()
+        final var player = framework.bots().join("lkplayer001", world);
+        final var secondPlayer = framework.bots().builder()
             .withName("lkplayer002")
             .atLocation(world, 0, 100, 0)
             .withHealth(10)
@@ -46,7 +46,7 @@ class LightkeeperBotIT
             )
             .build();
 
-        final var thirdPlayer = framework.buildPlayer()
+        final var thirdPlayer = framework.bots().builder()
             .withRandomName()
             .atSpawn(world)
             .build();
@@ -111,18 +111,18 @@ class LightkeeperBotIT
     void frameworkApi_shouldCoverBuilderAndCommandAndHandleVariants(ILightkeeperFramework framework)
     {
         // setup
-        final var buildWorldResult = framework.buildWorld()
+        final var buildWorldResult = framework.worlds().builder()
             .withName("lk_world_" + UUID.randomUUID().toString().replace("-", ""))
             .withSeed(123L)
             .build();
-        final var consoleCommandResult = framework.executeCommand(CommandSource.CONSOLE, "time set day");
-        final var builtPlayer = framework.buildPlayer()
+        final var consoleCommandResult = framework.server().executeCommand(CommandSource.CONSOLE, "time set day");
+        final var builtPlayer = framework.bots().builder()
             .withName("lkplayer003")
             .atSpawn(buildWorldResult)
             .withPermissions(TEST_GUI_PERMISSION)
             .build();
         final UUID explicitUuid = UUID.fromString("1479d27d-1260-48f5-8044-b6aad4c8ea0f");
-        final var explicitPlayer = framework.createPlayer("lkplayer004", explicitUuid, buildWorldResult);
+        final var explicitPlayer = framework.bots().join("lkplayer004", explicitUuid, buildWorldResult);
 
         // execute
         builtPlayer.executeCommand("lktestgui");
@@ -164,8 +164,8 @@ class LightkeeperBotIT
     void lktestgui_shouldFailWhenPlayerHasNoPermission(ILightkeeperFramework framework)
     {
         // setup
-        final var world = framework.mainWorld();
-        final var playerWithoutPermission = framework.buildPlayer()
+        final var world = framework.worlds().main();
+        final var playerWithoutPermission = framework.bots().builder()
             .withName("lkplayer005")
             .atSpawn(world)
             .build();
@@ -185,8 +185,8 @@ class LightkeeperBotIT
     void runtimeActions_shouldTeleportManageChunksAndCaptureEvents(ILightkeeperFramework framework)
     {
         // setup
-        final var world = framework.mainWorld();
-        final var player = framework.buildPlayer()
+        final var world = framework.worlds().main();
+        final var player = framework.bots().builder()
             .withRandomName()
             .atLocation(world, 0, 100, 0)
             .build();
@@ -194,7 +194,7 @@ class LightkeeperBotIT
         final int chunkZ = 24;
 
         // execute
-        try (var eventCapture = framework.captureEvents("org.bukkit.event.player.PlayerTeleportEvent"))
+        try (var eventCapture = framework.events().capture("org.bukkit.event.player.PlayerTeleportEvent"))
         {
             world.loadChunk(chunkX, chunkZ);
             final boolean loadedAfterLoad = world.isChunkLoaded(chunkX, chunkZ);

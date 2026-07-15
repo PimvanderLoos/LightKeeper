@@ -49,7 +49,7 @@ class LightkeeperDiagnosticsIT
         System.setProperty("lightkeeper.diagnosticsDirectory", REPORTS_ROOT.toString());
 
         // execute + verify: a trivially passing interaction; the bundle itself is written in afterEach
-        assertThat(framework.mainWorld()).hasNonBlankName();
+        assertThat(framework.worlds().main()).hasNonBlankName();
     }
 
     @Test

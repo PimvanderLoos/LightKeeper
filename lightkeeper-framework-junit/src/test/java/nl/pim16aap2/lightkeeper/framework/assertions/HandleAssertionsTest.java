@@ -6,6 +6,7 @@ import nl.pim16aap2.lightkeeper.framework.BlockSpec;
 import nl.pim16aap2.lightkeeper.framework.BlockStateSnapshot;
 import nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot;
 import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
+import nl.pim16aap2.lightkeeper.framework.IServerControl;
 import nl.pim16aap2.lightkeeper.framework.InventorySnapshot;
 import nl.pim16aap2.lightkeeper.framework.MenuHandle;
 import nl.pim16aap2.lightkeeper.framework.MenuItemSnapshot;
@@ -141,10 +142,12 @@ class HandleAssertionsTest
         // setup — a captured WARNING must not fail hasNoServerErrors()
         final ILightkeeperFramework framework = mock(ILightkeeperFramework.class);
         final ServerErrorsHandle serverErrorsHandle = mock(ServerErrorsHandle.class);
-        when(framework.serverErrors()).thenReturn(serverErrorsHandle);
+        final IServerControl serverControl = mock(IServerControl.class);
+        when(framework.server()).thenReturn(serverControl);
+        when(serverControl.errors()).thenReturn(serverErrorsHandle);
         when(serverErrorsHandle.getCaptured()).thenReturn(List.of(serverError(
             ServerErrorSnapshot.Severity.WARNING, "WARN", "a warning, not an error")));
-        when(framework.serverOutput()).thenReturn(List.of("Server started", "Done"));
+        when(serverControl.output()).thenReturn(List.of("Server started", "Done"));
 
         // execute + verify
         LightkeeperAssertions.assertThat(framework)
@@ -159,7 +162,9 @@ class HandleAssertionsTest
         // setup
         final ILightkeeperFramework framework = mock(ILightkeeperFramework.class);
         final ServerErrorsHandle serverErrorsHandle = mock(ServerErrorsHandle.class);
-        when(framework.serverErrors()).thenReturn(serverErrorsHandle);
+        final IServerControl serverControl = mock(IServerControl.class);
+        when(framework.server()).thenReturn(serverControl);
+        when(serverControl.errors()).thenReturn(serverErrorsHandle);
         when(serverErrorsHandle.getCaptured()).thenReturn(List.of(new ServerErrorSnapshot(
             1L,
             ServerErrorSnapshot.Severity.ERROR,
@@ -186,7 +191,9 @@ class HandleAssertionsTest
         // setup
         final ILightkeeperFramework framework = mock(ILightkeeperFramework.class);
         final ServerErrorsHandle serverErrorsHandle = mock(ServerErrorsHandle.class);
-        when(framework.serverErrors()).thenReturn(serverErrorsHandle);
+        final IServerControl serverControl = mock(IServerControl.class);
+        when(framework.server()).thenReturn(serverControl);
+        when(serverControl.errors()).thenReturn(serverErrorsHandle);
         when(serverErrorsHandle.getCaptured()).thenReturn(List.of(serverError(
             ServerErrorSnapshot.Severity.ERROR, "ERROR", "known moving_piston complaint")));
 
@@ -201,7 +208,9 @@ class HandleAssertionsTest
         // setup — more stack trace lines than the 15-line rendering cap
         final ILightkeeperFramework framework = mock(ILightkeeperFramework.class);
         final ServerErrorsHandle serverErrorsHandle = mock(ServerErrorsHandle.class);
-        when(framework.serverErrors()).thenReturn(serverErrorsHandle);
+        final IServerControl serverControl = mock(IServerControl.class);
+        when(framework.server()).thenReturn(serverControl);
+        when(serverControl.errors()).thenReturn(serverErrorsHandle);
         final List<String> stackTrace = IntStream.range(0, 20)
             .mapToObj(i -> "\tat net.example.SomePlugin.frame" + i + "(SomePlugin.java:" + i + ")")
             .toList();
@@ -229,7 +238,9 @@ class HandleAssertionsTest
         // setup
         final ILightkeeperFramework framework = mock(ILightkeeperFramework.class);
         final ServerErrorsHandle serverErrorsHandle = mock(ServerErrorsHandle.class);
-        when(framework.serverErrors()).thenReturn(serverErrorsHandle);
+        final IServerControl serverControl = mock(IServerControl.class);
+        when(framework.server()).thenReturn(serverControl);
+        when(serverControl.errors()).thenReturn(serverErrorsHandle);
         when(serverErrorsHandle.getCaptured()).thenReturn(List.of(new ServerErrorSnapshot(
             1L, ServerErrorSnapshot.Severity.ERROR, "ERROR", "net.example.SomePlugin", "", "boom",
             null, null, List.of())));

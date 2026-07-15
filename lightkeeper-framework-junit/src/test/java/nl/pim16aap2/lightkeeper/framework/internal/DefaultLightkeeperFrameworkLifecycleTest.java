@@ -83,7 +83,7 @@ class DefaultLightkeeperFrameworkLifecycleTest
         );
 
         // execute
-        final List<String> serverOutput = framework.serverOutput();
+        final List<String> serverOutput = framework.server().output();
 
         // verify
         assertThat(serverOutput).containsExactly("line one", "line two");
@@ -105,7 +105,7 @@ class DefaultLightkeeperFrameworkLifecycleTest
         );
 
         // execute
-        framework.crashServer();
+        framework.server().crash();
 
         // verify
         verify(playerScopeRegistry, times(1)).invalidateAll();
@@ -130,7 +130,7 @@ class DefaultLightkeeperFrameworkLifecycleTest
         );
 
         // execute
-        framework.stopServer();
+        framework.server().stop();
 
         // verify
         final InOrder inOrder = inOrder(playerScopeRegistry, agentClient, minecraftServerProcess);
@@ -156,7 +156,7 @@ class DefaultLightkeeperFrameworkLifecycleTest
         );
 
         // execute + verify
-        assertThatThrownBy(framework::stopServer)
+        assertThatThrownBy(() -> framework.server().stop())
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("not running");
         verify(playerScopeRegistry, never()).cleanupAll(any());
@@ -185,7 +185,7 @@ class DefaultLightkeeperFrameworkLifecycleTest
         );
 
         // execute + verify: the client close is skipped (mirroring close()), but the process is still stopped
-        assertThatThrownBy(framework::stopServer).isSameAs(cleanupFailure);
+        assertThatThrownBy(() -> framework.server().stop()).isSameAs(cleanupFailure);
         verify(agentClient, never()).close();
         verify(minecraftServerProcess, times(1)).stop(java.time.Duration.ofSeconds(45));
     }
@@ -205,7 +205,7 @@ class DefaultLightkeeperFrameworkLifecycleTest
         );
 
         // execute + verify
-        assertThatThrownBy(framework::startServer)
+        assertThatThrownBy(() -> framework.server().start())
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("already running");
     }
@@ -226,10 +226,10 @@ class DefaultLightkeeperFrameworkLifecycleTest
             agentClient,
             playerScopeRegistry
         );
-        framework.crashServer();
+        framework.server().crash();
 
         // execute
-        framework.startServer();
+        framework.server().start();
 
         // verify
         verify(minecraftServerProcess, times(1)).start(java.time.Duration.ofMinutes(2));
@@ -270,10 +270,10 @@ class DefaultLightkeeperFrameworkLifecycleTest
             agentClient,
             playerScopeRegistry
         );
-        framework.crashServer();
+        framework.server().crash();
 
         // execute + verify: the failure propagates and the process is stopped again so a retry stays possible
-        assertThatThrownBy(framework::startServer).isSameAs(rehandshakeFailure);
+        assertThatThrownBy(() -> framework.server().start()).isSameAs(rehandshakeFailure);
         verify(minecraftServerProcess, times(1)).start(java.time.Duration.ofMinutes(2));
         verify(minecraftServerProcess, times(1)).stop(java.time.Duration.ofSeconds(45));
         assertThatThrownBy(() -> framework.beginMethodScope("method-after-failed-start"))
@@ -297,7 +297,7 @@ class DefaultLightkeeperFrameworkLifecycleTest
         );
 
         // execute
-        framework.restartServer();
+        framework.server().restart();
 
         // verify
         verify(minecraftServerProcess, times(1)).start(java.time.Duration.ofMinutes(2));
@@ -329,7 +329,7 @@ class DefaultLightkeeperFrameworkLifecycleTest
         );
 
         // execute
-        framework.restartServer();
+        framework.server().restart();
 
         // verify
         final InOrder inOrder = inOrder(minecraftServerProcess);
@@ -354,7 +354,7 @@ class DefaultLightkeeperFrameworkLifecycleTest
         );
 
         // execute
-        framework.restartServer();
+        framework.server().restart();
 
         // verify
         verify(minecraftServerProcess, never()).stop(any());
@@ -375,7 +375,7 @@ class DefaultLightkeeperFrameworkLifecycleTest
             agentClient,
             playerScopeRegistry
         );
-        framework.crashServer();
+        framework.server().crash();
 
         // execute + verify
         assertThatThrownBy(() -> framework.beginMethodScope("method-2"))
@@ -399,8 +399,8 @@ class DefaultLightkeeperFrameworkLifecycleTest
             agentClient,
             playerScopeRegistry
         );
-        framework.crashServer();
-        framework.restartServer();
+        framework.server().crash();
+        framework.server().restart();
 
         // execute
         framework.beginMethodScope("method-2");
@@ -423,7 +423,7 @@ class DefaultLightkeeperFrameworkLifecycleTest
             agentClient,
             playerScopeRegistry
         );
-        framework.stopServer();
+        framework.server().stop();
 
         // execute + verify
         assertThatThrownBy(() -> framework.beginMethodScope("method-3"))

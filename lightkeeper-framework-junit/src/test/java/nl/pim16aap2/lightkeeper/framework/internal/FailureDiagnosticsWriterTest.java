@@ -1,6 +1,7 @@
 package nl.pim16aap2.lightkeeper.framework.internal;
 
 import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
+import nl.pim16aap2.lightkeeper.framework.IServerControl;
 import nl.pim16aap2.lightkeeper.framework.ServerErrorSnapshot;
 import nl.pim16aap2.lightkeeper.framework.ServerErrorsHandle;
 import org.junit.jupiter.api.Test;
@@ -24,7 +25,9 @@ class FailureDiagnosticsWriterTest
         // setup
         final ILightkeeperFramework framework = mock(ILightkeeperFramework.class);
         final ServerErrorsHandle serverErrorsHandle = mock(ServerErrorsHandle.class);
-        when(framework.serverErrors()).thenReturn(serverErrorsHandle);
+        final IServerControl serverControl = mock(IServerControl.class);
+        when(framework.server()).thenReturn(serverControl);
+        when(serverControl.errors()).thenReturn(serverErrorsHandle);
         when(serverErrorsHandle.getCaptured()).thenReturn(List.of(new ServerErrorSnapshot(
             123L,
             ServerErrorSnapshot.Severity.ERROR,
@@ -36,7 +39,7 @@ class FailureDiagnosticsWriterTest
             "boom",
             List.of("at example.Foo.bar(Foo.java:1)")
         )));
-        when(framework.serverOutput()).thenReturn(List.of("line one", "line two"));
+        when(serverControl.output()).thenReturn(List.of("line one", "line two"));
         final RuntimeException failure = new RuntimeException("test assertion failed");
 
         // execute
@@ -69,9 +72,11 @@ class FailureDiagnosticsWriterTest
         // setup
         final ILightkeeperFramework framework = mock(ILightkeeperFramework.class);
         final ServerErrorsHandle serverErrorsHandle = mock(ServerErrorsHandle.class);
-        when(framework.serverErrors()).thenReturn(serverErrorsHandle);
+        final IServerControl serverControl = mock(IServerControl.class);
+        when(framework.server()).thenReturn(serverControl);
+        when(serverControl.errors()).thenReturn(serverErrorsHandle);
         when(serverErrorsHandle.getCaptured()).thenReturn(List.of());
-        when(framework.serverOutput()).thenReturn(List.of());
+        when(serverControl.output()).thenReturn(List.of());
 
         // execute
         final Path writtenDirectory = FailureDiagnosticsWriter.write(
@@ -94,9 +99,11 @@ class FailureDiagnosticsWriterTest
         // setup
         final ILightkeeperFramework framework = mock(ILightkeeperFramework.class);
         final ServerErrorsHandle serverErrorsHandle = mock(ServerErrorsHandle.class);
-        when(framework.serverErrors()).thenReturn(serverErrorsHandle);
+        final IServerControl serverControl = mock(IServerControl.class);
+        when(framework.server()).thenReturn(serverControl);
+        when(serverControl.errors()).thenReturn(serverErrorsHandle);
         when(serverErrorsHandle.getCaptured()).thenReturn(List.of());
-        when(framework.serverOutput()).thenReturn(List.of());
+        when(serverControl.output()).thenReturn(List.of());
 
         // execute
         final Path writtenDirectory = FailureDiagnosticsWriter.write(
@@ -120,8 +127,10 @@ class FailureDiagnosticsWriterTest
     {
         // setup
         final ILightkeeperFramework framework = mock(ILightkeeperFramework.class);
-        when(framework.serverErrors()).thenThrow(new IllegalStateException("agent connection is gone"));
-        when(framework.serverOutput()).thenReturn(List.of("still available"));
+        final IServerControl serverControl = mock(IServerControl.class);
+        when(framework.server()).thenReturn(serverControl);
+        when(serverControl.errors()).thenThrow(new IllegalStateException("agent connection is gone"));
+        when(serverControl.output()).thenReturn(List.of("still available"));
 
         // execute
         final Path writtenDirectory = FailureDiagnosticsWriter.write(
@@ -161,9 +170,11 @@ class FailureDiagnosticsWriterTest
         // setup
         final ILightkeeperFramework framework = mock(ILightkeeperFramework.class);
         final ServerErrorsHandle serverErrorsHandle = mock(ServerErrorsHandle.class);
-        when(framework.serverErrors()).thenReturn(serverErrorsHandle);
+        final IServerControl serverControl = mock(IServerControl.class);
+        when(framework.server()).thenReturn(serverControl);
+        when(serverControl.errors()).thenReturn(serverErrorsHandle);
         when(serverErrorsHandle.getCaptured()).thenReturn(List.of());
-        when(framework.serverOutput()).thenReturn(List.of());
+        when(serverControl.output()).thenReturn(List.of());
 
         // execute
         final Path writtenDirectory = FailureDiagnosticsWriter.write(

@@ -18,30 +18,30 @@ class LightkeeperServerLifecycleIT
     void serverLifecycle_shouldSupportGracefulStopStartAndRestart(ILightkeeperFramework framework)
     {
         // setup
-        final Path serverDirectory = framework.serverDirectory();
+        final Path serverDirectory = framework.server().directory();
         assertThat(serverDirectory).isDirectory();
-        assertThat(framework.pluginDataDirectory("LightkeeperSpigotTestPlugin"))
+        assertThat(framework.server().pluginDataDirectory("LightkeeperSpigotTestPlugin"))
             .isEqualTo(serverDirectory.resolve("plugins").resolve("LightkeeperSpigotTestPlugin"));
-        framework.createPlayer("lklife001", framework.mainWorld());
+        framework.bots().join("lklife001", framework.worlds().main());
 
         // execute: graceful stop
-        framework.stopServer();
+        framework.server().stop();
 
         // verify: while stopped, the server directory remains accessible for seeding and inspection
         assertThat(serverDirectory.resolve("server.properties")).exists();
 
         // execute: start again after the graceful stop
-        framework.startServer();
+        framework.server().start();
 
         // verify: the started server is fully usable
-        assertThat(framework.mainWorld()).hasNonBlankName();
-        assertThat(framework.createPlayer("lklife002", framework.mainWorld())).hasName("lklife002");
+        assertThat(framework.worlds().main()).hasNonBlankName();
+        assertThat(framework.bots().join("lklife002", framework.worlds().main())).hasName("lklife002");
 
         // execute: graceful restart while the server is running
-        framework.restartServer();
+        framework.server().restart();
 
         // verify: usable again after the restart
-        assertThat(framework.mainWorld()).hasNonBlankName();
-        assertThat(framework.createPlayer("lklife003", framework.mainWorld())).hasName("lklife003");
+        assertThat(framework.worlds().main()).hasNonBlankName();
+        assertThat(framework.bots().join("lklife003", framework.worlds().main())).hasName("lklife003");
     }
 }

@@ -4,6 +4,8 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,5 +49,27 @@ class FrameworkApiVisibilityTest
         assertThat(isPermissionControlConstructorPublic).isFalse();
         assertThat(isBlockRefConstructorPublic).isFalse();
         assertThat(isEntityQueryConstructorPublic).isFalse();
+    }
+
+    @Test
+    void facetImplementations_shouldNotBePublicAndHaveNonPublicConstructors() throws Exception
+    {
+        // setup
+        final List<Class<?>> facadeClasses = List.of(
+            Class.forName("nl.pim16aap2.lightkeeper.framework.internal.ServerControlFacade"),
+            Class.forName("nl.pim16aap2.lightkeeper.framework.internal.WorldsFacade"),
+            Class.forName("nl.pim16aap2.lightkeeper.framework.internal.BotsFacade"),
+            Class.forName("nl.pim16aap2.lightkeeper.framework.internal.EventsFacade"));
+
+        // execute
+        final boolean allTypesNonPublic = facadeClasses.stream()
+            .noneMatch(facadeClass -> Modifier.isPublic(facadeClass.getModifiers()));
+        final boolean allConstructorsNonPublic = facadeClasses.stream()
+            .flatMap(facadeClass -> Arrays.stream(facadeClass.getDeclaredConstructors()))
+            .noneMatch(constructor -> Modifier.isPublic(constructor.getModifiers()));
+
+        // verify
+        assertThat(allTypesNonPublic).isTrue();
+        assertThat(allConstructorsNonPublic).isTrue();
     }
 }

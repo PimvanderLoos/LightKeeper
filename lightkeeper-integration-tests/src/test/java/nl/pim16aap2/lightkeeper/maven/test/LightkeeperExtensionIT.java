@@ -17,7 +17,7 @@ class LightkeeperExtensionIT
     void mainWorld_shouldInjectFrameworkFromExtension(ILightkeeperFramework framework)
     {
         // execute
-        final var mainWorld = framework.mainWorld();
+        final var mainWorld = framework.worlds().main();
 
         // verify
         assertThat(mainWorld).hasNonBlankName();
@@ -27,11 +27,11 @@ class LightkeeperExtensionIT
     void newWorld_shouldCreateIsolatedWorldWhenRequestedFromFramework(ILightkeeperFramework framework)
     {
         // setup
-        final var mainWorld = framework.mainWorld();
+        final var mainWorld = framework.worlds().main();
         final BlockPos position = new BlockPos(2, 70, 2);
 
         // execute
-        final var world = framework.newWorld();
+        final var world = framework.worlds().create();
         world.setBlockAt(position, "STONE");
         framework.waitUntil(() -> "minecraft:stone".equals(world.blockTypeAt(position)), Duration.ofSeconds(20));
 

@@ -29,7 +29,7 @@ class LightkeeperFrameworkIT
         // execute
         try (ILightkeeperFramework framework = Lightkeeper.start(runtimeManifestPath))
         {
-            final WorldHandle worldHandle = framework.mainWorld();
+            final WorldHandle worldHandle = framework.worlds().main();
             final String expectedServerType = System.getProperty("lightkeeper.expectedServerType", "paper");
 
             // verify
@@ -60,7 +60,7 @@ class LightkeeperFrameworkIT
         // execute
         try (ILightkeeperFramework framework = Lightkeeper.start(runtimeManifestPath))
         {
-            final WorldHandle worldHandle = framework.newWorld(worldSpec);
+            final WorldHandle worldHandle = framework.worlds().create(worldSpec);
             worldHandle.setBlockAt(position, "STONE");
             framework.waitUntil(
                 () -> "minecraft:stone".equals(worldHandle.blockTypeAt(position)),

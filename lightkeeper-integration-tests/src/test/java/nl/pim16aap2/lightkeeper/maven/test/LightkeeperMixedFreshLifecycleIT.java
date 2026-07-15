@@ -32,7 +32,7 @@ class LightkeeperMixedFreshLifecycleIT
         firstSharedFramework = framework;
 
         // execute
-        final var mainWorld = framework.mainWorld();
+        final var mainWorld = framework.worlds().main();
 
         // verify
         assertThat(mainWorld).hasNonBlankName();
@@ -46,7 +46,7 @@ class LightkeeperMixedFreshLifecycleIT
         assertThat(firstSharedFramework).isNotNull();
 
         // execute
-        final var mainWorld = framework.mainWorld();
+        final var mainWorld = framework.worlds().main();
 
         // verify
         assertThat(framework).isSameAs(firstSharedFramework);
@@ -63,7 +63,7 @@ class LightkeeperMixedFreshLifecycleIT
 
         // execute
         freshFramework = framework;
-        final var mainWorld = framework.mainWorld();
+        final var mainWorld = framework.worlds().main();
 
         // verify
         assertThat(framework).isNotSameAs(firstSharedFramework);
@@ -80,7 +80,7 @@ class LightkeeperMixedFreshLifecycleIT
 
         // execute
         secondSharedFramework = framework;
-        final var mainWorld = framework.mainWorld();
+        final var mainWorld = framework.worlds().main();
 
         // verify
         assertThat(secondSharedFramework).isNotNull();
