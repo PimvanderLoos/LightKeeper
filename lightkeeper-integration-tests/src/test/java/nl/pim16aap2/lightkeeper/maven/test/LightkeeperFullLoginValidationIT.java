@@ -5,7 +5,6 @@ import nl.pim16aap2.lightkeeper.framework.CapturedEventSnapshot;
 import nl.pim16aap2.lightkeeper.framework.CommandResult;
 import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.LightkeeperExtension;
-import nl.pim16aap2.lightkeeper.framework.Vec3;
 import nl.pim16aap2.lightkeeper.protocol.CommandSource;
 import nl.pim16aap2.lightkeeper.protocol.IProtocolValue;
 import org.junit.jupiter.api.Test;
@@ -20,7 +19,6 @@ import java.util.UUID;
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.catchThrowable;
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.eventually;
-import static nl.pim16aap2.lightkeeper.maven.test.FullLoginItSupport.assertPositionCloseTo;
 import static nl.pim16aap2.lightkeeper.maven.test.FullLoginItSupport.eventsWithPlayerRef;
 import static nl.pim16aap2.lightkeeper.maven.test.FullLoginItSupport.offlineUuid;
 import static nl.pim16aap2.lightkeeper.maven.test.FullLoginItSupport.playerPosition;
@@ -177,10 +175,13 @@ class LightkeeperFullLoginValidationIT
     @Timeout(60)
     void fullLogin_shouldRejoinAfterQuitWithSamePersistedIdentity(ILightkeeperFramework framework)
     {
-        // setup — join, then move to a distinctive position that must survive the quit/rejoin cycle.
+        // setup — join, then give the bot a distinctive item that must survive the quit/rejoin cycle. The
+        // persistence observable is the inventory (saved to player data on the real quit path) rather than the
+        // position, because FULL_LOGIN honors the requested placement: the agent teleports a (re)joining bot to
+        // the requested location/world spawn post-join, overriding the position loaded from player data.
         final var world = framework.worlds().main();
         final String name = "lkrejoin";
-        final Vec3 persistedPosition = new Vec3(21.0, 120.0, 21.0);
+        final String persistedItem = "minecraft:diamond";
 
         final var firstJoin = framework.bots().builder()
             .withName(name)
@@ -188,10 +189,11 @@ class LightkeeperFullLoginValidationIT
             .fullLogin()
             .build();
         final UUID firstUuid = firstJoin.uniqueId();
-        firstJoin.teleport(world, persistedPosition);
+        assertThat(framework.server()
+            .executeCommand(CommandSource.CONSOLE, "give %s %s 3".formatted(name, persistedItem))
+            .success()).isTrue();
         eventually(Duration.ofSeconds(10), () ->
-            assertThat(playerPosition(world, firstUuid)).hasValueSatisfying(position ->
-                assertPositionCloseTo(position, persistedPosition)));
+            assertThat(firstJoin.inventory().findItem(persistedItem)).isNotNull());
 
         // execute — quit (real quit path saves player data), then rejoin under the same name.
         firstJoin.remove();
@@ -203,11 +205,10 @@ class LightkeeperFullLoginValidationIT
             .fullLogin()
             .build();
 
-        // verify — same server-derived offline identity, and the position was restored from player data.
+        // verify — same server-derived offline identity, and the inventory was restored from player data.
         assertThat(rejoined.uniqueId()).isEqualTo(firstUuid).isEqualTo(offlineUuid(name));
         eventually(Duration.ofSeconds(10), () ->
-            assertThat(playerPosition(world, firstUuid)).hasValueSatisfying(position ->
-                assertPositionCloseTo(position, persistedPosition)));
+            assertThat(rejoined.inventory().findItem(persistedItem)).isNotNull());
 
         rejoined.remove();
     }
