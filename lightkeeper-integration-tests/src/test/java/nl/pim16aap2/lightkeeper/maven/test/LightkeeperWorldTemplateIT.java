@@ -20,10 +20,10 @@ class LightkeeperWorldTemplateIT
     void newWorldFromTemplate_shouldLoadProvisionedTemplateWorld(ILightkeeperFramework framework)
     {
         // setup
-        final Path templateDirectory = framework.serverDirectory().resolve(TEMPLATE_NAME);
+        final Path templateDirectory = framework.server().directory().resolve(TEMPLATE_NAME);
 
         // execute
-        final WorldHandle templateWorld = framework.newWorldFromTemplate(TEMPLATE_NAME);
+        final WorldHandle templateWorld = framework.worlds().fromTemplate(TEMPLATE_NAME);
 
         // verify
         assertThat(templateWorld).hasNonBlankName();
@@ -39,7 +39,7 @@ class LightkeeperWorldTemplateIT
         final String unknownTemplate = "lightkeeper-no-such-template";
 
         // execute
-        final Throwable thrown = catchThrowable(() -> framework.newWorldFromTemplate(unknownTemplate));
+        final Throwable thrown = catchThrowable(() -> framework.worlds().fromTemplate(unknownTemplate));
 
         // verify
         assertThat(thrown)

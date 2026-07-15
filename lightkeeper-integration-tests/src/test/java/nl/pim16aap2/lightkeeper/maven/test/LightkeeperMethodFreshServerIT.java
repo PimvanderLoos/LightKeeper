@@ -16,7 +16,7 @@ class LightkeeperMethodFreshServerIT
     void mainWorld_shouldStartFreshServerWhenMethodIsAnnotated(ILightkeeperFramework framework)
     {
         // execute
-        final var mainWorld = framework.mainWorld();
+        final var mainWorld = framework.worlds().main();
 
         // verify
         assertThat(mainWorld).hasNonBlankName();

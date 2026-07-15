@@ -1,6 +1,7 @@
 package nl.pim16aap2.lightkeeper.framework.assertions;
 
 import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
+import nl.pim16aap2.lightkeeper.framework.IServerControl;
 import nl.pim16aap2.lightkeeper.framework.Platform;
 import nl.pim16aap2.lightkeeper.framework.ServerErrorSnapshot;
 import org.assertj.core.api.AbstractAssert;
@@ -30,7 +31,7 @@ public final class LightkeeperFrameworkAssert
      */
     public ListAssert<String> serverOutput()
     {
-        return Assertions.assertThat(nonNullActual().serverOutput());
+        return Assertions.assertThat(nonNullActual().server().output());
     }
 
     /**
@@ -41,8 +42,8 @@ public final class LightkeeperFrameworkAssert
     public LightkeeperFrameworkAssert isPaper()
     {
         final var actual = nonNullActual();
-        if (actual.platform() != Platform.PAPER)
-            failWithMessage("Expected server platform to be PAPER but was %s.", actual.platform());
+        if (actual.server().platform() != Platform.PAPER)
+            failWithMessage("Expected server platform to be PAPER but was %s.", actual.server().platform());
         return this;
     }
 
@@ -54,15 +55,15 @@ public final class LightkeeperFrameworkAssert
     public LightkeeperFrameworkAssert isSpigot()
     {
         final var actual = nonNullActual();
-        if (actual.platform() != Platform.SPIGOT)
-            failWithMessage("Expected server platform to be SPIGOT but was %s.", actual.platform());
+        if (actual.server().platform() != Platform.SPIGOT)
+            failWithMessage("Expected server platform to be SPIGOT but was %s.", actual.server().platform());
         return this;
     }
 
     /**
      * Asserts that no error-severity server errors were captured.
      *
-     * <p>Backed by structured capture (see {@link ILightkeeperFramework#serverErrors()}): entries are matched
+     * <p>Backed by structured capture (see {@link IServerControl#errors()}): entries are matched
      * on their captured severity, not on console-line substrings, so a log message merely containing the word
      * "exception" no longer trips this assertion. Warnings are never counted.
      *
@@ -90,7 +91,7 @@ public final class LightkeeperFrameworkAssert
     public LightkeeperFrameworkAssert hasNoServerErrors(Predicate<ServerErrorSnapshot> allowedErrors)
     {
         Objects.requireNonNull(allowedErrors, "allowedErrors may not be null.");
-        final List<ServerErrorSnapshot> failingErrors = nonNullActual().serverErrors().getCaptured().stream()
+        final List<ServerErrorSnapshot> failingErrors = nonNullActual().server().errors().getCaptured().stream()
             .filter(error -> error.severity() == ServerErrorSnapshot.Severity.ERROR)
             .filter(error -> !allowedErrors.test(error))
             .toList();

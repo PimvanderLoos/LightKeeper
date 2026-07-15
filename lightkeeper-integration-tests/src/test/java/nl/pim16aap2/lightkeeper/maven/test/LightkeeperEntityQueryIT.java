@@ -32,13 +32,13 @@ class LightkeeperEntityQueryIT
         // binary-exact floats so the float-to-double comparison below is exact. The target chunk must be
         // force-loaded: a playerless world unloads its chunks (and their entities) right after the summon
         // command's temporary chunk ticket expires, and entity queries only see loaded chunks.
-        final WorldHandle world = framework.newWorld(new WorldSpec(
+        final WorldHandle world = framework.worlds().create(new WorldSpec(
             "lk_entityquery_" + UUID.randomUUID().toString().replace("-", ""),
             WorldSpec.WorldType.FLAT,
             WorldSpec.WorldEnvironment.NORMAL,
             99L
         ));
-        final CommandResult forceloadResult = framework.executeCommand(
+        final CommandResult forceloadResult = framework.server().executeCommand(
             CommandSource.CONSOLE,
             "execute in minecraft:%s run forceload add 8 8".formatted(world.name()));
         assertThat(forceloadResult.success()).isTrue();
@@ -50,7 +50,7 @@ class LightkeeperEntityQueryIT
         ).formatted(world.name());
 
         // execute
-        final CommandResult summonResult = framework.executeCommand(CommandSource.CONSOLE, summonCommand);
+        final CommandResult summonResult = framework.server().executeCommand(CommandSource.CONSOLE, summonCommand);
 
         // verify
         assertThat(summonResult.success()).isTrue();
@@ -66,7 +66,7 @@ class LightkeeperEntityQueryIT
         assertThat(snapshot.customName()).isEqualTo("lk-display");
         assertThat(snapshot.pdcKeys()).isEmpty();
         assertThat(snapshot.tick()).isPositive();
-        assertThat(framework.currentServerTick()).isGreaterThanOrEqualTo(snapshot.tick());
+        assertThat(framework.server().currentTick()).isGreaterThanOrEqualTo(snapshot.tick());
 
         final EntitySnapshot.Transform transform = snapshot.transform();
         assertThat(transform).isNotNull();
@@ -99,13 +99,13 @@ class LightkeeperEntityQueryIT
         // setup — armor stands are regular (non-display) entities: Marker:1b and NoGravity:1b pin it in
         // place so the position assertion is exact. The chunk is force-loaded for the same reason as above:
         // playerless worlds unload chunks (and their entities) otherwise.
-        final WorldHandle world = framework.newWorld(new WorldSpec(
+        final WorldHandle world = framework.worlds().create(new WorldSpec(
             "lk_entityquery_" + UUID.randomUUID().toString().replace("-", ""),
             WorldSpec.WorldType.FLAT,
             WorldSpec.WorldEnvironment.NORMAL,
             99L
         ));
-        final CommandResult forceloadResult = framework.executeCommand(
+        final CommandResult forceloadResult = framework.server().executeCommand(
             CommandSource.CONSOLE,
             "execute in minecraft:%s run forceload add 4 4".formatted(world.name()));
         assertThat(forceloadResult.success()).isTrue();
@@ -114,7 +114,7 @@ class LightkeeperEntityQueryIT
                 .formatted(world.name());
 
         // execute
-        final CommandResult summonResult = framework.executeCommand(CommandSource.CONSOLE, summonCommand);
+        final CommandResult summonResult = framework.server().executeCommand(CommandSource.CONSOLE, summonCommand);
 
         // verify
         assertThat(summonResult.success()).isTrue();

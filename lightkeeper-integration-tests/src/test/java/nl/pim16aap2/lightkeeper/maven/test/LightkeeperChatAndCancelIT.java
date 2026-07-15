@@ -22,11 +22,11 @@ class LightkeeperChatAndCancelIT
         throws Exception
     {
         // setup
-        final var world = framework.mainWorld();
-        final var player = framework.createPlayer("lkchat001", world);
-        final long tickBefore = framework.currentServerTick();
+        final var world = framework.worlds().main();
+        final var player = framework.bots().join("lkchat001", world);
+        final long tickBefore = framework.server().currentTick();
 
-        try (var chatCapture = framework.captureEvents(CHAT_EVENT))
+        try (var chatCapture = framework.events().capture(CHAT_EVENT))
         {
             // execute
             player.chat("hello lightkeeper");
@@ -38,7 +38,7 @@ class LightkeeperChatAndCancelIT
             assertThat(chatEvent.value("getMessage"))
                 .isEqualTo(new IProtocolValue.PString("hello lightkeeper"));
             assertThat(chatEvent.tick()).isGreaterThanOrEqualTo(tickBefore);
-            assertThat(framework.currentServerTick()).isGreaterThanOrEqualTo(chatEvent.tick());
+            assertThat(framework.server().currentTick()).isGreaterThanOrEqualTo(chatEvent.tick());
         }
     }
 
@@ -47,10 +47,10 @@ class LightkeeperChatAndCancelIT
         throws Exception
     {
         // setup
-        final var world = framework.mainWorld();
-        final var player = framework.createPlayer("lkchat002", world);
+        final var world = framework.worlds().main();
+        final var player = framework.bots().join("lkchat002", world);
 
-        try (var chatCapture = framework.captureEvents(CHAT_EVENT))
+        try (var chatCapture = framework.events().capture(CHAT_EVENT))
         {
             // execute
             chatCapture.cancelNext(1);
@@ -73,7 +73,7 @@ class LightkeeperChatAndCancelIT
         throws Exception
     {
         // setup — PlayerJoinEvent does not implement Cancellable, so arming must fail loudly
-        try (var joinCapture = framework.captureEvents("org.bukkit.event.player.PlayerJoinEvent"))
+        try (var joinCapture = framework.events().capture("org.bukkit.event.player.PlayerJoinEvent"))
         {
             // execute
             final Throwable thrown =

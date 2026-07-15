@@ -25,7 +25,7 @@ class LightkeeperBlockStateIT
     {
         // setup — a lever is an attachable block: place its supporting block first so the physics update
         // applied by the placement does not pop it off.
-        final WorldHandle world = framework.newWorld(new WorldSpec(
+        final WorldHandle world = framework.worlds().create(new WorldSpec(
             "lk_blockstate_" + UUID.randomUUID().toString().replace("-", ""),
             WorldSpec.WorldType.FLAT,
             WorldSpec.WorldEnvironment.NORMAL,
@@ -57,7 +57,7 @@ class LightkeeperBlockStateIT
     {
         // setup — the material key parses client-side; the agent's block-data parser is the authority that
         // rejects it, surfacing as a typed INVALID_ARGUMENT error.
-        final WorldHandle world = framework.mainWorld();
+        final WorldHandle world = framework.worlds().main();
         final BlockSpec bogusSpec = BlockSpec.parse("minecraft:definitely_not_a_block[foo=bar]");
 
         // execute

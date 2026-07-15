@@ -47,10 +47,10 @@ class LightkeeperServerErrorCaptureIT
     void serverErrors_shouldCaptureProvokedSevereWithThrowableMetadata(ILightkeeperFramework framework)
     {
         // setup
-        final ServerErrorsHandle serverErrors = framework.serverErrors();
+        final ServerErrorsHandle serverErrors = framework.server().errors();
 
         // execute
-        framework.executeCommand(CommandSource.CONSOLE, "lktesterror severe");
+        framework.server().executeCommand(CommandSource.CONSOLE, "lktesterror severe");
         framework.waitUntil(() -> containsMessage(serverErrors, SEVERE_MARKER), CAPTURE_TIMEOUT);
 
         // verify — the entry carries the real throwable, not scraped console text
@@ -76,7 +76,7 @@ class LightkeeperServerErrorCaptureIT
     void serverErrors_shouldBeClearedAutomaticallyBetweenTestMethods(ILightkeeperFramework framework)
     {
         // verify — the severe error provoked by the previous test must not leak into this test's window
-        assertThat(framework.serverErrors().getCaptured())
+        assertThat(framework.server().errors().getCaptured())
             .noneSatisfy(error -> assertThat(error.message()).contains(SEVERE_MARKER));
         assertThat(framework).hasNoServerErrors();
     }
@@ -86,10 +86,10 @@ class LightkeeperServerErrorCaptureIT
     void serverErrors_shouldBufferWarningsWithoutFailingHealthCheck(ILightkeeperFramework framework)
     {
         // setup
-        final ServerErrorsHandle serverErrors = framework.serverErrors();
+        final ServerErrorsHandle serverErrors = framework.server().errors();
 
         // execute
-        framework.executeCommand(CommandSource.CONSOLE, "lktesterror warning");
+        framework.server().executeCommand(CommandSource.CONSOLE, "lktesterror warning");
         framework.waitUntil(() -> containsMessage(serverErrors, WARNING_MARKER), CAPTURE_TIMEOUT);
 
         // verify — the warning is available for diagnostics but does not gate the health check
@@ -104,8 +104,8 @@ class LightkeeperServerErrorCaptureIT
     void serverErrors_clearShouldDiscardProvokedError(ILightkeeperFramework framework)
     {
         // setup
-        final ServerErrorsHandle serverErrors = framework.serverErrors();
-        framework.executeCommand(CommandSource.CONSOLE, "lktesterror severe");
+        final ServerErrorsHandle serverErrors = framework.server().errors();
+        framework.server().executeCommand(CommandSource.CONSOLE, "lktesterror severe");
         framework.waitUntil(() -> containsMessage(serverErrors, SEVERE_MARKER), CAPTURE_TIMEOUT);
 
         // execute

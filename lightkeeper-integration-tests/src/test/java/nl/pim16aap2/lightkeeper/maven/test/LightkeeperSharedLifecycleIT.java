@@ -28,7 +28,7 @@ class LightkeeperSharedLifecycleIT
         initialFramework = framework;
 
         // execute
-        final var mainWorld = framework.mainWorld();
+        final var mainWorld = framework.worlds().main();
 
         // verify
         assertThat(mainWorld).hasNonBlankName();
@@ -39,7 +39,7 @@ class LightkeeperSharedLifecycleIT
     void frameworkLifecycle_shouldReuseSharedFrameworkOnSecondMethod(ILightkeeperFramework framework)
     {
         // execute
-        final var mainWorld = framework.mainWorld();
+        final var mainWorld = framework.worlds().main();
 
         // verify
         assertThat(initialFramework).isNotNull();

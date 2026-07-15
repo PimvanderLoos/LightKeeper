@@ -9,22 +9,65 @@ import java.util.UUID;
 
 /**
  * LightKeeper end-to-end test framework entrypoint.
+ *
+ * <p>The framework surface is organised into facets, each returned by an accessor: {@link #server()},
+ * {@link #worlds()}, {@link #bots()}, and {@link #events()}. Prefer these facet accessors: the flat v1 methods
+ * on this interface are deprecated for removal and delegate into the facets.
  */
 public interface ILightkeeperFramework extends AutoCloseable
 {
     /**
+     * Gets the server-control facet: command execution, console output, platform, filesystem access, process
+     * lifecycle, tick counter, and captured server errors.
+     *
+     * @return The server-control facet.
+     */
+    IServerControl server();
+
+    /**
+     * Gets the worlds facet: create worlds from defaults, specs, or provisioned templates, or via a builder.
+     *
+     * @return The worlds facet.
+     */
+    IWorlds worlds();
+
+    /**
+     * Gets the bots facet: join synthetic players into a world, or configure one via a builder.
+     *
+     * @return The bots facet.
+     */
+    IBots bots();
+
+    /**
+     * Gets the events facet: capture Bukkit events for later inspection.
+     *
+     * @return The events facet.
+     */
+    IEvents events();
+
+    /**
      * Gets the main world handle.
      *
      * @return The main world handle.
+     * @deprecated Use {@link IWorlds#main()} via {@link #worlds()}.
      */
-    WorldHandle mainWorld();
+    @Deprecated(forRemoval = true)
+    default WorldHandle mainWorld()
+    {
+        return worlds().main();
+    }
 
     /**
      * Creates a new world using framework defaults.
      *
      * @return The created world handle.
+     * @deprecated Use {@link IWorlds#create()} via {@link #worlds()}.
      */
-    WorldHandle newWorld();
+    @Deprecated(forRemoval = true)
+    default WorldHandle newWorld()
+    {
+        return worlds().create();
+    }
 
     /**
      * Creates a new world from a world spec.
@@ -32,27 +75,27 @@ public interface ILightkeeperFramework extends AutoCloseable
      * @param worldSpec
      *     The world specification.
      * @return The created world handle.
+     * @deprecated Use {@link IWorlds#create(WorldSpec)} via {@link #worlds()}.
      */
-    WorldHandle newWorld(WorldSpec worldSpec);
+    @Deprecated(forRemoval = true)
+    default WorldHandle newWorld(WorldSpec worldSpec)
+    {
+        return worlds().create(worldSpec);
+    }
 
     /**
      * Loads a world from a pre-provisioned template folder.
      *
-     * <p>Templates are world folders provisioned into the server directory by the Maven plugin's
-     * {@code <worlds>} configuration (typically with {@code loadOnStartup=false}). The name is validated
-     * against the runtime manifest's provisioned-template list <em>before</em> touching the server: a typo
-     * fails loudly instead of silently creating a fresh world.
-     *
-     * <p>A provisioned world that is already loaded (e.g. one with {@code loadOnStartup=true}) is returned
-     * as-is rather than reloaded.
-     *
      * @param templateName
      *     The provisioned world folder's name.
      * @return A handle for the loaded world.
-     * @throws IllegalArgumentException
-     *     If no template with that name was provisioned; the message lists the available templates.
+     * @deprecated Use {@link IWorlds#fromTemplate(String)} via {@link #worlds()}.
      */
-    WorldHandle newWorldFromTemplate(String templateName);
+    @Deprecated(forRemoval = true)
+    default WorldHandle newWorldFromTemplate(String templateName)
+    {
+        return worlds().fromTemplate(templateName);
+    }
 
     /**
      * Creates a synthetic player in a world at spawn.
@@ -62,8 +105,13 @@ public interface ILightkeeperFramework extends AutoCloseable
      * @param world
      *     Target world.
      * @return Created player handle.
+     * @deprecated Use {@link IBots#join(String, WorldHandle)} via {@link #bots()}.
      */
-    PlayerHandle createPlayer(String name, WorldHandle world);
+    @Deprecated(forRemoval = true)
+    default PlayerHandle createPlayer(String name, WorldHandle world)
+    {
+        return bots().join(name, world);
+    }
 
     /**
      * Creates a synthetic player in a world at spawn.
@@ -75,22 +123,37 @@ public interface ILightkeeperFramework extends AutoCloseable
      * @param world
      *     Target world.
      * @return Created player handle.
+     * @deprecated Use {@link IBots#join(String, UUID, WorldHandle)} via {@link #bots()}.
      */
-    PlayerHandle createPlayer(String name, UUID uuid, WorldHandle world);
+    @Deprecated(forRemoval = true)
+    default PlayerHandle createPlayer(String name, UUID uuid, WorldHandle world)
+    {
+        return bots().join(name, uuid, world);
+    }
 
     /**
      * Creates a player builder.
      *
      * @return A new player builder.
+     * @deprecated Use {@link IBots#builder()} via {@link #bots()}.
      */
-    IPlayerBuilder buildPlayer();
+    @Deprecated(forRemoval = true)
+    default IPlayerBuilder buildPlayer()
+    {
+        return bots().builder();
+    }
 
     /**
      * Creates a world builder.
      *
      * @return A new world builder.
+     * @deprecated Use {@link IWorlds#builder()} via {@link #worlds()}.
      */
-    IWorldBuilder buildWorld();
+    @Deprecated(forRemoval = true)
+    default IWorldBuilder buildWorld()
+    {
+        return worlds().builder();
+    }
 
     /**
      * Executes a command from the requested source.
@@ -100,8 +163,13 @@ public interface ILightkeeperFramework extends AutoCloseable
      * @param command
      *     The command text.
      * @return Command result.
+     * @deprecated Use {@link IServerControl#executeCommand(CommandSource, String)} via {@link #server()}.
      */
-    CommandResult executeCommand(CommandSource source, String command);
+    @Deprecated(forRemoval = true)
+    default CommandResult executeCommand(CommandSource source, String command)
+    {
+        return server().executeCommand(source, command);
+    }
 
     /**
      * Waits until a condition is true or timeout expires.
@@ -117,84 +185,101 @@ public interface ILightkeeperFramework extends AutoCloseable
      * Gets a snapshot of captured Minecraft server output lines.
      *
      * @return Captured server output lines ordered oldest-to-newest.
+     * @deprecated Use {@link IServerControl#output()} via {@link #server()}.
      */
-    List<String> serverOutput();
+    @Deprecated(forRemoval = true)
+    default List<String> serverOutput()
+    {
+        return server().output();
+    }
 
     /**
      * Gets the server platform (e.g. PAPER, SPIGOT).
      *
      * @return Server platform.
+     * @deprecated Use {@link IServerControl#platform()} via {@link #server()}.
      */
-    Platform platform();
+    @Deprecated(forRemoval = true)
+    default Platform platform()
+    {
+        return server().platform();
+    }
 
     /**
      * Gets the Minecraft server's working directory.
      *
-     * <p>Filesystem contract: reading is safe at any time; writing (e.g. seeding database files or patching
-     * plugin configurations) is only safe while the server is stopped — between {@link #stopServer()} and
-     * {@link #startServer()} — because the server reads most files once at boot and may overwrite them on
-     * shutdown.
-     *
      * @return The server directory.
+     * @deprecated Use {@link IServerControl#directory()} via {@link #server()}.
      */
-    Path serverDirectory();
+    @Deprecated(forRemoval = true)
+    default Path serverDirectory()
+    {
+        return server().directory();
+    }
 
     /**
      * Gets the data directory of a plugin inside the server's {@code plugins} directory.
-     *
-     * <p>The directory may not exist yet, e.g. before the plugin's first boot. The filesystem contract of
-     * {@link #serverDirectory()} applies.
      *
      * @param pluginName
      *     The plugin's name, as used for its data directory (usually the {@code name} from its
      *     {@code plugin.yml}).
      * @return The plugin data directory.
+     * @deprecated Use {@link IServerControl#pluginDataDirectory(String)} via {@link #server()}.
      */
-    Path pluginDataDirectory(String pluginName);
+    @Deprecated(forRemoval = true)
+    default Path pluginDataDirectory(String pluginName)
+    {
+        return server().pluginDataDirectory(pluginName);
+    }
 
     /**
      * Crashes the Minecraft server immediately by force-killing the process.
      *
-     * <p>All fixtures created before the crash are invalidated: player and world handles obtained earlier no
-     * longer refer to live server state. In shared-server mode the server must be started again via
-     * {@link #startServer()} or {@link #restartServer()} before the next test method runs, otherwise that method
-     * fails fast; annotate the test with {@code @FreshServer} to receive a new server per method instead.
+     * @deprecated Use {@link IServerControl#crash()} via {@link #server()}.
      */
-    void crashServer();
+    @Deprecated(forRemoval = true)
+    default void crashServer()
+    {
+        server().crash();
+    }
 
     /**
-     * Stops the Minecraft server gracefully via the console {@code stop} command, force-killing it only when it
-     * does not exit within the shutdown timeout.
-     *
-     * <p>Synthetic players are removed before the server shuts down so they quit cleanly. All fixtures created
-     * before the stop are invalidated, exactly as documented on {@link #crashServer()}. While the server is
-     * stopped, the server directory may be modified freely — see {@link #serverDirectory()}.
+     * Stops the Minecraft server gracefully, force-killing it only when it does not exit within the shutdown
+     * timeout.
      *
      * @throws IllegalStateException
      *     If the server is not running.
+     * @deprecated Use {@link IServerControl#stop()} via {@link #server()}.
      */
-    void stopServer();
+    @Deprecated(forRemoval = true)
+    default void stopServer()
+    {
+        server().stop();
+    }
 
     /**
      * Starts the Minecraft server after a {@link #stopServer()} or {@link #crashServer()} call.
      *
-     * <p>Only worlds configured in the runtime manifest are preloaded again. Players and worlds created at
-     * runtime before the server went down are <strong>not</strong> recreated; tests must re-establish their own
-     * fixtures after starting.
-     *
      * @throws IllegalStateException
      *     If the server is already running.
+     * @deprecated Use {@link IServerControl#start()} via {@link #server()}.
      */
-    void startServer();
+    @Deprecated(forRemoval = true)
+    default void startServer()
+    {
+        server().start();
+    }
 
     /**
-     * Restarts the Minecraft server: a graceful {@link #stopServer()} when it is running, followed by
-     * {@link #startServer()}.
+     * Restarts the Minecraft server.
      *
-     * <p>Also valid when the server is already down (after {@link #stopServer()} or {@link #crashServer()}), in
-     * which case it only starts the server. See {@link #startServer()} for what is — and is not — restored.
+     * @deprecated Use {@link IServerControl#restart()} via {@link #server()}.
      */
-    void restartServer();
+    @Deprecated(forRemoval = true)
+    default void restartServer()
+    {
+        server().restart();
+    }
 
     /**
      * Starts capturing Bukkit events of the specified type.
@@ -202,36 +287,38 @@ public interface ILightkeeperFramework extends AutoCloseable
      * @param eventClassName
      *     The full class name of the event to capture (e.g. "org.bukkit.event.player.PlayerMoveEvent").
      * @return A handle to manage the capture session.
+     * @deprecated Use {@link IEvents#capture(String)} via {@link #events()}.
      */
-    EventCaptureHandle captureEvents(String eventClassName);
+    @Deprecated(forRemoval = true)
+    default EventCaptureHandle captureEvents(String eventClassName)
+    {
+        return events().capture(eventClassName);
+    }
 
     /**
      * Gets the agent's monotonic tick counter, for correlating against {@link CapturedEventSnapshot#tick()}
      * stamps.
      *
-     * <p>This is an agent-relative counter (ticks since the agent enabled), not the server's absolute game
-     * tick: it resets on every server start, so values are only comparable within one server session.
-     *
      * @return The monotonic, session-relative server tick.
+     * @deprecated Use {@link IServerControl#currentTick()} via {@link #server()}.
      */
-    long currentServerTick();
+    @Deprecated(forRemoval = true)
+    default long currentServerTick()
+    {
+        return server().currentTick();
+    }
 
     /**
      * Gets a handle over the always-on server-error capture.
      *
-     * <p>The agent captures every WARN-or-worse log event inside the server as a structured snapshot — with the
-     * real throwable class, message, and cause chain — from the moment the agent plugin loads (before any
-     * plugin's {@code onEnable}). Failures inside the logging system itself (reported via Log4j's status
-     * logger) and stack traces written to the server process's raw stderr file descriptor are captured as well.
-     *
-     * <p>In shared-server mode the capture buffer is cleared automatically at the end of every test method, so
-     * each test observes only the errors of its own window; the first test's window also covers server boot.
-     * Known gaps: exceptions that are caught and never logged are invisible, as are log events emitted before
-     * the agent plugin loads (use {@link #serverOutput()} for pre-boot inspection).
-     *
      * @return A handle exposing the captured server errors.
+     * @deprecated Use {@link IServerControl#errors()} via {@link #server()}.
      */
-    ServerErrorsHandle serverErrors();
+    @Deprecated(forRemoval = true)
+    default ServerErrorsHandle serverErrors()
+    {
+        return server().errors();
+    }
 
     @Override
     void close();

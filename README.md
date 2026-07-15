@@ -196,9 +196,10 @@ class MyPluginIT
     @Test
     void playerBots_shouldInteractWithTheServer(ILightkeeperFramework framework)
     {
+        // The API is organised into facets: framework.server(), .worlds(), .bots(), .events().
         // setup
-        final WorldHandle world = framework.mainWorld();
-        final PlayerHandle player = framework.buildPlayer()
+        final WorldHandle world = framework.worlds().main();
+        final PlayerHandle player = framework.bots().builder()
             .withName("lk_tester")
             .atSpawn(world)
             .withPermissions("minecraft.command.time")
@@ -218,6 +219,10 @@ class MyPluginIT
 }
 ```
 
+> The framework surface is organised into facets — `framework.server()`, `.worlds()`, `.bots()`, and
+> `.events()`. The older flat method names (`mainWorld()`, `buildPlayer()`, `stopServer()`, …) are deprecated
+> for removal; use the facet accessors instead.
+
 ## Core Features
 
 - Real server E2E tests (not mocks)
@@ -233,7 +238,7 @@ class MyPluginIT
 - Menu interaction and assertions; menu actions auto-wait for an open menu, and `clickItem("name")`
   clicks by item display name
 - World templates: provision world folders via `<worlds>` and load them with
-  `newWorldFromTemplate("name")` — typos fail loudly instead of silently creating a fresh world
+  `worlds().fromTemplate("name")` — typos fail loudly instead of silently creating a fresh world
 - Received-message assertions with AssertJ string chaining
 - Explicit retrying assertions: `eventually(timeout, () -> assertThat(...))` re-runs a live probe until it
   passes, and reports the attempt count, elapsed time, and last failure on timeout
@@ -253,10 +258,10 @@ class MyPluginIT
   burst so every snapshot shares one server tick
 - Diagnostics-on-failure: failed tests automatically get a bundle (test outcome, captured server errors,
   server console output) under `target/lightkeeper-reports/`
-- Graceful server lifecycle control from tests (`stopServer()`, `startServer()`, `restartServer()`), plus
-  `crashServer()` for hard-kill scenarios
-- Server directory access (`serverDirectory()`, `pluginDataDirectory(name)`) for seeding files while the
-  server is stopped
+- Graceful server lifecycle control from tests (`server().stop()`, `server().start()`, `server().restart()`),
+  plus `server().crash()` for hard-kill scenarios
+- Server directory access (`server().directory()`, `server().pluginDataDirectory(name)`) for seeding files
+  while the server is stopped
 
 ## World and Plugin Provisioning
 
@@ -345,9 +350,9 @@ class VaultIT
     void vaultInfo_shouldReportVaultVersion(ILightkeeperFramework framework)
     {
         // setup
-        final PlayerHandle player = framework.buildPlayer()
+        final PlayerHandle player = framework.bots().builder()
             .withName("vault_tester")
-            .atSpawn(framework.mainWorld())
+            .atSpawn(framework.worlds().main())
             .withPermissions("vault.admin")
             .build();
 

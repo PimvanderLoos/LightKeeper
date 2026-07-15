@@ -156,7 +156,7 @@ class DefaultLightkeeperFrameworkGatewayTest
         );
 
         // execute
-        final Path serverDirectory = framework.serverDirectory();
+        final Path serverDirectory = framework.server().directory();
 
         // verify
         assertThat(serverDirectory).isEqualTo(Path.of("/tmp/lightkeeper/server"));
@@ -174,7 +174,7 @@ class DefaultLightkeeperFrameworkGatewayTest
         );
 
         // execute
-        final Path pluginDataDirectory = framework.pluginDataDirectory("AnimatedArchitecture");
+        final Path pluginDataDirectory = framework.server().pluginDataDirectory("AnimatedArchitecture");
 
         // verify
         assertThat(pluginDataDirectory)
@@ -193,7 +193,7 @@ class DefaultLightkeeperFrameworkGatewayTest
         );
 
         // execute + verify
-        assertThatThrownBy(() -> framework.pluginDataDirectory("   "))
+        assertThatThrownBy(() -> framework.server().pluginDataDirectory("   "))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("blank");
     }
@@ -210,7 +210,7 @@ class DefaultLightkeeperFrameworkGatewayTest
         );
 
         // execute + verify
-        assertThatThrownBy(() -> framework.pluginDataDirectory("../evil"))
+        assertThatThrownBy(() -> framework.server().pluginDataDirectory("../evil"))
             .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -226,7 +226,7 @@ class DefaultLightkeeperFrameworkGatewayTest
         );
 
         // execute + verify
-        assertThatThrownBy(() -> framework.pluginDataDirectory("a/b"))
+        assertThatThrownBy(() -> framework.server().pluginDataDirectory("a/b"))
             .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -248,7 +248,7 @@ class DefaultLightkeeperFrameworkGatewayTest
         );
 
         // execute
-        final WorldHandle result = framework.newWorldFromTemplate("template-a");
+        final WorldHandle result = framework.worlds().fromTemplate("template-a");
 
         // verify
         assertThat(result.name()).isEqualTo("template-a-instance");
@@ -271,7 +271,7 @@ class DefaultLightkeeperFrameworkGatewayTest
         );
 
         // execute + verify
-        assertThatThrownBy(() -> framework.newWorldFromTemplate("template-x"))
+        assertThatThrownBy(() -> framework.worlds().fromTemplate("template-x"))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("template-a")
             .hasMessageContaining("template-b");
@@ -289,7 +289,7 @@ class DefaultLightkeeperFrameworkGatewayTest
         );
 
         // execute + verify
-        assertThatThrownBy(() -> framework.newWorldFromTemplate("   "))
+        assertThatThrownBy(() -> framework.worlds().fromTemplate("   "))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("blank");
     }
@@ -307,7 +307,7 @@ class DefaultLightkeeperFrameworkGatewayTest
         );
 
         // execute + verify
-        assertThatThrownBy(() -> framework.newWorldFromTemplate(null))
+        assertThatThrownBy(() -> framework.worlds().fromTemplate(null))
             .isInstanceOf(NullPointerException.class);
     }
 
@@ -601,7 +601,7 @@ class DefaultLightkeeperFrameworkGatewayTest
         );
 
         // execute
-        final long result = framework.currentServerTick();
+        final long result = framework.server().currentTick();
 
         // verify
         assertThat(result).isEqualTo(123L);

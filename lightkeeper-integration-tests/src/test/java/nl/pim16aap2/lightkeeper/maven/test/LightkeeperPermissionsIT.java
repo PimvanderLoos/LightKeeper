@@ -19,8 +19,8 @@ class LightkeeperPermissionsIT
     void permissions_shouldGateCommandsThroughRuntimeGrantAndRevoke(ILightkeeperFramework framework)
     {
         // setup
-        final var world = framework.mainWorld();
-        final var player = framework.createPlayer("lkperm001", world);
+        final var world = framework.worlds().main();
+        final var player = framework.bots().join("lkperm001", world);
         final PermissionControl permissions = player.permissions();
 
         // execute
@@ -57,8 +57,8 @@ class LightkeeperPermissionsIT
     void permissions_shouldOverrideSpawnTimePermissions(ILightkeeperFramework framework)
     {
         // setup
-        final var world = framework.mainWorld();
-        final var player = framework.buildPlayer()
+        final var world = framework.worlds().main();
+        final var player = framework.bots().builder()
             .withName("lkperm002")
             .atSpawn(world)
             .withPermissions(TEST_GUI_PERMISSION)
