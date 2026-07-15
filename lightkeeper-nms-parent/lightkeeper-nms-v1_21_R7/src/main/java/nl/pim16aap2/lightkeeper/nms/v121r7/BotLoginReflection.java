@@ -708,7 +708,7 @@ final class BotLoginReflection
     }
 
     @SuppressWarnings({"PMD.UseVarargs", "PMD.CompareObjectsWithEquals"}) // InvocationHandler contract; proxy identity.
-    private static Object gameContextInvoke(Object proxy, Method method, Object @Nullable [] args)
+    private static @Nullable Object gameContextInvoke(Object proxy, Method method, Object @Nullable [] args)
     {
         if (method.getReturnType() == boolean.class)
             return Boolean.FALSE;
