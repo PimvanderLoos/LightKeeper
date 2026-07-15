@@ -36,7 +36,9 @@ import org.jspecify.annotations.Nullable;
 
 import java.time.Duration;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -66,6 +68,11 @@ final class AgentPlayerActions
      * NMS-backed synthetic player implementation.
      */
     private final IBotPlayerNmsAdapter botPlayerNmsAdapter;
+    /**
+     * UUIDs of synthetic players that joined through the FULL_LOGIN pipeline and therefore own a real TCP
+     * connection; their removal must run the real disconnect flow instead of the legacy player-list removal.
+     */
+    private final Set<UUID> fullLoginPlayerIds = ConcurrentHashMap.newKeySet();
 
     /**
      * @param plugin
@@ -368,6 +375,7 @@ final class AgentPlayerActions
             player.teleport(target);
 
             playerStore.registerSyntheticPlayer(uuid, player);
+            fullLoginPlayerIds.add(uuid);
             if (health != null)
                 player.setHealth(Math.min(player.getMaxHealth(), health));
             if (permissionsCsv != null && !permissionsCsv.isBlank())
@@ -393,9 +401,7 @@ final class AgentPlayerActions
         mainThreadExecutor.callOnMainThread(() ->
         {
             final Player player = playerStore.getRequiredPlayer(uuid);
-            playerStore.removePermissionAttachment(uuid, player);
-            botPlayerNmsAdapter.removePlayer(player);
-            playerStore.removeSyntheticPlayer(uuid);
+            removeRegisteredPlayer(uuid, player);
             plugin.getLogger().info(
                 "LK_AGENT: Removed synthetic player '%s' (%s)."
                     .formatted(player.getName(), player.getUniqueId())
@@ -404,6 +410,31 @@ final class AgentPlayerActions
         });
 
         return new RemovePlayer.Response();
+    }
+
+    /**
+     * Removes a registered synthetic player through the path matching how it joined (main thread only).
+     *
+     * <p>A {@code FULL_LOGIN} bot owns a real TCP connection, so it must leave through the real disconnect
+     * flow ({@code Player#kickPlayer}): the play-phase disconnect packet reaches the login driver, the channel
+     * closes, and {@code PlayerQuitEvent} fires on the regular quit path. Removing such a bot through the
+     * legacy player-list removal would leave its connection open — the server times it out ~30 seconds later
+     * and runs the removal a second time, which crashes Paper ({@code EntityScheduler}: "Already retired").
+     * Legacy-spawn bots have no real connection and keep the reflective removal path.
+     *
+     * @param uuid
+     *     UUID of the player to remove.
+     * @param player
+     *     The registered player instance.
+     */
+    private void removeRegisteredPlayer(UUID uuid, Player player)
+    {
+        playerStore.removePermissionAttachment(uuid, player);
+        if (fullLoginPlayerIds.remove(uuid))
+            player.kickPlayer("LightKeeper bot removed.");
+        else
+            botPlayerNmsAdapter.removePlayer(player);
+        playerStore.removeSyntheticPlayer(uuid);
     }
 
     /**
@@ -638,9 +669,7 @@ final class AgentPlayerActions
             try
             {
                 final Player player = playerStore.getRequiredPlayer(uuid);
-                playerStore.removePermissionAttachment(uuid, player);
-                botPlayerNmsAdapter.removePlayer(player);
-                playerStore.removeSyntheticPlayer(uuid);
+                removeRegisteredPlayer(uuid, player);
             }
             catch (Exception exception)
             {
