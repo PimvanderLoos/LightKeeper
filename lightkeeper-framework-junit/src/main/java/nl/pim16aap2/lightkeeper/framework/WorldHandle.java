@@ -30,6 +30,17 @@ public final class WorldHandle
     }
 
     /**
+     * Gets a live, composable entity query for this world.
+     *
+     * @return An unfiltered entity query; add filters via {@link EntityQuery#ofType} and
+     *     {@link EntityQuery#within}.
+     */
+    public EntityQuery entities()
+    {
+        return new EntityQuery(frameworkGateway, name);
+    }
+
+    /**
      * Gets a live reference to the block at a position.
      *
      * <p>The reference stores only the address; every read through it re-queries the server.

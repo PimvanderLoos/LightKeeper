@@ -32,6 +32,32 @@ class WorldHandleTest
     }
 
     @Test
+    void entities_shouldReturnUnfilteredQueryBoundToWorld()
+    {
+        // setup
+        when(frameworkGateway.countEntities("world", null, null, null)).thenReturn(2);
+
+        // execute
+        final EntityQuery query = worldHandle.entities();
+        final int count = query.count();
+
+        // verify
+        assertThat(count).isEqualTo(2);
+        verify(frameworkGateway).countEntities("world", null, null, null);
+    }
+
+    @Test
+    void entities_shouldReturnNewQueryInstanceOnEachCall()
+    {
+        // execute
+        final EntityQuery first = worldHandle.entities();
+        final EntityQuery second = worldHandle.entities();
+
+        // verify
+        assertThat(first).isNotSameAs(second);
+    }
+
+    @Test
     void blockTypeAt_shouldDelegateToGateway()
     {
         // setup

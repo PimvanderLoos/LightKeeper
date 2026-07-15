@@ -26,6 +26,8 @@ class FrameworkApiVisibilityTest
             PermissionControl.class.getDeclaredConstructor(IFrameworkGatewayView.class, UUID.class);
         final Constructor<BlockRef> blockRefConstructor =
             BlockRef.class.getDeclaredConstructor(IFrameworkGatewayView.class, String.class, BlockPos.class);
+        final Constructor<EntityQuery> entityQueryConstructor =
+            EntityQuery.class.getDeclaredConstructor(IFrameworkGatewayView.class, String.class);
 
         // execute
         final boolean isPlayerConstructorPublic = Modifier.isPublic(playerConstructor.getModifiers());
@@ -35,6 +37,7 @@ class FrameworkApiVisibilityTest
         final boolean isPermissionControlConstructorPublic =
             Modifier.isPublic(permissionControlConstructor.getModifiers());
         final boolean isBlockRefConstructorPublic = Modifier.isPublic(blockRefConstructor.getModifiers());
+        final boolean isEntityQueryConstructorPublic = Modifier.isPublic(entityQueryConstructor.getModifiers());
 
         // verify
         assertThat(isPlayerConstructorPublic).isFalse();
@@ -43,5 +46,6 @@ class FrameworkApiVisibilityTest
         assertThat(isServerErrorsConstructorPublic).isFalse();
         assertThat(isPermissionControlConstructorPublic).isFalse();
         assertThat(isBlockRefConstructorPublic).isFalse();
+        assertThat(isEntityQueryConstructorPublic).isFalse();
     }
 }
