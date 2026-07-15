@@ -104,6 +104,64 @@ class ProtocolValueSerializationTest
     }
 
     @Test
+    void serialize_pPos_roundTrips() throws Exception
+    {
+        // setup
+        final ObjectMapper mapper = AgentProtocolMapper.create();
+        final IProtocolValue.PPos original = new IProtocolValue.PPos(1, -64, 3);
+
+        // execute
+        final String json = mapper.writeValueAsString(original);
+        final IProtocolValue deserialized = mapper.readValue(json, IProtocolValue.class);
+
+        // verify
+        assertThat(json).contains("\"type\":\"POS\"");
+        assertThat(deserialized).isEqualTo(original);
+    }
+
+    @Test
+    void pPos_toDisplayString_shouldRenderCommaSeparatedCoordinates()
+    {
+        // setup
+        final IProtocolValue.PPos pos = new IProtocolValue.PPos(1, -64, 3);
+
+        // execute
+        final String result = pos.toDisplayString();
+
+        // verify
+        assertThat(result).isEqualTo("(1, -64, 3)");
+    }
+
+    @Test
+    void serialize_pVec_roundTrips() throws Exception
+    {
+        // setup
+        final ObjectMapper mapper = AgentProtocolMapper.create();
+        final IProtocolValue.PVec original = new IProtocolValue.PVec(1.5, -64.25, 3.0);
+
+        // execute
+        final String json = mapper.writeValueAsString(original);
+        final IProtocolValue deserialized = mapper.readValue(json, IProtocolValue.class);
+
+        // verify
+        assertThat(json).contains("\"type\":\"VEC\"");
+        assertThat(deserialized).isEqualTo(original);
+    }
+
+    @Test
+    void pVec_toDisplayString_shouldRenderCommaSeparatedCoordinates()
+    {
+        // setup
+        final IProtocolValue.PVec vec = new IProtocolValue.PVec(1.5, -64.25, 3.0);
+
+        // execute
+        final String result = vec.toDisplayString();
+
+        // verify
+        assertThat(result).isEqualTo("(1.5, -64.25, 3.0)");
+    }
+
+    @Test
     void serialize_pList_roundTrips() throws Exception
     {
         // setup

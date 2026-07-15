@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.RecordComponent;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -224,6 +225,108 @@ class AgentCommandValidationTest
         assertThatThrownBy(() -> new PlayerChat.Command("request-1", uuid, "   "))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("message");
+    }
+
+    // -----------------------------------------------------------------------
+    // QueryEntities.Command validation
+    // -----------------------------------------------------------------------
+
+    @Test
+    void queryEntitiesCommand_shouldRejectBlankEntityTypeKeyWhenPresent()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> new QueryEntities.Command(
+            "request-1", "world", "   ", false, 0, 0, 0, 0, 0, 0, false))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("entityTypeKey");
+    }
+
+    @Test
+    void queryEntitiesCommand_shouldAllowNullEntityTypeKey()
+    {
+        // setup + execute
+        final QueryEntities.Command command = new QueryEntities.Command(
+            "request-1", "world", null, false, 0, 0, 0, 0, 0, 0, false);
+
+        // verify
+        assertThat(command.entityTypeKey()).isNull();
+    }
+
+    @Test
+    void queryEntitiesCommand_shouldRejectBoundsWhenMinXGreaterThanMaxXAndBounded()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> new QueryEntities.Command(
+            "request-1", "world", null, true, 5, 0, 0, 4, 0, 0, false))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("Bounds");
+    }
+
+    @Test
+    void queryEntitiesCommand_shouldRejectBoundsWhenMinYGreaterThanMaxYAndBounded()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> new QueryEntities.Command(
+            "request-1", "world", null, true, 0, 5, 0, 0, 4, 0, false))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("Bounds");
+    }
+
+    @Test
+    void queryEntitiesCommand_shouldRejectBoundsWhenMinZGreaterThanMaxZAndBounded()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> new QueryEntities.Command(
+            "request-1", "world", null, true, 0, 0, 5, 0, 0, 4, false))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("Bounds");
+    }
+
+    @Test
+    void queryEntitiesCommand_shouldAllowInvertedBoundsWhenUnbounded()
+    {
+        // setup + execute — bounded=false must ignore the (otherwise-invalid) inverted bounds
+        final QueryEntities.Command command = new QueryEntities.Command(
+            "request-1", "world", null, false, 5, 5, 5, 0, 0, 0, false);
+
+        // verify
+        assertThat(command.bounded()).isFalse();
+    }
+
+    @Test
+    void queryEntitiesCommand_shouldAllowEqualMinAndMaxWhenBounded()
+    {
+        // setup + execute — min == max on every axis is a valid single-block bound
+        final QueryEntities.Command command = new QueryEntities.Command(
+            "request-1", "world", null, true, 5, 5, 5, 5, 5, 5, false);
+
+        // verify
+        assertThat(command.bounded()).isTrue();
+    }
+
+    // -----------------------------------------------------------------------
+    // QueryEntities.EntityData validation
+    // -----------------------------------------------------------------------
+
+    @Test
+    @SuppressWarnings("NullAway") // Intentionally crosses the non-null API boundary to verify fail-fast validation.
+    void entityDataConstructor_shouldRejectNullUuid()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> new QueryEntities.EntityData(
+            null, "minecraft:zombie", 0.0, 0.0, 0.0, null, List.of(), null))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("uuid");
+    }
+
+    @Test
+    void entityDataConstructor_shouldRejectBlankTypeKey()
+    {
+        // execute + verify
+        assertThatThrownBy(() -> new QueryEntities.EntityData(
+            UUID.randomUUID(), "   ", 0.0, 0.0, 0.0, null, List.of(), null))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("typeKey");
     }
 
     // -----------------------------------------------------------------------

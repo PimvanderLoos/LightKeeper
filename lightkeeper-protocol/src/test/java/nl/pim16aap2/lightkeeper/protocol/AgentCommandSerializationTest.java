@@ -355,6 +355,147 @@ class AgentCommandSerializationTest
     }
 
     // -----------------------------------------------------------------------
+    // Round-trip: QueryEntities.Command (bounded, with type filter)
+    // -----------------------------------------------------------------------
+
+    @Test
+    void serialize_queryEntitiesCommand_boundedWithTypeFilter_roundTrips() throws Exception
+    {
+        // setup
+        final ObjectMapper mapper = AgentProtocolMapper.create();
+        final QueryEntities.Command original = new QueryEntities.Command(
+            "req-17", "world", "minecraft:block_display", true,
+            0, 1, 2, 10, 11, 12, false
+        );
+
+        // execute
+        final String json = mapper.writeValueAsString(original);
+        @SuppressWarnings("rawtypes")
+        final IAgentCommand deserialized = mapper.readValue(json, IAgentCommand.class);
+
+        // verify
+        assertThat(deserialized).isInstanceOf(QueryEntities.Command.class);
+        final QueryEntities.Command result = (QueryEntities.Command) deserialized;
+        assertThat(result.requestId()).isEqualTo("req-17");
+        assertThat(result.worldName()).isEqualTo("world");
+        assertThat(result.entityTypeKey()).isEqualTo("minecraft:block_display");
+        assertThat(result.bounded()).isTrue();
+        assertThat(result.minX()).isEqualTo(0);
+        assertThat(result.minY()).isEqualTo(1);
+        assertThat(result.minZ()).isEqualTo(2);
+        assertThat(result.maxX()).isEqualTo(10);
+        assertThat(result.maxY()).isEqualTo(11);
+        assertThat(result.maxZ()).isEqualTo(12);
+        assertThat(result.countOnly()).isFalse();
+    }
+
+    // -----------------------------------------------------------------------
+    // Round-trip: QueryEntities.Command (unbounded, no type filter, count-only)
+    // -----------------------------------------------------------------------
+
+    @Test
+    void serialize_queryEntitiesCommand_unboundedWithNullTypeFilter_roundTrips() throws Exception
+    {
+        // setup
+        final ObjectMapper mapper = AgentProtocolMapper.create();
+        final QueryEntities.Command original = new QueryEntities.Command(
+            "req-18", "world", null, false,
+            0, 0, 0, 0, 0, 0, true
+        );
+
+        // execute
+        final String json = mapper.writeValueAsString(original);
+        @SuppressWarnings("rawtypes")
+        final IAgentCommand deserialized = mapper.readValue(json, IAgentCommand.class);
+
+        // verify
+        assertThat(deserialized).isInstanceOf(QueryEntities.Command.class);
+        final QueryEntities.Command result = (QueryEntities.Command) deserialized;
+        assertThat(result.requestId()).isEqualTo("req-18");
+        assertThat(result.entityTypeKey()).isNull();
+        assertThat(result.bounded()).isFalse();
+        assertThat(result.countOnly()).isTrue();
+    }
+
+    // -----------------------------------------------------------------------
+    // Round-trip: QueryEntities.Response with nested EntityData and TransformData
+    // -----------------------------------------------------------------------
+
+    @Test
+    void serialize_queryEntitiesResponse_withNestedEntityDataAndTransformData_roundTrips() throws Exception
+    {
+        // setup
+        final ObjectMapper mapper = AgentProtocolMapper.create();
+        final UUID entityUuid = UUID.fromString("00000000-0000-0000-0000-00000000000a");
+        final QueryEntities.TransformData transformData = new QueryEntities.TransformData(
+            1.0, 2.0, 3.0,
+            1.5, 1.5, 1.5,
+            List.of(0.1, 0.2, 0.3, 0.4),
+            List.of(0.5, 0.6, 0.7, 0.8)
+        );
+        final QueryEntities.EntityData entityData = new QueryEntities.EntityData(
+            entityUuid, "minecraft:block_display", 10.0, 64.0, -5.0,
+            "Display Name", List.of("plugin:alpha", "plugin:beta"), transformData
+        );
+        final QueryEntities.Response original = new QueryEntities.Response(42L, 1, List.of(entityData));
+
+        // execute
+        final String json = mapper.writeValueAsString(original);
+        final QueryEntities.Response result = mapper.readValue(json, QueryEntities.Response.class);
+
+        // verify
+        assertThat(result.tick()).isEqualTo(42L);
+        assertThat(result.count()).isEqualTo(1);
+        assertThat(result.entities()).containsExactly(entityData);
+        assertThat(result).isEqualTo(original);
+    }
+
+    // -----------------------------------------------------------------------
+    // Round-trip: QueryEntities.Response with a null-transform entity and empty entity list
+    // -----------------------------------------------------------------------
+
+    @Test
+    void serialize_queryEntitiesResponse_withNullTransformEntity_roundTrips() throws Exception
+    {
+        // setup
+        final ObjectMapper mapper = AgentProtocolMapper.create();
+        final UUID entityUuid = UUID.fromString("00000000-0000-0000-0000-00000000000b");
+        final QueryEntities.EntityData entityData = new QueryEntities.EntityData(
+            entityUuid, "minecraft:zombie", 1.0, 2.0, 3.0, null, List.of(), null
+        );
+        final QueryEntities.Response original = new QueryEntities.Response(7L, 1, List.of(entityData));
+
+        // execute
+        final String json = mapper.writeValueAsString(original);
+        final QueryEntities.Response result = mapper.readValue(json, QueryEntities.Response.class);
+
+        // verify
+        assertThat(result.entities()).singleElement().satisfies(entity ->
+        {
+            assertThat(entity.customName()).isNull();
+            assertThat(entity.transform()).isNull();
+            assertThat(entity.pdcKeys()).isEmpty();
+        });
+    }
+
+    @Test
+    void serialize_queryEntitiesResponse_withEmptyEntities_roundTrips() throws Exception
+    {
+        // setup
+        final ObjectMapper mapper = AgentProtocolMapper.create();
+        final QueryEntities.Response original = new QueryEntities.Response(3L, 0, List.of());
+
+        // execute
+        final String json = mapper.writeValueAsString(original);
+        final QueryEntities.Response result = mapper.readValue(json, QueryEntities.Response.class);
+
+        // verify
+        assertThat(result.tick()).isEqualTo(3L);
+        assertThat(result.count()).isZero();
+        assertThat(result.entities()).isEmpty();
+    }
+
+    // -----------------------------------------------------------------------
     // Deserialization from raw JSON: discriminator field selects subtype
     // -----------------------------------------------------------------------
 
