@@ -182,8 +182,9 @@ final class ServerControlFacade implements IServerControl
     @Override
     public long currentTick()
     {
-        framework.ensureOpen();
-        return agentClient.getServerTick();
+        // Delegates to the framework's gateway method: the tick read must have exactly one implementation, and
+        // the gateway seam (IFrameworkGatewayView) forces that body to live on the framework class.
+        return framework.currentServerTick();
     }
 
     @Override

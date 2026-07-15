@@ -675,9 +675,9 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
         ensureOpen();
         if (serverDown.get())
             throw new IllegalStateException(
-                "A previous test took down the shared Minecraft server via crashServer() or stopServer() "
-                    + "without starting it again. Call startServer() (or restartServer()) before the test ends, "
-                    + "or annotate the test with @FreshServer so each method receives a fresh server.");
+                "A previous test took down the shared Minecraft server via server().crash() or server().stop() "
+                    + "without starting it again. Call server().start() (or server().restart()) before the test "
+                    + "ends, or annotate the test with @FreshServer so each method receives a fresh server.");
         playerScopeRegistry.beginMethodScope(methodExecutionId);
     }
 

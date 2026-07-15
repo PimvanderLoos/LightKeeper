@@ -380,8 +380,8 @@ class DefaultLightkeeperFrameworkLifecycleTest
         // execute + verify
         assertThatThrownBy(() -> framework.beginMethodScope("method-2"))
             .isInstanceOf(IllegalStateException.class)
-            .hasMessageContaining("crashServer")
-            .hasMessageContaining("restartServer");
+            .hasMessageContaining("server().crash()")
+            .hasMessageContaining("server().restart()");
         verify(playerScopeRegistry, never()).beginMethodScope("method-2");
     }
 
@@ -428,7 +428,7 @@ class DefaultLightkeeperFrameworkLifecycleTest
         // execute + verify
         assertThatThrownBy(() -> framework.beginMethodScope("method-3"))
             .isInstanceOf(IllegalStateException.class)
-            .hasMessageContaining("stopServer");
+            .hasMessageContaining("server().stop()");
         verify(playerScopeRegistry, never()).beginMethodScope("method-3");
     }
 
