@@ -247,6 +247,10 @@ class MyPluginIT
   `world.setBlockAt(pos, BlockSpec.parse("minecraft:lever[face=floor,powered=true]"))` and assert partially
   via `world.blockAt(pos).is(BlockSpec.parse("minecraft:lever[powered=true]"))` — only named properties
   are compared
+- Entity queries: `world.entities().ofType("minecraft:block_display").within(min, max).count()` counts
+  live entities cheaply (pairs with `eventually`), and `.snapshot()` freezes matching entities — position,
+  custom name, PDC keys, and the display transformation (translation/scale/rotations) — in one main-thread
+  burst so every snapshot shares one server tick
 - Diagnostics-on-failure: failed tests automatically get a bundle (test outcome, captured server errors,
   server console output) under `target/lightkeeper-reports/`
 - Graceful server lifecycle control from tests (`stopServer()`, `startServer()`, `restartServer()`), plus

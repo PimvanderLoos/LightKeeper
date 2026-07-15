@@ -1,9 +1,11 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
 import nl.pim16aap2.lightkeeper.protocol.IProtocolValue;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.util.Vector;
 import org.jspecify.annotations.Nullable;
 
 import java.lang.reflect.Array;
@@ -201,6 +203,14 @@ final class ProtocolValueEncoder
             return new IProtocolValue.PRef(entity.getClass().getName(), entity.getUniqueId().toString());
         if (value instanceof World world)
             return new IProtocolValue.PRef(world.getClass().getName(), world.getName());
+        // Positions are identity-shaped leaves like refs: a Location's getChunk()/getBlock() accessors would
+        // otherwise drag world geometry into the payload through the generic walk. The record is built by
+        // hand (world ref + position) so cross-world events at equal coordinates stay distinguishable;
+        // orientation is dropped. The world key is omitted for unbound/unloaded-world locations.
+        if (value instanceof Location location)
+            return encodeLocation(location);
+        if (value instanceof Vector vector)
+            return new IProtocolValue.PVec(vector.getX(), vector.getY(), vector.getZ());
 
         if (remainingDepth <= 0)
             return dropped(context, accessorName, value.getClass().getName());
@@ -290,6 +300,26 @@ final class ProtocolValueEncoder
     private IProtocolValue.PDropped truncated(String context, String accessorName, int omittedCount)
     {
         return dropped(context, accessorName, "truncated: %d more elements".formatted(omittedCount));
+    }
+
+
+    /**
+     * Encodes a {@link Location} as a hand-built record of world identity plus position, never via the
+     * generic accessor walk.
+     */
+    private static IProtocolValue.PRecord encodeLocation(Location location)
+    {
+        final LinkedHashMap<String, IProtocolValue> fields = new LinkedHashMap<>();
+        // isWorldLoaded guards Location#getWorld's IllegalArgumentException for stale world references; the
+        // null check covers unbound locations (and satisfies NullAway).
+        if (location.isWorldLoaded())
+        {
+            final @Nullable World world = location.getWorld();
+            if (world != null)
+                fields.put("world", new IProtocolValue.PRef(world.getClass().getName(), world.getName()));
+        }
+        fields.put("position", new IProtocolValue.PVec(location.getX(), location.getY(), location.getZ()));
+        return new IProtocolValue.PRecord(fields);
     }
 
     private IProtocolValue.PDropped dropped(String context, String accessorName, String runtimeType)

@@ -10,16 +10,27 @@ import nl.pim16aap2.lightkeeper.protocol.IsChunkLoaded;
 import nl.pim16aap2.lightkeeper.protocol.LoadChunk;
 import nl.pim16aap2.lightkeeper.protocol.MainWorld;
 import nl.pim16aap2.lightkeeper.protocol.NewWorld;
+import nl.pim16aap2.lightkeeper.protocol.QueryEntities;
 import nl.pim16aap2.lightkeeper.protocol.SetBlock;
 import nl.pim16aap2.lightkeeper.protocol.UnloadChunk;
 import nl.pim16aap2.lightkeeper.protocol.WaitTicks;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
 import org.bukkit.WorldType;
+import org.bukkit.entity.Display;
+import org.bukkit.entity.Entity;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.util.BoundingBox;
+import org.bukkit.util.Transformation;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
@@ -222,6 +233,100 @@ final class AgentWorldActions
         });
 
         return new SetBlock.Response(setMaterial);
+    }
+
+    /**
+     * Handles {@code QUERY_ENTITIES} by reading all matching entities in one main-thread burst, so the
+     * returned states are internally consistent and share one tick stamp.
+     *
+     * <p>Bounded queries match by hitbox intersection with the block-inclusive box (each max axis is
+     * extended by one so block coordinates span their full world-space cell), per the Bukkit
+     * nearby-entities semantic — not by position containment.
+     *
+     * @param command
+     *     Typed command carrying world name, optional type filter, optional bounds, and the count-only flag.
+     * @return
+     *     Response with the match count and (unless count-only) the entity states.
+     * @throws Exception
+     *     Propagates validation and main-thread execution failures.
+     */
+    QueryEntities.Response handleQueryEntities(QueryEntities.Command command)
+        throws Exception
+    {
+        final String worldName = command.worldName();
+        final String entityTypeKey = command.entityTypeKey() == null
+            ? null
+            : normalizeEntityTypeKey(command.entityTypeKey());
+
+        return mainThreadExecutor.callOnMainThread(() ->
+        {
+            final World world = Bukkit.getWorld(worldName);
+            if (world == null)
+                throw new IllegalArgumentException("World '%s' does not exist.".formatted(worldName));
+
+            final Collection<Entity> candidates = command.bounded()
+                ? world.getNearbyEntities(new BoundingBox(
+                    command.minX(), command.minY(), command.minZ(),
+                    command.maxX() + 1.0, command.maxY() + 1.0, command.maxZ() + 1.0))
+                : world.getEntities();
+
+            final List<QueryEntities.EntityData> matches = new ArrayList<>();
+            int count = 0;
+            for (final Entity entity : candidates)
+            {
+                // getKey(), not getKeyOrThrow(): the latter exists only in the Spigot API jar; Paper's
+                // EntityType lacks it at runtime and the agent must run on both.
+                if (entityTypeKey != null
+                    && !entity.getType().getKey().toString().equals(entityTypeKey))
+                    continue;
+                count++;
+                if (!command.countOnly())
+                    matches.add(toEntityData(entity));
+            }
+            return new QueryEntities.Response(tickCounter.get(), count, matches);
+        });
+    }
+
+    private static String normalizeEntityTypeKey(String entityTypeKey)
+    {
+        final String trimmed = entityTypeKey.trim().toLowerCase(Locale.ROOT);
+        return trimmed.indexOf(':') < 0 ? "minecraft:" + trimmed : trimmed;
+    }
+
+    private static QueryEntities.EntityData toEntityData(Entity entity)
+    {
+        final Location location = entity.getLocation();
+        final List<String> pdcKeys = entity.getPersistentDataContainer().getKeys().stream()
+            .map(Object::toString)
+            .sorted()
+            .toList();
+        return new QueryEntities.EntityData(
+            entity.getUniqueId(),
+            entity.getType().getKey().toString(),
+            location.getX(),
+            location.getY(),
+            location.getZ(),
+            entity.getCustomName(),
+            pdcKeys,
+            entity instanceof Display display ? toTransformData(display) : null
+        );
+    }
+
+    private static QueryEntities.TransformData toTransformData(Display display)
+    {
+        final Transformation transformation = display.getTransformation();
+        final Vector3f translation = transformation.getTranslation();
+        final Vector3f scale = transformation.getScale();
+        final Quaternionf leftRotation = transformation.getLeftRotation();
+        final Quaternionf rightRotation = transformation.getRightRotation();
+        return new QueryEntities.TransformData(
+            translation.x(), translation.y(), translation.z(),
+            scale.x(), scale.y(), scale.z(),
+            List.of((double) leftRotation.x(), (double) leftRotation.y(),
+                (double) leftRotation.z(), (double) leftRotation.w()),
+            List.of((double) rightRotation.x(), (double) rightRotation.y(),
+                (double) rightRotation.z(), (double) rightRotation.w())
+        );
     }
 
     /**

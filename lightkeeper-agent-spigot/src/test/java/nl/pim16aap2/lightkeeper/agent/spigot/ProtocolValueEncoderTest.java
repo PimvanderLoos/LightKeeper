@@ -1,11 +1,13 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
 import nl.pim16aap2.lightkeeper.protocol.IProtocolValue;
+import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -20,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -82,6 +85,92 @@ class ProtocolValueEncoderTest
         // verify
         assertThat(result).containsEntry(
             "getWorld", new IProtocolValue.PRef(world.getClass().getName(), "world_test"));
+    }
+
+    @Test
+    void encodeAccessors_shouldEncodeWorldlessLocationAsPositionOnlyRecordWithoutWalkingAccessors()
+    {
+        // setup — a null world verifies the leaf never touches getWorld()/getChunk()/getBlock()
+        final org.bukkit.Location location = new org.bukkit.Location(null, 1.5, 64.0, -2.25);
+        final ProtocolValueEncoder encoder = createEncoder(mock());
+
+        // execute
+        final Map<String, IProtocolValue> result = encoder.encodeAccessors(new LocationHolder(location), "ctx");
+
+        // verify
+        assertThat(result).containsEntry("getLocation", new IProtocolValue.PRecord(
+            new java.util.LinkedHashMap<>(Map.of("position", new IProtocolValue.PVec(1.5, 64.0, -2.25)))));
+    }
+
+    @Test
+    void encodeAccessors_shouldPreserveWorldIdentityWhenLocationHasLoadedWorld()
+    {
+        // setup — cross-world events at equal coordinates must stay distinguishable in payloads;
+        // Location#isWorldLoaded resolves the world through Bukkit#getWorld(UUID), hence the static mock.
+        final World world = mock();
+        final UUID worldId = UUID.randomUUID();
+        when(world.getUID()).thenReturn(worldId);
+        when(world.getName()).thenReturn("world_nether");
+        final org.bukkit.Location location = new org.bukkit.Location(world, 1.5, 64.0, -2.25);
+        final ProtocolValueEncoder encoder = createEncoder(mock());
+
+        // execute
+        final Map<String, IProtocolValue> result;
+        try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
+        {
+            bukkitMockedStatic.when(() -> Bukkit.getWorld(worldId)).thenReturn(world);
+            result = encoder.encodeAccessors(new LocationHolder(location), "ctx");
+        }
+
+        // verify
+        final java.util.LinkedHashMap<String, IProtocolValue> expectedFields = new java.util.LinkedHashMap<>();
+        expectedFields.put("world", new IProtocolValue.PRef(world.getClass().getName(), "world_nether"));
+        expectedFields.put("position", new IProtocolValue.PVec(1.5, 64.0, -2.25));
+        assertThat(result).containsEntry("getLocation", new IProtocolValue.PRecord(expectedFields));
+    }
+
+    @Test
+    void encodeAccessors_shouldEncodeLocationEvenWhenDepthIsExhausted()
+    {
+        // setup — a self-nesting fixture forces the walk past MAX_DEPTH; a sibling getChild() at the same,
+        // depth-exhausted level is dropped (see encodeAccessors_shouldDropValueBeyondMaxDepth), but the
+        // position leaf must still resolve because it is checked before the depth cutoff.
+        final JavaPlugin plugin = mock();
+        when(plugin.getLogger()).thenReturn(Logger.getLogger("protocol-value-encoder-test-location-depth"));
+        final ProtocolValueEncoder encoder = createEncoder(plugin);
+
+        // execute
+        final Map<String, IProtocolValue> level0 =
+            encoder.encodeAccessors(new LocationBearingNestingFixture(), "ctx");
+
+        // verify — drill down MAX_DEPTH - 1 levels to reach the depth-exhausted record, then read its sibling
+        IProtocolValue current = java.util.Objects.requireNonNull(level0.get("getChild"));
+        for (int depth = 0; depth < ProtocolValueEncoder.MAX_DEPTH - 1; depth++)
+        {
+            assertThat(current).isInstanceOf(IProtocolValue.PRecord.class);
+            current = java.util.Objects.requireNonNull(
+                ((IProtocolValue.PRecord) current).fields().get("getChild"));
+        }
+        assertThat(current).isInstanceOfSatisfying(IProtocolValue.PRecord.class, record ->
+        {
+            assertThat(record.fields().get("getChild")).isInstanceOf(IProtocolValue.PDropped.class);
+            assertThat(record.fields().get("getLocation")).isEqualTo(new IProtocolValue.PRecord(
+                new java.util.LinkedHashMap<>(Map.of("position", new IProtocolValue.PVec(7.0, 8.0, 9.0)))));
+        });
+    }
+
+    @Test
+    void encodeAccessors_shouldEncodeVectorAsPVecLeaf()
+    {
+        // setup
+        final org.bukkit.util.Vector vector = new org.bukkit.util.Vector(4.0, 5.0, 6.0);
+        final ProtocolValueEncoder encoder = createEncoder(mock());
+
+        // execute
+        final Map<String, IProtocolValue> result = encoder.encodeAccessors(new VectorHolder(vector), "ctx");
+
+        // verify
+        assertThat(result).containsEntry("getVector", new IProtocolValue.PVec(4.0, 5.0, 6.0));
     }
 
     @Test
@@ -346,6 +435,54 @@ class ProtocolValueEncoderTest
         public World getWorld()
         {
             return world;
+        }
+    }
+
+    public static final class LocationHolder
+    {
+        private final org.bukkit.Location location;
+
+        public LocationHolder(org.bukkit.Location location)
+        {
+            this.location = location;
+        }
+
+        public org.bukkit.Location getLocation()
+        {
+            return location;
+        }
+    }
+
+    public static final class VectorHolder
+    {
+        private final org.bukkit.util.Vector vector;
+
+        public VectorHolder(org.bukkit.util.Vector vector)
+        {
+            this.vector = vector;
+        }
+
+        public org.bukkit.util.Vector getVector()
+        {
+            return vector;
+        }
+    }
+
+    /**
+     * Self-nesting fixture (like {@link SelfNestingFixture}) with an additional constant-valued
+     * {@code getLocation()} accessor on every level, used to prove position leaves resolve even once
+     * {@code remainingDepth} is exhausted by the {@code getChild()} recursion.
+     */
+    public static final class LocationBearingNestingFixture
+    {
+        public LocationBearingNestingFixture getChild()
+        {
+            return new LocationBearingNestingFixture();
+        }
+
+        public org.bukkit.Location getLocation()
+        {
+            return new org.bukkit.Location(null, 7.0, 8.0, 9.0);
         }
     }
 

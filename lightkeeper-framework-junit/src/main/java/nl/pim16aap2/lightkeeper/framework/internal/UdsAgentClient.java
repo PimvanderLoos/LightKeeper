@@ -39,6 +39,7 @@ import nl.pim16aap2.lightkeeper.protocol.MutatePlayerPermission;
 import nl.pim16aap2.lightkeeper.protocol.NewWorld;
 import nl.pim16aap2.lightkeeper.protocol.PlacePlayerBlock;
 import nl.pim16aap2.lightkeeper.protocol.PlayerChat;
+import nl.pim16aap2.lightkeeper.protocol.QueryEntities;
 import nl.pim16aap2.lightkeeper.protocol.RegisterEventListener;
 import nl.pim16aap2.lightkeeper.protocol.RemovePlayer;
 import nl.pim16aap2.lightkeeper.protocol.RightClickBlock;
@@ -401,6 +402,41 @@ final class UdsAgentClient implements AutoCloseable
     {
         final PlayerChat.Command command = new PlayerChat.Command(nextRequestId(), uuid, message);
         send(command);
+    }
+
+    QueryEntities.Response queryEntities(
+        String worldName,
+        @Nullable String entityTypeKey,
+        @Nullable BlockPos boundsMin,
+        @Nullable BlockPos boundsMax,
+        boolean countOnly)
+    {
+        if ((boundsMin == null) != (boundsMax == null))
+            throw new IllegalArgumentException("Bounds must be both present or both absent.");
+        if (boundsMin != null && boundsMax != null)
+        {
+            return send(new QueryEntities.Command(
+                nextRequestId(),
+                worldName,
+                entityTypeKey,
+                true,
+                boundsMin.x(),
+                boundsMin.y(),
+                boundsMin.z(),
+                boundsMax.x(),
+                boundsMax.y(),
+                boundsMax.z(),
+                countOnly
+            ));
+        }
+        return send(new QueryEntities.Command(
+            nextRequestId(),
+            worldName,
+            entityTypeKey,
+            false,
+            0, 0, 0, 0, 0, 0,
+            countOnly
+        ));
     }
 
     void clearCapturedEvents(String eventClassName)

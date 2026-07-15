@@ -41,6 +41,7 @@ public sealed interface IAgentResponse
     NewWorld.Response,
     PlacePlayerBlock.Response,
     PlayerChat.Response,
+    QueryEntities.Response,
     RegisterEventListener.Response,
     RemovePlayer.Response,
     RightClickBlock.Response,

@@ -5,6 +5,7 @@ import nl.pim16aap2.lightkeeper.framework.CapturedEventSnapshot;
 import nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot;
 import nl.pim16aap2.lightkeeper.framework.CommandResult;
 import nl.pim16aap2.lightkeeper.framework.Condition;
+import nl.pim16aap2.lightkeeper.framework.EntitySnapshot;
 import nl.pim16aap2.lightkeeper.framework.EventCaptureHandle;
 import nl.pim16aap2.lightkeeper.framework.FrameworkHandleFactory;
 import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
@@ -16,12 +17,14 @@ import nl.pim16aap2.lightkeeper.framework.Platform;
 import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
 import nl.pim16aap2.lightkeeper.framework.ServerErrorSnapshot;
 import nl.pim16aap2.lightkeeper.framework.ServerErrorsHandle;
+import nl.pim16aap2.lightkeeper.framework.Vec3;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import nl.pim16aap2.lightkeeper.framework.WorldSpec;
 import nl.pim16aap2.lightkeeper.protocol.CommandSource;
 import nl.pim16aap2.lightkeeper.protocol.DropResult;
 import nl.pim16aap2.lightkeeper.protocol.GetServerErrors;
 import nl.pim16aap2.lightkeeper.protocol.MutatePlayerPermission;
+import nl.pim16aap2.lightkeeper.protocol.QueryEntities;
 import nl.pim16aap2.lightkeeper.protocol.ServerErrorEntry;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestReader;
@@ -590,6 +593,67 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     {
         ensureOpen();
         return agentClient.getServerTick();
+    }
+
+    @Override
+    public int countEntities(
+        String worldName,
+        @Nullable String entityTypeKey,
+        @Nullable BlockPos boundsMin,
+        @Nullable BlockPos boundsMax)
+    {
+        ensureOpen();
+        Objects.requireNonNull(worldName, "worldName may not be null.");
+        return agentClient.queryEntities(worldName, entityTypeKey, boundsMin, boundsMax, true).count();
+    }
+
+    @Override
+    public List<EntitySnapshot> snapshotEntities(
+        String worldName,
+        @Nullable String entityTypeKey,
+        @Nullable BlockPos boundsMin,
+        @Nullable BlockPos boundsMax)
+    {
+        ensureOpen();
+        Objects.requireNonNull(worldName, "worldName may not be null.");
+        final QueryEntities.Response response =
+            agentClient.queryEntities(worldName, entityTypeKey, boundsMin, boundsMax, false);
+        return response.entities().stream()
+            .map(entity -> toEntitySnapshot(entity, response.tick()))
+            .toList();
+    }
+
+    private static EntitySnapshot toEntitySnapshot(QueryEntities.EntityData entity, long tick)
+    {
+        return new EntitySnapshot(
+            entity.uuid(),
+            entity.typeKey(),
+            new Vec3(entity.x(), entity.y(), entity.z()),
+            entity.customName(),
+            entity.pdcKeys(),
+            entity.transform() == null ? null : toTransform(entity.transform()),
+            tick
+        );
+    }
+
+    private static EntitySnapshot.Transform toTransform(QueryEntities.TransformData transform)
+    {
+        return new EntitySnapshot.Transform(
+            new Vec3(transform.translationX(), transform.translationY(), transform.translationZ()),
+            new Vec3(transform.scaleX(), transform.scaleY(), transform.scaleZ()),
+            toRotation(transform.leftRotation()),
+            toRotation(transform.rightRotation())
+        );
+    }
+
+    private static EntitySnapshot.Rotation toRotation(List<Double> quaternion)
+    {
+        if (quaternion.size() != 4)
+            throw new IllegalStateException(
+                "Expected a 4-component rotation quaternion but received %d components."
+                    .formatted(quaternion.size()));
+        return new EntitySnapshot.Rotation(
+            quaternion.get(0), quaternion.get(1), quaternion.get(2), quaternion.get(3));
     }
 
     @Override

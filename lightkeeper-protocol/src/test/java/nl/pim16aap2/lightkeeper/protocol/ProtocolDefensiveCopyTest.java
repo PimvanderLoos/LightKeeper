@@ -102,6 +102,111 @@ class ProtocolDefensiveCopyTest
     }
 
     @Test
+    void pdcKeys_shouldNotExposeEntityDataState()
+    {
+        // setup
+        final List<String> source = new ArrayList<>(List.of("plugin:alpha"));
+        final QueryEntities.EntityData entityData = new QueryEntities.EntityData(
+            UUID.randomUUID(), "minecraft:zombie", 0.0, 0.0, 0.0, null, source, null);
+
+        // execute
+        source.add("plugin:beta");
+
+        // verify
+        assertThat(entityData.pdcKeys()).containsExactly("plugin:alpha");
+        assertThatThrownBy(() -> entityData.pdcKeys().add("plugin:gamma"))
+            .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    @SuppressWarnings("NullAway") // Intentionally crosses the non-null API boundary to verify default-on-null.
+    void pdcKeys_shouldDefaultToEmptyListWhenEntityDataConstructedWithNull()
+    {
+        // setup + execute
+        final QueryEntities.EntityData entityData = new QueryEntities.EntityData(
+            UUID.randomUUID(), "minecraft:zombie", 0.0, 0.0, 0.0, null, null, null);
+
+        // verify
+        assertThat(entityData.pdcKeys()).isEmpty();
+    }
+
+    @Test
+    void leftRotation_shouldNotExposeTransformDataState()
+    {
+        // setup
+        final List<Double> source = new ArrayList<>(List.of(0.1, 0.2, 0.3, 0.4));
+        final QueryEntities.TransformData transformData = new QueryEntities.TransformData(
+            0.0, 0.0, 0.0, 1.0, 1.0, 1.0, source, List.of(0.0, 0.0, 0.0, 1.0));
+
+        // execute
+        source.set(0, 9.9);
+
+        // verify
+        assertThat(transformData.leftRotation()).containsExactly(0.1, 0.2, 0.3, 0.4);
+        assertThatThrownBy(() -> transformData.leftRotation().add(1.0))
+            .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    void rightRotation_shouldNotExposeTransformDataState()
+    {
+        // setup
+        final List<Double> source = new ArrayList<>(List.of(0.5, 0.6, 0.7, 0.8));
+        final QueryEntities.TransformData transformData = new QueryEntities.TransformData(
+            0.0, 0.0, 0.0, 1.0, 1.0, 1.0, List.of(0.0, 0.0, 0.0, 1.0), source);
+
+        // execute
+        source.set(0, 9.9);
+
+        // verify
+        assertThat(transformData.rightRotation()).containsExactly(0.5, 0.6, 0.7, 0.8);
+        assertThatThrownBy(() -> transformData.rightRotation().add(1.0))
+            .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    @SuppressWarnings("NullAway") // Intentionally crosses the non-null API boundary to verify default-on-null.
+    void rotations_shouldDefaultToEmptyListWhenTransformDataConstructedWithNull()
+    {
+        // setup + execute
+        final QueryEntities.TransformData transformData = new QueryEntities.TransformData(
+            0.0, 0.0, 0.0, 1.0, 1.0, 1.0, null, null);
+
+        // verify
+        assertThat(transformData.leftRotation()).isEmpty();
+        assertThat(transformData.rightRotation()).isEmpty();
+    }
+
+    @Test
+    void entities_shouldNotExposeQueryEntitiesResponseState()
+    {
+        // setup
+        final QueryEntities.EntityData entityData = new QueryEntities.EntityData(
+            UUID.randomUUID(), "minecraft:zombie", 0.0, 0.0, 0.0, null, List.of(), null);
+        final List<QueryEntities.EntityData> source = new ArrayList<>(List.of(entityData));
+        final QueryEntities.Response response = new QueryEntities.Response(1L, 1, source);
+
+        // execute
+        source.clear();
+
+        // verify
+        assertThat(response.entities()).containsExactly(entityData);
+        assertThatThrownBy(() -> response.entities().add(entityData))
+            .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    @SuppressWarnings("NullAway") // Intentionally crosses the non-null API boundary to verify default-on-null.
+    void entities_shouldDefaultToEmptyListWhenQueryEntitiesResponseConstructedWithNull()
+    {
+        // setup + execute
+        final QueryEntities.Response response = new QueryEntities.Response(1L, 0, null);
+
+        // verify
+        assertThat(response.entities()).isEmpty();
+    }
+
+    @Test
     @SuppressWarnings("NullAway") // Intentionally crosses the non-null API boundary to verify fail-fast validation.
     void response_shouldRejectNullMessages()
     {

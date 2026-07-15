@@ -36,6 +36,7 @@ import nl.pim16aap2.lightkeeper.protocol.MutatePlayerPermission;
 import nl.pim16aap2.lightkeeper.protocol.NewWorld;
 import nl.pim16aap2.lightkeeper.protocol.PlacePlayerBlock;
 import nl.pim16aap2.lightkeeper.protocol.PlayerChat;
+import nl.pim16aap2.lightkeeper.protocol.QueryEntities;
 import nl.pim16aap2.lightkeeper.protocol.RegisterEventListener;
 import nl.pim16aap2.lightkeeper.protocol.RemovePlayer;
 import nl.pim16aap2.lightkeeper.protocol.RightClickBlock;
@@ -279,6 +280,7 @@ final class AgentRequestDispatcher
                 case HasPlayerPermission.Command c -> handle(c, playerActions::handleHasPlayerPermission);
                 case CancelNextEvents.Command c -> handle(c, eventActions::handleCancelNextEvents);
                 case PlayerChat.Command c -> handle(c, playerActions::handlePlayerChat);
+                case QueryEntities.Command c -> handle(c, worldActions::handleQueryEntities);
                 case Handshake.Command ignored ->
                     throw new IllegalStateException("Unreachable HANDSHAKE dispatch branch.");
             };

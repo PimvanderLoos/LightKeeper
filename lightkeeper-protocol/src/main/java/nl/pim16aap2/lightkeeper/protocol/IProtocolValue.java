@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
     @JsonSubTypes.Type(value = IProtocolValue.PBool.class, name = "BOOL"),
     @JsonSubTypes.Type(value = IProtocolValue.PUuid.class, name = "UUID"),
     @JsonSubTypes.Type(value = IProtocolValue.PEnum.class, name = "ENUM"),
+    @JsonSubTypes.Type(value = IProtocolValue.PVec.class, name = "VEC"),
     @JsonSubTypes.Type(value = IProtocolValue.PList.class, name = "LIST"),
     @JsonSubTypes.Type(value = IProtocolValue.PRecord.class, name = "RECORD"),
     @JsonSubTypes.Type(value = IProtocolValue.PRef.class, name = "REF"),
@@ -33,7 +34,8 @@ import java.util.stream.Collectors;
 })
 public sealed interface IProtocolValue
     permits IProtocolValue.PString, IProtocolValue.PNumber, IProtocolValue.PBool, IProtocolValue.PUuid,
-            IProtocolValue.PEnum, IProtocolValue.PList, IProtocolValue.PRecord, IProtocolValue.PRef,
+            IProtocolValue.PEnum, IProtocolValue.PVec,
+            IProtocolValue.PList, IProtocolValue.PRecord, IProtocolValue.PRef,
             IProtocolValue.PDropped
 {
     /**
@@ -160,6 +162,25 @@ public sealed interface IProtocolValue
         public String toDisplayString()
         {
             return name;
+        }
+    }
+
+    /**
+     * Double-precision position coordinates.
+     *
+     * @param x
+     *     X coordinate.
+     * @param y
+     *     Y coordinate.
+     * @param z
+     *     Z coordinate.
+     */
+    record PVec(double x, double y, double z) implements IProtocolValue
+    {
+        @Override
+        public String toDisplayString()
+        {
+            return "(%s, %s, %s)".formatted(x, y, z);
         }
     }
 

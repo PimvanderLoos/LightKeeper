@@ -1,6 +1,7 @@
 package nl.pim16aap2.lightkeeper.framework;
 
 import nl.pim16aap2.lightkeeper.protocol.DropResult;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Duration;
 import java.util.List;
@@ -188,6 +189,24 @@ public interface IFrameworkGatewayView
      * Gets the server's current tick.
      */
     long currentServerTick();
+
+    /**
+     * Counts entities in a world matching the optional type and bounds filters.
+     */
+    int countEntities(
+        String worldName,
+        @Nullable String entityTypeKey,
+        @Nullable BlockPos boundsMin,
+        @Nullable BlockPos boundsMax);
+
+    /**
+     * Snapshots entities in a world matching the optional type and bounds filters, in one main-thread burst.
+     */
+    List<EntitySnapshot> snapshotEntities(
+        String worldName,
+        @Nullable String entityTypeKey,
+        @Nullable BlockPos boundsMin,
+        @Nullable BlockPos boundsMax);
 
     /**
      * Gets all captured server errors: structured log events plus raw stderr stack-trace detections.

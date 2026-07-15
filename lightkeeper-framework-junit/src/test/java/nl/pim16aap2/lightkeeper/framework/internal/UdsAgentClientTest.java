@@ -854,6 +854,101 @@ class UdsAgentClientTest
     }
 
     @Test
+    void queryEntities_shouldSendUnboundedRequestWithZeroedBoundsWhenBoundsAreNull(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("query-entities-unbounded.sock");
+        final String responseJson = "{\"requestId\":\"1\",\"success\":true,\"tick\":10,\"count\":0,\"entities\":[]}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            final var response = client.queryEntities("world", null, null, null, false);
+
+            // verify
+            assertThat(response.tick()).isEqualTo(10L);
+            assertThat(response.count()).isZero();
+            assertThat(server.capturedRequest())
+                .contains("\"action\":\"QUERY_ENTITIES\"")
+                .contains("\"worldName\":\"world\"")
+                .contains("\"bounded\":false")
+                .contains("\"minX\":0")
+                .contains("\"maxZ\":0")
+                .contains("\"countOnly\":false");
+        }
+    }
+
+    @Test
+    void queryEntities_shouldSendBoundedRequestOnlyWhenBothBoundsArePresent(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("query-entities-bounded.sock");
+        final String responseJson = "{\"requestId\":\"1\",\"success\":true,\"tick\":1,\"count\":2,\"entities\":[]}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            final var response = client.queryEntities(
+                "world", "minecraft:zombie", new BlockPos(0, 1, 2), new BlockPos(10, 11, 12), false);
+
+            // verify
+            assertThat(response.count()).isEqualTo(2);
+            assertThat(server.capturedRequest())
+                .contains("\"action\":\"QUERY_ENTITIES\"")
+                .contains("\"entityTypeKey\":\"minecraft:zombie\"")
+                .contains("\"bounded\":true")
+                .contains("\"minX\":0")
+                .contains("\"minY\":1")
+                .contains("\"minZ\":2")
+                .contains("\"maxX\":10")
+                .contains("\"maxY\":11")
+                .contains("\"maxZ\":12");
+        }
+    }
+
+    @Test
+    void queryEntities_shouldRejectMixedBounds(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup — a lone bound is a caller bug and must fail fast instead of silently querying unbounded
+        final Path socketPath = tempDirectory.resolve("query-entities-partial-bounds.sock");
+        final String responseJson = "{\"requestId\":\"1\",\"success\":true,\"tick\":1,\"count\":0,\"entities\":[]}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            final Throwable thrown =
+                catchThrowable(() -> client.queryEntities("world", null, new BlockPos(0, 1, 2), null, false));
+
+            // verify
+            assertThat(thrown)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("both present or both absent");
+        }
+    }
+
+    @Test
+    void queryEntities_shouldSendCountOnlyFlag(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("query-entities-count-only.sock");
+        final String responseJson = "{\"requestId\":\"1\",\"success\":true,\"tick\":1,\"count\":5,\"entities\":[]}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute
+            final var response = client.queryEntities("world", null, null, null, true);
+
+            // verify
+            assertThat(response.count()).isEqualTo(5);
+            assertThat(server.capturedRequest()).contains("\"countOnly\":true");
+        }
+    }
+
+    @Test
     void hasPlayerPermission_shouldReturnFalseFromResponse(@TempDir Path tempDirectory)
         throws Exception
     {
