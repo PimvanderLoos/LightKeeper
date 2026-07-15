@@ -31,7 +31,7 @@ class EventCaptureHandleTest
     {
         // setup
         final List<CapturedEventSnapshot> events = List.of(
-            new CapturedEventSnapshot(EVENT_CLASS_NAME, Map.of("isCancelled", new IProtocolValue.PBool(true)))
+            new CapturedEventSnapshot(EVENT_CLASS_NAME, 1L, Map.of("isCancelled", new IProtocolValue.PBool(true)))
         );
         when(frameworkGateway.getCapturedEvents(EVENT_CLASS_NAME)).thenReturn(events);
 
@@ -41,6 +41,17 @@ class EventCaptureHandleTest
         // verify
         assertThat(result).isSameAs(events);
         verify(frameworkGateway).getCapturedEvents(EVENT_CLASS_NAME);
+    }
+
+    @Test
+    void cancelNext_shouldDelegateToGatewayWithClassNameAndReturnSelf()
+    {
+        // execute
+        final EventCaptureHandle result = eventCaptureHandle.cancelNext(3);
+
+        // verify
+        assertThat(result).isSameAs(eventCaptureHandle);
+        verify(frameworkGateway).cancelNextEvents(EVENT_CLASS_NAME, 3);
     }
 
     @Test

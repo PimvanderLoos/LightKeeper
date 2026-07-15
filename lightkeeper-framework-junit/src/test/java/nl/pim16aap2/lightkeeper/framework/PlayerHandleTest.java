@@ -97,6 +97,17 @@ class PlayerHandleTest
     }
 
     @Test
+    void chat_shouldDelegateToGatewayAndReturnSelf()
+    {
+        // execute
+        final PlayerHandle result = playerHandle.chat("hello world");
+
+        // verify
+        assertThat(result).isSameAs(playerHandle);
+        verify(frameworkGateway).playerChat(PLAYER_UUID, "hello world");
+    }
+
+    @Test
     void permissions_shouldReturnNonNullPermissionControl()
     {
         // execute

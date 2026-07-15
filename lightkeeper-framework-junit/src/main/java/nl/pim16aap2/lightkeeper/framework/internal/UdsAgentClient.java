@@ -7,6 +7,7 @@ import nl.pim16aap2.lightkeeper.framework.MenuSnapshot;
 import nl.pim16aap2.lightkeeper.framework.Platform;
 import nl.pim16aap2.lightkeeper.framework.WorldSpec;
 import nl.pim16aap2.lightkeeper.protocol.BlockType;
+import nl.pim16aap2.lightkeeper.protocol.CancelNextEvents;
 import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEvents;
 import nl.pim16aap2.lightkeeper.protocol.ClearServerErrors;
 import nl.pim16aap2.lightkeeper.protocol.ClickMenuSlot;
@@ -37,7 +38,7 @@ import nl.pim16aap2.lightkeeper.protocol.MainWorld;
 import nl.pim16aap2.lightkeeper.protocol.MutatePlayerPermission;
 import nl.pim16aap2.lightkeeper.protocol.NewWorld;
 import nl.pim16aap2.lightkeeper.protocol.PlacePlayerBlock;
-import nl.pim16aap2.lightkeeper.protocol.IProtocolValue;
+import nl.pim16aap2.lightkeeper.protocol.PlayerChat;
 import nl.pim16aap2.lightkeeper.protocol.RegisterEventListener;
 import nl.pim16aap2.lightkeeper.protocol.RemovePlayer;
 import nl.pim16aap2.lightkeeper.protocol.RightClickBlock;
@@ -54,7 +55,6 @@ import tools.jackson.databind.ObjectMapper;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -384,10 +384,23 @@ final class UdsAgentClient implements AutoCloseable
         send(command);
     }
 
-    List<Map<String, IProtocolValue>> getCapturedEvents(String eventClassName)
+    List<GetCapturedEvents.CapturedEvent> getCapturedEvents(String eventClassName)
     {
         final GetCapturedEvents.Command command = new GetCapturedEvents.Command(nextRequestId(), eventClassName);
         return send(command).events();
+    }
+
+    void cancelNextEvents(String eventClassName, int count)
+    {
+        final CancelNextEvents.Command command =
+            new CancelNextEvents.Command(nextRequestId(), eventClassName, count);
+        send(command);
+    }
+
+    void playerChat(UUID uuid, String message)
+    {
+        final PlayerChat.Command command = new PlayerChat.Command(nextRequestId(), uuid, message);
+        send(command);
     }
 
     void clearCapturedEvents(String eventClassName)

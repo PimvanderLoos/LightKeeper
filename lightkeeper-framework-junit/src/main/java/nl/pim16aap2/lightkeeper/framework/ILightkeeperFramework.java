@@ -206,6 +206,13 @@ public interface ILightkeeperFramework extends AutoCloseable
     EventCaptureHandle captureEvents(String eventClassName);
 
     /**
+     * Gets the server's current tick, for correlating against {@link CapturedEventSnapshot#tick()} stamps.
+     *
+     * @return The monotonic server tick.
+     */
+    long currentServerTick();
+
+    /**
      * Gets a handle over the always-on server-error capture.
      *
      * <p>The agent captures every WARN-or-worse log event inside the server as a structured snapshot — with the
