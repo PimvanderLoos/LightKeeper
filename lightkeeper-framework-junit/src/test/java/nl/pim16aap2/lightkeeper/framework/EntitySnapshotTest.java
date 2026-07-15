@@ -62,6 +62,20 @@ class EntitySnapshotTest
     }
 
     @Test
+    void pdcKeys_shouldBeSortedRegardlessOfSourceOrder()
+    {
+        // setup
+        final List<String> source = List.of("plugin:gamma", "plugin:alpha", "plugin:beta");
+
+        // execute
+        final EntitySnapshot snapshot = new EntitySnapshot(
+            UUID.randomUUID(), "minecraft:zombie", new Vec3(0, 0, 0), null, source, null, 0L);
+
+        // verify
+        assertThat(snapshot.pdcKeys()).containsExactly("plugin:alpha", "plugin:beta", "plugin:gamma");
+    }
+
+    @Test
     @SuppressWarnings("NullAway") // Intentionally crosses the non-null API boundary to verify default-on-null.
     void pdcKeys_shouldDefaultToEmptyListWhenConstructedWithNull()
     {

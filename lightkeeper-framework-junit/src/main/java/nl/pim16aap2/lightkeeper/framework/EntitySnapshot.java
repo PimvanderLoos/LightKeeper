@@ -36,14 +36,15 @@ public record EntitySnapshot(
 )
 {
     /**
-     * Validates and defensively copies the fields.
+     * Validates and defensively copies the fields; sorts {@code pdcKeys} so the documented ordering holds
+     * regardless of the source.
      */
     public EntitySnapshot
     {
         Objects.requireNonNull(uuid, "uuid may not be null.");
         Objects.requireNonNull(typeKey, "typeKey may not be null.");
         Objects.requireNonNull(position, "position may not be null.");
-        pdcKeys = pdcKeys == null ? List.of() : List.copyOf(pdcKeys);
+        pdcKeys = pdcKeys == null ? List.of() : pdcKeys.stream().sorted().toList();
     }
 
     /**
