@@ -155,4 +155,34 @@ class WorldHandleTest
         verify(frameworkGateway).isChunkLoaded("world", 1, 2);
     }
 
+    @Test
+    void blockAt_shouldReturnRefWiredToGateway()
+    {
+        // setup
+        final BlockPos position = new BlockPos(1, 70, 2);
+        when(frameworkGateway.getBlock("world", position)).thenReturn("STONE");
+
+        // execute
+        final BlockRef ref = worldHandle.blockAt(position);
+
+        // verify
+        assertThat(ref.pos()).isEqualTo(position);
+        assertThat(ref.material()).isEqualTo("minecraft:stone");
+        verify(frameworkGateway).getBlock("world", position);
+    }
+
+    @Test
+    void setBlockAt_shouldDelegateToGatewaySetBlockDataWithSpecString()
+    {
+        // setup
+        final BlockPos position = new BlockPos(1, 70, 2);
+        final BlockSpec spec = BlockSpec.parse("minecraft:lever[powered=true]");
+
+        // execute
+        worldHandle.setBlockAt(position, spec);
+
+        // verify
+        verify(frameworkGateway).setBlockData("world", position, "minecraft:lever[powered=true]");
+    }
+
 }

@@ -317,6 +317,27 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     }
 
     @Override
+    public String getBlockData(String worldName, BlockPos position)
+    {
+        ensureOpen();
+        Objects.requireNonNull(worldName, "worldName may not be null.");
+        Objects.requireNonNull(position, "position may not be null.");
+        return agentClient.blockData(worldName, position);
+    }
+
+    @Override
+    public void setBlockData(String worldName, BlockPos position, String blockData)
+    {
+        ensureOpen();
+        Objects.requireNonNull(worldName, "worldName may not be null.");
+        Objects.requireNonNull(position, "position may not be null.");
+        final String trimmedBlockData = Objects.requireNonNull(blockData, "blockData may not be null.").trim();
+        if (trimmedBlockData.isEmpty())
+            throw new IllegalArgumentException("blockData may not be blank.");
+        agentClient.setBlockData(worldName, position, trimmedBlockData);
+    }
+
+    @Override
     public void executePlayerCommand(UUID playerId, String command)
     {
         ensureOpen();
