@@ -267,6 +267,19 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     }
 
     @Override
+    public List<String> tabComplete(UUID playerId, String commandLine)
+    {
+        ensureOpen();
+        Objects.requireNonNull(playerId, "playerId may not be null.");
+        Objects.requireNonNull(commandLine, "commandLine may not be null.");
+        // Deliberately NOT trimmed: a trailing space selects argument completion over command-name completion,
+        // and the agent strips at most one leading slash. Only a fully-blank buffer is rejected.
+        if (commandLine.isBlank())
+            throw new IllegalArgumentException("commandLine may not be blank.");
+        return agentClient.tabComplete(playerId, commandLine);
+    }
+
+    @Override
     public void grantPermission(UUID playerId, String permission)
     {
         mutatePermission(playerId, permission, MutatePlayerPermission.Mode.GRANT);

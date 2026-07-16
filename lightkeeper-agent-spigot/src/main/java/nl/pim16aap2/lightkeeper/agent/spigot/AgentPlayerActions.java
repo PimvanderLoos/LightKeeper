@@ -14,6 +14,7 @@ import nl.pim16aap2.lightkeeper.protocol.PlacePlayerBlock;
 import nl.pim16aap2.lightkeeper.protocol.PlayerChat;
 import nl.pim16aap2.lightkeeper.protocol.RemovePlayer;
 import nl.pim16aap2.lightkeeper.protocol.RightClickBlock;
+import nl.pim16aap2.lightkeeper.protocol.TabCompletePlayer;
 import nl.pim16aap2.lightkeeper.protocol.TeleportPlayer;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -21,6 +22,7 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.command.CommandMap;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
@@ -35,6 +37,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -73,6 +76,15 @@ final class AgentPlayerActions
      * connection; their removal must run the real disconnect flow instead of the legacy player-list removal.
      */
     private final Set<UUID> fullLoginPlayerIds = ConcurrentHashMap.newKeySet();
+    /**
+     * The server's {@link CommandMap}, resolved lazily and cached on first tab-complete.
+     *
+     * <p>{@code CraftServer#getCommandMap()} is not declared on the {@code org.bukkit.Server} interface on either
+     * distribution (Spigot returns a versioned {@code SimpleCommandMap}, Paper an unversioned {@code CommandMap}),
+     * so it can only be reached reflectively off the live server instance; the {@code CommandMap} interface it
+     * returns is regular spigot-api, so no per-version NMS module is required.
+     */
+    private @Nullable CommandMap cachedCommandMap;
 
     /**
      * @param plugin
@@ -483,6 +495,84 @@ final class AgentPlayerActions
         });
 
         return new ExecutePlayerCommand.Response(dispatched);
+    }
+
+    /**
+     * Handles {@code TAB_COMPLETE_PLAYER} by computing command tab-completions in the player's context.
+     *
+     * <p>Any single leading slash is stripped before the buffer reaches {@code CommandMap#tabComplete}, mirroring
+     * {@link #handleExecutePlayerCommand}: the map matches command names without a slash, and its args-completion
+     * branch does a raw {@code knownCommands.get} lookup that a leading slash would defeat. The remaining
+     * whitespace of the buffer is preserved verbatim, since a trailing space selects argument completion rather
+     * than command-name completion. A {@code null} result (unknown command, or a plugin {@code TabCompleter}
+     * returning {@code null}) is normalized to an empty list. Completions are permission-filtered for the
+     * synthetic player exactly as they would be for a real client.
+     *
+     * <p>No {@code TabCompleteEvent}/{@code AsyncTabCompleteEvent} is fired: this path exercises registered
+     * commands and {@code TabCompleter}s, not plugins that customize completions purely through those events.
+     *
+     * @param command
+     *     Typed command carrying the player UUID and the raw command-line buffer.
+     * @return Response containing the ordered tab-completion suggestions.
+     *
+     * @throws Exception
+     *     Propagates main-thread execution failures, and {@link IllegalStateException} when the server
+     *     {@code CommandMap} cannot be resolved.
+     */
+    TabCompletePlayer.Response handleTabCompletePlayer(TabCompletePlayer.Command command)
+        throws Exception
+    {
+        final UUID uuid = command.uuid();
+        final String rawCommandLine = command.commandLine();
+        final String commandLine = rawCommandLine.startsWith("/") ? rawCommandLine.substring(1) : rawCommandLine;
+
+        final List<String> completions = mainThreadExecutor.callOnMainThread(() ->
+        {
+            final Player player = playerStore.getRequiredPlayer(uuid);
+            final CommandMap commandMap = resolveCommandMap();
+            final List<String> result = commandMap.tabComplete(player, commandLine);
+            return result == null ? List.<String>of() : List.copyOf(result);
+        });
+
+        return new TabCompletePlayer.Response(completions);
+    }
+
+    /**
+     * Resolves the server's {@link CommandMap}, caching it after the first lookup.
+     *
+     * <p>The accessor lives on the concrete {@code CraftServer} (versioned on Spigot, unversioned on Paper) and
+     * not on the {@code org.bukkit.Server} interface the agent compiles against, so it is reached reflectively.
+     * A missing or renamed accessor on a future fork fails loudly here on first use instead of silently
+     * returning empty completions forever.
+     *
+     * @return The live server command map.
+     * @throws IllegalStateException
+     *     When the accessor is absent, inaccessible, or returns something other than a {@link CommandMap}.
+     */
+    private CommandMap resolveCommandMap()
+    {
+        final CommandMap resolved = cachedCommandMap;
+        if (resolved != null)
+            return resolved;
+
+        try
+        {
+            final Object server = Bukkit.getServer();
+            final Object rawCommandMap = server.getClass().getMethod("getCommandMap").invoke(server);
+            if (!(rawCommandMap instanceof CommandMap commandMap))
+                throw new IllegalStateException(
+                    "Server#getCommandMap() returned %s, which is not a CommandMap."
+                        .formatted(rawCommandMap == null ? "null" : rawCommandMap.getClass().getName()));
+            cachedCommandMap = commandMap;
+            return commandMap;
+        }
+        catch (ReflectiveOperationException exception)
+        {
+            throw new IllegalStateException(
+                "Failed to resolve the server CommandMap via reflection; tab-completion is unavailable on this "
+                    + "server distribution.",
+                exception);
+        }
     }
 
     /**

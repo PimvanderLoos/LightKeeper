@@ -113,9 +113,13 @@ public final class PlayerHandleAssert extends AbstractAssert<PlayerHandleAssert,
                 continue;
             try
             {
-                // findValue matches a clickEvent nested in an 'extra' child, not only the root object; NMS
-                // serializes components that carry their clickable text in extra children.
-                if (OBJECT_MAPPER.readTree(component.json()).findValue("clickEvent") != null)
+                // findValue matches a click event nested in an 'extra' child, not only the root object; NMS
+                // serializes components that carry their clickable text in extra children. The native component
+                // codec renamed this field click_event (snake_case) in 1.21.5+, leaving the old clickEvent
+                // (camelCase) only on pre-1.21.5 payloads; accept both so the assertion matches across codec
+                // versions (keying on the old name alone silently never matched on 1.21.11).
+                final var tree = OBJECT_MAPPER.readTree(component.json());
+                if (tree.findValue("click_event") != null || tree.findValue("clickEvent") != null)
                 {
                     found = true;
                     break;

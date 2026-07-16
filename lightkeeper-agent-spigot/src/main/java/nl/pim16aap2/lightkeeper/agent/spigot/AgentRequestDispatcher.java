@@ -41,6 +41,7 @@ import nl.pim16aap2.lightkeeper.protocol.RegisterEventListener;
 import nl.pim16aap2.lightkeeper.protocol.RemovePlayer;
 import nl.pim16aap2.lightkeeper.protocol.RightClickBlock;
 import nl.pim16aap2.lightkeeper.protocol.SetBlock;
+import nl.pim16aap2.lightkeeper.protocol.TabCompletePlayer;
 import nl.pim16aap2.lightkeeper.protocol.TeleportPlayer;
 import nl.pim16aap2.lightkeeper.protocol.UnloadChunk;
 import nl.pim16aap2.lightkeeper.protocol.UnregisterEventListener;
@@ -281,6 +282,7 @@ final class AgentRequestDispatcher
                 case CancelNextEvents.Command c -> handle(c, eventActions::handleCancelNextEvents);
                 case PlayerChat.Command c -> handle(c, playerActions::handlePlayerChat);
                 case QueryEntities.Command c -> handle(c, worldActions::handleQueryEntities);
+                case TabCompletePlayer.Command c -> handle(c, playerActions::handleTabCompletePlayer);
                 case Handshake.Command ignored ->
                     throw new IllegalStateException("Unreachable HANDSHAKE dispatch branch.");
             };

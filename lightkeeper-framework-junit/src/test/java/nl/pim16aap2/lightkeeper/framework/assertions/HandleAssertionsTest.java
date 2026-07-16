@@ -79,6 +79,20 @@ class HandleAssertionsTest
     }
 
     @Test
+    void playerHandleAssert_shouldMatchModernSnakeCaseClickEvent()
+    {
+        // setup — the 1.21.5+ component codec spells the field click_event (snake_case); keying only on the
+        // pre-1.21.5 clickEvent (as the assertion used to) never matched real 1.21.11 wire JSON
+        final PlayerHandle handle = mock(PlayerHandle.class);
+        when(handle.name()).thenReturn("bot");
+        when(handle.chatComponents()).thenReturn(List.of(new ChatComponentSnapshot(
+            "{\"text\":\"Open\",\"click_event\":{\"action\":\"run_command\",\"command\":\"/aa\"}}")));
+
+        // execute + verify
+        LightkeeperAssertions.assertThat(handle).hasClickableChatText("Open");
+    }
+
+    @Test
     void playerHandleAssert_shouldFailWhenUnexpectedItemExists()
     {
         // setup

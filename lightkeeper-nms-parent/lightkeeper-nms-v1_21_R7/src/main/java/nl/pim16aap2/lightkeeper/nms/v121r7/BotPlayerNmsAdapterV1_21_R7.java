@@ -645,6 +645,20 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
         if (returnType == Void.TYPE || returnType.isPrimitive())
             return false;
 
+        // A zero-arg accessor that directly returns a chat-component type is always followed, regardless of its
+        // name. Spigot's remapped record accessors are single obfuscated letters (e.g. IChatBaseComponent b() on
+        // ClientboundSystemChatPacket), which no name heuristic matches, whereas Paper exposes the same field as
+        // content(); keying on the return type rather than the method name captures the component on both distros.
+        // Deliberately ONLY the type-name suffix: a whole-chat-package match would also follow MessageSignature/
+        // ChatType.Bound/FilterMask accessors on multi-field chat packets and could nondeterministically capture a
+        // decoration instead of the message. Note this widens capture to any Component-returning accessor
+        // (boss bars, titles, tab-list headers) — component capture is type-driven, not name-driven.
+        final String returnTypeName = returnType.getName();
+        if (returnTypeName.endsWith("Component"))
+            return true;
+
+        // For container return types the component sits one level deeper, so require a component-like accessor
+        // name before following the getter to avoid walking unrelated object graphs.
         final String lowerMethodName = methodName.toLowerCase(Locale.ROOT);
         final boolean safeName = methodName.startsWith("get") ||
             methodName.startsWith("is") ||
@@ -655,16 +669,9 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
         if (!safeName)
             return false;
 
-        if (Optional.class.isAssignableFrom(returnType))
-            return true;
-        if (Collection.class.isAssignableFrom(returnType))
-            return true;
-        if (returnType.isArray())
-            return true;
-
-        final String returnTypeName = returnType.getName();
-        return returnTypeName.startsWith("net.minecraft.network.chat.") ||
-            returnTypeName.endsWith("Component");
+        return Optional.class.isAssignableFrom(returnType) ||
+            Collection.class.isAssignableFrom(returnType) ||
+            returnType.isArray();
     }
 
     private static @Nullable String extractText(

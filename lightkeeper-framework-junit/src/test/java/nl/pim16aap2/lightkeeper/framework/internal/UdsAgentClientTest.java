@@ -728,6 +728,28 @@ class UdsAgentClientTest
     }
 
     @Test
+    void tabComplete_shouldReturnCompletionsFromResponseAndPreserveBuffer(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("tab-complete.sock");
+        final String responseJson =
+            "{\"requestId\":\"1\",\"success\":true,\"completions\":[\"/lktestgui\",\"/lktestlocale\"]}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson);
+             UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3)))
+        {
+            // execute — the trailing slash and space of the buffer must reach the wire unmodified
+            final List<String> completions = client.tabComplete(PLAYER_ID, "/lktestg ");
+
+            // verify
+            assertThat(completions).containsExactly("/lktestgui", "/lktestlocale");
+            assertThat(server.capturedRequest())
+                .contains("\"action\":\"TAB_COMPLETE_PLAYER\"")
+                .contains("\"commandLine\":\"/lktestg \"");
+        }
+    }
+
+    @Test
     void mutatePlayerPermission_shouldSendGrantModeInRequest(@TempDir Path tempDirectory)
         throws Exception
     {
