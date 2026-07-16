@@ -59,15 +59,18 @@ class ChatComponentSnapshotTest
     }
 
     @Test
-    void clickRunCommand_shouldReturnEmptyForLegacyCamelCaseClickEventKey()
+    void clickRunCommand_shouldExtractLegacyCamelCaseClickEventValue()
     {
-        // setup — extraction keys on the modern click_event only; the pre-1.21.5 clickEvent is not the wire
-        // format on supported versions, so it is not mined for a command
-        final ChatComponentSnapshot component = new ChatComponentSnapshot(
-            "{\"text\":\"click me\",\"clickEvent\":{\"action\":\"run_command\",\"value\":\"/aa confirm\"}}");
+        // setup — pre-1.21.5 payloads used clickEvent with a 'value' field; extraction accepts them so it
+        // stays consistent with hasClickableChatText's lenient matching.
+        final ChatComponentSnapshot snapshot = new ChatComponentSnapshot(
+            "{\"text\":\"[Confirm]\",\"clickEvent\":{\"action\":\"run_command\",\"value\":\"/lk confirm\"}}");
 
-        // execute + verify
-        assertThat(component.clickRunCommand()).isEmpty();
+        // execute
+        final java.util.Optional<String> result = snapshot.clickRunCommand();
+
+        // verify
+        assertThat(result).contains("/lk confirm");
     }
 
     @Test

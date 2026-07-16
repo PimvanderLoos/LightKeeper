@@ -27,6 +27,12 @@ public record ChatComponentSnapshot(
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     /**
+     * Modern and legacy click-event key spellings, in preference order.
+     */
+    private static final java.util.List<String> CLICK_EVENT_KEYS = java.util.List.of("click_event", "clickEvent");
+
+
+    /**
      * The {@code click_event} action name of a component that runs a command when clicked.
      */
     private static final String RUN_COMMAND_ACTION = "run_command";
@@ -76,10 +82,21 @@ public record ChatComponentSnapshot(
             // root-level one. Matching per action (rather than "the first click_event found") means
             // clickRunCommand() never returns a suggest_command payload when a single message carries both
             // (for example a paginated [<] [1/3] [>] control).
-            for (final JsonNode clickEvent : root.findValues("click_event"))
+            // Modern (1.21.5+) payloads use click_event with a 'command' field; legacy payloads used
+            // clickEvent with a 'value' field. Extraction accepts both so it matches exactly what
+            // PlayerHandleAssert#hasClickableChatText accepts — an asymmetry there would make
+            // clickChatComponent throw on the very payloads the assertion matches.
+            for (final String key : CLICK_EVENT_KEYS)
             {
-                if (action.equals(clickEvent.path("action").asString("")) && clickEvent.hasNonNull("command"))
-                    return Optional.of(clickEvent.get("command").asString());
+                for (final JsonNode clickEvent : root.findValues(key))
+                {
+                    if (!action.equals(clickEvent.path("action").asString("")))
+                        continue;
+                    if (clickEvent.hasNonNull("command"))
+                        return Optional.of(clickEvent.get("command").asString());
+                    if (clickEvent.hasNonNull("value"))
+                        return Optional.of(clickEvent.get("value").asString());
+                }
             }
             return Optional.empty();
         }
