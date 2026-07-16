@@ -46,6 +46,7 @@ public sealed interface IAgentResponse
     RemovePlayer.Response,
     RightClickBlock.Response,
     SetBlock.Response,
+    TabCompletePlayer.Response,
     TeleportPlayer.Response,
     UnloadChunk.Response,
     UnregisterEventListener.Response,

@@ -58,6 +58,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
     @JsonSubTypes.Type(value = CancelNextEvents.Command.class, name = "CANCEL_NEXT_EVENTS"),
     @JsonSubTypes.Type(value = PlayerChat.Command.class, name = "PLAYER_CHAT"),
     @JsonSubTypes.Type(value = QueryEntities.Command.class, name = "QUERY_ENTITIES"),
+    @JsonSubTypes.Type(value = TabCompletePlayer.Command.class, name = "TAB_COMPLETE_PLAYER"),
 })
 public sealed interface IAgentCommand<R extends IAgentResponse>
     permits Handshake.Command, MainWorld.Command, NewWorld.Command, ExecuteCommand.Command,
@@ -72,7 +73,8 @@ public sealed interface IAgentCommand<R extends IAgentResponse>
             GetPlayerChatComponents.Command, GetServerPlatform.Command,
             GetServerErrors.Command, ClearServerErrors.Command,
             MutatePlayerPermission.Command, HasPlayerPermission.Command,
-            CancelNextEvents.Command, PlayerChat.Command, QueryEntities.Command
+            CancelNextEvents.Command, PlayerChat.Command, QueryEntities.Command,
+            TabCompletePlayer.Command
 {
     /**
      * Correlation identifier matching the response's {@code requestId}.
