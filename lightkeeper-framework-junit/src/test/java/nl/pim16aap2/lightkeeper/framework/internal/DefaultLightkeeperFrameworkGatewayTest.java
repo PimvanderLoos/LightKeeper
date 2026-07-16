@@ -90,6 +90,83 @@ class DefaultLightkeeperFrameworkGatewayTest
     }
 
     @Test
+    void tabComplete_shouldDelegateToAgentClientAndReturnCompletions()
+    {
+        // setup
+        final UdsAgentClient agentClient = mock(UdsAgentClient.class);
+        final UUID playerId = UUID.randomUUID();
+        when(agentClient.tabComplete(playerId, "/lktestg")).thenReturn(List.of("/lktestgui"));
+        final DefaultLightkeeperFramework framework = new DefaultLightkeeperFramework(
+            runtimeManifest(),
+            mock(MinecraftServerProcess.class),
+            agentClient,
+            new PlayerScopeRegistry()
+        );
+
+        // execute
+        final List<String> completions = framework.tabComplete(playerId, "/lktestg");
+
+        // verify
+        assertThat(completions).containsExactly("/lktestgui");
+        verify(agentClient).tabComplete(playerId, "/lktestg");
+    }
+
+    @Test
+    void tabComplete_shouldPassBufferThroughUnmodifiedPreservingTrailingSpace()
+    {
+        // setup
+        final UdsAgentClient agentClient = mock(UdsAgentClient.class);
+        final UUID playerId = UUID.randomUUID();
+        when(agentClient.tabComplete(playerId, "/gamemode ")).thenReturn(List.of());
+        final DefaultLightkeeperFramework framework = new DefaultLightkeeperFramework(
+            runtimeManifest(),
+            mock(MinecraftServerProcess.class),
+            agentClient,
+            new PlayerScopeRegistry()
+        );
+
+        // execute — a trailing space (argument completion) is never trimmed
+        framework.tabComplete(playerId, "/gamemode ");
+
+        // verify
+        verify(agentClient).tabComplete(playerId, "/gamemode ");
+    }
+
+    @Test
+    void tabComplete_shouldThrowExceptionWhenCommandLineIsBlank()
+    {
+        // setup
+        final DefaultLightkeeperFramework framework = new DefaultLightkeeperFramework(
+            runtimeManifest(),
+            mock(MinecraftServerProcess.class),
+            mock(UdsAgentClient.class),
+            new PlayerScopeRegistry()
+        );
+
+        // execute + verify
+        assertThatThrownBy(() -> framework.tabComplete(UUID.randomUUID(), "   "))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("blank");
+    }
+
+    @Test
+    @SuppressWarnings("NullAway") // Intentionally crosses the non-null API boundary to verify fail-fast validation.
+    void tabComplete_shouldThrowNullPointerExceptionWhenCommandLineIsNull()
+    {
+        // setup
+        final DefaultLightkeeperFramework framework = new DefaultLightkeeperFramework(
+            runtimeManifest(),
+            mock(MinecraftServerProcess.class),
+            mock(UdsAgentClient.class),
+            new PlayerScopeRegistry()
+        );
+
+        // execute + verify
+        assertThatThrownBy(() -> framework.tabComplete(UUID.randomUUID(), null))
+            .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
     void grantPermission_shouldThrowExceptionWhenPermissionIsBlank()
     {
         // setup

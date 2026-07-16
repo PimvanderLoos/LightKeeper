@@ -65,6 +65,49 @@ class PlayerHandleTest
     }
 
     @Test
+    void tabComplete_shouldDelegateToGatewayAndReturnCompletions()
+    {
+        // setup
+        when(frameworkGateway.tabComplete(PLAYER_UUID, "/lktestg"))
+            .thenReturn(List.of("/lktestgui", "/lktestlocale"));
+
+        // execute
+        final List<String> completions = playerHandle.tabComplete("/lktestg");
+
+        // verify
+        assertThat(completions).containsExactly("/lktestgui", "/lktestlocale");
+        verify(frameworkGateway).tabComplete(PLAYER_UUID, "/lktestg");
+    }
+
+    @Test
+    void clickChatComponent_shouldExtractRunCommandAndExecuteItAsThePlayer()
+    {
+        // setup — the modern 1.21.5+ wire spells the click field click_event (snake_case)
+        final ChatComponentSnapshot component = new ChatComponentSnapshot(
+            "{\"text\":\"Confirm\",\"click_event\":{\"action\":\"run_command\",\"command\":\"/aa confirm\"}}");
+
+        // execute
+        final PlayerHandle result = playerHandle.clickChatComponent(component);
+
+        // verify
+        assertThat(result).isSameAs(playerHandle);
+        verify(frameworkGateway).executePlayerCommand(PLAYER_UUID, "/aa confirm");
+    }
+
+    @Test
+    void clickChatComponent_shouldThrowWhenComponentHasNoRunCommandClick()
+    {
+        // setup — a suggest_command click is not a run_command click and must be rejected
+        final ChatComponentSnapshot component = new ChatComponentSnapshot(
+            "{\"text\":\"Type\",\"click_event\":{\"action\":\"suggest_command\",\"command\":\"/aa create \"}}");
+
+        // execute + verify
+        assertThatThrownBy(() -> playerHandle.clickChatComponent(component))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("run_command");
+    }
+
+    @Test
     void teleport_shouldDelegateToGatewayAndReturnSelf()
     {
         // setup

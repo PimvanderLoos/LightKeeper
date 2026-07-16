@@ -45,6 +45,7 @@ import nl.pim16aap2.lightkeeper.protocol.RegisterEventListener;
 import nl.pim16aap2.lightkeeper.protocol.RemovePlayer;
 import nl.pim16aap2.lightkeeper.protocol.RightClickBlock;
 import nl.pim16aap2.lightkeeper.protocol.SetBlock;
+import nl.pim16aap2.lightkeeper.protocol.TabCompletePlayer;
 import nl.pim16aap2.lightkeeper.protocol.TeleportPlayer;
 import nl.pim16aap2.lightkeeper.protocol.UnloadChunk;
 import nl.pim16aap2.lightkeeper.protocol.UnregisterEventListener;
@@ -237,6 +238,13 @@ final class UdsAgentClient implements AutoCloseable
     {
         final ExecutePlayerCommand.Command cmd = new ExecutePlayerCommand.Command(nextRequestId(), uuid, command);
         send(cmd);
+    }
+
+    List<String> tabComplete(UUID uuid, String commandLine)
+    {
+        final TabCompletePlayer.Command command =
+            new TabCompletePlayer.Command(nextRequestId(), uuid, commandLine);
+        return send(command).completions();
     }
 
     void mutatePlayerPermission(UUID uuid, String permission, MutatePlayerPermission.Mode mode)

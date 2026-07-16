@@ -41,6 +41,13 @@ public interface IFrameworkGatewayView
     void executePlayerCommand(UUID playerId, String command);
 
     /**
+     * Computes command tab-completions as a synthetic player.
+     *
+     * @return The tab-completion suggestions in server order, permission-filtered for the player.
+     */
+    List<String> tabComplete(UUID playerId, String commandLine);
+
+    /**
      * Grants a permission node to a synthetic player by setting it to {@code true} on the player's attachment.
      */
     void grantPermission(UUID playerId, String permission);

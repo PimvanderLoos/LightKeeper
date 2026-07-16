@@ -72,6 +72,24 @@ public final class PlayerHandle
     }
 
     /**
+     * Computes command tab-completions for this player as if they had typed the given command-line buffer.
+     *
+     * <p>The suggestions come from the live server command map and are permission-filtered for this player, so a
+     * bot that lacks a command's permission never sees it completed. A leading slash is accepted and normalized
+     * away agent-side, so {@code "/gamemode"} and {@code "gamemode"} behave identically; the buffer is otherwise
+     * passed through unmodified, so a trailing space (which selects argument completion rather than command-name
+     * completion) is preserved.
+     *
+     * @param commandLine
+     *     The command-line buffer to complete; must not be blank.
+     * @return The tab-completion suggestions in server order; empty for an unknown command.
+     */
+    public List<String> tabComplete(String commandLine)
+    {
+        return frameworkGateway.tabComplete(uniqueId, commandLine);
+    }
+
+    /**
      * Teleports this player to target coordinates in a world.
      *
      * @param world
@@ -417,6 +435,27 @@ public final class PlayerHandle
     public List<ChatComponentSnapshot> chatComponents()
     {
         return frameworkGateway.playerChatComponents(uniqueId);
+    }
+
+    /**
+     * Clicks the {@code run_command} action of a captured chat component by extracting its command and executing
+     * it as this player, exactly as a real player clicking the message would.
+     *
+     * <p>Reuses the same execution path as {@link #executeCommand(String)} (no new protocol command), so the
+     * extracted command is dispatched in this player's context with a leading slash normalized away.
+     *
+     * @param component
+     *     The captured chat component to click; must carry a {@code run_command} click event.
+     * @return This handle for fluent chaining.
+     * @throws IllegalArgumentException
+     *     When the component carries no {@code run_command} click event to execute.
+     */
+    public PlayerHandle clickChatComponent(ChatComponentSnapshot component)
+    {
+        Objects.requireNonNull(component, "component may not be null.");
+        final String command = component.clickRunCommand().orElseThrow(() -> new IllegalArgumentException(
+            "Chat component carries no run_command click event to execute: " + component.json()));
+        return executeCommand(command);
     }
 
     /**
