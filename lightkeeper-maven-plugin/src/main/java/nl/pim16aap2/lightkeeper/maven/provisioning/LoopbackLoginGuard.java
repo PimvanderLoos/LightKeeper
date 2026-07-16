@@ -84,7 +84,8 @@ public final class LoopbackLoginGuard
         for (final String line : readLinesIfPresent(serverPropertiesFile))
         {
             final String trimmed = line.trim();
-            if (trimmed.startsWith("#"))
+            // Java Properties comments start with '#' OR '!' (java.util.Properties spec).
+            if (trimmed.startsWith("#") || trimmed.startsWith("!"))
                 continue;
 
             // Split at the first '=' so the legal properties spacing 'online-mode = true' is handled too.

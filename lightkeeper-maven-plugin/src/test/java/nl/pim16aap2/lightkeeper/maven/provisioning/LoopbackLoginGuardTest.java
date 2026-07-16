@@ -166,7 +166,8 @@ class LoopbackLoginGuardTest
         throws Exception
     {
         // setup
-        writeServerProperties(serverDirectory, "# online-mode=true", "online-mode=false");
+        writeServerProperties(
+            serverDirectory, "# online-mode=true", "! online-mode=true", "online-mode=false");
         writeSpigotConfiguration(serverDirectory, "settings:", "  # bungeecord: true");
         writePaperGlobalConfiguration(
             serverDirectory,
