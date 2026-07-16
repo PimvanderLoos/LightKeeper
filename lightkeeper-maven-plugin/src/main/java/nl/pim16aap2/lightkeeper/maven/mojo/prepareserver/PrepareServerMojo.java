@@ -2,6 +2,7 @@ package nl.pim16aap2.lightkeeper.maven.mojo.prepareserver;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import nl.pim16aap2.lightkeeper.maven.provisioning.LoopbackLoginGuard;
 import nl.pim16aap2.lightkeeper.maven.provisioning.PluginArtifactSpec;
 import nl.pim16aap2.lightkeeper.maven.provisioning.ResolvedPluginArtifact;
 import nl.pim16aap2.lightkeeper.maven.provisioning.ServerAssetInstaller;
@@ -209,6 +210,9 @@ public class PrepareServerMojo extends AbstractMojo
 
         final Path targetServerDirectory = serverProvider.targetServerDirectoryPath();
         installServerAssets(targetServerDirectory, executionContext, executionContext.pluginArtifactSpecs());
+        // Runs after ALL provisioning mutations (base copy, plugins, overlay): a config overlay is the one
+        // vector through which online-mode/proxy-forwarding could enter and silently break FULL_LOGIN joins.
+        LoopbackLoginGuard.validate(targetServerDirectory, getLog());
 
         final RuntimeManifest runtimeManifest = createRuntimeManifest(
             executionContext.normalizedServerType(),

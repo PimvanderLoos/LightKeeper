@@ -22,6 +22,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 /**
@@ -39,6 +40,12 @@ import java.util.function.Function;
 final class BotLoginReflection
 {
     private static final System.Logger LOG = System.getLogger(BotLoginReflection.class.getName());
+
+    /**
+     * Upper bound on the wait for a freshly connected channel to become active (see
+     * {@code awaitChannelActive}); loopback channels activate in well under a millisecond.
+     */
+    private static final long CHANNEL_ACTIVE_TIMEOUT_SECONDS = 5L;
 
     /**
      * How the session should react to a received clientbound packet, resolved from its class via
@@ -113,6 +120,7 @@ final class BotLoginReflection
     private final Method setupCompressionMethod;
     private final Field channelField;
     private final Method channelCloseMethod;
+    private final Method channelIsOpenMethod;
     /**
      * Paper's per-connection inbound packet-rate counter ({@code Connection.allPacketCounts}), or {@code null}
      * on distributions without it (Spigot). Paper initializes it from config on EVERY {@code Connection} —
@@ -264,6 +272,7 @@ final class BotLoginReflection
             channelField = NmsReflectionUtils.resolveFieldByNameOrAcceptedType(
                 connectionClass, "channel", channelClass);
             channelCloseMethod = channelClass.getMethod("close");
+            channelIsOpenMethod = channelClass.getMethod("isOpen");
             paperPacketLimiterField = resolvePaperPacketLimiterField(connectionClass);
             channelCloseFutureMethod = channelClass.getMethod("closeFuture");
             futureListenerInterface = NmsReflectionUtils.resolveClass(
@@ -374,6 +383,15 @@ final class BotLoginReflection
         final Object connection = connectToServerMethod.invoke(null, address, eventLoopGroupHolder, null);
         try
         {
+            // connectToServer syncs on the Netty CONNECT future, but Connection.channel is only assigned in
+            // channelActive() on the event loop, so this thread can still observe isConnected() == false here.
+            // In that window initiateServerboundPlayConnection silently defers the whole protocol/listener
+            // setup into the connection's pending-actions queue — which nothing ever drains for this untucked
+            // client-side connection — while send() queues the hello separately. The hello then reaches the
+            // encoder without a LOGIN protocol or listener ("Sending unknown packet 'serverbound/minecraft:
+            // hello'") and the join stalls until the server's ReadTimeoutHandler closes it. Waiting for the
+            // channel to be live makes both calls below take their immediate, in-program-order paths.
+            awaitChannelActive(connection);
             disarmPaperPacketLimiter(connection);
             initiateLoginConnectionMethod.invoke(connection, "127.0.0.1", port, listenerProxy);
         }
@@ -384,6 +402,42 @@ final class BotLoginReflection
             throw exception;
         }
         return connection;
+    }
+
+    /**
+     * Waits (bounded) until the connection's channel is assigned and open, i.e. vanilla's
+     * {@code isConnected()} contract holds for callers on this thread.
+     *
+     * @param connection
+     *     The connection returned by {@code connectToServer}.
+     * @throws ReflectiveOperationException
+     *     When the reflective channel read fails.
+     */
+    private void awaitChannelActive(Object connection)
+        throws ReflectiveOperationException
+    {
+        final long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(CHANNEL_ACTIVE_TIMEOUT_SECONDS);
+        while (System.nanoTime() - deadlineNanos < 0)
+        {
+            // Non-volatile cross-thread read by design: vanilla's own isConnected() reads this same field
+            // cross-thread, and the reflective Field.get defeats any hoisting of the read out of the loop.
+            final Object channel = channelField.get(connection);
+            if (channel != null && Boolean.TRUE.equals(channelIsOpenMethod.invoke(channel)))
+                return;
+            try
+            {
+                Thread.sleep(1L);
+            }
+            catch (InterruptedException exception)
+            {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(
+                    "Interrupted while waiting for the bot connection channel to become active.", exception);
+            }
+        }
+        throw new IllegalStateException(
+            "Bot connection channel did not become active within %d seconds."
+                .formatted(CHANNEL_ACTIVE_TIMEOUT_SECONDS));
     }
 
     /**

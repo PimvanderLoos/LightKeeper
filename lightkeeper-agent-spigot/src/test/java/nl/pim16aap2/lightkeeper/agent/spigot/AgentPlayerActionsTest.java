@@ -20,6 +20,7 @@ import nl.pim16aap2.lightkeeper.protocol.LeftClickBlock;
 import nl.pim16aap2.lightkeeper.protocol.MutatePlayerPermission;
 import nl.pim16aap2.lightkeeper.protocol.PlacePlayerBlock;
 import nl.pim16aap2.lightkeeper.protocol.PlayerChat;
+import nl.pim16aap2.lightkeeper.protocol.RemovePlayer;
 import nl.pim16aap2.lightkeeper.protocol.RightClickBlock;
 import nl.pim16aap2.lightkeeper.protocol.TeleportPlayer;
 import org.bukkit.Bukkit;
@@ -28,12 +29,15 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.permissions.PermissionAttachment;
+import org.bukkit.plugin.EventExecutor;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitScheduler;
@@ -672,6 +676,98 @@ class AgentPlayerActionsTest
         }
     }
 
+    @Test
+    void handleRemovePlayer_shouldKickFullLoginBotInsteadOfLegacyRemoval()
+        throws Exception
+    {
+        // setup — drive a successful FULL_LOGIN join (the stubbed plugin manager fires PlayerJoinEvent on
+        // registration) so the bot is tracked as owning a real connection.
+        final PlayerActionsFixture fixture = createPlayerActionsFixture();
+        final IBotLoginDriver loginDriver = mock();
+        when(fixture.nmsAdapter().loginDriver()).thenReturn(loginDriver);
+        when(loginDriver.login(any())).thenReturn(new IBotLoginOutcome.Joined("fullbot"));
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mock();
+        when(player.getUniqueId()).thenReturn(uuid);
+        when(player.getName()).thenReturn("fullbot");
+        final CreatePlayer.Command createCommand = new CreatePlayer.Command(
+            "request-full-rm", "fullbot", null, "world", null, null, null, null, null, JoinMode.FULL_LOGIN, null);
+
+        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class))
+        {
+            stubFullLoginBukkitStatics(bukkit, joinEventFiringPluginManager(player));
+            final CreatePlayer.Response created = fixture.playerActions().handleCreatePlayer(createCommand);
+            assertThat(created.uuid()).isEqualTo(uuid);
+
+            // execute
+            fixture.playerActions().handleRemovePlayer(new RemovePlayer.Command("request-remove-full", uuid));
+
+            // verify — the bot leaves through the real disconnect flow (kick), never the legacy player-list
+            // removal that would leave its TCP connection open (Paper crashes on the second removal when the
+            // server times that connection out).
+            verify(player).kickPlayer(anyString());
+            verify(fixture.nmsAdapter(), never()).removePlayer(any());
+        }
+    }
+
+    @Test
+    void handleRemovePlayer_shouldFailLoudWhenKickOfFullLoginBotIsCancelled()
+        throws Exception
+    {
+        // setup — a kick-cancelling plugin (PlayerKickEvent is cancellable on both distros) leaves the bot
+        // online after kickPlayer returns; the agent must fail loud instead of reporting a successful removal.
+        final PlayerActionsFixture fixture = createPlayerActionsFixture();
+        final IBotLoginDriver loginDriver = mock();
+        when(fixture.nmsAdapter().loginDriver()).thenReturn(loginDriver);
+        when(loginDriver.login(any())).thenReturn(new IBotLoginOutcome.Joined("fullbot"));
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mock();
+        when(player.getUniqueId()).thenReturn(uuid);
+        when(player.getName()).thenReturn("fullbot");
+        when(player.isOnline()).thenReturn(true);
+        final CreatePlayer.Command createCommand = new CreatePlayer.Command(
+            "request-full-veto", "fullbot", null, "world", null, null, null, null, null, JoinMode.FULL_LOGIN,
+            null);
+
+        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class))
+        {
+            stubFullLoginBukkitStatics(bukkit, joinEventFiringPluginManager(player));
+            fixture.playerActions().handleCreatePlayer(createCommand);
+
+            // execute
+            final Throwable thrown = catchThrowable(() -> fixture.playerActions()
+                .handleRemovePlayer(new RemovePlayer.Command("request-remove-veto", uuid)));
+
+            // verify — typed failure naming the veto, and no agent state mutated: the bot stays registered
+            // (the removal is retryable) and the legacy removal path is never used as a fallback.
+            assertThat(thrown)
+                .isInstanceOf(AgentProtocolException.class)
+                .satisfies(failure -> assertThat(((AgentProtocolException) failure).errorCode())
+                    .isEqualTo(AgentErrorCode.REQUEST_FAILED))
+                .hasMessageContaining("PlayerKickEvent was cancelled");
+            verify(player).kickPlayer(anyString());
+            verify(fixture.nmsAdapter(), never()).removePlayer(any());
+            assertThat(fixture.playerStore().getRequiredPlayer(uuid)).isSameAs(player);
+        }
+    }
+
+    /**
+     * Creates a plugin-manager mock that immediately fires a {@code PlayerJoinEvent} for the given player
+     * whenever an event executor is registered, completing a FULL_LOGIN join's join-latch synchronously.
+     */
+    private static PluginManager joinEventFiringPluginManager(Player player)
+    {
+        final PluginManager pluginManager = mock();
+        doAnswer(invocation ->
+        {
+            final Listener listener = invocation.getArgument(1);
+            final EventExecutor eventExecutor = invocation.getArgument(3);
+            eventExecutor.execute(listener, new PlayerJoinEvent(player, "joined"));
+            return null;
+        }).when(pluginManager).registerEvent(eq(PlayerJoinEvent.class), any(), any(), any(), any());
+        return pluginManager;
+    }
+
     /**
      * Stubs the Bukkit statics a FULL_LOGIN join touches: NOT the primary thread (the handler rejects
      * main-thread execution), a server exposing a port, a known world named {@code "world"}, a no-op plugin
@@ -679,10 +775,18 @@ class AgentPlayerActionsTest
      */
     private static void stubFullLoginBukkitStatics(MockedStatic<Bukkit> bukkit)
     {
+        stubFullLoginBukkitStatics(bukkit, mock(PluginManager.class));
+    }
+
+    /**
+     * Variant of {@link #stubFullLoginBukkitStatics(MockedStatic)} with a caller-supplied plugin manager, for
+     * tests that need event registrations to actually fire events.
+     */
+    private static void stubFullLoginBukkitStatics(MockedStatic<Bukkit> bukkit, PluginManager pluginManager)
+    {
         final org.bukkit.Server server = mock();
         when(server.getPort()).thenReturn(25_565);
         final World world = mock();
-        final PluginManager pluginManager = mock();
         final BukkitScheduler scheduler = mock();
         when(scheduler.callSyncMethod(any(), any())).thenAnswer(invocation ->
         {

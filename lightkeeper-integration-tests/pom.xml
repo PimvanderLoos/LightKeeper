@@ -108,6 +108,15 @@
                             <version>${project.version}</version>
                             <renameTo>lightkeeper-spigot-test-plugin.jar</renameTo>
                         </plugin>
+                        <!-- LuckPerms provisions the Permissible-injection survival check for FULL_LOGIN bots
+                             (LightkeeperFullLoginSessionIT). Version pinned for deterministic provisioning. -->
+                        <plugin>
+                            <sourceType>modrinth</sourceType>
+                            <modrinthProject>luckperms</modrinthProject>
+                            <modrinthVersion>v5.5.53-bukkit</modrinthVersion>
+                            <modrinthGameVersion>${lightkeeper.minecraft-version}</modrinthGameVersion>
+                            <renameTo>LuckPerms.jar</renameTo>
+                        </plugin>
                     </plugins>
                     <worlds>
                         <world>
