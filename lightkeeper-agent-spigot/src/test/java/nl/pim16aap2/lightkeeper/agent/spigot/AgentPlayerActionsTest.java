@@ -22,12 +22,15 @@ import nl.pim16aap2.lightkeeper.protocol.PlacePlayerBlock;
 import nl.pim16aap2.lightkeeper.protocol.PlayerChat;
 import nl.pim16aap2.lightkeeper.protocol.RemovePlayer;
 import nl.pim16aap2.lightkeeper.protocol.RightClickBlock;
+import nl.pim16aap2.lightkeeper.protocol.TabCompletePlayer;
 import nl.pim16aap2.lightkeeper.protocol.TeleportPlayer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.command.CommandMap;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
@@ -105,6 +108,111 @@ class AgentPlayerActionsTest
 
         // verify — a command performCommand cannot run still executes via the server dispatcher fallback
         assertThat(response.dispatched()).isTrue();
+    }
+
+    @Test
+    void handleTabCompletePlayer_shouldStripLeadingSlashAndReturnCompletions()
+        throws Exception
+    {
+        // setup
+        final PlayerActionsFixture fixture = createPlayerActionsFixture();
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mock();
+        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        final CommandMap commandMap = mock();
+        final TabCompleteServer server = mock();
+        when(server.getCommandMap()).thenReturn(commandMap);
+        when(commandMap.tabComplete(player, "lktestg")).thenReturn(List.of("/lktestgui"));
+        final TabCompletePlayer.Command command =
+            new TabCompletePlayer.Command("request-tc", uuid, "/lktestg");
+
+        // execute
+        final TabCompletePlayer.Response response;
+        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class))
+        {
+            bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
+            bukkit.when(Bukkit::getServer).thenReturn(server);
+            response = fixture.playerActions().handleTabCompletePlayer(command);
+        }
+
+        // verify — the agent strips the single leading slash before the CommandMap lookup
+        assertThat(response.completions()).containsExactly("/lktestgui");
+        verify(commandMap).tabComplete(player, "lktestg");
+    }
+
+    @Test
+    void handleTabCompletePlayer_shouldReturnEmptyListWhenCommandMapReturnsNull()
+        throws Exception
+    {
+        // setup — an unknown command's args-completion branch yields a null result that must not propagate
+        final PlayerActionsFixture fixture = createPlayerActionsFixture();
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mock();
+        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        final CommandMap commandMap = mock();
+        final TabCompleteServer server = mock();
+        when(server.getCommandMap()).thenReturn(commandMap);
+        when(commandMap.tabComplete(player, "totallyNotACommand arg")).thenReturn(null);
+        final TabCompletePlayer.Command command =
+            new TabCompletePlayer.Command("request-tc-null", uuid, "/totallyNotACommand arg");
+
+        // execute
+        final TabCompletePlayer.Response response;
+        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class))
+        {
+            bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
+            bukkit.when(Bukkit::getServer).thenReturn(server);
+            response = fixture.playerActions().handleTabCompletePlayer(command);
+        }
+
+        // verify
+        assertThat(response.completions()).isEmpty();
+    }
+
+    @Test
+    void handleTabCompletePlayer_shouldPreserveTrailingSpaceAfterStrippingSlash()
+        throws Exception
+    {
+        // setup — a trailing space selects argument completion and must survive the slash strip
+        final PlayerActionsFixture fixture = createPlayerActionsFixture();
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mock();
+        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        final CommandMap commandMap = mock();
+        final TabCompleteServer server = mock();
+        when(server.getCommandMap()).thenReturn(commandMap);
+        when(commandMap.tabComplete(player, "gamemode ")).thenReturn(List.of());
+        final TabCompletePlayer.Command command =
+            new TabCompletePlayer.Command("request-tc-space", uuid, "/gamemode ");
+
+        // execute
+        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class))
+        {
+            bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
+            bukkit.when(Bukkit::getServer).thenReturn(server);
+            fixture.playerActions().handleTabCompletePlayer(command);
+        }
+
+        // verify
+        verify(commandMap).tabComplete(player, "gamemode ");
+    }
+
+    @Test
+    void handleTabCompletePlayer_shouldPropagateWhenPlayerUnknown()
+    {
+        // setup
+        final AgentPlayerActions playerActions = createPlayerActions();
+        final TabCompletePlayer.Command command =
+            new TabCompletePlayer.Command("request-tc-unknown", UUID.randomUUID(), "/help");
+
+        // execute + verify
+        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class))
+        {
+            bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
+            assertThatThrownBy(() -> playerActions.handleTabCompletePlayer(command))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("not registered");
+        }
     }
 
     @Test
@@ -902,5 +1010,15 @@ class AgentPlayerActionsTest
         AgentSyntheticPlayerStore playerStore,
         IBotPlayerNmsAdapter nmsAdapter)
     {
+    }
+
+    /**
+     * Mockable stand-in for the concrete {@code CraftServer} whose {@code getCommandMap()} accessor lives off the
+     * {@code org.bukkit.Server} interface. The agent reaches it reflectively; mocking this subtype lets
+     * {@code server.getClass().getMethod("getCommandMap")} resolve to a stubbed {@link CommandMap}.
+     */
+    interface TabCompleteServer extends Server
+    {
+        CommandMap getCommandMap();
     }
 }
