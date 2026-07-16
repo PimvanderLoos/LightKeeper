@@ -288,22 +288,6 @@ class PlayerHandleTest
     }
 
     @Test
-    @SuppressWarnings("removal")
-    void leftClickBlock_shouldDelegateFromDeprecatedVector3DiOverload()
-    {
-        // setup
-        final Vector3Di position = new Vector3Di(1, 64, 2);
-        when(frameworkGateway.leftClickBlock(PLAYER_UUID, position.toBlockPos(), "NORTH")).thenReturn(true);
-
-        // execute
-        final InteractionResult result = playerHandle.leftClickBlock(position, BlockFace.NORTH);
-
-        // verify
-        assertThat(result).isEqualTo(new InteractionResult(true, true));
-        verify(frameworkGateway).leftClickBlock(PLAYER_UUID, position.toBlockPos(), "NORTH");
-    }
-
-    @Test
     void rightClickBlock_shouldDelegateToGatewayAndReturnInteractionResult()
     {
         // setup

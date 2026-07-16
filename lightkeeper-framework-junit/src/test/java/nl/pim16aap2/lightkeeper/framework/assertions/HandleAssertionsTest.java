@@ -13,7 +13,6 @@ import nl.pim16aap2.lightkeeper.framework.MenuItemSnapshot;
 import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
 import nl.pim16aap2.lightkeeper.framework.ServerErrorSnapshot;
 import nl.pim16aap2.lightkeeper.framework.ServerErrorsHandle;
-import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
@@ -329,18 +328,6 @@ class HandleAssertionsTest
             LightkeeperAssertions.assertThat(handle).hasBlockAt(0, 0, 0).ofType("minecraft:dirt"))
             .isInstanceOf(AssertionError.class)
             .hasMessageContaining("Expected block at (0,0,0)");
-    }
-
-    @Test
-    @SuppressWarnings("removal")
-    void hasBlockAt_shouldDelegateFromDeprecatedVector3DiOverload()
-    {
-        // setup
-        final WorldHandle handle = mock(WorldHandle.class);
-        when(handle.blockTypeAt(new BlockPos(1, 2, 3))).thenReturn("minecraft:stone");
-
-        // execute + verify
-        LightkeeperAssertions.assertThat(handle).hasBlockAt(new Vector3Di(1, 2, 3)).ofType(Material.STONE);
     }
 
     @Test
