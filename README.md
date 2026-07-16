@@ -221,8 +221,7 @@ class MyPluginIT
 ```
 
 > The framework surface is organised into facets — `framework.server()`, `.worlds()`, `.bots()`, and
-> `.events()`. The older flat method names (`mainWorld()`, `buildPlayer()`, `stopServer()`, …) are deprecated
-> for removal; use the facet accessors instead.
+> `.events()`. Use these facet accessors to reach the server, worlds, bots, and event-capture APIs.
 
 ## Core Features
 
