@@ -407,6 +407,43 @@ class BotPlayerNmsAdapterV1_21_R7Test
     }
 
     @Test
+    void extractComponentJson_shouldFollowObfuscatedRecordAccessorReturningComponentType()
+        throws Exception
+    {
+        // setup — Spigot's remapped ClientboundSystemChatPacket exposes its component through an obfuscated
+        // single-letter record accessor (e.g. IChatBaseComponent b()) that no method-name heuristic matches;
+        // keying on the return type follows it, so components are captured on Spigot as well as on Paper.
+        final BotPlayerNmsAdapterV1_21_R7 adapter = allocateAdapter();
+        setField(adapter, "componentJsonCodec", new FakeCodec());
+        setField(adapter, "componentJsonOps", new Object());
+        setField(adapter, "componentCodecEncodeStartMethod", FakeCodec.class.getMethod(
+            "encodeStart",
+            Object.class,
+            Object.class
+        ));
+        setField(adapter, "dataResultResultMethod", FakeDataResult.class.getMethod("result"));
+        final boolean obfuscatedAccessorSafe = (boolean) invokeStatic(
+            "isSafeComponentAccessor",
+            new Class<?>[]{Method.class},
+            ObfuscatedComponentPacket.class.getMethod("b")
+        );
+
+        // execute
+        final String extracted = (String) invokeInstance(
+            adapter,
+            "extractComponentJson",
+            new Class<?>[]{Object.class, int.class, IdentityHashMap.class},
+            new ObfuscatedComponentPacket(new FakeComponent("hi")),
+            4,
+            new IdentityHashMap<>()
+        );
+
+        // verify
+        assertThat(obfuscatedAccessorSafe).isTrue();
+        assertThat(extracted).isEqualTo("{\"text\":\"hi\"}");
+    }
+
+    @Test
     void extractComponentJson_shouldReturnNullWhenComponentSerializationFails()
         throws Exception
     {
@@ -735,7 +772,11 @@ class BotPlayerNmsAdapterV1_21_R7Test
         }
     }
 
-    public record UnsafeComponentPacket(FakeComponent value)
+    public record UnsafeComponentPacket(String value)
+    {
+    }
+
+    public record ObfuscatedComponentPacket(FakeComponent b)
     {
     }
 
