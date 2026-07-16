@@ -39,7 +39,8 @@ public final class TabCompletePlayer
          *
          * <p>Unlike {@link ExecutePlayerCommand.Command}, the {@code commandLine} is intentionally not rejected
          * when blank and not stripped: a whitespace-only or trailing-whitespace buffer is a valid,
-         * meaningfully-different tab-complete input rather than a malformed command string.
+         * meaningfully-different tab-complete input at the wire level; the framework's public API rejects blank
+         * input before it reaches this command.
          */
         public Command
         {

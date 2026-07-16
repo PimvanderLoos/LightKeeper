@@ -649,8 +649,12 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
         // name. Spigot's remapped record accessors are single obfuscated letters (e.g. IChatBaseComponent b() on
         // ClientboundSystemChatPacket), which no name heuristic matches, whereas Paper exposes the same field as
         // content(); keying on the return type rather than the method name captures the component on both distros.
+        // Deliberately ONLY the type-name suffix: a whole-chat-package match would also follow MessageSignature/
+        // ChatType.Bound/FilterMask accessors on multi-field chat packets and could nondeterministically capture a
+        // decoration instead of the message. Note this widens capture to any Component-returning accessor
+        // (boss bars, titles, tab-list headers) — component capture is type-driven, not name-driven.
         final String returnTypeName = returnType.getName();
-        if (returnTypeName.startsWith("net.minecraft.network.chat.") || returnTypeName.endsWith("Component"))
+        if (returnTypeName.endsWith("Component"))
             return true;
 
         // For container return types the component sits one level deeper, so require a component-like accessor
