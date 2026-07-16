@@ -15,10 +15,20 @@ commands:
   lktestlocale:
     description: Logs the invoking player's client locale for LightKeeper full-login locale integration tests
     usage: /lktestlocale
+  lktestclick:
+    description: Sends a clickable run_command chat component for LightKeeper chat-click integration tests
+    usage: /lktestclick
+  lktestperm:
+    description: A permission-gated no-op command for LightKeeper tab-completion permission integration tests
+    usage: /lktestperm
+    permission: lightkeeper.testplugin.lktestperm
 permissions:
   lightkeeper.testplugin.lktestgui:
     description: Allows opening the LightKeeper test GUI.
     default: false
   lightkeeper.testplugin.lktesterror:
     description: Allows emitting LightKeeper error-capture test log events.
+    default: false
+  lightkeeper.testplugin.lktestperm:
+    description: Gates visibility of /lktestperm in tab-completion.
     default: false

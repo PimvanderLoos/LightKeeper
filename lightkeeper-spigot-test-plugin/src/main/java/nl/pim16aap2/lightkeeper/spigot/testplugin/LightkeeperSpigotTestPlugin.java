@@ -37,6 +37,10 @@ public final class LightkeeperSpigotTestPlugin extends JavaPlugin implements Lis
      */
     private static final String LOCALE_COMMAND_NAME = "lktestlocale";
     /**
+     * Command name used to emit a clickable {@code run_command} chat component for chat-click integration tests.
+     */
+    private static final String CLICK_COMMAND_NAME = "lktestclick";
+    /**
      * Prefix used for deterministic block interaction messages.
      */
     static final String BLOCK_CLICK_MESSAGE_PREFIX = "LK_BLOCK_CLICK";
@@ -66,9 +70,15 @@ public final class LightkeeperSpigotTestPlugin extends JavaPlugin implements Lis
             throw new IllegalStateException(
                 "Required command '/%s' is not declared in plugin metadata.".formatted(LOCALE_COMMAND_NAME));
 
+        final PluginCommand clickCommand = getCommand(CLICK_COMMAND_NAME);
+        if (clickCommand == null)
+            throw new IllegalStateException(
+                "Required command '/%s' is not declared in plugin metadata.".formatted(CLICK_COMMAND_NAME));
+
         pluginCommand.setExecutor(new LkTestGuiCommandExecutor(guiMenuService));
         errorCommand.setExecutor(new LkTestErrorCommandExecutor(getLogger()));
         localeCommand.setExecutor(new LkTestLocaleCommandExecutor(getLogger()));
+        clickCommand.setExecutor(new LkTestClickCommandExecutor());
         Bukkit.getPluginManager().registerEvents(this, this);
     }
 
