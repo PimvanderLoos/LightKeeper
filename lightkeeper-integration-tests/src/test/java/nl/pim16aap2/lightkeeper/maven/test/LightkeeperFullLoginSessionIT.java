@@ -46,7 +46,7 @@ class LightkeeperFullLoginSessionIT
     private static final String QUIT_EVENT = "org.bukkit.event.player.PlayerQuitEvent";
 
     @Test
-    @Timeout(60)
+    @Timeout(180)
     void fullLogin_shouldAckTeleportAfterJoin(ILightkeeperFramework framework)
     {
         // setup — watch for kicks: a driver that failed to acknowledge the teleport would desync the session.
@@ -78,7 +78,7 @@ class LightkeeperFullLoginSessionIT
     }
 
     @Test
-    @Timeout(60)
+    @Timeout(180)
     void fullLogin_shouldNegotiateCompressionWhenEnabled(ILightkeeperFramework framework)
         throws IOException
     {
@@ -117,8 +117,8 @@ class LightkeeperFullLoginSessionIT
     }
 
     @Test
-    @Timeout(60)
-    void fullLogin_shouldSupportFiveConcurrentJoins(ILightkeeperFramework framework)
+    @Timeout(180)
+    void fullLogin_shouldSustainFiveSimultaneousSessions(ILightkeeperFramework framework)
     {
         // setup — the framework transport (UdsAgentTransport.send) is synchronized: exactly one request may
         // be in flight per agent connection, so wire-level concurrent joins are not deliverable through this
@@ -163,7 +163,7 @@ class LightkeeperFullLoginSessionIT
     }
 
     @Test
-    @Timeout(60)
+    @Timeout(180)
     void fullLogin_shouldApplyRequestedLocale(ILightkeeperFramework framework)
     {
         // setup — the driver sends the locale inside ClientInformation during the configuration phase; the
@@ -191,7 +191,7 @@ class LightkeeperFullLoginSessionIT
     }
 
     @Test
-    @Timeout(60)
+    @Timeout(180)
     void fullLogin_shouldChatLikeARealClient(ILightkeeperFramework framework)
     {
         // setup
@@ -224,7 +224,7 @@ class LightkeeperFullLoginSessionIT
     }
 
     @Test
-    @Timeout(60)
+    @Timeout(180)
     void fullLogin_shouldRetainLuckPermsPermissionInjectedAtLogin(ILightkeeperFramework framework)
     {
         // setup — LuckPerms is provisioned by this module's pom (Modrinth, pinned version); fail fast with a

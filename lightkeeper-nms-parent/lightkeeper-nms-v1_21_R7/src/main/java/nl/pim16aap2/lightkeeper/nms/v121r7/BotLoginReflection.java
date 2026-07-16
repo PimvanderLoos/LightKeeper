@@ -419,6 +419,8 @@ final class BotLoginReflection
         final long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(CHANNEL_ACTIVE_TIMEOUT_SECONDS);
         while (System.nanoTime() - deadlineNanos < 0)
         {
+            // Non-volatile cross-thread read by design: vanilla's own isConnected() reads this same field
+            // cross-thread, and the reflective Field.get defeats any hoisting of the read out of the loop.
             final Object channel = channelField.get(connection);
             if (channel != null && Boolean.TRUE.equals(channelIsOpenMethod.invoke(channel)))
                 return;

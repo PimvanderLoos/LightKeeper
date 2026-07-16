@@ -33,9 +33,10 @@ public final class LoopbackLoginGuard
     /**
      * Matches an active {@code bungeecord: true} entry in {@code spigot.yml} (the key only exists under the
      * top-level {@code settings} section in stock Spigot configurations), with an optional trailing comment.
+     * The boolean is matched case-insensitively ({@code True}/{@code TRUE} are legal YAML booleans).
      */
     private static final Pattern SPIGOT_BUNGEECORD_ENABLED_PATTERN =
-        Pattern.compile("^\\s*bungeecord:\\s*true\\s*(?:#.*)?$");
+        Pattern.compile("^\\s*bungeecord:\\s*(?i:true)\\s*(?:#.*)?$");
 
     /**
      * Matches the opening of the {@code velocity} section in {@code config/paper-global.yml}, capturing its
@@ -45,9 +46,11 @@ public final class LoopbackLoginGuard
 
     /**
      * Matches an active {@code enabled: true} entry (inside the {@code velocity} section), with an optional
-     * trailing comment.
+     * trailing comment. The boolean is matched case-insensitively ({@code True}/{@code TRUE} are legal YAML
+     * booleans).
      */
-    private static final Pattern VELOCITY_ENABLED_PATTERN = Pattern.compile("^\\s*enabled:\\s*true\\s*(?:#.*)?$");
+    private static final Pattern VELOCITY_ENABLED_PATTERN =
+        Pattern.compile("^\\s*enabled:\\s*(?i:true)\\s*(?:#.*)?$");
 
     private LoopbackLoginGuard()
     {
@@ -81,10 +84,15 @@ public final class LoopbackLoginGuard
         for (final String line : readLinesIfPresent(serverPropertiesFile))
         {
             final String trimmed = line.trim();
-            if (trimmed.startsWith("#") || !trimmed.startsWith("online-mode="))
+            if (trimmed.startsWith("#"))
                 continue;
 
-            final String value = trimmed.substring("online-mode=".length()).trim().toLowerCase(Locale.ROOT);
+            // Split at the first '=' so the legal properties spacing 'online-mode = true' is handled too.
+            final int separatorIndex = trimmed.indexOf('=');
+            if (separatorIndex < 0 || !"online-mode".equals(trimmed.substring(0, separatorIndex).trim()))
+                continue;
+
+            final String value = trimmed.substring(separatorIndex + 1).trim().toLowerCase(Locale.ROOT);
             if ("true".equals(value))
             {
                 throw new MojoExecutionException(

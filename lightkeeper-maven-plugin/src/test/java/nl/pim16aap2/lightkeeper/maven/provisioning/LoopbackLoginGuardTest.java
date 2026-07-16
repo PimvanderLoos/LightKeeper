@@ -94,6 +94,53 @@ class LoopbackLoginGuardTest
     }
 
     @Test
+    void validate_shouldFailWhenOnlineModeUsesSpacedAssignment(@TempDir Path serverDirectory)
+        throws Exception
+    {
+        // setup — legal properties spacing around the separator.
+        writeServerProperties(serverDirectory, "online-mode = true");
+
+        // execute + verify
+        assertThatThrownBy(() -> LoopbackLoginGuard.validate(serverDirectory, new SystemStreamLog()))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("online-mode=true")
+            .hasMessageContaining("FULL_LOGIN");
+    }
+
+    @Test
+    void validate_shouldFailWhenBungeecordUsesCapitalizedYamlBoolean(@TempDir Path serverDirectory)
+        throws Exception
+    {
+        // setup — 'True' is a legal YAML boolean spelling.
+        writeSpigotConfiguration(serverDirectory, "settings:", "  bungeecord: True");
+
+        // execute + verify
+        assertThatThrownBy(() -> LoopbackLoginGuard.validate(serverDirectory, new SystemStreamLog()))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("BungeeCord")
+            .hasMessageContaining("FULL_LOGIN");
+    }
+
+    @Test
+    void validate_shouldFailWhenVelocityUsesUppercaseYamlBoolean(@TempDir Path serverDirectory)
+        throws Exception
+    {
+        // setup — 'TRUE' is a legal YAML boolean spelling.
+        writePaperGlobalConfiguration(
+            serverDirectory,
+            "proxies:",
+            "  velocity:",
+            "    enabled: TRUE"
+        );
+
+        // execute + verify
+        assertThatThrownBy(() -> LoopbackLoginGuard.validate(serverDirectory, new SystemStreamLog()))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("Velocity")
+            .hasMessageContaining("FULL_LOGIN");
+    }
+
+    @Test
     void validate_shouldIgnoreEnabledFlagsOutsideTheVelocitySection(@TempDir Path serverDirectory)
         throws Exception
     {

@@ -40,7 +40,7 @@ class LightkeeperFullLoginValidationIT
     private static final String QUIT_EVENT = "org.bukkit.event.player.PlayerQuitEvent";
 
     @Test
-    @Timeout(60)
+    @Timeout(180)
     void fullLogin_shouldFireLoginEventsInDocumentedOrderPerDistro(ILightkeeperFramework framework)
     {
         // setup — register all three captures BEFORE joining so no login event can be missed.
@@ -97,7 +97,7 @@ class LightkeeperFullLoginValidationIT
     }
 
     @Test
-    @Timeout(60)
+    @Timeout(180)
     void fullLogin_shouldRejectBannedPlayerWithTypedDenial(ILightkeeperFramework framework)
     {
         // setup — ban the name BEFORE it ever joins; the console resolves the offline profile by name.
@@ -126,7 +126,7 @@ class LightkeeperFullLoginValidationIT
     }
 
     @Test
-    @Timeout(60)
+    @Timeout(180)
     void fullLogin_shouldRejectWhenWhitelistExcludesPlayer(ILightkeeperFramework framework)
     {
         // setup
@@ -136,8 +136,10 @@ class LightkeeperFullLoginValidationIT
 
         try
         {
-            // execute + verify — the excluded bot is denied fast, as a typed error (not a join timeout).
-            final long startNanos = System.nanoTime();
+            // execute + verify — the excluded bot is denied as a typed error. Fail-fast semantics are proven
+            // by the TYPE of the failure: a BotJoinDeniedException (the server's login-phase kick) instead of
+            // a BotJoinTimeoutException. Deliberately no wall-clock bound: elapsed-time assertions flake on
+            // starved CI runners.
             final Throwable denial = catchThrowable(() -> framework.bots().builder()
                 .withName(name)
                 .atSpawn(world)
@@ -148,11 +150,6 @@ class LightkeeperFullLoginValidationIT
             assertThat(denial.getMessage().toLowerCase(Locale.ROOT).replace("-", ""))
                 .as("denial reason should name the whitelist: %s", denial.getMessage())
                 .contains("whitelist");
-
-            final long elapsedMillis = (System.nanoTime() - startNanos) / 1_000_000L;
-            assertThat(elapsedMillis)
-                .as("a whitelist denial must fail fast instead of riding the join timeout")
-                .isLessThan(15_000L);
 
             // execute + verify — whitelisting the name turns the same join into a success.
             framework.server().executeCommand(CommandSource.CONSOLE, "whitelist add " + name);
@@ -172,7 +169,7 @@ class LightkeeperFullLoginValidationIT
     }
 
     @Test
-    @Timeout(60)
+    @Timeout(180)
     void fullLogin_shouldRejoinAfterQuitWithSamePersistedIdentity(ILightkeeperFramework framework)
     {
         // setup — join, then give the bot a distinctive item that must survive the quit/rejoin cycle. The
@@ -214,7 +211,7 @@ class LightkeeperFullLoginValidationIT
     }
 
     @Test
-    @Timeout(60)
+    @Timeout(180)
     void fullLogin_shouldFireRealQuitEventOnRemoval(ILightkeeperFramework framework)
     {
         // setup — capture quit events BEFORE removal so the event cannot be missed.

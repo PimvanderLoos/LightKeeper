@@ -422,18 +422,37 @@ final class AgentPlayerActions
      * and runs the removal a second time, which crashes Paper ({@code EntityScheduler}: "Already retired").
      * Legacy-spawn bots have no real connection and keep the reflective removal path.
      *
+     * <p>{@code PlayerKickEvent} is cancellable on both distros, so a vetoing plugin would silently turn the
+     * kick into a no-op while the agent reports success — a permanent ghost bot whose driver keeps answering
+     * keep-alives. The disconnect completes synchronously inside {@code kickPlayer} on both jars, so the
+     * {@code isOnline()} probe below reliably reflects the outcome; a vetoed kick fails loud BEFORE any agent
+     * state is mutated, keeping the removal cleanly retryable.
+     *
      * @param uuid
      *     UUID of the player to remove.
      * @param player
      *     The registered player instance.
+     * @throws AgentProtocolException
+     *     If a plugin cancelled the {@code PlayerKickEvent} of a full-login bot's removal.
      */
     private void removeRegisteredPlayer(UUID uuid, Player player)
     {
-        playerStore.removePermissionAttachment(uuid, player);
-        if (fullLoginPlayerIds.remove(uuid))
+        if (fullLoginPlayerIds.contains(uuid))
+        {
             player.kickPlayer("LightKeeper bot removed.");
+            if (player.isOnline())
+                throw new AgentProtocolException(
+                    AgentErrorCode.REQUEST_FAILED,
+                    ("PlayerKickEvent was cancelled by a plugin: full-login bot '%s' (%s) is still online and "
+                        + "was NOT removed.").formatted(player.getName(), uuid));
+            fullLoginPlayerIds.remove(uuid);
+            playerStore.removePermissionAttachment(uuid, player);
+        }
         else
+        {
+            playerStore.removePermissionAttachment(uuid, player);
             botPlayerNmsAdapter.removePlayer(player);
+        }
         playerStore.removeSyntheticPlayer(uuid);
     }
 

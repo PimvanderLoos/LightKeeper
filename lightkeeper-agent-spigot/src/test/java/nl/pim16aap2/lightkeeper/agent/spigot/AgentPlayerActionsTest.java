@@ -710,6 +710,47 @@ class AgentPlayerActionsTest
         }
     }
 
+    @Test
+    void handleRemovePlayer_shouldFailLoudWhenKickOfFullLoginBotIsCancelled()
+        throws Exception
+    {
+        // setup — a kick-cancelling plugin (PlayerKickEvent is cancellable on both distros) leaves the bot
+        // online after kickPlayer returns; the agent must fail loud instead of reporting a successful removal.
+        final PlayerActionsFixture fixture = createPlayerActionsFixture();
+        final IBotLoginDriver loginDriver = mock();
+        when(fixture.nmsAdapter().loginDriver()).thenReturn(loginDriver);
+        when(loginDriver.login(any())).thenReturn(new IBotLoginOutcome.Joined("fullbot"));
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mock();
+        when(player.getUniqueId()).thenReturn(uuid);
+        when(player.getName()).thenReturn("fullbot");
+        when(player.isOnline()).thenReturn(true);
+        final CreatePlayer.Command createCommand = new CreatePlayer.Command(
+            "request-full-veto", "fullbot", null, "world", null, null, null, null, null, JoinMode.FULL_LOGIN,
+            null);
+
+        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class))
+        {
+            stubFullLoginBukkitStatics(bukkit, joinEventFiringPluginManager(player));
+            fixture.playerActions().handleCreatePlayer(createCommand);
+
+            // execute
+            final Throwable thrown = catchThrowable(() -> fixture.playerActions()
+                .handleRemovePlayer(new RemovePlayer.Command("request-remove-veto", uuid)));
+
+            // verify — typed failure naming the veto, and no agent state mutated: the bot stays registered
+            // (the removal is retryable) and the legacy removal path is never used as a fallback.
+            assertThat(thrown)
+                .isInstanceOf(AgentProtocolException.class)
+                .satisfies(failure -> assertThat(((AgentProtocolException) failure).errorCode())
+                    .isEqualTo(AgentErrorCode.REQUEST_FAILED))
+                .hasMessageContaining("PlayerKickEvent was cancelled");
+            verify(player).kickPlayer(anyString());
+            verify(fixture.nmsAdapter(), never()).removePlayer(any());
+            assertThat(fixture.playerStore().getRequiredPlayer(uuid)).isSameAs(player);
+        }
+    }
+
     /**
      * Creates a plugin-manager mock that immediately fires a {@code PlayerJoinEvent} for the given player
      * whenever an event executor is registered, completing a FULL_LOGIN join's join-latch synchronously.
