@@ -46,7 +46,8 @@ planned and reviewed by a human.
 - **World & Chunk Control**: Load/unload chunks, check chunk status, and teleport players between worlds.
 - **Inventory & Item Drops**: Inspect player inventories and simulate item drops.
 - **Dynamic Event Capture**: Capture and assert on any Bukkit event dynamically without writing custom listeners.
-- **Clickable Chat Assertions**: Verify clickable chat message text and actions.
+- **Clickable Chat Assertions**: Verify clickable chat message text and actions, extract a click action, and click it.
+- **Command Tab-Completion**: Query a player's permission-filtered command completions exactly as a real client would.
 - **Platform Awareness**: Write tests that adapt to Paper or Spigot specifics.
 
 ## Requirements
@@ -248,6 +249,13 @@ class MyPluginIT
 - Bot chat and deterministic cancellation: `player.chat("...")` fires the real chat event;
   `capture.cancelNext(n)` cancels exactly the next N events of a captured class (LOWEST priority, so the
   capture still records the final cancelled state); captured events carry the server tick they fired on
+- Command tab-completion: `player.tabComplete("/cmd")` returns the live server command map's completions for that
+  player, permission-filtered exactly as a real client's tab-complete would be — a bot that lacks a command's
+  permission never sees it. A leading slash is accepted and normalized; a trailing space selects argument
+  completion (and is never trimmed), while an unknown command yields an empty list
+- Clickable chat components: capture a player's rendered chat components with `player.chatComponents()`, extract a
+  click action from a snapshot with `component.clickRunCommand()`/`component.clickSuggestedCommand()`, and dispatch
+  a `run_command` click as the player with `player.clickChatComponent(component)` — the same path a real click takes
 - Block state as a first-class value: place blocks with full state via
   `world.setBlockAt(pos, BlockSpec.parse("minecraft:lever[face=floor,powered=true]"))` and assert partially
   via `world.blockAt(pos).is(BlockSpec.parse("minecraft:lever[powered=true]"))` — only named properties
