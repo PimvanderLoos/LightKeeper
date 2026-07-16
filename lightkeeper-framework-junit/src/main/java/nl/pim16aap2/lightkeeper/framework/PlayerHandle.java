@@ -184,21 +184,6 @@ public final class PlayerHandle
      *
      * @param position
      *     Block coordinates.
-     * @return The interaction result; a real {@code PlayerInteractEvent} is always fired.
-     * @deprecated Use {@link #leftClickBlock(BlockPos)} instead.
-     */
-    @Deprecated(forRemoval = true)
-    public InteractionResult leftClickBlock(Vector3Di position)
-    {
-        Objects.requireNonNull(position, "position may not be null.");
-        return leftClickBlock(position.toBlockPos());
-    }
-
-    /**
-     * Fires a left-click block interaction at a position in this player's current world.
-     *
-     * @param position
-     *     Block coordinates.
      * @param blockFace
      *     Clicked block face.
      * @return The interaction result; a real {@code PlayerInteractEvent} is always fired.
@@ -211,23 +196,6 @@ public final class PlayerHandle
             Objects.requireNonNull(blockFace, "blockFace may not be null.").name()
         );
         return new InteractionResult(true, cancelled);
-    }
-
-    /**
-     * Fires a left-click block interaction at a position in this player's current world.
-     *
-     * @param position
-     *     Block coordinates.
-     * @param blockFace
-     *     Clicked block face.
-     * @return The interaction result; a real {@code PlayerInteractEvent} is always fired.
-     * @deprecated Use {@link #leftClickBlock(BlockPos, BlockFace)} instead.
-     */
-    @Deprecated(forRemoval = true)
-    public InteractionResult leftClickBlock(Vector3Di position, BlockFace blockFace)
-    {
-        Objects.requireNonNull(position, "position may not be null.");
-        return leftClickBlock(position.toBlockPos(), blockFace);
     }
 
     /**
@@ -263,21 +231,6 @@ public final class PlayerHandle
      *
      * @param position
      *     Block coordinates.
-     * @return The interaction result; a real {@code PlayerInteractEvent} is always fired.
-     * @deprecated Use {@link #rightClickBlock(BlockPos)} instead.
-     */
-    @Deprecated(forRemoval = true)
-    public InteractionResult rightClickBlock(Vector3Di position)
-    {
-        Objects.requireNonNull(position, "position may not be null.");
-        return rightClickBlock(position.toBlockPos());
-    }
-
-    /**
-     * Fires a right-click block interaction at a position in this player's current world.
-     *
-     * @param position
-     *     Block coordinates.
      * @param blockFace
      *     Clicked block face.
      * @return The interaction result; a real {@code PlayerInteractEvent} is always fired.
@@ -290,23 +243,6 @@ public final class PlayerHandle
             Objects.requireNonNull(blockFace, "blockFace may not be null.").name()
         );
         return new InteractionResult(true, cancelled);
-    }
-
-    /**
-     * Fires a right-click block interaction at a position in this player's current world.
-     *
-     * @param position
-     *     Block coordinates.
-     * @param blockFace
-     *     Clicked block face.
-     * @return The interaction result; a real {@code PlayerInteractEvent} is always fired.
-     * @deprecated Use {@link #rightClickBlock(BlockPos, BlockFace)} instead.
-     */
-    @Deprecated(forRemoval = true)
-    public InteractionResult rightClickBlock(Vector3Di position, BlockFace blockFace)
-    {
-        Objects.requireNonNull(position, "position may not be null.");
-        return rightClickBlock(position.toBlockPos(), blockFace);
     }
 
     /**

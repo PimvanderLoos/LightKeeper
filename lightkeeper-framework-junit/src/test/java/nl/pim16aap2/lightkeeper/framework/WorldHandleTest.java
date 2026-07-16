@@ -73,22 +73,6 @@ class WorldHandleTest
     }
 
     @Test
-    @SuppressWarnings("removal")
-    void blockTypeAt_shouldDelegateFromDeprecatedVector3DiOverload()
-    {
-        // setup
-        final Vector3Di position = new Vector3Di(1, 70, 2);
-        when(frameworkGateway.getBlock("world", position.toBlockPos())).thenReturn("STONE");
-
-        // execute
-        final String blockType = worldHandle.blockTypeAt(position);
-
-        // verify
-        assertThat(blockType).isEqualTo("STONE");
-        verify(frameworkGateway).getBlock("world", position.toBlockPos());
-    }
-
-    @Test
     void setBlockAt_shouldDelegateToGateway()
     {
         // setup
@@ -99,20 +83,6 @@ class WorldHandleTest
 
         // verify
         verify(frameworkGateway).setBlock("world", position, "STONE");
-    }
-
-    @Test
-    @SuppressWarnings("removal")
-    void setBlockAt_shouldDelegateFromDeprecatedVector3DiOverload()
-    {
-        // setup
-        final Vector3Di position = new Vector3Di(1, 70, 2);
-
-        // execute
-        worldHandle.setBlockAt(position, "STONE");
-
-        // verify
-        verify(frameworkGateway).setBlock("world", position.toBlockPos(), "STONE");
     }
 
     @Test

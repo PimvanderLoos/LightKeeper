@@ -19,7 +19,7 @@ import java.util.Map;
  *     The full class name of the event.
  * @param tick
  *     The server tick the event fired on, for correlating events with each other and with
- *     {@code ILightkeeperFramework#currentServerTick()}.
+ *     {@code IServerControl#currentTick()}.
  * @param values
  *     The captured event values keyed by accessor name (getter/is-method or record component).
  */
@@ -49,20 +49,5 @@ public record CapturedEventSnapshot(
     public @Nullable IProtocolValue value(String accessorName)
     {
         return values.get(accessorName);
-    }
-
-    /**
-     * Gets the captured values rendered as display text.
-     *
-     * @return Accessor name to rendered value, in capture order.
-     * @deprecated Use {@link #values()} (typed) or {@link #value(String)} instead; this string view only
-     *     remains so existing tests keep compiling for one release.
-     */
-    @Deprecated(forRemoval = true)
-    public Map<String, String> data()
-    {
-        final Map<String, String> rendered = new LinkedHashMap<>();
-        values.forEach((accessorName, value) -> rendered.put(accessorName, value.toDisplayString()));
-        return Collections.unmodifiableMap(rendered);
     }
 }

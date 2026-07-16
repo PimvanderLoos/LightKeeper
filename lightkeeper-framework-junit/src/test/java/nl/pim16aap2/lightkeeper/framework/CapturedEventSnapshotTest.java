@@ -3,7 +3,6 @@ package nl.pim16aap2.lightkeeper.framework;
 import nl.pim16aap2.lightkeeper.protocol.IProtocolValue;
 import org.junit.jupiter.api.Test;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,27 +39,6 @@ class CapturedEventSnapshotTest
 
         // verify
         assertThat(result).isNull();
-    }
-
-    @Test
-    @SuppressWarnings("removal") // Intentionally exercises the deprecated-for-removal data() view.
-    void data_shouldRenderEachValueAsDisplayStringInCaptureOrder()
-    {
-        // setup
-        final Map<String, IProtocolValue> values = new LinkedHashMap<>();
-        values.put("getName", new IProtocolValue.PString("Steve"));
-        values.put("isCancelled", new IProtocolValue.PBool(false));
-        values.put("getCount", new IProtocolValue.PNumber(3));
-        final CapturedEventSnapshot snapshot = new CapturedEventSnapshot("event.Class", 1L, values);
-
-        // execute
-        final Map<String, String> rendered = snapshot.data();
-
-        // verify
-        assertThat(rendered).containsExactly(
-            Map.entry("getName", "Steve"),
-            Map.entry("isCancelled", "false"),
-            Map.entry("getCount", "3"));
     }
 
     @Test
