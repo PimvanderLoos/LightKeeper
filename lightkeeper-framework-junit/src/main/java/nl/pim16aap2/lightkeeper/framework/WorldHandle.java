@@ -86,21 +86,6 @@ public final class WorldHandle
     }
 
     /**
-     * Retrieves the block type at a position.
-     *
-     * @param position
-     *     Block coordinates.
-     * @return The block material name.
-     * @deprecated Use {@link #blockTypeAt(BlockPos)} instead.
-     */
-    @Deprecated(forRemoval = true)
-    public String blockTypeAt(Vector3Di position)
-    {
-        Objects.requireNonNull(position, "position may not be null.");
-        return blockTypeAt(position.toBlockPos());
-    }
-
-    /**
      * Sets the block type at a position.
      *
      * @param position
@@ -112,22 +97,6 @@ public final class WorldHandle
     {
         Objects.requireNonNull(position, "position may not be null.");
         frameworkGateway.setBlock(name, position, material);
-    }
-
-    /**
-     * Sets the block type at a position.
-     *
-     * @param position
-     *     Block coordinates.
-     * @param material
-     *     Material name.
-     * @deprecated Use {@link #setBlockAt(BlockPos, String)} instead.
-     */
-    @Deprecated(forRemoval = true)
-    public void setBlockAt(Vector3Di position, String material)
-    {
-        Objects.requireNonNull(position, "position may not be null.");
-        setBlockAt(position.toBlockPos(), material);
     }
 
     /**

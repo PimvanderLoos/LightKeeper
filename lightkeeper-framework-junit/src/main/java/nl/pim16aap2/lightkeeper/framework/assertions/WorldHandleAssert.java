@@ -1,7 +1,6 @@
 package nl.pim16aap2.lightkeeper.framework.assertions;
 
 import nl.pim16aap2.lightkeeper.framework.BlockPos;
-import nl.pim16aap2.lightkeeper.framework.Vector3Di;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.Assertions;
@@ -49,20 +48,6 @@ public final class WorldHandleAssert extends AbstractAssert<WorldHandleAssert, @
             position.y(),
             position.z()
         );
-    }
-
-    /**
-     * Starts an assertion chain for a block at the requested position.
-     *
-     * @param position
-     *     Block position.
-     * @return Block assertion entrypoint.
-     * @deprecated Use {@link #hasBlockAt(BlockPos)} instead.
-     */
-    @Deprecated(forRemoval = true)
-    public WorldBlockAssert hasBlockAt(Vector3Di position)
-    {
-        return hasBlockAt(position.toBlockPos());
     }
 
     /**
