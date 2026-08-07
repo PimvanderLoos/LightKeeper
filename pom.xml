@@ -29,7 +29,7 @@
 
         <version.maven>3.9.16</version.maven>
 
-        <version.apache-commons-io>2.21.0</version.apache-commons-io>
+        <version.apache-commons-io>2.22.0</version.apache-commons-io>
         <version.assertj>4.0.0-M1</version.assertj>
         <version.checkstyle>13.9.0</version.checkstyle>
         <version.dagger>2.56.1</version.dagger>
