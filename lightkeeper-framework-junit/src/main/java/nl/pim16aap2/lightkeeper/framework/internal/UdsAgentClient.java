@@ -25,6 +25,7 @@ import nl.pim16aap2.lightkeeper.protocol.GetPlayerInventory;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerMessages;
 import nl.pim16aap2.lightkeeper.protocol.GetServerErrors;
 import nl.pim16aap2.lightkeeper.protocol.GetServerPlatform;
+import nl.pim16aap2.lightkeeper.protocol.GetServerPlugins;
 import nl.pim16aap2.lightkeeper.protocol.GetServerTick;
 import nl.pim16aap2.lightkeeper.protocol.Handshake;
 import nl.pim16aap2.lightkeeper.protocol.HasPlayerPermission;
@@ -44,6 +45,7 @@ import nl.pim16aap2.lightkeeper.protocol.QueryEntities;
 import nl.pim16aap2.lightkeeper.protocol.RegisterEventListener;
 import nl.pim16aap2.lightkeeper.protocol.RemovePlayer;
 import nl.pim16aap2.lightkeeper.protocol.RightClickBlock;
+import nl.pim16aap2.lightkeeper.protocol.ServerPlugin;
 import nl.pim16aap2.lightkeeper.protocol.SetBlock;
 import nl.pim16aap2.lightkeeper.protocol.TabCompletePlayer;
 import nl.pim16aap2.lightkeeper.protocol.TeleportPlayer;
@@ -59,6 +61,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
@@ -74,8 +77,8 @@ final class UdsAgentClient implements AutoCloseable
     private static final System.Logger LOG = System.getLogger(UdsAgentClient.class.getName());
 
     /**
-     * Default response timeout: the agent's own synchronous-operation timeout plus a safety margin, so the
-     * agent reports a detailed {@code TIMEOUT} error before this client-side watchdog closes the channel.
+     * Default response timeout: the agent's own synchronous-operation timeout plus a safety margin, so the agent
+     * reports a detailed {@code TIMEOUT} error before this client-side watchdog closes the channel.
      *
      * <p>Unix Domain Sockets do not support SO_TIMEOUT, so the transport enforces this with a watchdog.
      */
@@ -498,6 +501,17 @@ final class UdsAgentClient implements AutoCloseable
                 () -> "Unrecognized server platform '" + response.platform() + "'; treating it as UNKNOWN.");
             return Platform.UNKNOWN;
         }
+    }
+
+    Optional<ServerPlugin> getServerPlugin(String pluginName)
+    {
+        final GetServerPlugins.Command command = new GetServerPlugins.Command(nextRequestId(), pluginName);
+        final GetServerPlugins.Response response = send(command);
+        if (response.plugins().isEmpty())
+        {
+            return Optional.empty();
+        }
+        return Optional.of(response.plugins().getFirst());
     }
 
     <R extends IAgentResponse> R send(IAgentCommand<R> command)

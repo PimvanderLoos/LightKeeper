@@ -1,9 +1,7 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.exc.ValueInstantiationException;
+import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
+import nl.pim16aap2.lightkeeper.protocol.AgentProtocolException;
 import nl.pim16aap2.lightkeeper.protocol.BlockType;
 import nl.pim16aap2.lightkeeper.protocol.CancelNextEvents;
 import nl.pim16aap2.lightkeeper.protocol.ClearCapturedEvents;
@@ -21,13 +19,12 @@ import nl.pim16aap2.lightkeeper.protocol.GetPlayerInventory;
 import nl.pim16aap2.lightkeeper.protocol.GetPlayerMessages;
 import nl.pim16aap2.lightkeeper.protocol.GetServerErrors;
 import nl.pim16aap2.lightkeeper.protocol.GetServerPlatform;
+import nl.pim16aap2.lightkeeper.protocol.GetServerPlugins;
 import nl.pim16aap2.lightkeeper.protocol.GetServerTick;
 import nl.pim16aap2.lightkeeper.protocol.Handshake;
 import nl.pim16aap2.lightkeeper.protocol.HasPlayerPermission;
 import nl.pim16aap2.lightkeeper.protocol.IAgentCommand;
 import nl.pim16aap2.lightkeeper.protocol.IAgentResponse;
-import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
-import nl.pim16aap2.lightkeeper.protocol.AgentProtocolException;
 import nl.pim16aap2.lightkeeper.protocol.IsChunkLoaded;
 import nl.pim16aap2.lightkeeper.protocol.LeftClickBlock;
 import nl.pim16aap2.lightkeeper.protocol.LoadChunk;
@@ -47,6 +44,10 @@ import nl.pim16aap2.lightkeeper.protocol.UnloadChunk;
 import nl.pim16aap2.lightkeeper.protocol.UnregisterEventListener;
 import nl.pim16aap2.lightkeeper.protocol.WaitTicks;
 import org.bukkit.Bukkit;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.exc.ValueInstantiationException;
 
 import java.util.Objects;
 import java.util.logging.Level;
@@ -146,8 +147,7 @@ final class AgentRequestDispatcher
      *     Raw JSON request line.
      * @param handshakeCompleted
      *     Whether the current connection has already completed handshake successfully.
-     * @return
-     *     Dispatch result containing response JSON and updated handshake state.
+     * @return Dispatch result containing response JSON and updated handshake state.
      */
     RequestDispatchResult handleRequestLine(String line, boolean handshakeCompleted)
     {
@@ -157,8 +157,8 @@ final class AgentRequestDispatcher
         {
             final JsonNode tree = objectMapper.readTree(line);
             requestId = tree.path("requestId").asString("unknown");
-            @SuppressWarnings("rawtypes")
-            final IAgentCommand command = objectMapper.treeToValue(tree, IAgentCommand.class);
+            @SuppressWarnings("rawtypes") final IAgentCommand command = objectMapper.treeToValue(tree,
+                IAgentCommand.class);
             return dispatchCommand(command, handshakeCompleted);
         }
         catch (ValueInstantiationException exception)
@@ -211,8 +211,7 @@ final class AgentRequestDispatcher
      *     Parsed protocol command.
      * @param handshakeCompleted
      *     Current connection handshake state.
-     * @return
-     *     Dispatch result containing response JSON and updated handshake state.
+     * @return Dispatch result containing response JSON and updated handshake state.
      */
     @SuppressWarnings("rawtypes")
     private RequestDispatchResult dispatchCommand(IAgentCommand command, boolean handshakeCompleted)
@@ -246,43 +245,45 @@ final class AgentRequestDispatcher
             // fails to compile rather than silently deserializing into the wrong record on the client.
             final IAgentResponse response = switch (command)
             {
-                case MainWorld.Command c -> handle(c, worldActions::handleMainWorld);
-                case NewWorld.Command c -> handle(c, worldActions::handleNewWorld);
-                case ExecuteCommand.Command c -> handle(c, worldActions::handleExecuteCommand);
                 case BlockType.Command c -> handle(c, worldActions::handleBlockType);
-                case SetBlock.Command c -> handle(c, worldActions::handleSetBlock);
-                case CreatePlayer.Command c -> handle(c, playerActions::handleCreatePlayer);
-                case RemovePlayer.Command c -> handle(c, playerActions::handleRemovePlayer);
-                case ExecutePlayerCommand.Command c -> handle(c, playerActions::handleExecutePlayerCommand);
-                case PlacePlayerBlock.Command c -> handle(c, playerActions::handlePlacePlayerBlock);
-                case LeftClickBlock.Command c -> handle(c, playerActions::handleLeftClickBlock);
-                case RightClickBlock.Command c -> handle(c, playerActions::handleRightClickBlock);
-                case GetOpenMenu.Command c -> handle(c, menuActions::handleGetOpenMenu);
-                case ClickMenuSlot.Command c -> handle(c, menuActions::handleClickMenuSlot);
-                case DragMenuSlots.Command c -> handle(c, menuActions::handleDragMenuSlots);
-                case GetPlayerMessages.Command c -> handle(c, playerStateActions::handleGetPlayerMessages);
-                case WaitTicks.Command c -> handle(c, worldActions::handleWaitTicks);
-                case GetServerTick.Command c -> handle(c, worldActions::handleGetServerTick);
-                case TeleportPlayer.Command c -> handle(c, playerActions::handleTeleportPlayer);
-                case LoadChunk.Command c -> handle(c, worldActions::handleLoadChunk);
-                case UnloadChunk.Command c -> handle(c, worldActions::handleUnloadChunk);
-                case IsChunkLoaded.Command c -> handle(c, worldActions::handleIsChunkLoaded);
-                case GetPlayerInventory.Command c -> handle(c, playerStateActions::handleGetPlayerInventory);
-                case DropItem.Command c -> handle(c, playerStateActions::handleDropItem);
-                case RegisterEventListener.Command c -> handle(c, eventActions::handleRegisterEventListener);
-                case GetCapturedEvents.Command c -> handle(c, eventActions::handleGetCapturedEvents);
-                case ClearCapturedEvents.Command c -> handle(c, eventActions::handleClearCapturedEvents);
-                case UnregisterEventListener.Command c -> handle(c, eventActions::handleUnregisterEventListener);
-                case GetPlayerChatComponents.Command c -> handle(c, playerStateActions::handleGetPlayerChatComponents);
-                case GetServerPlatform.Command c -> handle(c, worldActions::handleGetServerPlatform);
-                case GetServerErrors.Command c -> handle(c, serverErrorActions::handleGetServerErrors);
-                case ClearServerErrors.Command c -> handle(c, serverErrorActions::handleClearServerErrors);
-                case MutatePlayerPermission.Command c -> handle(c, playerActions::handleMutatePlayerPermission);
-                case HasPlayerPermission.Command c -> handle(c, playerActions::handleHasPlayerPermission);
                 case CancelNextEvents.Command c -> handle(c, eventActions::handleCancelNextEvents);
+                case ClearCapturedEvents.Command c -> handle(c, eventActions::handleClearCapturedEvents);
+                case ClearServerErrors.Command c -> handle(c, serverErrorActions::handleClearServerErrors);
+                case ClickMenuSlot.Command c -> handle(c, menuActions::handleClickMenuSlot);
+                case CreatePlayer.Command c -> handle(c, playerActions::handleCreatePlayer);
+                case DragMenuSlots.Command c -> handle(c, menuActions::handleDragMenuSlots);
+                case DropItem.Command c -> handle(c, playerStateActions::handleDropItem);
+                case ExecuteCommand.Command c -> handle(c, worldActions::handleExecuteCommand);
+                case ExecutePlayerCommand.Command c -> handle(c, playerActions::handleExecutePlayerCommand);
+                case GetCapturedEvents.Command c -> handle(c, eventActions::handleGetCapturedEvents);
+                case GetOpenMenu.Command c -> handle(c, menuActions::handleGetOpenMenu);
+                case GetPlayerChatComponents.Command c -> handle(c, playerStateActions::handleGetPlayerChatComponents);
+                case GetPlayerInventory.Command c -> handle(c, playerStateActions::handleGetPlayerInventory);
+                case GetPlayerMessages.Command c -> handle(c, playerStateActions::handleGetPlayerMessages);
+                case GetServerErrors.Command c -> handle(c, serverErrorActions::handleGetServerErrors);
+                case GetServerPlatform.Command c -> handle(c, worldActions::handleGetServerPlatform);
+                case GetServerPlugins.Command c -> handle(c, worldActions::handleGetServerPlugins);
+                case GetServerTick.Command c -> handle(c, worldActions::handleGetServerTick);
+                case HasPlayerPermission.Command c -> handle(c, playerActions::handleHasPlayerPermission);
+                case IsChunkLoaded.Command c -> handle(c, worldActions::handleIsChunkLoaded);
+                case LeftClickBlock.Command c -> handle(c, playerActions::handleLeftClickBlock);
+                case LoadChunk.Command c -> handle(c, worldActions::handleLoadChunk);
+                case MainWorld.Command c -> handle(c, worldActions::handleMainWorld);
+                case MutatePlayerPermission.Command c -> handle(c, playerActions::handleMutatePlayerPermission);
+                case NewWorld.Command c -> handle(c, worldActions::handleNewWorld);
+                case PlacePlayerBlock.Command c -> handle(c, playerActions::handlePlacePlayerBlock);
                 case PlayerChat.Command c -> handle(c, playerActions::handlePlayerChat);
                 case QueryEntities.Command c -> handle(c, worldActions::handleQueryEntities);
+                case RegisterEventListener.Command c -> handle(c, eventActions::handleRegisterEventListener);
+                case RemovePlayer.Command c -> handle(c, playerActions::handleRemovePlayer);
+                case RightClickBlock.Command c -> handle(c, playerActions::handleRightClickBlock);
+                case SetBlock.Command c -> handle(c, worldActions::handleSetBlock);
                 case TabCompletePlayer.Command c -> handle(c, playerActions::handleTabCompletePlayer);
+                case TeleportPlayer.Command c -> handle(c, playerActions::handleTeleportPlayer);
+                case UnloadChunk.Command c -> handle(c, worldActions::handleUnloadChunk);
+                case UnregisterEventListener.Command c -> handle(c, eventActions::handleUnregisterEventListener);
+                case WaitTicks.Command c -> handle(c, worldActions::handleWaitTicks);
+
                 case Handshake.Command ignored ->
                     throw new IllegalStateException("Unreachable HANDSHAKE dispatch branch.");
             };
@@ -354,8 +355,8 @@ final class AgentRequestDispatcher
     }
 
     /**
-     * Invokes a command handler, constraining at compile time that the handler returns the response type the
-     * command declares via {@code IAgentCommand<R>}. A mispaired handler therefore fails to compile.
+     * Invokes a command handler, constraining at compile time that the handler returns the response type the command
+     * declares via {@code IAgentCommand<R>}. A mispaired handler therefore fails to compile.
      *
      * @param command
      *     The parsed command to handle.
@@ -366,6 +367,7 @@ final class AgentRequestDispatcher
      * @param <R>
      *     The response type the command is paired with.
      * @return The handler's response.
+     *
      * @throws Exception
      *     Propagates handler failures.
      */
@@ -392,10 +394,12 @@ final class AgentRequestDispatcher
          * @param command
          *     The command to handle.
          * @return The typed response.
+         *
          * @throws Exception
          *     Propagates handler failures.
          */
-        R handle(C command) throws Exception;
+        R handle(C command)
+            throws Exception;
     }
 
     /**
@@ -403,8 +407,8 @@ final class AgentRequestDispatcher
      *
      * @param command
      *     Handshake command containing token, protocol version, and agent hash.
-     * @return
-     *     Success response when validation succeeds.
+     * @return Success response when validation succeeds.
+     *
      * @throws AgentProtocolException
      *     When token, protocol version, or agent SHA validation fails.
      */
@@ -441,8 +445,7 @@ final class AgentRequestDispatcher
      *     Human-readable error message.
      * @param handshakeCompleted
      *     Current handshake state to propagate.
-     * @return
-     *     Error dispatch result.
+     * @return Error dispatch result.
      */
     private RequestDispatchResult buildErrorResult(
         String requestId,

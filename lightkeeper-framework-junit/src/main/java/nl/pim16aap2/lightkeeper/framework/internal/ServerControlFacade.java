@@ -6,18 +6,20 @@ import nl.pim16aap2.lightkeeper.framework.IServerControl;
 import nl.pim16aap2.lightkeeper.framework.Platform;
 import nl.pim16aap2.lightkeeper.framework.ServerErrorsHandle;
 import nl.pim16aap2.lightkeeper.protocol.CommandSource;
+import nl.pim16aap2.lightkeeper.protocol.ServerPlugin;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
 
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Default {@link IServerControl} implementation.
  *
  * <p>Wraps the shared framework internals handed to it by {@link DefaultLightkeeperFramework}: it drives the
- * server process, the agent client, and the player registry, and defers the shared open-state gate,
- * server-down flag, and world preload to the owning framework.
+ * server process, the agent client, and the player registry, and defers the shared open-state gate, server-down flag,
+ * and world preload to the owning framework.
  */
 final class ServerControlFacade implements IServerControl
 {
@@ -77,16 +79,34 @@ final class ServerControlFacade implements IServerControl
     public Path pluginDataDirectory(String pluginName)
     {
         framework.ensureOpen();
-        final String trimmedPluginName =
-            Objects.requireNonNull(pluginName, "pluginName may not be null.").trim();
+        final String trimmedPluginName = getTrimmedPluginName(pluginName);
+        return directory().resolve("plugins").resolve(trimmedPluginName);
+    }
+
+    @Override
+    public Optional<ServerPlugin> plugin(String pluginName)
+    {
+        framework.ensureOpen();
+        final String trimmedPluginName = getTrimmedPluginName(pluginName);
+        return agentClient.getServerPlugin(trimmedPluginName);
+    }
+
+    private String getTrimmedPluginName(String pluginName)
+    {
+        Objects.requireNonNull(pluginName, "pluginName may not be null.");
+        final String trimmedPluginName = pluginName.trim();
         if (trimmedPluginName.isEmpty())
             throw new IllegalArgumentException("pluginName may not be blank.");
+
         // The plugin name is authored by the test writer (trusted input); this check catches accidental path
         // fragments early rather than acting as a security boundary.
-        if (trimmedPluginName.contains("/") || trimmedPluginName.contains("\\") || trimmedPluginName.contains(".."))
+        if (trimmedPluginName.contains("/") ||
+            trimmedPluginName.contains("\\") ||
+            trimmedPluginName.contains(".."))
             throw new IllegalArgumentException(
                 "pluginName must be a plain directory name, got '%s'.".formatted(trimmedPluginName));
-        return directory().resolve("plugins").resolve(trimmedPluginName);
+
+        return trimmedPluginName;
     }
 
     @Override
@@ -113,8 +133,8 @@ final class ServerControlFacade implements IServerControl
      * Graceful-stop implementation without the running-state precondition.
      *
      * <p>Tolerates a server that died on its own after the caller's running check: player cleanup swallows
-     * per-player failures, the client close is idempotent, and the process stop handles dead processes. This is
-     * what lets {@link #restart()} avoid a check-then-act race on the running state.
+     * per-player failures, the client close is idempotent, and the process stop handles dead processes. This is what
+     * lets {@link #restart()} avoid a check-then-act race on the running state.
      */
     private void doStop()
     {

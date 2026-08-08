@@ -22,6 +22,9 @@ class LightkeeperServerLifecycleIT
         assertThat(serverDirectory).isDirectory();
         assertThat(framework.server().pluginDataDirectory("LightkeeperSpigotTestPlugin"))
             .isEqualTo(serverDirectory.resolve("plugins").resolve("LightkeeperSpigotTestPlugin"));
+        assertThat(framework.server().plugin("LightkeeperSpigotTestPlugin"))
+            .hasValueSatisfying(plugin -> assertThat(plugin.isEnabled()).isTrue());
+
         framework.bots().join("lklife001", framework.worlds().main());
 
         // execute: graceful stop
