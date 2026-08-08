@@ -1,9 +1,11 @@
 package nl.pim16aap2.lightkeeper.framework;
 
 import nl.pim16aap2.lightkeeper.protocol.CommandSource;
+import nl.pim16aap2.lightkeeper.protocol.ServerPlugin;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Server-control facet of the framework: command execution, console output, platform, filesystem access, process
@@ -42,8 +44,8 @@ public interface IServerControl
      * Gets the Minecraft server's working directory.
      *
      * <p>Filesystem contract: reading is safe at any time; writing (e.g. seeding database files or patching
-     * plugin configurations) is only safe while the server is stopped — between {@link #stop()} and
-     * {@link #start()} — because the server reads most files once at boot and may overwrite them on shutdown.
+     * plugin configurations) is only safe while the server is stopped — between {@link #stop()} and {@link #start()} —
+     * because the server reads most files once at boot and may overwrite them on shutdown.
      *
      * @return The server directory.
      */
@@ -56,25 +58,33 @@ public interface IServerControl
      * {@link #directory()} applies.
      *
      * @param pluginName
-     *     The plugin's name, as used for its data directory (usually the {@code name} from its
-     *     {@code plugin.yml}).
+     *     The plugin's name, as used for its data directory (usually the {@code name} from its {@code plugin.yml}).
      * @return The plugin data directory.
      */
     Path pluginDataDirectory(String pluginName);
 
     /**
+     * Gets the data of the plugin with the given name.
+     *
+     * @param pluginName
+     *     The plugin's name from its {@code plugin.yml}).
+     * @return The plugin snapshot if the plugin exists on the server.
+     */
+    Optional<ServerPlugin> plugin(String pluginName);
+
+    /**
      * Crashes the Minecraft server immediately by force-killing the process.
      *
      * <p>All fixtures created before the crash are invalidated: player and world handles obtained earlier no
-     * longer refer to live server state. In shared-server mode the server must be started again via
-     * {@link #start()} or {@link #restart()} before the next test method runs, otherwise that method fails fast;
-     * annotate the test with {@code @FreshServer} to receive a new server per method instead.
+     * longer refer to live server state. In shared-server mode the server must be started again via {@link #start()} or
+     * {@link #restart()} before the next test method runs, otherwise that method fails fast; annotate the test with
+     * {@code @FreshServer} to receive a new server per method instead.
      */
     void crash();
 
     /**
-     * Stops the Minecraft server gracefully via the console {@code stop} command, force-killing it only when it
-     * does not exit within the shutdown timeout.
+     * Stops the Minecraft server gracefully via the console {@code stop} command, force-killing it only when it does
+     * not exit within the shutdown timeout.
      *
      * <p>Synthetic players are removed before the server shuts down so they quit cleanly. All fixtures created
      * before the stop are invalidated, exactly as documented on {@link #crash()}. While the server is stopped, the
@@ -89,8 +99,8 @@ public interface IServerControl
      * Starts the Minecraft server after a {@link #stop()} or {@link #crash()} call.
      *
      * <p>Only worlds configured in the runtime manifest are preloaded again. Players and worlds created at runtime
-     * before the server went down are <strong>not</strong> recreated; tests must re-establish their own fixtures
-     * after starting.
+     * before the server went down are <strong>not</strong> recreated; tests must re-establish their own fixtures after
+     * starting.
      *
      * @throws IllegalStateException
      *     If the server is already running.
@@ -106,8 +116,7 @@ public interface IServerControl
     void restart();
 
     /**
-     * Gets the agent's monotonic tick counter, for correlating against {@link CapturedEventSnapshot#tick()}
-     * stamps.
+     * Gets the agent's monotonic tick counter, for correlating against {@link CapturedEventSnapshot#tick()} stamps.
      *
      * <p>This is an agent-relative counter (ticks since the agent enabled), not the server's absolute game tick:
      * it resets on every server start, so values are only comparable within one server session.
@@ -120,9 +129,9 @@ public interface IServerControl
      * Gets a handle over the always-on server-error capture.
      *
      * <p>The agent captures every WARN-or-worse log event inside the server as a structured snapshot — with the
-     * real throwable class, message, and cause chain — from the moment the agent plugin loads (before any
-     * plugin's {@code onEnable}). Failures inside the logging system itself (reported via Log4j's status logger)
-     * and stack traces written to the server process's raw stderr file descriptor are captured as well.
+     * real throwable class, message, and cause chain — from the moment the agent plugin loads (before any plugin's
+     * {@code onEnable}). Failures inside the logging system itself (reported via Log4j's status logger) and stack
+     * traces written to the server process's raw stderr file descriptor are captured as well.
      *
      * <p>In shared-server mode the capture buffer is cleared automatically at the end of every test method, so
      * each test observes only the errors of its own window; the first test's window also covers server boot. Known
