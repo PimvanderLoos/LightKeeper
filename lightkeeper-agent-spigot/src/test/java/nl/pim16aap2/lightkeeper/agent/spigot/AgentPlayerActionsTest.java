@@ -37,6 +37,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.permissions.PermissionAttachment;
@@ -48,10 +49,16 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 
+import java.net.InetAddress;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -677,14 +684,18 @@ class AgentPlayerActionsTest
         final TeleportPlayer.Command command =
             new TeleportPlayer.Command("request-teleport", uuid, "world", 1.0D, 64.0D, 2.0D);
 
-        // execute + verify
+        // execute
+        final Throwable thrown;
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class))
         {
             bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
-            assertThatThrownBy(() -> fixture.playerActions().handleTeleportPlayer(command))
-                .isInstanceOfSatisfying(AgentProtocolException.class, exception ->
-                    assertThat(exception.errorCode()).isEqualTo(AgentErrorCode.PLAYER_DEAD));
+            thrown = catchThrowable(() -> fixture.playerActions().handleTeleportPlayer(command));
         }
+
+        // verify
+        assertThat(thrown)
+            .isInstanceOfSatisfying(AgentProtocolException.class, exception ->
+                assertThat(exception.errorCode()).isEqualTo(AgentErrorCode.PLAYER_DEAD));
         verify(player, never()).teleport(any(org.bukkit.Location.class));
     }
 
@@ -698,7 +709,14 @@ class AgentPlayerActionsTest
         final World world = mock();
         final Player player = mockPlayer(uuid);
         when(player.getName()).thenReturn("testbot");
-        when(fixture.nmsAdapter().spawnPlayer(eq(uuid), eq("testbot"), eq(world), any())).thenReturn(player);
+        when(fixture.nmsAdapter().spawnPlayer(eq(uuid), eq("testbot"), eq(world), any(), eq(false), any()))
+            .thenAnswer(invocation ->
+            {
+                @SuppressWarnings("unchecked")
+                final Consumer<Player> beforeJoin = invocation.getArgument(5);
+                beforeJoin.accept(player);
+                return player;
+            });
         final PermissionAttachment attachment = mock();
         when(player.addAttachment(any())).thenReturn(attachment);
         final CreatePlayer.Command command = new CreatePlayer.Command(
@@ -723,7 +741,7 @@ class AgentPlayerActionsTest
         // is dropped and removePermissionAttachment finds nothing to detach.
         fixture.playerStore().removePermissionAttachment(uuid, player);
         verify(player).removeAttachment(attachment);
-        verify(player).setInvulnerable(false);
+        verify(fixture.nmsAdapter()).spawnPlayer(eq(uuid), eq("testbot"), eq(world), any(), eq(false), any());
     }
 
     @Test
@@ -752,6 +770,64 @@ class AgentPlayerActionsTest
                     .isEqualTo(AgentErrorCode.PLAYER_JOIN_DENIED))
                 .hasMessageContaining("Banned");
         }
+    }
+
+    @Test
+    void handleCreatePlayer_shouldApplyInvulnerabilityBeforeFullLoginJoinHandlers()
+        throws Exception
+    {
+        // setup
+        final PlayerActionsFixture fixture = createPlayerActionsFixture();
+        final IBotLoginDriver loginDriver = mock();
+        when(fixture.nmsAdapter().loginDriver()).thenReturn(loginDriver);
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mock();
+        when(player.getUniqueId()).thenReturn(uuid);
+        when(player.getName()).thenReturn("fullbot");
+        final AtomicBoolean invulnerable = new AtomicBoolean();
+        doAnswer(invocation ->
+        {
+            invulnerable.set(invocation.getArgument(0));
+            return null;
+        }).when(player).setInvulnerable(anyBoolean());
+
+        final Map<Class<?>, Listener> listeners = new HashMap<>();
+        final Map<Class<?>, EventExecutor> eventExecutors = new HashMap<>();
+        final PluginManager pluginManager = mock();
+        doAnswer(invocation ->
+        {
+            final Class<?> eventType = invocation.getArgument(0);
+            listeners.put(eventType, invocation.getArgument(1));
+            eventExecutors.put(eventType, invocation.getArgument(3));
+            return null;
+        }).when(pluginManager).registerEvent(any(), any(), any(), any(), any());
+
+        final AtomicBoolean invulnerableAtJoin = new AtomicBoolean();
+        when(loginDriver.login(any())).thenAnswer(invocation ->
+        {
+            Objects.requireNonNull(eventExecutors.get(PlayerLoginEvent.class)).execute(
+                Objects.requireNonNull(listeners.get(PlayerLoginEvent.class)),
+                new PlayerLoginEvent(player, "localhost", InetAddress.getLoopbackAddress()));
+            invulnerableAtJoin.set(invulnerable.get());
+            Objects.requireNonNull(eventExecutors.get(PlayerJoinEvent.class)).execute(
+                Objects.requireNonNull(listeners.get(PlayerJoinEvent.class)), new PlayerJoinEvent(player, "joined"));
+            return new IBotLoginOutcome.Joined("fullbot");
+        });
+        final CreatePlayer.Command command = new CreatePlayer.Command(
+            "request-full-safe", "fullbot", null, "world", null, null, null, null, null, true,
+            JoinMode.FULL_LOGIN, null);
+
+        // execute
+        final CreatePlayer.Response response;
+        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class))
+        {
+            stubFullLoginBukkitStatics(bukkit, pluginManager);
+            response = fixture.playerActions().handleCreatePlayer(command);
+        }
+
+        // verify
+        assertThat(response.uuid()).isEqualTo(uuid);
+        assertThat(invulnerableAtJoin).isTrue();
     }
 
     @Test
@@ -842,7 +918,6 @@ class AgentPlayerActionsTest
             // verify — the bot leaves through the real disconnect flow (kick), never the legacy player-list
             // removal that would leave its TCP connection open (Paper crashes on the second removal when the
             // server times that connection out).
-            verify(player).setInvulnerable(true);
             verify(player).kickPlayer(anyString());
             verify(fixture.nmsAdapter(), never()).removePlayer(any());
         }
@@ -890,12 +965,20 @@ class AgentPlayerActionsTest
     }
 
     /**
-     * Creates a plugin-manager mock that immediately fires a {@code PlayerJoinEvent} for the given player
-     * whenever an event executor is registered, completing a FULL_LOGIN join's join-latch synchronously.
+     * Creates a plugin-manager mock that immediately fires the login and join events for the given player when
+     * their executors are registered, completing a FULL_LOGIN join's join-latch synchronously.
      */
     private static PluginManager joinEventFiringPluginManager(Player player)
     {
         final PluginManager pluginManager = mock();
+        doAnswer(invocation ->
+        {
+            final Listener listener = invocation.getArgument(1);
+            final EventExecutor eventExecutor = invocation.getArgument(3);
+            eventExecutor.execute(
+                listener, new PlayerLoginEvent(player, "localhost", InetAddress.getLoopbackAddress()));
+            return null;
+        }).when(pluginManager).registerEvent(eq(PlayerLoginEvent.class), any(), any(), any(), any());
         doAnswer(invocation ->
         {
             final Listener listener = invocation.getArgument(1);

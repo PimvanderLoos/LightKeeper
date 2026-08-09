@@ -7,6 +7,7 @@ import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
@@ -81,5 +82,36 @@ class AgentSyntheticPlayerLifecycleListenerTest
             .isInstanceOfSatisfying(AgentProtocolException.class, exception ->
                 assertThat(exception.errorCode()).isEqualTo(AgentErrorCode.PLAYER_DISCONNECTED))
             .hasMessageContaining("left the game");
+    }
+
+    @Test
+    void onPlayerRespawn_shouldClearRecordedDeath()
+    {
+        // setup
+        final AgentSyntheticPlayerStore store = new AgentSyntheticPlayerStore();
+        final Logger logger = mock();
+        final AgentSyntheticPlayerLifecycleListener listener =
+            new AgentSyntheticPlayerLifecycleListener(store, logger);
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mock();
+        final World world = mock();
+        final Location respawnLocation = new Location(world, 4.0D, 70.0D, 8.0D);
+        final PlayerRespawnEvent event = mock();
+        when(player.getUniqueId()).thenReturn(uuid);
+        when(player.getName()).thenReturn("respawnbot");
+        when(player.isOnline()).thenReturn(true);
+        when(world.getName()).thenReturn("world");
+        when(event.getPlayer()).thenReturn(player);
+        when(event.getRespawnLocation()).thenReturn(respawnLocation);
+        store.registerSyntheticPlayer(uuid, player);
+        store.markPlayerDead(uuid, "player died");
+
+        // execute
+        listener.onPlayerRespawn(event);
+
+        // verify
+        assertThat(store.getRequiredActivePlayer(uuid, "TELEPORT_PLAYER")).isSameAs(player);
+        verify(logger).info(contains("Synthetic player 'respawnbot'"));
+        verify(logger).info(contains("respawned at world[4.00, 70.00, 8.00]"));
     }
 }

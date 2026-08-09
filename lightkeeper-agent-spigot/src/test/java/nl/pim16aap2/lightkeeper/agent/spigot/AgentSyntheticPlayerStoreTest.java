@@ -26,8 +26,11 @@ class AgentSyntheticPlayerStoreTest
         when(player.isDead()).thenReturn(true);
         store.registerSyntheticPlayer(uuid, player);
 
-        // execute + verify
-        assertThatThrownBy(() -> store.getRequiredActivePlayer(uuid, "TELEPORT_PLAYER"))
+        // execute
+        final Throwable thrown = catchThrowable(() -> store.getRequiredActivePlayer(uuid, "TELEPORT_PLAYER"));
+
+        // verify
+        assertThat(thrown)
             .isInstanceOfSatisfying(AgentProtocolException.class, exception ->
                 assertThat(exception.errorCode()).isEqualTo(AgentErrorCode.PLAYER_DEAD))
             .hasMessageContaining("TELEPORT_PLAYER")
@@ -44,8 +47,11 @@ class AgentSyntheticPlayerStoreTest
         when(player.isOnline()).thenReturn(false);
         store.registerSyntheticPlayer(uuid, player);
 
-        // execute + verify
-        assertThatThrownBy(() -> store.getRequiredActivePlayer(uuid, "PLAYER_CHAT"))
+        // execute
+        final Throwable thrown = catchThrowable(() -> store.getRequiredActivePlayer(uuid, "PLAYER_CHAT"));
+
+        // verify
+        assertThat(thrown)
             .isInstanceOfSatisfying(AgentProtocolException.class, exception ->
                 assertThat(exception.errorCode()).isEqualTo(AgentErrorCode.PLAYER_DISCONNECTED))
             .hasMessageContaining("PLAYER_CHAT")
@@ -81,15 +87,23 @@ class AgentSyntheticPlayerStoreTest
         store.registerSyntheticPlayer(uuid, player);
         store.markPlayerDead(uuid, "cause=minecraft:fall location=world[1.0,64.0,2.0]");
 
-        // execute + verify
-        assertThatThrownBy(() -> store.getRequiredActivePlayer(uuid, "TELEPORT_PLAYER"))
+        // execute - inspect the recorded death
+        final Throwable deathFailure = catchThrowable(
+            () -> store.getRequiredActivePlayer(uuid, "TELEPORT_PLAYER"));
+
+        // verify - the diagnostic survives Bukkit's transient entity state
+        assertThat(deathFailure)
             .isInstanceOfSatisfying(AgentProtocolException.class, exception ->
                 assertThat(exception.errorCode()).isEqualTo(AgentErrorCode.PLAYER_DEAD))
             .hasMessageContaining("minecraft:fall")
             .hasMessageContaining("world[1.0,64.0,2.0]");
 
+        // execute - complete the lifecycle transition
         store.markPlayerRespawned(uuid);
-        assertThat(store.getRequiredActivePlayer(uuid, "TELEPORT_PLAYER")).isSameAs(player);
+        final Player respawnedPlayer = store.getRequiredActivePlayer(uuid, "TELEPORT_PLAYER");
+
+        // verify - actions are available again after respawn
+        assertThat(respawnedPlayer).isSameAs(player);
     }
 
     @Test

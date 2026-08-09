@@ -129,6 +129,31 @@ class UdsAgentClientTest
     }
 
     @Test
+    void send_shouldTranslatePlayerNotRegisteredFailureToTypedException(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("agent-player-not-registered.sock");
+        final String responseJson = "{\"requestId\":\"1\",\"success\":false,"
+            + "\"errorCode\":\"PLAYER_NOT_REGISTERED\","
+            + "\"errorMessage\":\"Player is not registered.\"}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson))
+        {
+            final UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3));
+
+            // execute
+            final Throwable thrown = catchThrowable(() -> client.send(new WaitTicks.Command("1", 1)));
+
+            // verify
+            assertThat(thrown)
+                .isInstanceOfSatisfying(PlayerUnavailableException.class, exception ->
+                    assertThat(exception.reason()).isEqualTo(PlayerUnavailableException.Reason.NOT_REGISTERED))
+                .hasMessageContaining("not registered");
+            client.close();
+        }
+    }
+
+    @Test
     void send_shouldPreserveUnknownWireErrorCode(@TempDir Path tempDirectory)
         throws Exception
     {

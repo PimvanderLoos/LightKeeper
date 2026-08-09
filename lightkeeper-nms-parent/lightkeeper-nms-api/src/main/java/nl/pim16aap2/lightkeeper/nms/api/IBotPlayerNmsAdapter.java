@@ -6,6 +6,7 @@ import org.bukkit.entity.Player;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 /**
  * Version-specific NMS bridge for synthetic player lifecycle.
@@ -23,9 +24,20 @@ public interface IBotPlayerNmsAdapter
      *     The target world.
      * @param spawnLocation
      *     Spawn location.
+     * @param invulnerable
+     *     Whether the player must be invulnerable before join handlers observe it.
+     * @param beforeJoin
+     *     Initializer invoked exactly once after the Bukkit player is configured and before join handlers can
+     *     observe it.
      * @return Registered Bukkit player handle.
      */
-    Player spawnPlayer(UUID uuid, String name, World world, Location spawnLocation);
+    Player spawnPlayer(
+        UUID uuid,
+        String name,
+        World world,
+        Location spawnLocation,
+        boolean invulnerable,
+        Consumer<Player> beforeJoin);
 
     /**
      * Returns the full-login driver for this adapter.

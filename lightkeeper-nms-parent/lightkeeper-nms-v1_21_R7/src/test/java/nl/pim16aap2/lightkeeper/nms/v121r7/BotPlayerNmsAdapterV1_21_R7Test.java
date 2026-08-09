@@ -3,6 +3,7 @@ package nl.pim16aap2.lightkeeper.nms.v121r7;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.bukkit.entity.Player;
+import org.mockito.InOrder;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -15,9 +16,12 @@ import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -516,7 +520,7 @@ class BotPlayerNmsAdapterV1_21_R7Test
     }
 
     @Test
-    void spawnPlayer_shouldCreateAndRegisterPlayerWhenHandlesAreConfigured()
+    void spawnPlayer_shouldApplyInvulnerabilityBeforeRegisteringPlayer()
         throws Exception
     {
         // setup
@@ -524,10 +528,12 @@ class BotPlayerNmsAdapterV1_21_R7Test
         final org.bukkit.World world = mock(org.bukkit.World.class);
         final org.bukkit.Location location = mock(org.bukkit.Location.class);
         final org.bukkit.entity.Player bukkitPlayer = mock(org.bukkit.entity.Player.class);
+        @SuppressWarnings("unchecked")
+        final Consumer<org.bukkit.entity.Player> beforeJoin = mock(Consumer.class);
         when(bukkitPlayer.teleport(location)).thenReturn(true);
 
         final FakeMinecraftServer server = new FakeMinecraftServer();
-        final FakePlayerList playerList = new FakePlayerList();
+        final FakePlayerList playerList = mock();
         final BotPlayerNmsAdapterV1_21_R7 adapter = allocateAdapter();
         setField(adapter, "minecraftServer", server);
         setField(adapter, "playerList", playerList);
@@ -567,11 +573,15 @@ class BotPlayerNmsAdapterV1_21_R7Test
         FakeServerPlayer.returningBukkitPlayer = bukkitPlayer;
 
         // execute
-        final org.bukkit.entity.Player created = adapter.spawnPlayer(playerId, "bot", world, location);
+        final org.bukkit.entity.Player created =
+            adapter.spawnPlayer(playerId, "bot", world, location, true, beforeJoin);
 
         // verify
         assertThat(created).isSameAs(bukkitPlayer);
-        assertThat(playerList.placedPlayer).isNotNull();
+        final InOrder creationOrder = inOrder(bukkitPlayer, beforeJoin, playerList);
+        creationOrder.verify(bukkitPlayer).setInvulnerable(true);
+        creationOrder.verify(beforeJoin).accept(bukkitPlayer);
+        creationOrder.verify(playerList).placeNewPlayer(any(), any(), any());
         verify(bukkitPlayer).teleport(location);
     }
 
@@ -892,7 +902,6 @@ class BotPlayerNmsAdapterV1_21_R7Test
     public static final class FakePlayerList
     {
         private @Nullable FakeServerPlayer removedPlayer;
-        private @Nullable FakeServerPlayer placedPlayer;
 
         public void remove(FakeServerPlayer serverPlayer)
         {
@@ -901,7 +910,7 @@ class BotPlayerNmsAdapterV1_21_R7Test
 
         public void placeNewPlayer(FakeConnection connection, FakeServerPlayer serverPlayer, Object cookie)
         {
-            this.placedPlayer = serverPlayer;
+            // no-op
         }
     }
 

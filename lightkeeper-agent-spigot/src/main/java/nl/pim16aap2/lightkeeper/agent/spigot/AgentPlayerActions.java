@@ -30,6 +30,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.EventExecutor;
@@ -160,15 +161,25 @@ final class AgentPlayerActions
             final Location spawnLocation = x == null || y == null || z == null
                 ? world.getSpawnLocation()
                 : new Location(world, x, y, z);
-            final Player spawnedPlayer = botPlayerNmsAdapter.spawnPlayer(uuid, name, world, spawnLocation);
+            final Player spawnedPlayer;
+            try
+            {
+                spawnedPlayer = botPlayerNmsAdapter.spawnPlayer(
+                    uuid,
+                    name,
+                    world,
+                    spawnLocation,
+                    command.invulnerable(),
+                    preparedPlayer -> playerStore.registerSyntheticPlayer(uuid, preparedPlayer));
+            }
+            catch (RuntimeException exception)
+            {
+                playerStore.removeSyntheticPlayer(uuid);
+                throw exception;
+            }
             spawnedPlayer.setInvulnerable(command.invulnerable());
             if (health != null)
                 spawnedPlayer.setHealth(Math.min(spawnedPlayer.getMaxHealth(), health));
-
-            // Register before applying permissions so setPermissions can store the attachment on the player's
-            // state; registering afterwards leaves the attachment created-and-applied but never recorded, so it
-            // can never be revoked on removal.
-            playerStore.registerSyntheticPlayer(uuid, spawnedPlayer);
 
             if (permissionsCsv != null && !permissionsCsv.isBlank())
                 playerStore.setPermissions(plugin, uuid, spawnedPlayer, permissionsCsv);
@@ -219,14 +230,24 @@ final class AgentPlayerActions
 
         final CountDownLatch joinLatch = new CountDownLatch(1);
         final AtomicReference<Player> joinedPlayer = new AtomicReference<>();
+        final AtomicReference<UUID> preRegisteredPlayerId = new AtomicReference<>();
         final Listener listener = new Listener()
         {
         };
         final EventExecutor executor = (ignoredListener, event) ->
         {
-            if (event instanceof PlayerJoinEvent joinEvent && joinEvent.getPlayer().getName().equals(name))
+            if (event instanceof PlayerLoginEvent loginEvent && loginEvent.getPlayer().getName().equals(name)
+                && loginEvent.getResult() == PlayerLoginEvent.Result.ALLOWED)
+            {
+                final Player player = loginEvent.getPlayer();
+                player.setInvulnerable(command.invulnerable());
+                playerStore.registerSyntheticPlayer(player.getUniqueId(), player);
+                preRegisteredPlayerId.set(player.getUniqueId());
+            }
+            else if (event instanceof PlayerJoinEvent joinEvent && joinEvent.getPlayer().getName().equals(name))
             {
                 final Player player = joinEvent.getPlayer();
+                // Reassert the requested final state in case a join handler deliberately changed it.
                 player.setInvulnerable(command.invulnerable());
                 joinedPlayer.set(player);
                 joinLatch.countDown();
@@ -238,11 +259,14 @@ final class AgentPlayerActions
             if (Bukkit.getWorld(command.worldName()) == null)
                 throw new IllegalArgumentException("World '%s' does not exist.".formatted(command.worldName()));
             Bukkit.getPluginManager().registerEvent(
+                PlayerLoginEvent.class, listener, EventPriority.HIGHEST, executor, plugin);
+            Bukkit.getPluginManager().registerEvent(
                 PlayerJoinEvent.class, listener, EventPriority.MONITOR, executor, plugin);
             return Boolean.TRUE;
         });
 
         Exception primaryFailure = null;
+        boolean creationCompleted = false;
         try
         {
             final int port = Bukkit.getServer().getPort();
@@ -263,6 +287,7 @@ final class AgentPlayerActions
 
             final Player player = Objects.requireNonNull(joinedPlayer.get(), "joined player");
             registerJoinedPlayer(player, command);
+            creationCompleted = true;
 
             plugin.getLogger().info(
                 "LK_AGENT: Full-login player '%s' (%s) joined.".formatted(player.getName(), player.getUniqueId()));
@@ -275,6 +300,12 @@ final class AgentPlayerActions
         }
         finally
         {
+            if (!creationCompleted)
+            {
+                final UUID preRegisteredId = preRegisteredPlayerId.get();
+                if (preRegisteredId != null)
+                    playerStore.removeSyntheticPlayer(preRegisteredId);
+            }
             unregisterJoinListener(listener, deadlineNanos, primaryFailure);
         }
     }
@@ -389,7 +420,11 @@ final class AgentPlayerActions
                 : new Location(world, command.x(), command.y(), command.z());
             player.teleport(target);
 
-            playerStore.registerSyntheticPlayer(uuid, player);
+            if (!player.equals(playerStore.getRequiredPlayer(uuid)))
+                throw new IllegalStateException(
+                    "Full-login player '%s' (%s) changed between login and join events."
+                        .formatted(player.getName(), uuid));
+            player.setInvulnerable(command.invulnerable());
             fullLoginPlayerIds.add(uuid);
             if (health != null)
                 player.setHealth(Math.min(player.getMaxHealth(), health));

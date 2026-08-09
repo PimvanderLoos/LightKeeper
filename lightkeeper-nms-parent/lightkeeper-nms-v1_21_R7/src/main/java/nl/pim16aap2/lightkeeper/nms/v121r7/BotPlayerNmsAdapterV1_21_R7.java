@@ -27,6 +27,7 @@ import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Consumer;
 
 /**
  * Paper 1.21.11 (v1_21_R7) synthetic-player adapter.
@@ -349,15 +350,27 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
      *     Target world.
      * @param spawnLocation
      *     Initial player location.
+     * @param invulnerable
+     *     Whether the player must be invulnerable before join handlers observe it.
+     * @param beforeJoin
+     *     Initializer invoked exactly once after the Bukkit player is configured and before join handlers can
+     *     observe it.
      * @return The spawned Bukkit player instance.
      */
     @Override
-    public Player spawnPlayer(UUID uuid, String name, World world, Location spawnLocation)
+    public Player spawnPlayer(
+        UUID uuid,
+        String name,
+        World world,
+        Location spawnLocation,
+        boolean invulnerable,
+        Consumer<Player> beforeJoin)
     {
         Objects.requireNonNull(uuid, "uuid may not be null.");
         Objects.requireNonNull(name, "name may not be null.");
         Objects.requireNonNull(world, "world may not be null.");
         Objects.requireNonNull(spawnLocation, "spawnLocation may not be null.");
+        Objects.requireNonNull(beforeJoin, "beforeJoin may not be null.");
 
         try
         {
@@ -379,9 +392,11 @@ public final class BotPlayerNmsAdapterV1_21_R7 implements IBotPlayerNmsAdapter
             connectionAddressField.set(connection, new InetSocketAddress(InetAddress.getLoopbackAddress(), 0));
             final Object listenerCookie = commonListenerCreateInitialMethod.invoke(null, gameProfile, false);
 
+            final Player bukkitPlayer = (Player) serverPlayerGetBukkitEntityMethod.invoke(serverPlayer);
+            bukkitPlayer.setInvulnerable(invulnerable);
+            beforeJoin.accept(bukkitPlayer);
             playerListPlaceNewPlayerMethod.invoke(playerList, connection, serverPlayer, listenerCookie);
 
-            final Player bukkitPlayer = (Player) serverPlayerGetBukkitEntityMethod.invoke(serverPlayer);
             bukkitPlayer.teleport(spawnLocation);
             playerChannels.put(uuid, embeddedChannel);
             playerMessageQueues.put(uuid, new ConcurrentLinkedQueue<>());
