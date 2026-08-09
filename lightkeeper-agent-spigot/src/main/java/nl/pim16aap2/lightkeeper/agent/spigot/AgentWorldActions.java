@@ -501,13 +501,13 @@ final class AgentWorldActions
 
         final List<ServerPluginSnapshot> serverPlugins = plugins.stream()
             .filter(Objects::nonNull)
-            .map(this::toServerPluginSnapshot)
+            .map(AgentWorldActions::toServerPluginSnapshot)
             .toList();
 
         return new GetServerPlugins.Response(serverPlugins);
     }
 
-    private ServerPluginSnapshot toServerPluginSnapshot(Plugin plugin)
+    static ServerPluginSnapshot toServerPluginSnapshot(Plugin plugin)
     {
         return new ServerPluginSnapshot(
             plugin.getName(),
