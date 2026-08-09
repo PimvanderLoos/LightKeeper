@@ -45,7 +45,7 @@ import nl.pim16aap2.lightkeeper.protocol.QueryEntities;
 import nl.pim16aap2.lightkeeper.protocol.RegisterEventListener;
 import nl.pim16aap2.lightkeeper.protocol.RemovePlayer;
 import nl.pim16aap2.lightkeeper.protocol.RightClickBlock;
-import nl.pim16aap2.lightkeeper.protocol.ServerPlugin;
+import nl.pim16aap2.lightkeeper.protocol.ServerPluginSnapshot;
 import nl.pim16aap2.lightkeeper.protocol.SetBlock;
 import nl.pim16aap2.lightkeeper.protocol.TabCompletePlayer;
 import nl.pim16aap2.lightkeeper.protocol.TeleportPlayer;
@@ -503,7 +503,7 @@ final class UdsAgentClient implements AutoCloseable
         }
     }
 
-    Optional<ServerPlugin> getServerPlugin(String pluginName)
+    Optional<ServerPluginSnapshot> getServerPlugin(String pluginName)
     {
         final GetServerPlugins.Command command = new GetServerPlugins.Command(nextRequestId(), pluginName);
         final GetServerPlugins.Response response = send(command);

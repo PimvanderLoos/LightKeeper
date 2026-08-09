@@ -6,7 +6,7 @@ import nl.pim16aap2.lightkeeper.framework.IServerControl;
 import nl.pim16aap2.lightkeeper.framework.Platform;
 import nl.pim16aap2.lightkeeper.framework.ServerErrorsHandle;
 import nl.pim16aap2.lightkeeper.protocol.CommandSource;
-import nl.pim16aap2.lightkeeper.protocol.ServerPlugin;
+import nl.pim16aap2.lightkeeper.protocol.ServerPluginSnapshot;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
 
 import java.nio.file.Path;
@@ -84,7 +84,7 @@ final class ServerControlFacade implements IServerControl
     }
 
     @Override
-    public Optional<ServerPlugin> plugin(String pluginName)
+    public Optional<ServerPluginSnapshot> plugin(String pluginName)
     {
         framework.ensureOpen();
         final String trimmedPluginName = getTrimmedPluginName(pluginName);

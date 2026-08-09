@@ -16,7 +16,7 @@ import java.util.List;
  * @param isEnabled
  *     Whether the plugin is enabled.
  */
-public record ServerPlugin(
+public record ServerPluginSnapshot(
     String name,
     String version,
     String description,
@@ -24,7 +24,7 @@ public record ServerPlugin(
     boolean isEnabled
 )
 {
-    public ServerPlugin
+    public ServerPluginSnapshot
     {
         authors = authors == null ? List.of() : List.copyOf(authors);
     }

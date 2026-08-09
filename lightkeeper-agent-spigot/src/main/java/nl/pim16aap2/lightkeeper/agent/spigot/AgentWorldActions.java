@@ -12,7 +12,7 @@ import nl.pim16aap2.lightkeeper.protocol.LoadChunk;
 import nl.pim16aap2.lightkeeper.protocol.MainWorld;
 import nl.pim16aap2.lightkeeper.protocol.NewWorld;
 import nl.pim16aap2.lightkeeper.protocol.QueryEntities;
-import nl.pim16aap2.lightkeeper.protocol.ServerPlugin;
+import nl.pim16aap2.lightkeeper.protocol.ServerPluginSnapshot;
 import nl.pim16aap2.lightkeeper.protocol.SetBlock;
 import nl.pim16aap2.lightkeeper.protocol.UnloadChunk;
 import nl.pim16aap2.lightkeeper.protocol.WaitTicks;
@@ -499,17 +499,17 @@ final class AgentWorldActions
             plugins = Arrays.asList(Bukkit.getPluginManager().getPlugins());
         }
 
-        final List<ServerPlugin> serverPlugins = plugins.stream()
+        final List<ServerPluginSnapshot> serverPlugins = plugins.stream()
             .filter(Objects::nonNull)
-            .map(this::toServerPlugin)
+            .map(this::toServerPluginSnapshot)
             .toList();
 
         return new GetServerPlugins.Response(serverPlugins);
     }
 
-    private ServerPlugin toServerPlugin(Plugin plugin)
+    private ServerPluginSnapshot toServerPluginSnapshot(Plugin plugin)
     {
-        return new ServerPlugin(
+        return new ServerPluginSnapshot(
             plugin.getName(),
             plugin.getDescription().getVersion(),
             plugin.getDescription().getDescription(),

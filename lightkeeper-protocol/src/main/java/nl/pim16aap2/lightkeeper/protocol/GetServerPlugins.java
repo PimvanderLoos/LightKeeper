@@ -55,7 +55,7 @@ public final class GetServerPlugins
      *     server.
      */
     public record Response(
-        List<ServerPlugin> plugins
+        List<ServerPluginSnapshot> plugins
     ) implements IAgentResponse
     {
         public Response

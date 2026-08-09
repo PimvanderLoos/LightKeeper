@@ -1,7 +1,7 @@
 package nl.pim16aap2.lightkeeper.framework;
 
 import nl.pim16aap2.lightkeeper.protocol.CommandSource;
-import nl.pim16aap2.lightkeeper.protocol.ServerPlugin;
+import nl.pim16aap2.lightkeeper.protocol.ServerPluginSnapshot;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -70,7 +70,7 @@ public interface IServerControl
      *     The plugin's name from its {@code plugin.yml}).
      * @return The plugin snapshot if the plugin exists on the server.
      */
-    Optional<ServerPlugin> plugin(String pluginName);
+    Optional<ServerPluginSnapshot> plugin(String pluginName);
 
     /**
      * Crashes the Minecraft server immediately by force-killing the process.
