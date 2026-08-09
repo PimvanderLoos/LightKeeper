@@ -100,7 +100,8 @@ final class ServerControlFacade implements IServerControl
 
         // The plugin name is authored by the test writer (trusted input); this check catches accidental path
         // fragments early rather than acting as a security boundary.
-        if (trimmedPluginName.contains("/") ||
+        if (trimmedPluginName.equals(".") ||
+            trimmedPluginName.contains("/") ||
             trimmedPluginName.contains("\\") ||
             trimmedPluginName.contains(".."))
             throw new IllegalArgumentException(
