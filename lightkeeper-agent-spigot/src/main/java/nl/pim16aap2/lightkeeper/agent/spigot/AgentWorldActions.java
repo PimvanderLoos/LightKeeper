@@ -5,12 +5,14 @@ import nl.pim16aap2.lightkeeper.protocol.AgentProtocolException;
 import nl.pim16aap2.lightkeeper.protocol.BlockType;
 import nl.pim16aap2.lightkeeper.protocol.ExecuteCommand;
 import nl.pim16aap2.lightkeeper.protocol.GetServerPlatform;
+import nl.pim16aap2.lightkeeper.protocol.GetServerPlugins;
 import nl.pim16aap2.lightkeeper.protocol.GetServerTick;
 import nl.pim16aap2.lightkeeper.protocol.IsChunkLoaded;
 import nl.pim16aap2.lightkeeper.protocol.LoadChunk;
 import nl.pim16aap2.lightkeeper.protocol.MainWorld;
 import nl.pim16aap2.lightkeeper.protocol.NewWorld;
 import nl.pim16aap2.lightkeeper.protocol.QueryEntities;
+import nl.pim16aap2.lightkeeper.protocol.ServerPluginSnapshot;
 import nl.pim16aap2.lightkeeper.protocol.SetBlock;
 import nl.pim16aap2.lightkeeper.protocol.UnloadChunk;
 import nl.pim16aap2.lightkeeper.protocol.WaitTicks;
@@ -22,14 +24,18 @@ import org.bukkit.WorldCreator;
 import org.bukkit.WorldType;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Transformation;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -89,8 +95,8 @@ final class AgentWorldActions
      *
      * @param command
      *     Typed command carrying the request identifier.
-     * @return
-     *     Response containing {@code worldName}.
+     * @return Response containing {@code worldName}.
+     *
      * @throws Exception
      *     Propagates main-thread execution failures.
      */
@@ -106,8 +112,8 @@ final class AgentWorldActions
      *
      * @param command
      *     Typed command carrying world name, type, environment, and seed.
-     * @return
-     *     Response containing resolved world name.
+     * @return Response containing resolved world name.
+     *
      * @throws Exception
      *     Propagates main-thread execution failures.
      */
@@ -143,8 +149,8 @@ final class AgentWorldActions
      *
      * @param command
      *     Typed command carrying command source and command string.
-     * @return
-     *     Response with command execution result.
+     * @return Response with command execution result.
+     *
      * @throws Exception
      *     Propagates main-thread execution failures.
      */
@@ -168,8 +174,8 @@ final class AgentWorldActions
      *
      * @param command
      *     Typed command carrying world name and block coordinates.
-     * @return
-     *     Response containing the resolved block material.
+     * @return Response containing the resolved block material.
+     *
      * @throws Exception
      *     Propagates main-thread execution failures.
      */
@@ -199,8 +205,8 @@ final class AgentWorldActions
      *
      * @param command
      *     Typed command carrying world name, block coordinates, and material key.
-     * @return
-     *     Response containing resulting material name.
+     * @return Response containing resulting material name.
+     *
      * @throws Exception
      *     Propagates validation and main-thread execution failures.
      */
@@ -236,17 +242,17 @@ final class AgentWorldActions
     }
 
     /**
-     * Handles {@code QUERY_ENTITIES} by reading all matching entities in one main-thread burst, so the
-     * returned states are internally consistent and share one tick stamp.
+     * Handles {@code QUERY_ENTITIES} by reading all matching entities in one main-thread burst, so the returned states
+     * are internally consistent and share one tick stamp.
      *
      * <p>Bounded queries match by hitbox intersection with the block-inclusive box (each max axis is
-     * extended by one so block coordinates span their full world-space cell), per the Bukkit
-     * nearby-entities semantic — not by position containment.
+     * extended by one so block coordinates span their full world-space cell), per the Bukkit nearby-entities semantic —
+     * not by position containment.
      *
      * @param command
      *     Typed command carrying world name, optional type filter, optional bounds, and the count-only flag.
-     * @return
-     *     Response with the match count and (unless count-only) the entity states.
+     * @return Response with the match count and (unless count-only) the entity states.
+     *
      * @throws Exception
      *     Propagates validation and main-thread execution failures.
      */
@@ -266,8 +272,8 @@ final class AgentWorldActions
 
             final Collection<Entity> candidates = command.bounded()
                 ? world.getNearbyEntities(new BoundingBox(
-                    command.minX(), command.minY(), command.minZ(),
-                    command.maxX() + 1.0, command.maxY() + 1.0, command.maxZ() + 1.0))
+                command.minX(), command.minY(), command.minZ(),
+                command.maxX() + 1.0, command.maxY() + 1.0, command.maxZ() + 1.0))
                 : world.getEntities();
 
             final List<QueryEntities.EntityData> matches = new ArrayList<>();
@@ -334,8 +340,8 @@ final class AgentWorldActions
      *
      * @param command
      *     Typed command carrying the number of ticks to wait.
-     * @return
-     *     Response with start/end tick values.
+     * @return Response with start/end tick values.
+     *
      * @throws AgentProtocolException
      *     On invalid arguments, timeout, or interruption.
      */
@@ -378,8 +384,7 @@ final class AgentWorldActions
      *
      * @param command
      *     Typed command carrying the request identifier.
-     * @return
-     *     Response with current tick counter value.
+     * @return Response with current tick counter value.
      */
     GetServerTick.Response handleGetServerTick(GetServerTick.Command command)
     {
@@ -391,8 +396,8 @@ final class AgentWorldActions
      *
      * @param command
      *     Typed command carrying world name and chunk coordinates.
-     * @return
-     *     Response with whether the chunk was loaded.
+     * @return Response with whether the chunk was loaded.
+     *
      * @throws Exception
      *     Propagates main-thread execution failures.
      */
@@ -419,8 +424,8 @@ final class AgentWorldActions
      *
      * @param command
      *     Typed command carrying world name and chunk coordinates.
-     * @return
-     *     Response with whether the chunk was unloaded.
+     * @return Response with whether the chunk was unloaded.
+     *
      * @throws Exception
      *     Propagates main-thread execution failures.
      */
@@ -447,8 +452,8 @@ final class AgentWorldActions
      *
      * @param command
      *     Typed command carrying world name and chunk coordinates.
-     * @return
-     *     Response with {@code loaded} boolean.
+     * @return Response with {@code loaded} boolean.
+     *
      * @throws Exception
      *     Propagates main-thread execution failures.
      */
@@ -475,11 +480,41 @@ final class AgentWorldActions
      *
      * @param command
      *     Typed command carrying the request identifier.
-     * @return
-     *     Response containing the canonical platform identifier.
+     * @return Response containing the canonical platform identifier.
      */
     GetServerPlatform.Response handleGetServerPlatform(GetServerPlatform.Command command)
     {
         return new GetServerPlatform.Response(AgentPlatformDetector.detect());
+    }
+
+    GetServerPlugins.Response handleGetServerPlugins(GetServerPlugins.Command command)
+    {
+        final List<@Nullable Plugin> plugins;
+        if (command.name() != null)
+        {
+            plugins = Collections.singletonList(Bukkit.getPluginManager().getPlugin(command.name()));
+        }
+        else
+        {
+            plugins = Arrays.asList(Bukkit.getPluginManager().getPlugins());
+        }
+
+        final List<ServerPluginSnapshot> serverPlugins = plugins.stream()
+            .filter(Objects::nonNull)
+            .map(AgentWorldActions::toServerPluginSnapshot)
+            .toList();
+
+        return new GetServerPlugins.Response(serverPlugins);
+    }
+
+    static ServerPluginSnapshot toServerPluginSnapshot(Plugin plugin)
+    {
+        return new ServerPluginSnapshot(
+            plugin.getName(),
+            plugin.getDescription().getVersion(),
+            plugin.getDescription().getDescription(),
+            plugin.getDescription().getAuthors(),
+            plugin.isEnabled()
+        );
     }
 }

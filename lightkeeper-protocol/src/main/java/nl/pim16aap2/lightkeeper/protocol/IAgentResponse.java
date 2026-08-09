@@ -30,6 +30,7 @@ public sealed interface IAgentResponse
     GetPlayerMessages.Response,
     GetServerErrors.Response,
     GetServerPlatform.Response,
+    GetServerPlugins.Response,
     GetServerTick.Response,
     Handshake.Response,
     HasPlayerPermission.Response,
