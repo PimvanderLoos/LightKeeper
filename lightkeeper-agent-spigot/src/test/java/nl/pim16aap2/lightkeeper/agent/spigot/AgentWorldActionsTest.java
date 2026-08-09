@@ -5,6 +5,7 @@ import nl.pim16aap2.lightkeeper.protocol.AgentProtocolException;
 import nl.pim16aap2.lightkeeper.protocol.BlockType;
 import nl.pim16aap2.lightkeeper.protocol.CommandSource;
 import nl.pim16aap2.lightkeeper.protocol.ExecuteCommand;
+import nl.pim16aap2.lightkeeper.protocol.GetServerPlugins;
 import nl.pim16aap2.lightkeeper.protocol.GetServerTick;
 import nl.pim16aap2.lightkeeper.protocol.IsChunkLoaded;
 import nl.pim16aap2.lightkeeper.protocol.LoadChunk;
@@ -24,6 +25,8 @@ import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Transformation;
@@ -31,7 +34,9 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.MockedStatic;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Set;
@@ -39,10 +44,11 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
 
+@ExtendWith(MockitoExtension.class)
 class AgentWorldActionsTest
 {
     @Test
@@ -184,6 +190,94 @@ class AgentWorldActionsTest
 
         // verify
         assertThat(response.loaded()).isTrue();
+    }
+
+    @SuppressWarnings("DirectInvocationOnMock")
+    private static Plugin stubPlugin(
+        String pluginName,
+        String pluginVersion,
+        @Nullable String pluginDescription,
+        List<String> authors,
+        boolean pluginEnabled
+    )
+    {
+        final Plugin targetPlugin = mock();
+        when(targetPlugin.getName()).thenReturn(pluginName);
+        when(targetPlugin.getDescription()).thenReturn(mock());
+        when(targetPlugin.getDescription().getVersion()).thenReturn(pluginVersion);
+        when(targetPlugin.getDescription().getDescription()).thenReturn(pluginDescription);
+        when(targetPlugin.getDescription().getAuthors()).thenReturn(authors);
+        when(targetPlugin.isEnabled()).thenReturn(pluginEnabled);
+        return targetPlugin;
+    }
+
+    @Test
+    void handleGetServerPlugins_shouldReturnNamedPluginWhenNameIsProvided()
+    {
+        // setup
+        final AgentWorldActions worldActions = createWorldActions(new AtomicLong());
+
+        final String pluginName = "requested-plugin";
+        final String pluginVersion = "12";
+        final String pluginDescription = "requested-plugin-description";
+        final List<String> authors = List.of("author0", "author1", "author2");
+        final boolean pluginEnabled = true;
+
+        final Plugin targetPlugin = stubPlugin(
+            pluginName,
+            pluginVersion,
+            pluginDescription,
+            authors,
+            pluginEnabled
+        );
+
+        final GetServerPlugins.Command command = new GetServerPlugins.Command("req-id", pluginName);
+
+        final PluginManager pluginManager = mock();
+        when(pluginManager.getPlugin(pluginName)).thenReturn(targetPlugin);
+
+        // execute
+        final GetServerPlugins.Response response;
+        try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
+        {
+            bukkitMockedStatic.when(Bukkit::getPluginManager).thenReturn(pluginManager);
+            response = worldActions.handleGetServerPlugins(command);
+        }
+
+        // verify
+        assertThat(response.plugins())
+            .containsExactly(AgentWorldActions.toServerPluginSnapshot(targetPlugin));
+
+        verify(pluginManager, never()).getPlugins();
+    }
+
+    @Test
+    void handleGetServerPlugins_shouldReturnAllPluginsWhenNameIsNotProvided()
+    {
+        // setup
+        final AgentWorldActions worldActions = createWorldActions(new AtomicLong());
+
+        final Plugin plugin0 = stubPlugin("plugin1", "0.1", "desc0", List.of("authorA", "Author B"), true);
+        final Plugin plugin1 = stubPlugin("plugin2", "2.0", null, List.of(), false);
+
+        final PluginManager pluginManager = mock();
+        when(pluginManager.getPlugins()).thenReturn(new Plugin[]{plugin0, plugin1});
+
+        final GetServerPlugins.Command command = new GetServerPlugins.Command("req-id", null);
+
+        // execute
+        final GetServerPlugins.Response response;
+        try (MockedStatic<Bukkit> bukkitMockedStatic = mockStatic(Bukkit.class))
+        {
+            bukkitMockedStatic.when(Bukkit::getPluginManager).thenReturn(pluginManager);
+            response = worldActions.handleGetServerPlugins(command);
+        }
+
+        // verify
+        assertThat(response.plugins()).containsExactlyInAnyOrder(
+            AgentWorldActions.toServerPluginSnapshot(plugin0),
+            AgentWorldActions.toServerPluginSnapshot(plugin1)
+        );
     }
 
     @Test
@@ -568,8 +662,9 @@ class AgentWorldActionsTest
             new SetBlock.Command("request-unknown-mat", "world", 0, 64, 0, "not_a_material", null);
 
         // execute + verify
-        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class);
-             MockedStatic<Material> materialMockedStatic = mockStatic(Material.class))
+        try (
+            MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class);
+            MockedStatic<Material> materialMockedStatic = mockStatic(Material.class))
         {
             materialMockedStatic.when(() -> Material.matchMaterial(anyString(), eq(true))).thenReturn(null);
             assertThatThrownBy(() -> worldActions.handleSetBlock(command))
