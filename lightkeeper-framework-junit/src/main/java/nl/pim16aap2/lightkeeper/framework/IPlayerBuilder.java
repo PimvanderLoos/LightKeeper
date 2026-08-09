@@ -64,6 +64,16 @@ public interface IPlayerBuilder
     IPlayerBuilder withHealth(double health);
 
     /**
+     * Allows ordinary server damage to affect the synthetic player.
+     *
+     * <p>Synthetic players are invulnerable by default so unrelated survival mechanics cannot make tests
+     * nondeterministic. Use this opt-in for tests that explicitly exercise damage or death behavior.
+     *
+     * @return This builder.
+     */
+    IPlayerBuilder vulnerable();
+
+    /**
      * Grants permissions to the synthetic player.
      *
      * @param permissions

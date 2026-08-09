@@ -1,6 +1,8 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
 import nl.pim16aap2.lightkeeper.nms.api.IBotPlayerNmsAdapter;
+import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
+import nl.pim16aap2.lightkeeper.protocol.AgentProtocolException;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -35,15 +37,120 @@ final class AgentSyntheticPlayerStore
      *     Synthetic player UUID.
      * @return
      *     Registered player instance.
-     * @throws IllegalArgumentException
+     * @throws AgentProtocolException
      *     When the UUID is unknown.
      */
     Player getRequiredPlayer(UUID uuid)
     {
         final SyntheticPlayerState state = players.get(uuid);
         if (state == null)
-            throw new IllegalArgumentException("Synthetic player '%s' is not registered.".formatted(uuid));
+            throw new AgentProtocolException(
+                AgentErrorCode.PLAYER_NOT_REGISTERED,
+                "Synthetic player '%s' is not registered.".formatted(uuid));
         return state.player;
+    }
+
+    /**
+     * Resolves a registered synthetic player that is currently able to perform an in-game action.
+     *
+     * @param uuid
+     *     Synthetic player UUID.
+     * @param action
+     *     Protocol action being attempted, for failure diagnostics.
+     * @return
+     *     Active Bukkit player instance.
+     * @throws AgentProtocolException
+     *     When the UUID is unknown or the player is dead or disconnected.
+     */
+    Player getRequiredActivePlayer(UUID uuid, String action)
+    {
+        final SyntheticPlayerState state = players.get(uuid);
+        if (state == null)
+            throw new AgentProtocolException(
+                AgentErrorCode.PLAYER_NOT_REGISTERED,
+                "Synthetic player '%s' is not registered.".formatted(uuid));
+
+        final PlayerUnavailability recordedUnavailability = state.unavailability;
+        if (recordedUnavailability != null)
+            throw unavailableException(uuid, action, recordedUnavailability);
+
+        final Player player = state.player;
+        if (player.isDead())
+            throw new AgentProtocolException(
+                AgentErrorCode.PLAYER_DEAD,
+                "Synthetic player '%s' cannot perform %s because the player is dead."
+                    .formatted(uuid, action));
+        if (!player.isOnline())
+            throw new AgentProtocolException(
+                AgentErrorCode.PLAYER_DISCONNECTED,
+                "Synthetic player '%s' cannot perform %s because the player is disconnected."
+                    .formatted(uuid, action));
+        return player;
+    }
+
+    /**
+     * Records a synthetic player death so later action failures retain the event's diagnostic context.
+     *
+     * @param uuid
+     *     Synthetic player UUID.
+     * @param details
+     *     Human-readable death details captured from the Bukkit event.
+     */
+    void markPlayerDead(UUID uuid, String details)
+    {
+        final SyntheticPlayerState state = players.get(uuid);
+        if (state != null)
+            state.unavailability = new PlayerUnavailability(AgentErrorCode.PLAYER_DEAD, details);
+    }
+
+    /**
+     * Clears a recorded death after Bukkit has respawned the synthetic player.
+     *
+     * @param uuid
+     *     Synthetic player UUID.
+     */
+    void markPlayerRespawned(UUID uuid)
+    {
+        final SyntheticPlayerState state = players.get(uuid);
+        if (state != null && state.unavailability != null
+            && state.unavailability.errorCode() == AgentErrorCode.PLAYER_DEAD)
+            state.unavailability = null;
+    }
+
+    /**
+     * Records that a synthetic player left the server.
+     *
+     * @param uuid
+     *     Synthetic player UUID.
+     * @param details
+     *     Human-readable quit details captured from the Bukkit event.
+     */
+    void markPlayerDisconnected(UUID uuid, String details)
+    {
+        final SyntheticPlayerState state = players.get(uuid);
+        if (state != null)
+            state.unavailability = new PlayerUnavailability(AgentErrorCode.PLAYER_DISCONNECTED, details);
+    }
+
+    /**
+     * Returns whether the UUID belongs to a currently registered synthetic player.
+     *
+     * @param uuid
+     *     Player UUID to inspect.
+     * @return {@code true} when the player is managed by this store.
+     */
+    boolean isSyntheticPlayer(UUID uuid)
+    {
+        return players.containsKey(uuid);
+    }
+
+    private static AgentProtocolException unavailableException(
+        UUID uuid, String action, PlayerUnavailability unavailability)
+    {
+        return new AgentProtocolException(
+            unavailability.errorCode(),
+            "Synthetic player '%s' cannot perform %s: %s"
+                .formatted(uuid, action, unavailability.details()));
     }
 
     /**
@@ -288,10 +395,26 @@ final class AgentSyntheticPlayerStore
          * Accumulated chat-component JSON history.
          */
         private final List<String> componentHistory = new CopyOnWriteArrayList<>();
+        /**
+         * Recorded lifecycle reason that currently prevents player actions, or {@code null} while active.
+         */
+        private volatile @Nullable PlayerUnavailability unavailability;
 
         private SyntheticPlayerState(Player player)
         {
             this.player = player;
         }
+    }
+
+    /**
+     * Immutable lifecycle failure retained between its Bukkit event and a later framework action.
+     *
+     * @param errorCode
+     *     Stable protocol error code for the unavailable state.
+     * @param details
+     *     Human-readable event details.
+     */
+    private record PlayerUnavailability(AgentErrorCode errorCode, String details)
+    {
     }
 }

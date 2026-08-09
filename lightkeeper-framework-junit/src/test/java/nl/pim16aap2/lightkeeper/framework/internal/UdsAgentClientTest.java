@@ -3,6 +3,7 @@ package nl.pim16aap2.lightkeeper.framework.internal;
 import nl.pim16aap2.lightkeeper.framework.BlockPos;
 import nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot;
 import nl.pim16aap2.lightkeeper.framework.Platform;
+import nl.pim16aap2.lightkeeper.framework.PlayerUnavailableException;
 import nl.pim16aap2.lightkeeper.protocol.CommandSource;
 import nl.pim16aap2.lightkeeper.protocol.DropResult;
 import nl.pim16aap2.lightkeeper.protocol.GetCapturedEvents;
@@ -79,6 +80,50 @@ class UdsAgentClientTest
             assertThatThrownBy(() -> client.send(new WaitTicks.Command("1", 1)))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("code=PROTOCOL_MISMATCH");
+            client.close();
+        }
+    }
+
+    @Test
+    void send_shouldTranslatePlayerDeadFailureToTypedException(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("agent-player-dead.sock");
+        final String responseJson = "{\"requestId\":\"1\",\"success\":false,"
+            + "\"errorCode\":\"PLAYER_DEAD\","
+            + "\"errorMessage\":\"Player died from minecraft:fall.\"}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson))
+        {
+            final UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3));
+
+            // execute + verify
+            assertThatThrownBy(() -> client.send(new WaitTicks.Command("1", 1)))
+                .isInstanceOfSatisfying(PlayerUnavailableException.class, exception ->
+                    assertThat(exception.reason()).isEqualTo(PlayerUnavailableException.Reason.DEAD))
+                .hasMessageContaining("minecraft:fall");
+            client.close();
+        }
+    }
+
+    @Test
+    void send_shouldTranslatePlayerDisconnectedFailureToTypedException(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("agent-player-disconnected.sock");
+        final String responseJson = "{\"requestId\":\"1\",\"success\":false,"
+            + "\"errorCode\":\"PLAYER_DISCONNECTED\","
+            + "\"errorMessage\":\"Player left the server.\"}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson))
+        {
+            final UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3));
+
+            // execute + verify
+            assertThatThrownBy(() -> client.send(new WaitTicks.Command("1", 1)))
+                .isInstanceOfSatisfying(PlayerUnavailableException.class, exception ->
+                    assertThat(exception.reason()).isEqualTo(PlayerUnavailableException.Reason.DISCONNECTED))
+                .hasMessageContaining("left the server");
             client.close();
         }
     }

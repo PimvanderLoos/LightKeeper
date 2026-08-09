@@ -68,7 +68,7 @@ class AgentPlayerActionsTest
         final UUID uuid = UUID.randomUUID();
         final Player player = mock();
         when(player.performCommand("gamemode creative")).thenReturn(true);
-        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        registerActivePlayer(fixture, uuid, player);
         final ExecutePlayerCommand.Command command =
             new ExecutePlayerCommand.Command("request-cmd", uuid, "/gamemode creative");
 
@@ -93,7 +93,7 @@ class AgentPlayerActionsTest
         final UUID uuid = UUID.randomUUID();
         final Player player = mock();
         when(player.performCommand("say hi")).thenReturn(false);
-        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        registerActivePlayer(fixture, uuid, player);
         final ExecutePlayerCommand.Command command =
             new ExecutePlayerCommand.Command("request-cmd", uuid, "say hi");
 
@@ -118,7 +118,7 @@ class AgentPlayerActionsTest
         final PlayerActionsFixture fixture = createPlayerActionsFixture();
         final UUID uuid = UUID.randomUUID();
         final Player player = mock();
-        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        registerActivePlayer(fixture, uuid, player);
         final CommandMap commandMap = mock();
         final TabCompleteServer server = mock();
         when(server.getCommandMap()).thenReturn(commandMap);
@@ -148,7 +148,7 @@ class AgentPlayerActionsTest
         final PlayerActionsFixture fixture = createPlayerActionsFixture();
         final UUID uuid = UUID.randomUUID();
         final Player player = mock();
-        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        registerActivePlayer(fixture, uuid, player);
         final CommandMap commandMap = mock();
         final TabCompleteServer server = mock();
         when(server.getCommandMap()).thenReturn(commandMap);
@@ -177,7 +177,7 @@ class AgentPlayerActionsTest
         final PlayerActionsFixture fixture = createPlayerActionsFixture();
         final UUID uuid = UUID.randomUUID();
         final Player player = mock();
-        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        registerActivePlayer(fixture, uuid, player);
         final CommandMap commandMap = mock();
         final TabCompleteServer server = mock();
         when(server.getCommandMap()).thenReturn(commandMap);
@@ -210,7 +210,8 @@ class AgentPlayerActionsTest
         {
             bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
             assertThatThrownBy(() -> playerActions.handleTabCompletePlayer(command))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOfSatisfying(AgentProtocolException.class, exception ->
+                    assertThat(exception.errorCode()).isEqualTo(AgentErrorCode.PLAYER_NOT_REGISTERED))
                 .hasMessageContaining("not registered");
         }
     }
@@ -225,7 +226,7 @@ class AgentPlayerActionsTest
         final Player player = mockPlayer(uuid);
         final PluginManager pluginManager = mock();
         final ArgumentCaptor<PlayerInteractEvent> eventCaptor = ArgumentCaptor.forClass(PlayerInteractEvent.class);
-        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        registerActivePlayer(fixture, uuid, player);
         final LeftClickBlock.Command command =
             new LeftClickBlock.Command("request-click", uuid, 1, 64, 2, "NORTH");
 
@@ -268,7 +269,7 @@ class AgentPlayerActionsTest
         when(player.getWorld()).thenReturn(world);
         when(inventory.getItemInMainHand()).thenReturn(item);
         when(world.dropItemNaturally(any(), any())).thenReturn(entity);
-        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        registerActivePlayer(fixture, uuid, player);
         final DropItem.Command command = new DropItem.Command("req-drop", uuid);
 
         // execute
@@ -308,7 +309,7 @@ class AgentPlayerActionsTest
         when(player.getWorld()).thenReturn(world);
         when(inventory.getItemInMainHand()).thenReturn(item);
         when(world.dropItemNaturally(any(), any())).thenReturn(entity);
-        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        registerActivePlayer(fixture, uuid, player);
         final DropItem.Command command = new DropItem.Command("req-drop-cancel", uuid);
 
         // execute
@@ -415,7 +416,7 @@ class AgentPlayerActionsTest
             airItem,
             stone
         });
-        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        registerActivePlayer(fixture, uuid, player);
         final GetPlayerInventory.Command command = new GetPlayerInventory.Command("request-inventory", uuid);
 
         // execute
@@ -445,7 +446,7 @@ class AgentPlayerActionsTest
         final Player player = mock();
         final PermissionAttachment attachment = mock();
         when(player.addAttachment(any())).thenReturn(attachment);
-        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        registerActivePlayer(fixture, uuid, player);
         final MutatePlayerPermission.Command command = new MutatePlayerPermission.Command(
             "request-grant", uuid, "test.perm", MutatePlayerPermission.Mode.GRANT);
 
@@ -472,7 +473,7 @@ class AgentPlayerActionsTest
         final Player player = mock();
         final PermissionAttachment attachment = mock();
         when(player.addAttachment(any())).thenReturn(attachment);
-        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        registerActivePlayer(fixture, uuid, player);
         final MutatePlayerPermission.Command command = new MutatePlayerPermission.Command(
             "request-revoke", uuid, "test.perm", MutatePlayerPermission.Mode.REVOKE);
 
@@ -499,7 +500,7 @@ class AgentPlayerActionsTest
         final Player player = mock();
         final PermissionAttachment attachment = mock();
         when(player.addAttachment(any())).thenReturn(attachment);
-        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        registerActivePlayer(fixture, uuid, player);
         final MutatePlayerPermission.Command grantCommand = new MutatePlayerPermission.Command(
             "request-grant", uuid, "test.perm", MutatePlayerPermission.Mode.GRANT);
         final MutatePlayerPermission.Command unsetCommand = new MutatePlayerPermission.Command(
@@ -526,7 +527,7 @@ class AgentPlayerActionsTest
         final UUID uuid = UUID.randomUUID();
         final Player player = mock();
         when(player.hasPermission("test.perm")).thenReturn(true);
-        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        registerActivePlayer(fixture, uuid, player);
         final HasPlayerPermission.Command command =
             new HasPlayerPermission.Command("request-has-true", uuid, "test.perm");
 
@@ -551,7 +552,7 @@ class AgentPlayerActionsTest
         final UUID uuid = UUID.randomUUID();
         final Player player = mock();
         when(player.hasPermission("test.perm")).thenReturn(false);
-        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        registerActivePlayer(fixture, uuid, player);
         final HasPlayerPermission.Command command =
             new HasPlayerPermission.Command("request-has-false", uuid, "test.perm");
 
@@ -649,7 +650,7 @@ class AgentPlayerActionsTest
         final ItemStack emptyHand = mock();
         when(emptyHand.getType()).thenReturn(Material.AIR);
         when(player.getInventory().getItemInMainHand()).thenReturn(emptyHand);
-        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        registerActivePlayer(fixture, uuid, player);
         final DropItem.Command command = new DropItem.Command("request-drop", uuid);
 
         // execute
@@ -665,7 +666,30 @@ class AgentPlayerActionsTest
     }
 
     @Test
-    void handleCreatePlayer_shouldSpawnPlayerWithCoordinatesAndOptionalPermissions()
+    void handleTeleportPlayer_shouldReportDeadPlayerBeforeTeleport()
+    {
+        // setup
+        final PlayerActionsFixture fixture = createPlayerActionsFixture();
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mock();
+        when(player.isDead()).thenReturn(true);
+        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        final TeleportPlayer.Command command =
+            new TeleportPlayer.Command("request-teleport", uuid, "world", 1.0D, 64.0D, 2.0D);
+
+        // execute + verify
+        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class))
+        {
+            bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
+            assertThatThrownBy(() -> fixture.playerActions().handleTeleportPlayer(command))
+                .isInstanceOfSatisfying(AgentProtocolException.class, exception ->
+                    assertThat(exception.errorCode()).isEqualTo(AgentErrorCode.PLAYER_DEAD));
+        }
+        verify(player, never()).teleport(any(org.bukkit.Location.class));
+    }
+
+    @Test
+    void handleCreatePlayer_shouldSpawnVulnerablePlayerWithCoordinatesAndOptionalPermissions()
         throws Exception
     {
         // setup
@@ -679,7 +703,7 @@ class AgentPlayerActionsTest
         when(player.addAttachment(any())).thenReturn(attachment);
         final CreatePlayer.Command command = new CreatePlayer.Command(
             "request-create", "testbot", uuid, "world", 10.0, 64.0, 20.0, null, "test.perm",
-            JoinMode.LEGACY_SPAWN, null
+            false, JoinMode.LEGACY_SPAWN, null
         );
 
         // execute
@@ -699,6 +723,7 @@ class AgentPlayerActionsTest
         // is dropped and removePermissionAttachment finds nothing to detach.
         fixture.playerStore().removePermissionAttachment(uuid, player);
         verify(player).removeAttachment(attachment);
+        verify(player).setInvulnerable(false);
     }
 
     @Test
@@ -710,7 +735,8 @@ class AgentPlayerActionsTest
         when(fixture.nmsAdapter().loginDriver()).thenReturn(loginDriver);
         when(loginDriver.login(any())).thenReturn(new IBotLoginOutcome.Denied(BotJoinPhase.LOGIN, "Banned"));
         final CreatePlayer.Command command = new CreatePlayer.Command(
-            "request-full", "fullbot", null, "world", null, null, null, null, null, JoinMode.FULL_LOGIN, "en_us");
+            "request-full", "fullbot", null, "world", null, null, null, null, null, true,
+            JoinMode.FULL_LOGIN, "en_us");
 
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class))
         {
@@ -737,7 +763,8 @@ class AgentPlayerActionsTest
         when(fixture.nmsAdapter().loginDriver()).thenReturn(loginDriver);
         when(loginDriver.login(any())).thenReturn(new IBotLoginOutcome.TimedOut(BotJoinPhase.LOGIN));
         final CreatePlayer.Command command = new CreatePlayer.Command(
-            "request-full-to", "fullbot", null, "world", null, null, null, null, null, JoinMode.FULL_LOGIN, null);
+            "request-full-to", "fullbot", null, "world", null, null, null, null, null, true,
+            JoinMode.FULL_LOGIN, null);
 
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class))
         {
@@ -766,7 +793,8 @@ class AgentPlayerActionsTest
         when(fixture.nmsAdapter().loginDriver()).thenReturn(loginDriver);
         when(loginDriver.login(any())).thenReturn(new IBotLoginOutcome.Joined("fullbot"));
         final CreatePlayer.Command command = new CreatePlayer.Command(
-            "request-full-nj", "fullbot", null, "world", null, null, null, null, null, JoinMode.FULL_LOGIN, null);
+            "request-full-nj", "fullbot", null, "world", null, null, null, null, null, true,
+            JoinMode.FULL_LOGIN, null);
 
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class))
         {
@@ -799,7 +827,8 @@ class AgentPlayerActionsTest
         when(player.getUniqueId()).thenReturn(uuid);
         when(player.getName()).thenReturn("fullbot");
         final CreatePlayer.Command createCommand = new CreatePlayer.Command(
-            "request-full-rm", "fullbot", null, "world", null, null, null, null, null, JoinMode.FULL_LOGIN, null);
+            "request-full-rm", "fullbot", null, "world", null, null, null, null, null, true,
+            JoinMode.FULL_LOGIN, null);
 
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class))
         {
@@ -813,6 +842,7 @@ class AgentPlayerActionsTest
             // verify — the bot leaves through the real disconnect flow (kick), never the legacy player-list
             // removal that would leave its TCP connection open (Paper crashes on the second removal when the
             // server times that connection out).
+            verify(player).setInvulnerable(true);
             verify(player).kickPlayer(anyString());
             verify(fixture.nmsAdapter(), never()).removePlayer(any());
         }
@@ -834,8 +864,8 @@ class AgentPlayerActionsTest
         when(player.getName()).thenReturn("fullbot");
         when(player.isOnline()).thenReturn(true);
         final CreatePlayer.Command createCommand = new CreatePlayer.Command(
-            "request-full-veto", "fullbot", null, "world", null, null, null, null, null, JoinMode.FULL_LOGIN,
-            null);
+            "request-full-veto", "fullbot", null, "world", null, null, null, null, null, true,
+            JoinMode.FULL_LOGIN, null);
 
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class))
         {
@@ -917,7 +947,7 @@ class AgentPlayerActionsTest
         final PlayerActionsFixture fixture = createPlayerActionsFixture();
         final UUID uuid = UUID.randomUUID();
         final Player player = mock();
-        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        registerActivePlayer(fixture, uuid, player);
         final PlayerChat.Command command = new PlayerChat.Command("request-chat", uuid, "hello world");
 
         // execute
@@ -946,7 +976,8 @@ class AgentPlayerActionsTest
         {
             bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
             assertThatThrownBy(() -> playerActions.handlePlayerChat(command))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOfSatisfying(AgentProtocolException.class, exception ->
+                    assertThat(exception.errorCode()).isEqualTo(AgentErrorCode.PLAYER_NOT_REGISTERED))
                 .hasMessageContaining("not registered");
         }
     }
@@ -1002,6 +1033,12 @@ class AgentPlayerActionsTest
         when(world.getBlockAt(1, 64, 2)).thenReturn(block);
         when(inventory.getItemInMainHand()).thenReturn(item);
         return player;
+    }
+
+    private static void registerActivePlayer(PlayerActionsFixture fixture, UUID uuid, Player player)
+    {
+        when(player.isOnline()).thenReturn(true);
+        fixture.playerStore().registerSyntheticPlayer(uuid, player);
     }
 
     private record PlayerActionsFixture(

@@ -70,7 +70,7 @@ final class AgentMenuActions
         final UUID uuid = command.uuid();
         return mainThreadExecutor.callOnMainThread(() ->
         {
-            final Player player = playerStore.getRequiredPlayer(uuid);
+            final Player player = playerStore.getRequiredActivePlayer(uuid, "GET_OPEN_MENU");
             final InventoryView view = player.getOpenInventory();
 
             if (!isActionableOpenInventory(view))
@@ -109,7 +109,7 @@ final class AgentMenuActions
 
         mainThreadExecutor.callOnMainThread(() ->
         {
-            final Player player = playerStore.getRequiredPlayer(uuid);
+            final Player player = playerStore.getRequiredActivePlayer(uuid, "CLICK_MENU_SLOT");
             final InventoryView view = player.getOpenInventory();
             if (!isActionableOpenInventory(view))
                 throw new IllegalStateException("Player does not have an actionable open menu.");
@@ -153,7 +153,7 @@ final class AgentMenuActions
 
         mainThreadExecutor.callOnMainThread(() ->
         {
-            final Player player = playerStore.getRequiredPlayer(uuid);
+            final Player player = playerStore.getRequiredActivePlayer(uuid, "DRAG_MENU_SLOTS");
             final InventoryView view = player.getOpenInventory();
             if (!isActionableOpenInventory(view))
                 throw new IllegalStateException("Player does not have an actionable open menu.");

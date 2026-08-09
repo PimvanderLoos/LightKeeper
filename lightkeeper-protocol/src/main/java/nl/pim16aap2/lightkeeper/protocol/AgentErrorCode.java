@@ -24,6 +24,9 @@ public enum AgentErrorCode
     INTERRUPTED,
     PLAYER_JOIN_DENIED,
     PLAYER_JOIN_TIMEOUT,
+    PLAYER_NOT_REGISTERED,
+    PLAYER_DEAD,
+    PLAYER_DISCONNECTED,
     UNKNOWN;
 
     private static final Map<String, AgentErrorCode> BY_WIRE_CODE = Arrays.stream(values())

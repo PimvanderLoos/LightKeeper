@@ -2,6 +2,7 @@ package nl.pim16aap2.lightkeeper.framework.internal;
 
 import nl.pim16aap2.lightkeeper.framework.BotJoinDeniedException;
 import nl.pim16aap2.lightkeeper.framework.BotJoinTimeoutException;
+import nl.pim16aap2.lightkeeper.framework.PlayerUnavailableException;
 import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
 import nl.pim16aap2.lightkeeper.protocol.AgentProtocolMapper;
 import nl.pim16aap2.lightkeeper.protocol.IAgentCommand;
@@ -167,6 +168,12 @@ final class UdsAgentTransport implements AutoCloseable
             throw new BotJoinDeniedException(errorMessage);
         if (errorCode == AgentErrorCode.PLAYER_JOIN_TIMEOUT)
             throw new BotJoinTimeoutException(errorMessage);
+        if (errorCode == AgentErrorCode.PLAYER_DEAD)
+            throw new PlayerUnavailableException(PlayerUnavailableException.Reason.DEAD, errorMessage);
+        if (errorCode == AgentErrorCode.PLAYER_DISCONNECTED)
+            throw new PlayerUnavailableException(PlayerUnavailableException.Reason.DISCONNECTED, errorMessage);
+        if (errorCode == AgentErrorCode.PLAYER_NOT_REGISTERED)
+            throw new PlayerUnavailableException(PlayerUnavailableException.Reason.NOT_REGISTERED, errorMessage);
 
         final String displayedErrorCode = errorCode != null
             ? errorCode.wireCode()

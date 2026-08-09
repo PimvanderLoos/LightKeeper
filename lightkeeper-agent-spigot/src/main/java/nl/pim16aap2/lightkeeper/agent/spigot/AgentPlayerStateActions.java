@@ -83,7 +83,7 @@ final class AgentPlayerStateActions
         final UUID uuid = command.uuid();
         final List<ItemSnapshot> items = mainThreadExecutor.callOnMainThread(() ->
         {
-            final Player player = playerStore.getRequiredPlayer(uuid);
+            final Player player = playerStore.getRequiredActivePlayer(uuid, "GET_PLAYER_INVENTORY");
             return buildInventoryItems(player.getInventory().getContents());
         });
         return new GetPlayerInventory.Response(items);
@@ -108,7 +108,7 @@ final class AgentPlayerStateActions
         final UUID uuid = command.uuid();
         final DropResult result = mainThreadExecutor.callOnMainThread(() ->
         {
-            final Player player = playerStore.getRequiredPlayer(uuid);
+            final Player player = playerStore.getRequiredActivePlayer(uuid, "DROP_ITEM");
             final ItemStack item = player.getInventory().getItemInMainHand();
             if (item == null || AgentMaterials.isAir(item.getType()))
                 return DropResult.EMPTY_HAND;

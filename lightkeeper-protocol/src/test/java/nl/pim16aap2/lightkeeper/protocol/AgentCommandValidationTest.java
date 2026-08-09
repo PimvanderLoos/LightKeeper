@@ -339,7 +339,7 @@ class AgentCommandValidationTest
         // execute + verify
         assertThatThrownBy(() -> new CreatePlayer.Command(
             "request-1", "Alice", UUID.randomUUID(), "world",
-            null, null, null, null, null, JoinMode.FULL_LOGIN, null))
+            null, null, null, null, null, true, JoinMode.FULL_LOGIN, null))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("uuid")
             .hasMessageContaining("FULL_LOGIN");
@@ -352,7 +352,7 @@ class AgentCommandValidationTest
         // execute + verify
         assertThatThrownBy(() -> new CreatePlayer.Command(
             "request-1", "Alice", null, "world",
-            null, null, null, null, null, JoinMode.LEGACY_SPAWN, null))
+            null, null, null, null, null, true, JoinMode.LEGACY_SPAWN, null))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("uuid");
     }
@@ -363,7 +363,7 @@ class AgentCommandValidationTest
         // setup + execute
         final CreatePlayer.Command command = new CreatePlayer.Command(
             "request-1", "Alice", null, "world",
-            null, null, null, null, null, JoinMode.FULL_LOGIN, "en_us");
+            null, null, null, null, null, true, JoinMode.FULL_LOGIN, "en_us");
 
         // verify
         assertThat(command.uuid()).isNull();
@@ -378,7 +378,7 @@ class AgentCommandValidationTest
         // execute + verify
         assertThatThrownBy(() -> new CreatePlayer.Command(
             "request-1", "Alice", UUID.randomUUID(), "world",
-            null, null, null, null, null, null, null))
+            null, null, null, null, null, true, null, null))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("joinMode");
     }
@@ -389,7 +389,7 @@ class AgentCommandValidationTest
         // execute + verify
         assertThatThrownBy(() -> new CreatePlayer.Command(
             "request-1", "Alice", null, "world",
-            null, null, null, null, null, JoinMode.FULL_LOGIN, "   "))
+            null, null, null, null, null, true, JoinMode.FULL_LOGIN, "   "))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("locale");
     }

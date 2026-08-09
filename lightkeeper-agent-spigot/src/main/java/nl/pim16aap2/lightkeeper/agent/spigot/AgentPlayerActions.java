@@ -112,8 +112,8 @@ final class AgentPlayerActions
      * Handles {@code CREATE_PLAYER} by routing to the full-login pipeline or the legacy spawn path.
      *
      * @param command
-     *     Typed command carrying player name, UUID, world, spawn coordinates, health, permissions, join mode,
-     *     and locale.
+     *     Typed command carrying player name, UUID, world, spawn coordinates, health, permissions,
+     *     invulnerability, join mode, and locale.
      * @return Response containing the created player's UUID and name.
      *
      * @throws Exception
@@ -161,6 +161,7 @@ final class AgentPlayerActions
                 ? world.getSpawnLocation()
                 : new Location(world, x, y, z);
             final Player spawnedPlayer = botPlayerNmsAdapter.spawnPlayer(uuid, name, world, spawnLocation);
+            spawnedPlayer.setInvulnerable(command.invulnerable());
             if (health != null)
                 spawnedPlayer.setHealth(Math.min(spawnedPlayer.getMaxHealth(), health));
 
@@ -225,7 +226,9 @@ final class AgentPlayerActions
         {
             if (event instanceof PlayerJoinEvent joinEvent && joinEvent.getPlayer().getName().equals(name))
             {
-                joinedPlayer.set(joinEvent.getPlayer());
+                final Player player = joinEvent.getPlayer();
+                player.setInvulnerable(command.invulnerable());
+                joinedPlayer.set(player);
                 joinLatch.countDown();
             }
         };
@@ -486,7 +489,7 @@ final class AgentPlayerActions
         final String command = rawCommand.startsWith("/") ? rawCommand.substring(1) : rawCommand;
         final Boolean dispatched = mainThreadExecutor.callOnMainThread(() ->
         {
-            final Player player = playerStore.getRequiredPlayer(uuid);
+            final Player player = playerStore.getRequiredActivePlayer(uuid, "EXECUTE_PLAYER_COMMAND");
             // performCommand only runs commands the player context knows; fall back to the server dispatcher so
             // commands reachable only through Bukkit.dispatchCommand still execute (parity with the flat branch).
             if (player.performCommand(command))
@@ -528,7 +531,7 @@ final class AgentPlayerActions
 
         final List<String> completions = mainThreadExecutor.callOnMainThread(() ->
         {
-            final Player player = playerStore.getRequiredPlayer(uuid);
+            final Player player = playerStore.getRequiredActivePlayer(uuid, "TAB_COMPLETE_PLAYER");
             final CommandMap commandMap = resolveCommandMap();
             final List<String> result = commandMap.tabComplete(player, commandLine);
             return result == null ? List.<String>of() : List.copyOf(result);
@@ -599,7 +602,7 @@ final class AgentPlayerActions
 
         final String finalMaterial = mainThreadExecutor.callOnMainThread(() ->
         {
-            final Player player = playerStore.getRequiredPlayer(uuid);
+            final Player player = playerStore.getRequiredActivePlayer(uuid, "PLACE_PLAYER_BLOCK");
             final World world = player.getWorld();
             world.getBlockAt(x, y, z).setType(material);
             return world.getBlockAt(x, y, z).getType().getKey().toString();
@@ -670,11 +673,14 @@ final class AgentPlayerActions
 
         final Boolean teleported = mainThreadExecutor.callOnMainThread(() ->
         {
-            final Player player = playerStore.getRequiredPlayer(uuid);
+            final Player player = playerStore.getRequiredActivePlayer(uuid, "TELEPORT_PLAYER");
             final World world = Bukkit.getWorld(worldName);
             if (world == null)
                 throw new IllegalArgumentException("World '%s' does not exist.".formatted(worldName));
-            return player.teleport(new Location(world, x, y, z));
+            final boolean result = player.teleport(new Location(world, x, y, z));
+            if (!result)
+                playerStore.getRequiredActivePlayer(uuid, "TELEPORT_PLAYER");
+            return result;
         });
 
         return new TeleportPlayer.Response(teleported);
@@ -700,13 +706,13 @@ final class AgentPlayerActions
 
         mainThreadExecutor.callOnMainThread(() ->
         {
-            // The store methods validate registration themselves; only the set paths need the player instance.
+            final Player player = playerStore.getRequiredActivePlayer(uuid, "MUTATE_PLAYER_PERMISSION");
             switch (mode)
             {
                 case GRANT ->
-                    playerStore.setPermission(plugin, uuid, playerStore.getRequiredPlayer(uuid), permission, true);
+                    playerStore.setPermission(plugin, uuid, player, permission, true);
                 case REVOKE ->
-                    playerStore.setPermission(plugin, uuid, playerStore.getRequiredPlayer(uuid), permission, false);
+                    playerStore.setPermission(plugin, uuid, player, permission, false);
                 case UNSET -> playerStore.unsetPermission(uuid, permission);
             }
             return Boolean.TRUE;
@@ -732,7 +738,7 @@ final class AgentPlayerActions
         final String permission = command.permission();
 
         final Boolean value = mainThreadExecutor.callOnMainThread(
-            () -> playerStore.getRequiredPlayer(uuid).hasPermission(permission)
+            () -> playerStore.getRequiredActivePlayer(uuid, "HAS_PLAYER_PERMISSION").hasPermission(permission)
         );
 
         return new HasPlayerPermission.Response(value);
@@ -759,7 +765,7 @@ final class AgentPlayerActions
 
         mainThreadExecutor.callOnMainThread(() ->
         {
-            playerStore.getRequiredPlayer(uuid).chat(message);
+            playerStore.getRequiredActivePlayer(uuid, "PLAYER_CHAT").chat(message);
             return Boolean.TRUE;
         });
 
@@ -822,7 +828,7 @@ final class AgentPlayerActions
 
         return mainThreadExecutor.callOnMainThread(() ->
         {
-            final Player player = playerStore.getRequiredPlayer(uuid);
+            final Player player = playerStore.getRequiredActivePlayer(uuid, "CLICK_BLOCK");
             final Block block = player.getWorld().getBlockAt(x, y, z);
             final ItemStack item = player.getInventory().getItemInMainHand();
             final PlayerInteractEvent event = new PlayerInteractEvent(

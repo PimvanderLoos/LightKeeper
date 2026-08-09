@@ -381,7 +381,19 @@ class AgentRequestDispatcherTest
         dispatchExpectingSuccess(fixture, toJson(new ExecuteCommand.Command("request-2", CommandSource.CONSOLE, "time set day")));
         dispatchExpectingSuccess(fixture, toJson(new BlockType.Command("request-3", "world", 0, 64, 0)));
         dispatchExpectingSuccess(fixture, toJson(new SetBlock.Command("request-4", "world", 0, 64, 0, "stone", null)));
-        dispatchExpectingSuccess(fixture, toJson(new CreatePlayer.Command("request-5", "bot", uuid, "world", null, null, null, null, null, JoinMode.LEGACY_SPAWN, null)));
+        dispatchExpectingSuccess(fixture,
+            toJson(new CreatePlayer.Command("request-5",
+                "bot",
+                uuid,
+                "world",
+                null,
+                null,
+                null,
+                null,
+                null,
+                true,
+                JoinMode.LEGACY_SPAWN,
+                null)));
         dispatchExpectingSuccess(fixture, toJson(new RemovePlayer.Command("request-6", uuid)));
         dispatchExpectingSuccess(fixture, toJson(new ExecutePlayerCommand.Command("request-7", uuid, "gamemode creative")));
         dispatchExpectingSuccess(fixture, toJson(new PlacePlayerBlock.Command("request-8", uuid, "stone", 0, 64, 0)));
@@ -488,7 +500,7 @@ class AgentRequestDispatcherTest
         final AgentRequestDispatcher dispatcher = createDispatcher("token", 1, "");
         final String requestLine = "{\"requestId\":\"req-123\",\"action\":\"CREATE_PLAYER\","
             + "\"name\":\"\",\"uuid\":\"550e8400-e29b-41d4-a716-446655440000\","
-            + "\"worldName\":\"world\"}";
+            + "\"worldName\":\"world\",\"invulnerable\":true,\"joinMode\":\"LEGACY_SPAWN\"}";
 
         // execute
         final AgentRequestDispatcher.RequestDispatchResult result =
