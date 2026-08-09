@@ -192,6 +192,7 @@ class AgentWorldActionsTest
         assertThat(response.loaded()).isTrue();
     }
 
+    @SuppressWarnings("DirectInvocationOnMock")
     private static Plugin stubPlugin(
         String pluginName,
         String pluginVersion,

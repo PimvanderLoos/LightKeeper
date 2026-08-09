@@ -434,6 +434,7 @@ class AgentRequestDispatcherTest
         dispatchExpectingSuccess(fixture, toJson(new CancelNextEvents.Command(
             "request-33", "org.bukkit.event.player.PlayerJoinEvent", 1)));
         dispatchExpectingSuccess(fixture, toJson(new PlayerChat.Command("request-34", uuid, "hello")));
+        dispatchExpectingSuccess(fixture, toJson(new GetServerPlugins.Command("request-35", "plugin-name")));
 
         // verify
         verify(fixture.worldActions()).handleNewWorld(any(NewWorld.Command.class));
