@@ -801,9 +801,11 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
         @Nullable Double z,
         @Nullable Double health,
         java.util.Set<String> permissions,
+        boolean invulnerable,
         nl.pim16aap2.lightkeeper.protocol.JoinMode joinMode,
         @Nullable String locale)
     {
-        return botsFacade.createFromBuilder(name, uuid, worldHandle, x, y, z, health, permissions, joinMode, locale);
+        return botsFacade.createFromBuilder(
+            name, uuid, worldHandle, x, y, z, health, permissions, invulnerable, joinMode, locale);
     }
 }

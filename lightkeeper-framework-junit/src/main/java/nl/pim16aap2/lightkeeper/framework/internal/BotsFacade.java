@@ -21,6 +21,10 @@ import java.util.UUID;
  */
 final class BotsFacade implements IBots
 {
+    /**
+     * Canonical damage-safety default for every synthetic-player creation entry point.
+     */
+    static final boolean DEFAULT_INVULNERABLE = true;
     private static final System.Logger LOG = System.getLogger(BotsFacade.class.getName());
 
     private final DefaultLightkeeperFramework framework;
@@ -61,6 +65,7 @@ final class BotsFacade implements IBots
             null,
             null,
             null,
+            DEFAULT_INVULNERABLE,
             JoinMode.LEGACY_SPAWN,
             null
         );
@@ -95,6 +100,7 @@ final class BotsFacade implements IBots
         @Nullable Double z,
         @Nullable Double health,
         Set<String> permissions,
+        boolean invulnerable,
         JoinMode joinMode,
         @Nullable String locale)
     {
@@ -107,6 +113,7 @@ final class BotsFacade implements IBots
             z,
             health,
             permissions,
+            invulnerable,
             joinMode,
             locale
         );

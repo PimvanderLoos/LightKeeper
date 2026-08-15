@@ -10,7 +10,7 @@ import java.util.UUID;
 public interface IBots
 {
     /**
-     * Joins a synthetic player into a world at spawn.
+     * Joins an invulnerable synthetic player into a world at spawn.
      *
      * @param name
      *     Player name.
@@ -21,7 +21,7 @@ public interface IBots
     PlayerHandle join(String name, WorldHandle world);
 
     /**
-     * Joins a synthetic player into a world at spawn.
+     * Joins an invulnerable synthetic player into a world at spawn.
      *
      * @param name
      *     Player name.

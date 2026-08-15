@@ -37,6 +37,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.permissions.PermissionAttachment;
@@ -48,10 +49,16 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 
+import java.net.InetAddress;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -68,7 +75,7 @@ class AgentPlayerActionsTest
         final UUID uuid = UUID.randomUUID();
         final Player player = mock();
         when(player.performCommand("gamemode creative")).thenReturn(true);
-        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        registerActivePlayer(fixture, uuid, player);
         final ExecutePlayerCommand.Command command =
             new ExecutePlayerCommand.Command("request-cmd", uuid, "/gamemode creative");
 
@@ -93,7 +100,7 @@ class AgentPlayerActionsTest
         final UUID uuid = UUID.randomUUID();
         final Player player = mock();
         when(player.performCommand("say hi")).thenReturn(false);
-        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        registerActivePlayer(fixture, uuid, player);
         final ExecutePlayerCommand.Command command =
             new ExecutePlayerCommand.Command("request-cmd", uuid, "say hi");
 
@@ -118,7 +125,7 @@ class AgentPlayerActionsTest
         final PlayerActionsFixture fixture = createPlayerActionsFixture();
         final UUID uuid = UUID.randomUUID();
         final Player player = mock();
-        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        registerActivePlayer(fixture, uuid, player);
         final CommandMap commandMap = mock();
         final TabCompleteServer server = mock();
         when(server.getCommandMap()).thenReturn(commandMap);
@@ -148,7 +155,7 @@ class AgentPlayerActionsTest
         final PlayerActionsFixture fixture = createPlayerActionsFixture();
         final UUID uuid = UUID.randomUUID();
         final Player player = mock();
-        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        registerActivePlayer(fixture, uuid, player);
         final CommandMap commandMap = mock();
         final TabCompleteServer server = mock();
         when(server.getCommandMap()).thenReturn(commandMap);
@@ -177,7 +184,7 @@ class AgentPlayerActionsTest
         final PlayerActionsFixture fixture = createPlayerActionsFixture();
         final UUID uuid = UUID.randomUUID();
         final Player player = mock();
-        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        registerActivePlayer(fixture, uuid, player);
         final CommandMap commandMap = mock();
         final TabCompleteServer server = mock();
         when(server.getCommandMap()).thenReturn(commandMap);
@@ -210,7 +217,8 @@ class AgentPlayerActionsTest
         {
             bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
             assertThatThrownBy(() -> playerActions.handleTabCompletePlayer(command))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOfSatisfying(AgentProtocolException.class, exception ->
+                    assertThat(exception.errorCode()).isEqualTo(AgentErrorCode.PLAYER_NOT_REGISTERED))
                 .hasMessageContaining("not registered");
         }
     }
@@ -225,7 +233,7 @@ class AgentPlayerActionsTest
         final Player player = mockPlayer(uuid);
         final PluginManager pluginManager = mock();
         final ArgumentCaptor<PlayerInteractEvent> eventCaptor = ArgumentCaptor.forClass(PlayerInteractEvent.class);
-        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        registerActivePlayer(fixture, uuid, player);
         final LeftClickBlock.Command command =
             new LeftClickBlock.Command("request-click", uuid, 1, 64, 2, "NORTH");
 
@@ -268,7 +276,7 @@ class AgentPlayerActionsTest
         when(player.getWorld()).thenReturn(world);
         when(inventory.getItemInMainHand()).thenReturn(item);
         when(world.dropItemNaturally(any(), any())).thenReturn(entity);
-        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        registerActivePlayer(fixture, uuid, player);
         final DropItem.Command command = new DropItem.Command("req-drop", uuid);
 
         // execute
@@ -308,7 +316,7 @@ class AgentPlayerActionsTest
         when(player.getWorld()).thenReturn(world);
         when(inventory.getItemInMainHand()).thenReturn(item);
         when(world.dropItemNaturally(any(), any())).thenReturn(entity);
-        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        registerActivePlayer(fixture, uuid, player);
         final DropItem.Command command = new DropItem.Command("req-drop-cancel", uuid);
 
         // execute
@@ -415,7 +423,7 @@ class AgentPlayerActionsTest
             airItem,
             stone
         });
-        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        registerActivePlayer(fixture, uuid, player);
         final GetPlayerInventory.Command command = new GetPlayerInventory.Command("request-inventory", uuid);
 
         // execute
@@ -445,7 +453,7 @@ class AgentPlayerActionsTest
         final Player player = mock();
         final PermissionAttachment attachment = mock();
         when(player.addAttachment(any())).thenReturn(attachment);
-        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        registerActivePlayer(fixture, uuid, player);
         final MutatePlayerPermission.Command command = new MutatePlayerPermission.Command(
             "request-grant", uuid, "test.perm", MutatePlayerPermission.Mode.GRANT);
 
@@ -472,7 +480,7 @@ class AgentPlayerActionsTest
         final Player player = mock();
         final PermissionAttachment attachment = mock();
         when(player.addAttachment(any())).thenReturn(attachment);
-        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        registerActivePlayer(fixture, uuid, player);
         final MutatePlayerPermission.Command command = new MutatePlayerPermission.Command(
             "request-revoke", uuid, "test.perm", MutatePlayerPermission.Mode.REVOKE);
 
@@ -499,7 +507,7 @@ class AgentPlayerActionsTest
         final Player player = mock();
         final PermissionAttachment attachment = mock();
         when(player.addAttachment(any())).thenReturn(attachment);
-        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        registerActivePlayer(fixture, uuid, player);
         final MutatePlayerPermission.Command grantCommand = new MutatePlayerPermission.Command(
             "request-grant", uuid, "test.perm", MutatePlayerPermission.Mode.GRANT);
         final MutatePlayerPermission.Command unsetCommand = new MutatePlayerPermission.Command(
@@ -526,7 +534,7 @@ class AgentPlayerActionsTest
         final UUID uuid = UUID.randomUUID();
         final Player player = mock();
         when(player.hasPermission("test.perm")).thenReturn(true);
-        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        registerActivePlayer(fixture, uuid, player);
         final HasPlayerPermission.Command command =
             new HasPlayerPermission.Command("request-has-true", uuid, "test.perm");
 
@@ -551,7 +559,7 @@ class AgentPlayerActionsTest
         final UUID uuid = UUID.randomUUID();
         final Player player = mock();
         when(player.hasPermission("test.perm")).thenReturn(false);
-        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        registerActivePlayer(fixture, uuid, player);
         final HasPlayerPermission.Command command =
             new HasPlayerPermission.Command("request-has-false", uuid, "test.perm");
 
@@ -649,7 +657,7 @@ class AgentPlayerActionsTest
         final ItemStack emptyHand = mock();
         when(emptyHand.getType()).thenReturn(Material.AIR);
         when(player.getInventory().getItemInMainHand()).thenReturn(emptyHand);
-        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        registerActivePlayer(fixture, uuid, player);
         final DropItem.Command command = new DropItem.Command("request-drop", uuid);
 
         // execute
@@ -665,7 +673,34 @@ class AgentPlayerActionsTest
     }
 
     @Test
-    void handleCreatePlayer_shouldSpawnPlayerWithCoordinatesAndOptionalPermissions()
+    void handleTeleportPlayer_shouldReportDeadPlayerBeforeTeleport()
+    {
+        // setup
+        final PlayerActionsFixture fixture = createPlayerActionsFixture();
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mock();
+        when(player.isDead()).thenReturn(true);
+        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        final TeleportPlayer.Command command =
+            new TeleportPlayer.Command("request-teleport", uuid, "world", 1.0D, 64.0D, 2.0D);
+
+        // execute
+        final Throwable thrown;
+        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class))
+        {
+            bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
+            thrown = catchThrowable(() -> fixture.playerActions().handleTeleportPlayer(command));
+        }
+
+        // verify
+        assertThat(thrown)
+            .isInstanceOfSatisfying(AgentProtocolException.class, exception ->
+                assertThat(exception.errorCode()).isEqualTo(AgentErrorCode.PLAYER_DEAD));
+        verify(player, never()).teleport(any(org.bukkit.Location.class));
+    }
+
+    @Test
+    void handleCreatePlayer_shouldSpawnVulnerablePlayerWithCoordinatesAndOptionalPermissions()
         throws Exception
     {
         // setup
@@ -674,12 +709,19 @@ class AgentPlayerActionsTest
         final World world = mock();
         final Player player = mockPlayer(uuid);
         when(player.getName()).thenReturn("testbot");
-        when(fixture.nmsAdapter().spawnPlayer(eq(uuid), eq("testbot"), eq(world), any())).thenReturn(player);
+        when(fixture.nmsAdapter().spawnPlayer(eq(uuid), eq("testbot"), eq(world), any(), eq(false), any()))
+            .thenAnswer(invocation ->
+            {
+                @SuppressWarnings("unchecked")
+                final Consumer<Player> beforeJoin = invocation.getArgument(5);
+                beforeJoin.accept(player);
+                return player;
+            });
         final PermissionAttachment attachment = mock();
         when(player.addAttachment(any())).thenReturn(attachment);
         final CreatePlayer.Command command = new CreatePlayer.Command(
             "request-create", "testbot", uuid, "world", 10.0, 64.0, 20.0, null, "test.perm",
-            JoinMode.LEGACY_SPAWN, null
+            false, JoinMode.LEGACY_SPAWN, null
         );
 
         // execute
@@ -699,6 +741,7 @@ class AgentPlayerActionsTest
         // is dropped and removePermissionAttachment finds nothing to detach.
         fixture.playerStore().removePermissionAttachment(uuid, player);
         verify(player).removeAttachment(attachment);
+        verify(fixture.nmsAdapter()).spawnPlayer(eq(uuid), eq("testbot"), eq(world), any(), eq(false), any());
     }
 
     @Test
@@ -710,7 +753,8 @@ class AgentPlayerActionsTest
         when(fixture.nmsAdapter().loginDriver()).thenReturn(loginDriver);
         when(loginDriver.login(any())).thenReturn(new IBotLoginOutcome.Denied(BotJoinPhase.LOGIN, "Banned"));
         final CreatePlayer.Command command = new CreatePlayer.Command(
-            "request-full", "fullbot", null, "world", null, null, null, null, null, JoinMode.FULL_LOGIN, "en_us");
+            "request-full", "fullbot", null, "world", null, null, null, null, null, true,
+            JoinMode.FULL_LOGIN, "en_us");
 
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class))
         {
@@ -729,6 +773,64 @@ class AgentPlayerActionsTest
     }
 
     @Test
+    void handleCreatePlayer_shouldApplyInvulnerabilityBeforeFullLoginJoinHandlers()
+        throws Exception
+    {
+        // setup
+        final PlayerActionsFixture fixture = createPlayerActionsFixture();
+        final IBotLoginDriver loginDriver = mock();
+        when(fixture.nmsAdapter().loginDriver()).thenReturn(loginDriver);
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mock();
+        when(player.getUniqueId()).thenReturn(uuid);
+        when(player.getName()).thenReturn("fullbot");
+        final AtomicBoolean invulnerable = new AtomicBoolean();
+        doAnswer(invocation ->
+        {
+            invulnerable.set(invocation.getArgument(0));
+            return null;
+        }).when(player).setInvulnerable(anyBoolean());
+
+        final Map<Class<?>, Listener> listeners = new HashMap<>();
+        final Map<Class<?>, EventExecutor> eventExecutors = new HashMap<>();
+        final PluginManager pluginManager = mock();
+        doAnswer(invocation ->
+        {
+            final Class<?> eventType = invocation.getArgument(0);
+            listeners.put(eventType, invocation.getArgument(1));
+            eventExecutors.put(eventType, invocation.getArgument(3));
+            return null;
+        }).when(pluginManager).registerEvent(any(), any(), any(), any(), any());
+
+        final AtomicBoolean invulnerableAtJoin = new AtomicBoolean();
+        when(loginDriver.login(any())).thenAnswer(invocation ->
+        {
+            Objects.requireNonNull(eventExecutors.get(PlayerLoginEvent.class)).execute(
+                Objects.requireNonNull(listeners.get(PlayerLoginEvent.class)),
+                new PlayerLoginEvent(player, "localhost", InetAddress.getLoopbackAddress()));
+            invulnerableAtJoin.set(invulnerable.get());
+            Objects.requireNonNull(eventExecutors.get(PlayerJoinEvent.class)).execute(
+                Objects.requireNonNull(listeners.get(PlayerJoinEvent.class)), new PlayerJoinEvent(player, "joined"));
+            return new IBotLoginOutcome.Joined("fullbot");
+        });
+        final CreatePlayer.Command command = new CreatePlayer.Command(
+            "request-full-safe", "fullbot", null, "world", null, null, null, null, null, true,
+            JoinMode.FULL_LOGIN, null);
+
+        // execute
+        final CreatePlayer.Response response;
+        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class))
+        {
+            stubFullLoginBukkitStatics(bukkit, pluginManager);
+            response = fixture.playerActions().handleCreatePlayer(command);
+        }
+
+        // verify
+        assertThat(response.uuid()).isEqualTo(uuid);
+        assertThat(invulnerableAtJoin).isTrue();
+    }
+
+    @Test
     void handleCreatePlayer_shouldSurfaceFullLoginDriverTimeoutAsTypedError()
     {
         // setup
@@ -737,7 +839,8 @@ class AgentPlayerActionsTest
         when(fixture.nmsAdapter().loginDriver()).thenReturn(loginDriver);
         when(loginDriver.login(any())).thenReturn(new IBotLoginOutcome.TimedOut(BotJoinPhase.LOGIN));
         final CreatePlayer.Command command = new CreatePlayer.Command(
-            "request-full-to", "fullbot", null, "world", null, null, null, null, null, JoinMode.FULL_LOGIN, null);
+            "request-full-to", "fullbot", null, "world", null, null, null, null, null, true,
+            JoinMode.FULL_LOGIN, null);
 
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class))
         {
@@ -766,7 +869,8 @@ class AgentPlayerActionsTest
         when(fixture.nmsAdapter().loginDriver()).thenReturn(loginDriver);
         when(loginDriver.login(any())).thenReturn(new IBotLoginOutcome.Joined("fullbot"));
         final CreatePlayer.Command command = new CreatePlayer.Command(
-            "request-full-nj", "fullbot", null, "world", null, null, null, null, null, JoinMode.FULL_LOGIN, null);
+            "request-full-nj", "fullbot", null, "world", null, null, null, null, null, true,
+            JoinMode.FULL_LOGIN, null);
 
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class))
         {
@@ -799,7 +903,8 @@ class AgentPlayerActionsTest
         when(player.getUniqueId()).thenReturn(uuid);
         when(player.getName()).thenReturn("fullbot");
         final CreatePlayer.Command createCommand = new CreatePlayer.Command(
-            "request-full-rm", "fullbot", null, "world", null, null, null, null, null, JoinMode.FULL_LOGIN, null);
+            "request-full-rm", "fullbot", null, "world", null, null, null, null, null, true,
+            JoinMode.FULL_LOGIN, null);
 
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class))
         {
@@ -834,8 +939,8 @@ class AgentPlayerActionsTest
         when(player.getName()).thenReturn("fullbot");
         when(player.isOnline()).thenReturn(true);
         final CreatePlayer.Command createCommand = new CreatePlayer.Command(
-            "request-full-veto", "fullbot", null, "world", null, null, null, null, null, JoinMode.FULL_LOGIN,
-            null);
+            "request-full-veto", "fullbot", null, "world", null, null, null, null, null, true,
+            JoinMode.FULL_LOGIN, null);
 
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class))
         {
@@ -860,12 +965,20 @@ class AgentPlayerActionsTest
     }
 
     /**
-     * Creates a plugin-manager mock that immediately fires a {@code PlayerJoinEvent} for the given player
-     * whenever an event executor is registered, completing a FULL_LOGIN join's join-latch synchronously.
+     * Creates a plugin-manager mock that immediately fires the login and join events for the given player when
+     * their executors are registered, completing a FULL_LOGIN join's join-latch synchronously.
      */
     private static PluginManager joinEventFiringPluginManager(Player player)
     {
         final PluginManager pluginManager = mock();
+        doAnswer(invocation ->
+        {
+            final Listener listener = invocation.getArgument(1);
+            final EventExecutor eventExecutor = invocation.getArgument(3);
+            eventExecutor.execute(
+                listener, new PlayerLoginEvent(player, "localhost", InetAddress.getLoopbackAddress()));
+            return null;
+        }).when(pluginManager).registerEvent(eq(PlayerLoginEvent.class), any(), any(), any(), any());
         doAnswer(invocation ->
         {
             final Listener listener = invocation.getArgument(1);
@@ -917,7 +1030,7 @@ class AgentPlayerActionsTest
         final PlayerActionsFixture fixture = createPlayerActionsFixture();
         final UUID uuid = UUID.randomUUID();
         final Player player = mock();
-        fixture.playerStore().registerSyntheticPlayer(uuid, player);
+        registerActivePlayer(fixture, uuid, player);
         final PlayerChat.Command command = new PlayerChat.Command("request-chat", uuid, "hello world");
 
         // execute
@@ -946,7 +1059,8 @@ class AgentPlayerActionsTest
         {
             bukkitMockedStatic.when(Bukkit::isPrimaryThread).thenReturn(true);
             assertThatThrownBy(() -> playerActions.handlePlayerChat(command))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOfSatisfying(AgentProtocolException.class, exception ->
+                    assertThat(exception.errorCode()).isEqualTo(AgentErrorCode.PLAYER_NOT_REGISTERED))
                 .hasMessageContaining("not registered");
         }
     }
@@ -1002,6 +1116,12 @@ class AgentPlayerActionsTest
         when(world.getBlockAt(1, 64, 2)).thenReturn(block);
         when(inventory.getItemInMainHand()).thenReturn(item);
         return player;
+    }
+
+    private static void registerActivePlayer(PlayerActionsFixture fixture, UUID uuid, Player player)
+    {
+        when(player.isOnline()).thenReturn(true);
+        fixture.playerStore().registerSyntheticPlayer(uuid, player);
     }
 
     private record PlayerActionsFixture(

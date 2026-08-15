@@ -87,7 +87,7 @@ class AgentCommandSerializationTest
             "req-3", "Alice", uuid, "world",
             null, null, null,
             null, null,
-            JoinMode.LEGACY_SPAWN, null
+            true, JoinMode.LEGACY_SPAWN, null
         );
 
         // execute
@@ -107,6 +107,7 @@ class AgentCommandSerializationTest
         assertThat(result.z()).isNull();
         assertThat(result.health()).isNull();
         assertThat(result.permissionsCsv()).isNull();
+        assertThat(result.invulnerable()).isTrue();
         assertThat(result.joinMode()).isEqualTo(JoinMode.LEGACY_SPAWN);
         assertThat(result.locale()).isNull();
     }
@@ -125,7 +126,7 @@ class AgentCommandSerializationTest
             "req-4", "Bob", uuid, "nether",
             10.0, 64.0, -5.0,
             20.0, "minecraft.command.tp,some.other.node",
-            JoinMode.LEGACY_SPAWN, null
+            false, JoinMode.LEGACY_SPAWN, null
         );
 
         // execute
@@ -145,6 +146,7 @@ class AgentCommandSerializationTest
         assertThat(result.z()).isEqualTo(-5.0);
         assertThat(result.health()).isEqualTo(20.0);
         assertThat(result.permissionsCsv()).isEqualTo("minecraft.command.tp,some.other.node");
+        assertThat(result.invulnerable()).isFalse();
         assertThat(result.joinMode()).isEqualTo(JoinMode.LEGACY_SPAWN);
         assertThat(result.locale()).isNull();
     }
@@ -162,7 +164,7 @@ class AgentCommandSerializationTest
             "req-4b", "Carol", null, "world",
             null, null, null,
             null, null,
-            JoinMode.FULL_LOGIN, "en_us"
+            true, JoinMode.FULL_LOGIN, "en_us"
         );
 
         // execute
@@ -177,6 +179,7 @@ class AgentCommandSerializationTest
         assertThat(result.name()).isEqualTo("Carol");
         assertThat(result.uuid()).isNull();
         assertThat(result.worldName()).isEqualTo("world");
+        assertThat(result.invulnerable()).isTrue();
         assertThat(result.joinMode()).isEqualTo(JoinMode.FULL_LOGIN);
         assertThat(result.locale()).isEqualTo("en_us");
     }

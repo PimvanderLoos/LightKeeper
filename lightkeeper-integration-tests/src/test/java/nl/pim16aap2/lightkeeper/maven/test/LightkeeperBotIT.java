@@ -5,6 +5,7 @@ import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.InteractionResult;
 import nl.pim16aap2.lightkeeper.framework.LightkeeperExtension;
 import nl.pim16aap2.lightkeeper.framework.MenuHandle;
+import nl.pim16aap2.lightkeeper.framework.PlayerUnavailableException;
 import nl.pim16aap2.lightkeeper.protocol.CommandSource;
 import nl.pim16aap2.lightkeeper.protocol.IProtocolValue;
 import nl.pim16aap2.lightkeeper.protocol.DropResult;
@@ -19,6 +20,8 @@ import java.util.UUID;
 
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.eventually;
+import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -213,5 +216,75 @@ class LightkeeperBotIT
                 .isInstanceOfSatisfying(IProtocolValue.PRef.class, playerRef ->
                     assertThat(playerRef.id()).isEqualTo(player.uniqueId().toString()));
         }
+    }
+
+    @Test
+    void deadPlayer_shouldReportRecordedDeathBeforeFollowingInteraction(ILightkeeperFramework framework)
+    {
+        // setup
+        final var world = framework.worlds().main();
+        final var player = framework.bots().builder()
+            .withName("lkdeathcheck")
+            .atSpawn(world)
+            .vulnerable()
+            .build();
+
+        // execute
+        player.andWaitTicks(100);
+        final var killResult = framework.server().executeCommand(
+            CommandSource.CONSOLE, "kill " + player.name());
+        framework.waitUntil(
+            () -> framework.server().output().stream()
+                .anyMatch(line -> line.contains("Synthetic player 'lkdeathcheck'") && line.contains("died")),
+            Duration.ofSeconds(15)
+        );
+
+        // verify
+        assertThat(killResult.success()).isTrue();
+        assertThatThrownBy(() -> player.teleport(world, 1.0D, 100.0D, 1.0D))
+            .isInstanceOfSatisfying(PlayerUnavailableException.class, exception ->
+                assertThat(exception.reason()).isEqualTo(PlayerUnavailableException.Reason.DEAD))
+            .hasMessageContaining("cannot perform TELEPORT_PLAYER")
+            .hasMessageContaining("player died")
+            .hasMessageContaining("cause=minecraft:");
+    }
+
+    @Test
+    void invulnerabilitySetting_shouldControlPostJoinDamage(ILightkeeperFramework framework)
+    {
+        // setup
+        final var world = framework.worlds().main();
+        final var protectedPlayer = framework.bots().builder()
+            .withName("lkjoinsafe")
+            .atSpawn(world)
+            .build();
+        final var vulnerablePlayer = framework.bots().builder()
+            .withName("lkjoinvulner")
+            .atSpawn(world)
+            .vulnerable()
+            .build();
+
+        // execute
+        framework.waitUntil(
+            () -> framework.server().output().stream()
+                .anyMatch(line -> line.contains("LK_POST_JOIN_INVULNERABILITY name=lkjoinsafe invulnerable=true"))
+                && framework.server().output().stream()
+                .anyMatch(line -> line.contains("LK_POST_JOIN_INVULNERABILITY name=lkjoinvulner invulnerable=false"))
+                && framework.server().output().stream()
+                .anyMatch(line -> line.contains("Synthetic player 'lkjoinvulner'") && line.contains("died")),
+            Duration.ofSeconds(15)
+        );
+        protectedPlayer.teleport(world, 1.0D, 100.0D, 1.0D);
+        final Throwable vulnerableFailure = catchThrowable(
+            () -> vulnerablePlayer.teleport(world, 2.0D, 100.0D, 2.0D));
+
+        // verify
+        assertThat(framework.server().output())
+            .anyMatch(line -> line.contains("LK_POST_JOIN_INVULNERABILITY name=lkjoinsafe invulnerable=true"))
+            .anyMatch(line -> line.contains("LK_POST_JOIN_INVULNERABILITY name=lkjoinvulner invulnerable=false"));
+        assertThat(vulnerableFailure)
+            .isInstanceOfSatisfying(PlayerUnavailableException.class, exception ->
+                assertThat(exception.reason()).isEqualTo(PlayerUnavailableException.Reason.DEAD))
+            .hasMessageContaining("player died");
     }
 }

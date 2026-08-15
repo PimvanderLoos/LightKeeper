@@ -9,6 +9,7 @@ import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,7 +31,7 @@ class BotsFacadeTest
         final PlayerScopeRegistry playerScopeRegistry = mock(PlayerScopeRegistry.class);
         final UUID uuid = UUID.randomUUID();
         when(agentClient.createPlayer(
-            "lkbot001", uuid, "world", null, null, null, null, null, JoinMode.LEGACY_SPAWN, null))
+            "lkbot001", uuid, "world", null, null, null, null, null, true, JoinMode.LEGACY_SPAWN, null))
             .thenReturn(new AgentPlayerData(uuid, "lkbot001"));
         final DefaultLightkeeperFramework framework = framework(agentClient, playerScopeRegistry);
         final WorldHandle world = FrameworkHandleFactory.worldHandle(framework, "world");
@@ -53,7 +54,7 @@ class BotsFacadeTest
         final UUID generatedUuid = UUID.randomUUID();
         when(agentClient.createPlayer(
             eq("lkbot002"), any(UUID.class), eq("world"), isNull(), isNull(), isNull(), isNull(), isNull(),
-            eq(JoinMode.LEGACY_SPAWN), isNull()))
+            eq(true), eq(JoinMode.LEGACY_SPAWN), isNull()))
             .thenReturn(new AgentPlayerData(generatedUuid, "lkbot002"));
         final DefaultLightkeeperFramework framework = framework(agentClient, playerScopeRegistry);
         final WorldHandle world = FrameworkHandleFactory.worldHandle(framework, "world");
@@ -106,6 +107,57 @@ class BotsFacadeTest
 
         // verify
         assertThat(builder).isNotNull();
+    }
+
+    @Test
+    void build_shouldCreateInvulnerablePlayerByDefault()
+    {
+        // setup
+        final UdsAgentClient agentClient = mock(UdsAgentClient.class);
+        final PlayerScopeRegistry playerScopeRegistry = mock(PlayerScopeRegistry.class);
+        final UUID createdUuid = UUID.randomUUID();
+        when(agentClient.createPlayer(
+            eq("safe_bot"), any(UUID.class), eq("world"), isNull(), isNull(), isNull(), isNull(), eq(Set.of()),
+            eq(true), eq(JoinMode.LEGACY_SPAWN), isNull()))
+            .thenReturn(new AgentPlayerData(createdUuid, "safe_bot"));
+        final DefaultLightkeeperFramework framework = framework(agentClient, playerScopeRegistry);
+        final WorldHandle world = FrameworkHandleFactory.worldHandle(framework, "world");
+
+        // execute
+        final PlayerHandle player = framework.bots().builder()
+            .withName("safe_bot")
+            .atSpawn(world)
+            .build();
+
+        // verify
+        assertThat(player.uniqueId()).isEqualTo(createdUuid);
+        verify(playerScopeRegistry).register(createdUuid);
+    }
+
+    @Test
+    void build_shouldCreateVulnerablePlayerWhenRequested()
+    {
+        // setup
+        final UdsAgentClient agentClient = mock(UdsAgentClient.class);
+        final PlayerScopeRegistry playerScopeRegistry = mock(PlayerScopeRegistry.class);
+        final UUID createdUuid = UUID.randomUUID();
+        when(agentClient.createPlayer(
+            eq("damage_bot"), any(UUID.class), eq("world"), isNull(), isNull(), isNull(), isNull(), eq(Set.of()),
+            eq(false), eq(JoinMode.LEGACY_SPAWN), isNull()))
+            .thenReturn(new AgentPlayerData(createdUuid, "damage_bot"));
+        final DefaultLightkeeperFramework framework = framework(agentClient, playerScopeRegistry);
+        final WorldHandle world = FrameworkHandleFactory.worldHandle(framework, "world");
+
+        // execute
+        final PlayerHandle player = framework.bots().builder()
+            .withName("damage_bot")
+            .atSpawn(world)
+            .vulnerable()
+            .build();
+
+        // verify
+        assertThat(player.uniqueId()).isEqualTo(createdUuid);
+        verify(playerScopeRegistry).register(createdUuid);
     }
 
     @Test

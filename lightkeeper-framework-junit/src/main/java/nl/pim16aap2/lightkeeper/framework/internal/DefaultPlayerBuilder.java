@@ -23,6 +23,7 @@ final class DefaultPlayerBuilder implements IPlayerBuilder
     private @Nullable Double y;
     private @Nullable Double z;
     private @Nullable Double health;
+    private boolean invulnerable = BotsFacade.DEFAULT_INVULNERABLE;
     private final Set<String> permissions = new HashSet<>();
     private JoinMode joinMode = JoinMode.LEGACY_SPAWN;
     private @Nullable String locale;
@@ -87,6 +88,13 @@ final class DefaultPlayerBuilder implements IPlayerBuilder
     }
 
     @Override
+    public IPlayerBuilder vulnerable()
+    {
+        this.invulnerable = false;
+        return this;
+    }
+
+    @Override
     public IPlayerBuilder withPermissions(String... permissions)
     {
         if (permissions == null || permissions.length == 0)
@@ -134,6 +142,7 @@ final class DefaultPlayerBuilder implements IPlayerBuilder
             z,
             health,
             permissions,
+            invulnerable,
             joinMode,
             locale
         );

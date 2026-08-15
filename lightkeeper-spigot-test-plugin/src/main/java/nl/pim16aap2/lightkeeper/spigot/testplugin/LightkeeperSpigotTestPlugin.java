@@ -13,6 +13,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -40,6 +41,14 @@ public final class LightkeeperSpigotTestPlugin extends JavaPlugin implements Lis
      * Command name used to emit a clickable {@code run_command} chat component for chat-click integration tests.
      */
     private static final String CLICK_COMMAND_NAME = "lktestclick";
+    /**
+     * Player-name prefix that enables post-join invulnerability reporting for lifecycle integration tests.
+     */
+    private static final String JOIN_INVULNERABILITY_PLAYER_PREFIX = "lkjoin";
+    /**
+     * Prefix for the post-join invulnerability state recorded by the lifecycle integration test.
+     */
+    private static final String JOIN_INVULNERABILITY_MESSAGE_PREFIX = "LK_POST_JOIN_INVULNERABILITY";
     /**
      * Prefix used for deterministic block interaction messages.
      */
@@ -158,6 +167,27 @@ public final class LightkeeperSpigotTestPlugin extends JavaPlugin implements Lis
                     itemKey(event.getItem())
                 )
         );
+    }
+
+    /**
+     * Schedules damage after Minecraft's spawn-protection window and records the invulnerability state then.
+     *
+     * @param event
+     *     Player join event fired after the player is exposed to plugin handlers.
+     */
+    @EventHandler(priority = EventPriority.NORMAL)
+    public void onPlayerJoin(PlayerJoinEvent event)
+    {
+        final Player player = event.getPlayer();
+        if (!player.getName().startsWith(JOIN_INVULNERABILITY_PLAYER_PREFIX))
+            return;
+        Bukkit.getScheduler().runTaskLater(this, () ->
+        {
+            getLogger().info(
+                "%s name=%s invulnerable=%s"
+                    .formatted(JOIN_INVULNERABILITY_MESSAGE_PREFIX, player.getName(), player.isInvulnerable()));
+            player.damage(1_000.0D);
+        }, 100L);
     }
 
     private static NamespacedKey itemKey(ItemStack itemStack)

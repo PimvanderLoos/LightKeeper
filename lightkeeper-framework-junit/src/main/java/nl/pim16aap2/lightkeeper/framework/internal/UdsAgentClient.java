@@ -203,6 +203,7 @@ final class UdsAgentClient implements AutoCloseable
         @Nullable Double z,
         @Nullable Double health,
         @Nullable Set<String> permissions,
+        boolean invulnerable,
         JoinMode joinMode,
         @Nullable String locale)
     {
@@ -224,6 +225,7 @@ final class UdsAgentClient implements AutoCloseable
             z,
             health,
             permissionsCsv,
+            invulnerable,
             joinMode,
             locale
         );

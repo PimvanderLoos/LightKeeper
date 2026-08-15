@@ -3,6 +3,7 @@ package nl.pim16aap2.lightkeeper.framework.internal;
 import nl.pim16aap2.lightkeeper.framework.BlockPos;
 import nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot;
 import nl.pim16aap2.lightkeeper.framework.Platform;
+import nl.pim16aap2.lightkeeper.framework.PlayerUnavailableException;
 import nl.pim16aap2.lightkeeper.protocol.CommandSource;
 import nl.pim16aap2.lightkeeper.protocol.DropResult;
 import nl.pim16aap2.lightkeeper.protocol.GetCapturedEvents;
@@ -19,6 +20,7 @@ import java.io.IOException;
 import java.net.StandardProtocolFamily;
 import java.net.UnixDomainSocketAddress;
 import java.nio.channels.Channels;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
@@ -79,6 +81,75 @@ class UdsAgentClientTest
             assertThatThrownBy(() -> client.send(new WaitTicks.Command("1", 1)))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("code=PROTOCOL_MISMATCH");
+            client.close();
+        }
+    }
+
+    @Test
+    void send_shouldTranslatePlayerDeadFailureToTypedException(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("agent-player-dead.sock");
+        final String responseJson = "{\"requestId\":\"1\",\"success\":false,"
+            + "\"errorCode\":\"PLAYER_DEAD\","
+            + "\"errorMessage\":\"Player died from minecraft:fall.\"}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson))
+        {
+            final UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3));
+
+            // execute + verify
+            assertThatThrownBy(() -> client.send(new WaitTicks.Command("1", 1)))
+                .isInstanceOfSatisfying(PlayerUnavailableException.class, exception ->
+                    assertThat(exception.reason()).isEqualTo(PlayerUnavailableException.Reason.DEAD))
+                .hasMessageContaining("minecraft:fall");
+            client.close();
+        }
+    }
+
+    @Test
+    void send_shouldTranslatePlayerDisconnectedFailureToTypedException(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("agent-player-disconnected.sock");
+        final String responseJson = "{\"requestId\":\"1\",\"success\":false,"
+            + "\"errorCode\":\"PLAYER_DISCONNECTED\","
+            + "\"errorMessage\":\"Player left the server.\"}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson))
+        {
+            final UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3));
+
+            // execute + verify
+            assertThatThrownBy(() -> client.send(new WaitTicks.Command("1", 1)))
+                .isInstanceOfSatisfying(PlayerUnavailableException.class, exception ->
+                    assertThat(exception.reason()).isEqualTo(PlayerUnavailableException.Reason.DISCONNECTED))
+                .hasMessageContaining("left the server");
+            client.close();
+        }
+    }
+
+    @Test
+    void send_shouldTranslatePlayerNotRegisteredFailureToTypedException(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("agent-player-not-registered.sock");
+        final String responseJson = "{\"requestId\":\"1\",\"success\":false,"
+            + "\"errorCode\":\"PLAYER_NOT_REGISTERED\","
+            + "\"errorMessage\":\"Player is not registered.\"}";
+        try (AgentSocketServer server = AgentSocketServer.start(socketPath, responseJson))
+        {
+            final UdsAgentClient client = new UdsAgentClient(socketPath, Duration.ofSeconds(3));
+
+            // execute
+            final Throwable thrown = catchThrowable(() -> client.send(new WaitTicks.Command("1", 1)));
+
+            // verify
+            assertThat(thrown)
+                .isInstanceOfSatisfying(PlayerUnavailableException.class, exception ->
+                    assertThat(exception.reason()).isEqualTo(PlayerUnavailableException.Reason.NOT_REGISTERED))
+                .hasMessageContaining("not registered");
             client.close();
         }
     }
@@ -988,6 +1059,21 @@ class UdsAgentClientTest
         }
     }
 
+    @Test
+    void close_shouldNotReportWorkerFailureWhenServerIsShutDownBeforeAccept(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("agent-close-before-accept.sock");
+        final AgentSocketServer server = AgentSocketServer.start(socketPath, "{}");
+
+        // execute
+        final Throwable thrown = catchThrowable(server::close);
+
+        // verify
+        assertThat(thrown).isNull();
+    }
+
     private static final class AgentSocketServer implements AutoCloseable
     {
         private enum Mode
@@ -1009,6 +1095,8 @@ class UdsAgentClientTest
         private final AtomicReference<Throwable> workerFailure = new AtomicReference<>();
         private final AtomicReference<String> requestLine = new AtomicReference<>("");
         private final Path socketPath;
+        /** Whether teardown has intentionally closed the server channel. */
+        private volatile boolean shutdownRequested;
 
         private AgentSocketServer(
             Path socketPath, String responseJson, long responseDelayMillis, int maxRequests, Mode mode)
@@ -1089,7 +1177,8 @@ class UdsAgentClientTest
             }
             catch (Throwable throwable)
             {
-                workerFailure.set(throwable);
+                if (!(shutdownRequested && throwable instanceof ClosedChannelException))
+                    workerFailure.set(throwable);
             }
         }
 
@@ -1103,6 +1192,7 @@ class UdsAgentClientTest
         public void close()
             throws Exception
         {
+            shutdownRequested = true;
             serverChannel.close();
             workerThread.join(TimeUnit.SECONDS.toMillis(3));
             final Throwable failure = workerFailure.get();

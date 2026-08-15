@@ -1,6 +1,8 @@
 package nl.pim16aap2.lightkeeper.agent.spigot;
 
 import nl.pim16aap2.lightkeeper.nms.api.IBotPlayerNmsAdapter;
+import nl.pim16aap2.lightkeeper.protocol.AgentErrorCode;
+import nl.pim16aap2.lightkeeper.protocol.AgentProtocolException;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -15,6 +17,96 @@ import static org.mockito.Mockito.*;
 class AgentSyntheticPlayerStoreTest
 {
     @Test
+    void getRequiredActivePlayer_shouldReportDeadPlayer()
+    {
+        // setup
+        final AgentSyntheticPlayerStore store = new AgentSyntheticPlayerStore();
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mock();
+        when(player.isDead()).thenReturn(true);
+        store.registerSyntheticPlayer(uuid, player);
+
+        // execute
+        final Throwable thrown = catchThrowable(() -> store.getRequiredActivePlayer(uuid, "TELEPORT_PLAYER"));
+
+        // verify
+        assertThat(thrown)
+            .isInstanceOfSatisfying(AgentProtocolException.class, exception ->
+                assertThat(exception.errorCode()).isEqualTo(AgentErrorCode.PLAYER_DEAD))
+            .hasMessageContaining("TELEPORT_PLAYER")
+            .hasMessageContaining(uuid.toString());
+    }
+
+    @Test
+    void getRequiredActivePlayer_shouldReportDisconnectedPlayer()
+    {
+        // setup
+        final AgentSyntheticPlayerStore store = new AgentSyntheticPlayerStore();
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mock();
+        when(player.isOnline()).thenReturn(false);
+        store.registerSyntheticPlayer(uuid, player);
+
+        // execute
+        final Throwable thrown = catchThrowable(() -> store.getRequiredActivePlayer(uuid, "PLAYER_CHAT"));
+
+        // verify
+        assertThat(thrown)
+            .isInstanceOfSatisfying(AgentProtocolException.class, exception ->
+                assertThat(exception.errorCode()).isEqualTo(AgentErrorCode.PLAYER_DISCONNECTED))
+            .hasMessageContaining("PLAYER_CHAT")
+            .hasMessageContaining(uuid.toString());
+    }
+
+    @Test
+    void getRequiredActivePlayer_shouldAcceptOnlinePlayerWhenBukkitEntityIsInvalid()
+    {
+        // setup
+        final AgentSyntheticPlayerStore store = new AgentSyntheticPlayerStore();
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mock();
+        when(player.isOnline()).thenReturn(true);
+        store.registerSyntheticPlayer(uuid, player);
+
+        // execute
+        final Player result = store.getRequiredActivePlayer(uuid, "EXECUTE_PLAYER_COMMAND");
+
+        // verify
+        assertThat(result).isSameAs(player);
+        verify(player, never()).isValid();
+    }
+
+    @Test
+    void markPlayerDead_shouldPreserveDeathDetailsUntilRespawn()
+    {
+        // setup
+        final AgentSyntheticPlayerStore store = new AgentSyntheticPlayerStore();
+        final UUID uuid = UUID.randomUUID();
+        final Player player = mock();
+        when(player.isOnline()).thenReturn(true);
+        store.registerSyntheticPlayer(uuid, player);
+        store.markPlayerDead(uuid, "cause=minecraft:fall location=world[1.0,64.0,2.0]");
+
+        // execute - inspect the recorded death
+        final Throwable deathFailure = catchThrowable(
+            () -> store.getRequiredActivePlayer(uuid, "TELEPORT_PLAYER"));
+
+        // verify - the diagnostic survives Bukkit's transient entity state
+        assertThat(deathFailure)
+            .isInstanceOfSatisfying(AgentProtocolException.class, exception ->
+                assertThat(exception.errorCode()).isEqualTo(AgentErrorCode.PLAYER_DEAD))
+            .hasMessageContaining("minecraft:fall")
+            .hasMessageContaining("world[1.0,64.0,2.0]");
+
+        // execute - complete the lifecycle transition
+        store.markPlayerRespawned(uuid);
+        final Player respawnedPlayer = store.getRequiredActivePlayer(uuid, "TELEPORT_PLAYER");
+
+        // verify - actions are available again after respawn
+        assertThat(respawnedPlayer).isSameAs(player);
+    }
+
+    @Test
     void getRequiredPlayer_shouldThrowExceptionWhenPlayerIsNotRegistered()
     {
         // setup
@@ -23,7 +115,8 @@ class AgentSyntheticPlayerStoreTest
 
         // execute + verify
         assertThatThrownBy(() -> store.getRequiredPlayer(uuid))
-            .isInstanceOf(IllegalArgumentException.class)
+            .isInstanceOfSatisfying(AgentProtocolException.class, exception ->
+                assertThat(exception.errorCode()).isEqualTo(AgentErrorCode.PLAYER_NOT_REGISTERED))
             .hasMessageContaining(uuid.toString());
     }
 
@@ -322,7 +415,8 @@ class AgentSyntheticPlayerStoreTest
         assertThat(store.syntheticPlayerIds()).isEmpty();
         assertThat(store.getPlayerMessages(uuid)).isEmpty();
         assertThatThrownBy(() -> store.getRequiredPlayer(uuid))
-            .isInstanceOf(IllegalArgumentException.class);
+            .isInstanceOfSatisfying(AgentProtocolException.class, exception ->
+                assertThat(exception.errorCode()).isEqualTo(AgentErrorCode.PLAYER_NOT_REGISTERED));
     }
 
     @Test

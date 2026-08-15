@@ -35,6 +35,8 @@ public final class CreatePlayer
      *     Starting health value, or {@code null} to use the server default.
      * @param permissionsCsv
      *     Comma-separated list of permission nodes to grant, or {@code null} for none.
+     * @param invulnerable
+     *     Whether the synthetic player is protected from ordinary damage.
      * @param joinMode
      *     How the player joins the server: the full login pipeline or the internal legacy spawn.
      * @param locale
@@ -52,6 +54,7 @@ public final class CreatePlayer
         @Nullable Double z,
         @Nullable Double health,
         @Nullable String permissionsCsv,
+        boolean invulnerable,
         JoinMode joinMode,
         @Nullable String locale
     ) implements IAgentCommand<Response>

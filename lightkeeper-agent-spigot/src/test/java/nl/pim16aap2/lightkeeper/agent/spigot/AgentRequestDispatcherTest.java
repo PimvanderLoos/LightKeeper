@@ -395,6 +395,7 @@ class AgentRequestDispatcherTest
                 null,
                 null,
                 null,
+                true,
                 JoinMode.LEGACY_SPAWN,
                 null)));
         dispatchExpectingSuccess(fixture, toJson(new RemovePlayer.Command("request-6", uuid)));
@@ -511,7 +512,7 @@ class AgentRequestDispatcherTest
         final AgentRequestDispatcher dispatcher = createDispatcher("token", 1, "");
         final String requestLine = "{\"requestId\":\"req-123\",\"action\":\"CREATE_PLAYER\","
             + "\"name\":\"\",\"uuid\":\"550e8400-e29b-41d4-a716-446655440000\","
-            + "\"worldName\":\"world\"}";
+            + "\"worldName\":\"world\",\"invulnerable\":true,\"joinMode\":\"LEGACY_SPAWN\"}";
 
         // execute
         final AgentRequestDispatcher.RequestDispatchResult result =

@@ -129,6 +129,8 @@ public final class SpigotLightkeeperAgentPlugin extends JavaPlugin
 
             final AgentMainThreadExecutor mainThreadExecutor = new AgentMainThreadExecutor(this);
             final AgentSyntheticPlayerStore playerStore = new AgentSyntheticPlayerStore();
+            getServer().getPluginManager().registerEvents(
+                new AgentSyntheticPlayerLifecycleListener(playerStore, getLogger()), this);
             final AgentMenuActions menuActions = new AgentMenuActions(
                 mainThreadExecutor,
                 playerStore
