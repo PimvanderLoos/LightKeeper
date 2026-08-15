@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.net.StandardProtocolFamily;
 import java.net.UnixDomainSocketAddress;
 import java.nio.channels.Channels;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
@@ -1058,6 +1059,21 @@ class UdsAgentClientTest
         }
     }
 
+    @Test
+    void close_shouldNotReportWorkerFailureWhenServerIsShutDownBeforeAccept(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path socketPath = tempDirectory.resolve("agent-close-before-accept.sock");
+        final AgentSocketServer server = AgentSocketServer.start(socketPath, "{}");
+
+        // execute
+        final Throwable thrown = catchThrowable(server::close);
+
+        // verify
+        assertThat(thrown).isNull();
+    }
+
     private static final class AgentSocketServer implements AutoCloseable
     {
         private enum Mode
@@ -1079,6 +1095,8 @@ class UdsAgentClientTest
         private final AtomicReference<Throwable> workerFailure = new AtomicReference<>();
         private final AtomicReference<String> requestLine = new AtomicReference<>("");
         private final Path socketPath;
+        /** Whether teardown has intentionally closed the server channel. */
+        private volatile boolean shutdownRequested;
 
         private AgentSocketServer(
             Path socketPath, String responseJson, long responseDelayMillis, int maxRequests, Mode mode)
@@ -1159,7 +1177,8 @@ class UdsAgentClientTest
             }
             catch (Throwable throwable)
             {
-                workerFailure.set(throwable);
+                if (!(shutdownRequested && throwable instanceof ClosedChannelException))
+                    workerFailure.set(throwable);
             }
         }
 
@@ -1173,6 +1192,7 @@ class UdsAgentClientTest
         public void close()
             throws Exception
         {
+            shutdownRequested = true;
             serverChannel.close();
             workerThread.join(TimeUnit.SECONDS.toMillis(3));
             final Throwable failure = workerFailure.get();
