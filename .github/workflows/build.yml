@@ -51,7 +51,7 @@ jobs:
           retention-days: 3
 
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v6.0.2
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           directory: lightkeeper-report-aggregate/target/site/jacoco-aggregate
           token: ${{ secrets.CODECOV_TOKEN }}
