@@ -31,10 +31,13 @@ class LightkeeperFrameworkIT
         try (ILightkeeperFramework framework = Lightkeeper.start(LightkeeperFrameworkIT.class))
         {
             final WorldHandle worldHandle = framework.worlds().main();
-            final String expectedServerType = System.getProperty("lightkeeper.expectedServerType", "paper");
+            final String expectedServerType = System.getProperty("lightkeeper.expectedServerType");
 
             // verify
-            assertThat(runtimeManifest.serverType()).isEqualTo(expectedServerType);
+            if (expectedServerType == null)
+                assertThat(runtimeManifest.serverType()).isIn("paper", "spigot");
+            else
+                assertThat(runtimeManifest.serverType()).isEqualTo(expectedServerType);
             assertThat(runtimeManifest.runtimeProtocolVersion()).isEqualTo(RuntimeProtocol.VERSION);
             assertThat(runtimeManifest.udsSocketPath()).isNotBlank();
             assertThat(runtimeManifest.agentAuthToken()).isNotBlank();

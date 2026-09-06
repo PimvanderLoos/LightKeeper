@@ -28,6 +28,47 @@ class IdeRuntimeDiscoveryTest
     }
 
     @Test
+    void resolve_shouldSurviveRecreatedMavenClassOutput(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path moduleDirectory = Files.createDirectories(tempDirectory.resolve("module"));
+        final Path targetDirectory = Files.createDirectories(moduleDirectory.resolve("target"));
+        final Path classOutput = Files.createDirectories(targetDirectory.resolve("test-classes"));
+        final Path manifest = writeDiscovery(moduleDirectory, moduleDirectory);
+        Files.delete(classOutput);
+        Files.delete(targetDirectory);
+        final Path recompiledClassOutput = Files.createDirectories(moduleDirectory.resolve("target/test-classes"));
+
+        // execute
+        final Path resolved = IdeRuntimeDiscoveryResolver.resolve(recompiledClassOutput);
+
+        // verify
+        assertThat(resolved).isEqualTo(manifest);
+    }
+
+    @Test
+    void resolve_shouldSelectRuntimeFromEachOwningModule(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path paperModule = Files.createDirectories(tempDirectory.resolve("paper-module"));
+        final Path spigotModule = Files.createDirectories(tempDirectory.resolve("spigot-module"));
+        final Path paperOutput = Files.createDirectories(paperModule.resolve("target/test-classes"));
+        final Path spigotOutput = Files.createDirectories(spigotModule.resolve("target/test-classes"));
+        final Path paperManifest = writeDiscovery(paperModule, paperModule, "paper");
+        final Path spigotManifest = writeDiscovery(spigotModule, spigotModule, "spigot");
+
+        // execute
+        final Path resolvedPaper = IdeRuntimeDiscoveryResolver.resolve(paperOutput);
+        final Path resolvedSpigot = IdeRuntimeDiscoveryResolver.resolve(spigotOutput);
+
+        // verify
+        assertThat(resolvedPaper).isEqualTo(paperManifest);
+        assertThat(resolvedSpigot).isEqualTo(spigotManifest);
+    }
+
+    @Test
     void resolve_shouldRejectDiscoveryOwnedByDifferentModule(@TempDir Path tempDirectory)
         throws Exception
     {
@@ -112,6 +153,12 @@ class IdeRuntimeDiscoveryTest
     private static Path writeDiscovery(Path moduleDirectory, Path recordedModule)
         throws Exception
     {
+        return writeDiscovery(moduleDirectory, recordedModule, "paper");
+    }
+
+    private static Path writeDiscovery(Path moduleDirectory, Path recordedModule, String serverType)
+        throws Exception
+    {
         final Path manifest = IdeRuntimePaths.preparationsDirectory(moduleDirectory)
             .resolve("fingerprint/runtime-manifest.json");
         Files.createDirectories(manifest.getParent());
@@ -121,7 +168,7 @@ class IdeRuntimeDiscoveryTest
                 IdeRuntimeDiscovery.SCHEMA_VERSION,
                 recordedModule.toRealPath().toString(),
                 "prepare-server-paper",
-                "paper",
+                serverType,
                 manifest.toAbsolutePath().normalize().toString(),
                 "fingerprint"
             ),
