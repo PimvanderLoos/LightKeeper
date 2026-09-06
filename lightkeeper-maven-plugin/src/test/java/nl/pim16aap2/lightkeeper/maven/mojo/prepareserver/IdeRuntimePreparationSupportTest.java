@@ -14,6 +14,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -153,7 +154,8 @@ class IdeRuntimePreparationSupportTest
             "fingerprint"
         );
         assertThat(discovery).isNotNull();
-        assertThat(discovery.runtimeManifestPath()).isEqualTo(manifest.toAbsolutePath().normalize().toString());
+        assertThat(Objects.requireNonNull(discovery).runtimeManifestPath())
+            .isEqualTo(manifest.toAbsolutePath().normalize().toString());
         assertThat(IdeRuntimePaths.stateDirectory(tempDirectory).resolve(".gitignore"))
             .hasContent("*\n");
     }
@@ -251,7 +253,8 @@ class IdeRuntimePreparationSupportTest
     private static RuntimeManifest writeRuntimeManifest(Path manifestPath)
         throws Exception
     {
-        final Path serverDirectory = Files.createDirectories(manifestPath.getParent().resolve("server"));
+        final Path manifestDirectory = Objects.requireNonNull(manifestPath.getParent());
+        final Path serverDirectory = Files.createDirectories(manifestDirectory.resolve("server"));
         final Path serverJar = Files.writeString(serverDirectory.resolve("paper.jar"), "server");
         final Path agentJar = serverDirectory.resolve("plugins/lightkeeper-agent-spigot.jar");
         Files.createDirectories(agentJar.getParent());
