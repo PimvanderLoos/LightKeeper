@@ -27,6 +27,12 @@ public class PaperServerProvider extends ServerProvider
     }
 
     @Override
+    protected ServerProvider recreate(ServerSpecification specification)
+    {
+        return new PaperServerProvider(log(), specification, paperBuildMetadata);
+    }
+
+    @Override
     protected void createBaseServerJar()
         throws MojoExecutionException
     {

@@ -10,6 +10,9 @@ import nl.pim16aap2.lightkeeper.maven.provisioning.WorldInputSpec;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.PaperServerProvider;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.ServerProvider;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.SpigotServerProvider;
+import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeDiscovery;
+import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeDiscoveryReader;
+import nl.pim16aap2.lightkeeper.runtime.IdeRuntimePaths;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
@@ -163,6 +166,26 @@ class PrepareServerMojoInternalTest
 
         // execute + verify
         invokePrivate(mojo, "validateConfiguration", new Class<?>[0]);
+    }
+
+    @Test
+    void validateConfiguration_shouldRejectIdeRefreshWithoutIdeMode()
+        throws Exception
+    {
+        // setup
+        final PrepareServerMojo mojo = new PrepareServerMojo();
+        setField(mojo, "serverType", "paper");
+        setField(mojo, "userAgent", "LightKeeper/Test");
+        setField(mojo, "serverStartMaxAttempts", 1);
+        setField(mojo, "jarCacheExpiryDays", 0);
+        setField(mojo, "baseServerCacheExpiryDays", 0);
+        setField(mojo, "ideRefresh", true);
+
+        // execute + verify
+        assertThatThrownBy(() -> invokePrivate(mojo, "validateConfiguration", new Class<?>[0]))
+            .isInstanceOf(MojoExecutionException.class)
+            .hasMessageContaining("lightkeeper.ide.refresh=true")
+            .hasMessageContaining("lightkeeper.ide=true");
     }
 
     @Test
@@ -746,6 +769,63 @@ class PrepareServerMojoInternalTest
     }
 
     @Test
+    void execute_shouldCreateReuseAndRefreshDurableIdeRuntime(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final TestPrepareServerMojo mojo = new TestPrepareServerMojo(
+            mock(PaperDownloadsClient.class),
+            mock(SpigotDownloadsClient.class)
+        );
+        configureRequiredFields(mojo, tempDirectory, "paper");
+        setField(mojo, "ide", true);
+        setField(mojo, "projectBaseDirectory", tempDirectory);
+        setField(mojo, "executionId", "prepare-server-paper");
+
+        final ServerProvider resolvedProvider = mock(ServerProvider.class);
+        final ServerProvider durableProvider = mock(ServerProvider.class);
+        final Path durableServerDirectory = tempDirectory.resolve("durable-server");
+        when(resolvedProvider.withRuntimeLocations(any(Path.class), any(Path.class))).thenReturn(durableProvider);
+        when(durableProvider.targetServerDirectoryPath()).thenReturn(durableServerDirectory);
+        when(durableProvider.targetJarFilePath()).thenReturn(durableServerDirectory.resolve("paper.jar"));
+        mojo.setResolvedServerSetupForTests(new PrepareServerResolvedServerSetup(
+            resolvedProvider,
+            "1.21.11",
+            116L,
+            "paper-cache-key",
+            768
+        ));
+        mojo.setResolvedAgentMetadataForTests(new PrepareServerAgentMetadata("abc123", "agent-cache-id"));
+        mojo.setResolvedSocketPathForTests(tempDirectory.resolve("sockets/lk-test.sock"));
+
+        // execute
+        mojo.execute();
+        final IdeRuntimeDiscovery initial = new IdeRuntimeDiscoveryReader().read(
+            IdeRuntimePaths.discoveryFile(tempDirectory)
+        );
+        mojo.execute();
+        final IdeRuntimeDiscovery reused = new IdeRuntimeDiscoveryReader().read(
+            IdeRuntimePaths.discoveryFile(tempDirectory)
+        );
+        setField(mojo, "ideRefresh", true);
+        mojo.execute();
+        final IdeRuntimeDiscovery refreshed = new IdeRuntimeDiscoveryReader().read(
+            IdeRuntimePaths.discoveryFile(tempDirectory)
+        );
+
+        // verify
+        assertThat(Path.of(initial.runtimeManifestPath())).isRegularFile();
+        assertThat(initial).isEqualTo(reused);
+        assertThat(refreshed.runtimeManifestPath()).isNotEqualTo(initial.runtimeManifestPath());
+        assertThat(Path.of(refreshed.runtimeManifestPath())).isRegularFile();
+        assertThat(tempDirectory.resolve("runtime-manifest.json")).doesNotExist();
+        assertThat(IdeRuntimePaths.stateDirectory(tempDirectory).resolve(".gitignore")).isRegularFile();
+        verify(resolvedProvider, times(2)).withRuntimeLocations(any(Path.class), any(Path.class));
+        verify(durableProvider, times(2)).prepareServer();
+        verify(resolvedProvider, never()).prepareServer();
+    }
+
+    @Test
     void validateConfiguration_shouldThrowExceptionWhenServerStartAttemptsAreInvalid()
         throws Exception
     {
@@ -1084,12 +1164,12 @@ class PrepareServerMojoInternalTest
         void installServerAssets(
             Path targetServerDirectory,
             PrepareServerExecutionContext executionContext,
-            List<PluginArtifactSpec> pluginArtifactSpecs)
+            List<ResolvedPluginArtifact> resolvedPluginArtifacts)
             throws MojoExecutionException
         {
             installServerAssetsCalled = true;
             installServerAssetsTargetDirectory = targetServerDirectory;
-            installServerAssetsPluginCount = pluginArtifactSpecs.size();
+            installServerAssetsPluginCount = resolvedPluginArtifacts.size();
         }
 
         private void setResolvedServerSetupForTests(PrepareServerResolvedServerSetup resolvedServerSetup)

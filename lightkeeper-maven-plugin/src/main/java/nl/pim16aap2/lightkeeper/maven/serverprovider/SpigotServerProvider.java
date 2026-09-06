@@ -47,6 +47,12 @@ public class SpigotServerProvider extends ServerProvider
     }
 
     @Override
+    protected ServerProvider recreate(ServerSpecification specification)
+    {
+        return new SpigotServerProvider(log(), specification, spigotBuildMetadata);
+    }
+
+    @Override
     protected void createBaseServerJar()
         throws MojoExecutionException
     {

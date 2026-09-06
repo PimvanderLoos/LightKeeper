@@ -72,4 +72,41 @@ public record ServerSpecification(
     String agentCacheIdentity
 )
 {
+    /**
+     * Copies this specification with different runtime output locations.
+     *
+     * @param newServerWorkDirectoryRoot Root directory for the prepared server.
+     * @param newRuntimeManifestPath Runtime manifest destination.
+     * @return The copied specification.
+     */
+    public ServerSpecification withRuntimeLocations(
+        Path newServerWorkDirectoryRoot,
+        Path newRuntimeManifestPath)
+    {
+        return new ServerSpecification(
+            serverVersion,
+            jarCacheDirectoryRoot,
+            baseServerCacheDirectoryRoot,
+            newServerWorkDirectoryRoot,
+            newRuntimeManifestPath,
+            versionedCacheDirectories,
+            jarCacheExpiryDays,
+            forceRebuildJar,
+            baseServerCacheExpiryDays,
+            forceRecreateBaseServer,
+            cleanupUnusedCacheDirectories,
+            serverInitTimeoutSeconds,
+            serverStopTimeoutSeconds,
+            serverStartMaxAttempts,
+            memoryMb,
+            javaExecutablePath,
+            extraJvmArgs,
+            cacheKey,
+            paperUserAgent,
+            agentJarSha256,
+            agentAuthToken,
+            runtimeProtocolVersion,
+            agentCacheIdentity
+        );
+    }
 }

@@ -382,6 +382,12 @@ class ServerProviderTest
             throw new UnsupportedOperationException("Not used in this test.");
         }
 
+        @Override
+        protected ServerProvider recreate(ServerSpecification specification)
+        {
+            return new TestServerProvider(log(), specification, reservedPort);
+        }
+
         private String createDefaultServerPropertiesForTests()
             throws MojoExecutionException
         {
