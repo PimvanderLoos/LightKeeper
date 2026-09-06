@@ -14,6 +14,7 @@ import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeDiscovery;
 import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeDiscoveryReader;
 import nl.pim16aap2.lightkeeper.runtime.IdeRuntimePaths;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.project.MavenProject;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
@@ -779,7 +780,9 @@ class PrepareServerMojoInternalTest
         );
         configureRequiredFields(mojo, tempDirectory, "paper");
         setField(mojo, "ide", true);
-        setField(mojo, "projectBaseDirectory", tempDirectory);
+        final MavenProject project = new MavenProject();
+        project.setFile(tempDirectory.resolve("pom.xml").toFile());
+        setField(mojo, "project", project);
         setField(mojo, "executionId", "prepare-server-paper");
 
         final ServerProvider resolvedProvider = mock(ServerProvider.class);

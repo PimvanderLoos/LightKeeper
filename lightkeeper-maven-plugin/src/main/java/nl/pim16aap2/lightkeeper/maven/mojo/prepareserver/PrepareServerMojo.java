@@ -28,6 +28,7 @@ import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.project.MavenProject;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -70,9 +71,9 @@ public class PrepareServerMojo extends AbstractMojo
     @Parameter(property = "lightkeeper.ide.refresh", defaultValue = "false")
     private boolean ideRefresh;
 
-    @Parameter(defaultValue = "${project.basedir}", readonly = true, required = true)
+    @Parameter(defaultValue = "${project}", readonly = true, required = true)
     @Nullable
-    private Path projectBaseDirectory;
+    private MavenProject project;
 
     @Parameter(defaultValue = "${mojoExecution.executionId}", readonly = true, required = true)
     @Nullable
@@ -264,10 +265,14 @@ public class PrepareServerMojo extends AbstractMojo
         PrepareServerRuntimePreparation runtimePreparation)
         throws MojoExecutionException
     {
+        final MavenProject mavenProject = Objects.requireNonNull(
+            project,
+            "Maven did not inject the current project for IDE test setup."
+        );
         final Path moduleDirectory = Objects.requireNonNull(
-            projectBaseDirectory,
-            "Maven did not inject project.basedir for IDE test setup."
-        ).toAbsolutePath().normalize();
+            mavenProject.getBasedir(),
+            "The current Maven project has no base directory for IDE test setup."
+        ).toPath().toAbsolutePath().normalize();
         final String selectedExecutionId = Objects.requireNonNull(
             executionId,
             "Maven did not inject mojoExecution.executionId for IDE test setup."

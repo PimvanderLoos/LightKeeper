@@ -155,7 +155,7 @@ class IdeRuntimePreparationSupportTest
         assertThat(discovery).isNotNull();
         assertThat(discovery.runtimeManifestPath()).isEqualTo(manifest.toAbsolutePath().normalize().toString());
         assertThat(IdeRuntimePaths.stateDirectory(tempDirectory).resolve(".gitignore"))
-            .hasContent("*\n!.gitignore\n");
+            .hasContent("*\n");
     }
 
     @Test

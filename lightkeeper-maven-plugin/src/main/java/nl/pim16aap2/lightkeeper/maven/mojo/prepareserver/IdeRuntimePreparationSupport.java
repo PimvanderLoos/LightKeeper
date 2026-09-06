@@ -33,7 +33,7 @@ import java.util.UUID;
  */
 final class IdeRuntimePreparationSupport
 {
-    private static final String GENERATED_IGNORE_CONTENT = "*\n!.gitignore\n";
+    private static final String GENERATED_IGNORE_CONTENT = "*\n";
 
     private IdeRuntimePreparationSupport()
     {
