@@ -48,7 +48,7 @@
         <version.nullaway>0.14.1</version.nullaway>
         <version.inventorygui>1.6.5-SNAPSHOT</version.inventorygui>
         <version.spigot-api>${lightkeeper.minecraft-version}-R0.2-SNAPSHOT</version.spigot-api>
-        <version.pmd>7.23.0</version.pmd>
+        <version.pmd>7.27.0</version.pmd>
         <version.semver4j>6.0.0</version.semver4j>
 
         <version.maven-checkstyle-plugin>3.6.0</version.maven-checkstyle-plugin>
