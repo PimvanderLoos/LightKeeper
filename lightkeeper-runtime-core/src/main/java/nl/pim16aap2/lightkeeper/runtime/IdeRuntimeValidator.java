@@ -45,7 +45,7 @@ public final class IdeRuntimeValidator
             provenance.runtimeProtocolVersion() != RuntimeProtocol.VERSION ||
             manifest.runtimeProtocolVersion() != provenance.runtimeProtocolVersion())
         {
-            throw invalid("discovery, provenance, and runtime protocol metadata do not match", null);
+            throw invalid("discovery, provenance, and runtime protocol metadata do not match");
         }
 
         for (final IdeRuntimeProvenance.Artifact artifact : provenance.requiredArtifacts())
@@ -58,7 +58,7 @@ public final class IdeRuntimeValidator
     {
         final Path path = Path.of(artifact.path());
         if (!Files.exists(path))
-            throw invalid("required prepared artifact '%s' is missing".formatted(path), null);
+            throw invalid("required prepared artifact '%s' is missing".formatted(path));
         validateHash(path, artifact.sha256(), "prepared artifact");
     }
 
@@ -76,7 +76,7 @@ public final class IdeRuntimeValidator
         {
             final String actualHash = IdeRuntimeArtifactHasher.sha256(path);
             if (!actualHash.equals(expectedHash))
-                throw invalid("%s '%s' changed since IDE setup".formatted(kind, path), null);
+                throw invalid("%s '%s' changed since IDE setup".formatted(kind, path));
         }
         catch (IOException exception)
         {
@@ -96,10 +96,19 @@ public final class IdeRuntimeValidator
         }
     }
 
+    private static IllegalStateException invalid(String cause)
+    {
+        return new IllegalStateException(invalidMessage(cause));
+    }
+
     private static IllegalStateException invalid(String cause, Exception exception)
     {
-        final String message = "IDE runtime is stale or invalid: " + cause + ". Rebuild changed artifacts and rerun "
+        return new IllegalStateException(invalidMessage(cause), exception);
+    }
+
+    private static String invalidMessage(String cause)
+    {
+        return "IDE runtime is stale or invalid: " + cause + ". Rebuild changed artifacts and rerun "
             + "'mvn lightkeeper:prepare-server@<execution-id> -Dlightkeeper.ide=true'.";
-        return exception == null ? new IllegalStateException(message) : new IllegalStateException(message, exception);
     }
 }

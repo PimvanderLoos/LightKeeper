@@ -6,6 +6,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -37,7 +38,9 @@ class IdeRuntimeSafetyTest
 
         try
         {
-            final BufferedReader processOutput = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            final BufferedReader processOutput = new BufferedReader(
+                new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8)
+            );
             assertThat(processOutput.readLine()).isEqualTo("locked");
 
             // execute + verify

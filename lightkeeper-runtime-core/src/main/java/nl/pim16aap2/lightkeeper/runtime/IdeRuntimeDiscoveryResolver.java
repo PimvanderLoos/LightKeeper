@@ -57,8 +57,7 @@ public final class IdeRuntimeDiscoveryResolver
         {
             throw setupFailure(
                 "IDE runtime at '%s' belongs to module '%s', not test module '%s'."
-                    .formatted(discoveryPath, recordedModule, moduleDirectory),
-                null
+                    .formatted(discoveryPath, recordedModule, moduleDirectory)
             );
         }
 
@@ -68,12 +67,11 @@ public final class IdeRuntimeDiscoveryResolver
         {
             throw setupFailure(
                 "IDE runtime manifest '%s' is outside its owning directory '%s'."
-                    .formatted(manifestPath, expectedIdeDirectory),
-                null
+                    .formatted(manifestPath, expectedIdeDirectory)
             );
         }
         if (!Files.isRegularFile(manifestPath))
-            throw setupFailure("IDE runtime manifest '%s' does not exist.".formatted(manifestPath), null);
+            throw setupFailure("IDE runtime manifest '%s' does not exist.".formatted(manifestPath));
         return new IdeRuntimeSelection(moduleDirectory, manifestPath, discovery);
     }
 
@@ -117,11 +115,20 @@ public final class IdeRuntimeDiscoveryResolver
         }
     }
 
+    private static IllegalStateException setupFailure(String cause)
+    {
+        return new IllegalStateException(setupFailureMessage(cause));
+    }
+
     private static IllegalStateException setupFailure(String cause, Exception exception)
     {
-        final String message = cause + " Run the configured setup execution with "
+        return new IllegalStateException(setupFailureMessage(cause), exception);
+    }
+
+    private static String setupFailureMessage(String cause)
+    {
+        return cause + " Run the configured setup execution with "
             + "'mvn lightkeeper:prepare-server@<execution-id> -Dlightkeeper.ide=true', or set "
             + "'-Dlightkeeper.runtimeManifestPath=<path>' explicitly.";
-        return exception == null ? new IllegalStateException(message) : new IllegalStateException(message, exception);
     }
 }

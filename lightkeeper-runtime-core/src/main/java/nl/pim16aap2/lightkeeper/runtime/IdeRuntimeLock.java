@@ -7,6 +7,7 @@ import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Cross-process lease preventing concurrent use or replacement of a module's IDE runtime.
@@ -42,7 +43,7 @@ public final class IdeRuntimeLock implements AutoCloseable
             if (lock == null)
             {
                 channel.close();
-                throw busy(lockPath, null);
+                throw busy(lockPath);
             }
             return new IdeRuntimeLock(lockPath, channel, lock);
         }
@@ -72,14 +73,23 @@ public final class IdeRuntimeLock implements AutoCloseable
         }
     }
 
-    private static IllegalStateException busy(Path lockPath, Exception exception)
+    private static IllegalStateException busy(Path lockPath)
     {
-        final String message = "IDE runtime for module is busy (lock '%s'). Close the running test/server and retry."
-            .formatted(lockPath);
-        return exception == null ? new IllegalStateException(message) : new IllegalStateException(message, exception);
+        return new IllegalStateException(busyMessage(lockPath));
     }
 
-    private static void closeQuietly(FileChannel channel)
+    private static IllegalStateException busy(Path lockPath, Exception exception)
+    {
+        return new IllegalStateException(busyMessage(lockPath), exception);
+    }
+
+    private static String busyMessage(Path lockPath)
+    {
+        return "IDE runtime for module is busy (lock '%s'). Close the running test/server and retry."
+            .formatted(lockPath);
+    }
+
+    private static void closeQuietly(@Nullable FileChannel channel)
     {
         if (channel == null)
             return;
