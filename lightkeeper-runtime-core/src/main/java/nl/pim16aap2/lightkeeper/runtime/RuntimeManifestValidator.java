@@ -41,5 +41,21 @@ public final class RuntimeManifestValidator
             throw new IllegalStateException("Server directory '%s' does not exist.".formatted(serverDirectory));
         if (!Files.isRegularFile(serverJar))
             throw new IllegalStateException("Server jar '%s' does not exist.".formatted(serverJar));
+
+        final Path socketPath = Path.of(resolvedManifest.udsSocketPath());
+        final Path socketParent = socketPath.getParent();
+        if (socketParent == null)
+            throw new IllegalStateException("Agent socket path '%s' has no parent directory.".formatted(socketPath));
+        try
+        {
+            Files.createDirectories(socketParent);
+        }
+        catch (java.io.IOException exception)
+        {
+            throw new IllegalStateException(
+                "Agent socket directory '%s' cannot be prepared.".formatted(socketParent),
+                exception
+            );
+        }
     }
 }

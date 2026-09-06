@@ -19,6 +19,7 @@ import nl.pim16aap2.lightkeeper.maven.serverprovider.SpigotServerProvider;
 import nl.pim16aap2.lightkeeper.maven.util.CacheKeyUtil;
 import nl.pim16aap2.lightkeeper.maven.util.FileUtil;
 import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeDiscovery;
+import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeLock;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
 import org.apache.maven.plugin.AbstractMojo;
@@ -271,6 +272,28 @@ public class PrepareServerMojo extends AbstractMojo
             executionId,
             "Maven did not inject mojoExecution.executionId for IDE test setup."
         );
+        try (IdeRuntimeLock ignored = IdeRuntimeLock.acquire(moduleDirectory))
+        {
+            executeLockedIdePreparation(
+                moduleDirectory,
+                selectedExecutionId,
+                executionContext,
+                runtimePreparation
+            );
+        }
+        catch (IllegalStateException exception)
+        {
+            throw new MojoExecutionException(exception.getMessage(), exception);
+        }
+    }
+
+    private void executeLockedIdePreparation(
+        Path moduleDirectory,
+        String selectedExecutionId,
+        PrepareServerExecutionContext executionContext,
+        PrepareServerRuntimePreparation runtimePreparation)
+        throws MojoExecutionException
+    {
         final List<ResolvedPluginArtifact> resolvedPlugins =
             resolvePluginArtifacts(executionContext.pluginArtifactSpecs());
         final String fingerprint;
@@ -356,6 +379,16 @@ public class PrepareServerMojo extends AbstractMojo
             ideContext.worldInputSpecs()
         );
         writeRuntimeManifest(runtimeManifest, manifestPath);
+        IdeRuntimePreparationSupport.writeProvenance(
+            moduleDirectory,
+            selectedExecutionId,
+            fingerprint,
+            manifestPath,
+            runtimeManifest,
+            resolvedPlugins,
+            ideContext.worldInputSpecs(),
+            configOverlayPath
+        );
         IdeRuntimePreparationSupport.publish(
             moduleDirectory,
             selectedExecutionId,

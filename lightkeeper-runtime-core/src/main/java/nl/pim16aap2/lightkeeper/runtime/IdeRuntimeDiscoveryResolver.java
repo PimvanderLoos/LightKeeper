@@ -25,6 +25,17 @@ public final class IdeRuntimeDiscoveryResolver
      */
     public static Path resolve(Path classOutputDirectory)
     {
+        return resolveSelection(classOutputDirectory).runtimeManifestPath();
+    }
+
+    /**
+     * Resolves discovery metadata and its owning module from a test class output directory.
+     *
+     * @param classOutputDirectory Test class code-source directory.
+     * @return The validated module-owned selection.
+     */
+    public static IdeRuntimeSelection resolveSelection(Path classOutputDirectory)
+    {
         final Path moduleDirectory = resolveModuleDirectory(classOutputDirectory);
         final Path discoveryPath = IdeRuntimePaths.discoveryFile(moduleDirectory);
         final IdeRuntimeDiscovery discovery;
@@ -63,7 +74,7 @@ public final class IdeRuntimeDiscoveryResolver
         }
         if (!Files.isRegularFile(manifestPath))
             throw setupFailure("IDE runtime manifest '%s' does not exist.".formatted(manifestPath), null);
-        return manifestPath;
+        return new IdeRuntimeSelection(moduleDirectory, manifestPath, discovery);
     }
 
     /**

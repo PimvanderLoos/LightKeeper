@@ -1,6 +1,8 @@
 package nl.pim16aap2.lightkeeper.framework;
 
 import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeDiscoveryResolver;
+import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeSelection;
+import org.jspecify.annotations.Nullable;
 
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -27,10 +29,15 @@ public final class LightkeeperRuntimeResolver
      */
     public static Path resolve(Class<?> testClass)
     {
+        return resolveRuntime(testClass).manifestPath();
+    }
+
+    static ResolvedRuntime resolveRuntime(Class<?> testClass)
+    {
         Objects.requireNonNull(testClass, "testClass may not be null.");
         final String explicitPath = System.getProperty(RUNTIME_MANIFEST_PROPERTY, "").trim();
         if (!explicitPath.isBlank())
-            return validateExplicitPath(Path.of(explicitPath));
+            return new ResolvedRuntime(validateExplicitPath(Path.of(explicitPath)), null);
 
         final Path classOutputDirectory;
         try
@@ -50,7 +57,8 @@ public final class LightkeeperRuntimeResolver
                 exception
             );
         }
-        return resolveFromClassOutput(classOutputDirectory);
+        final IdeRuntimeSelection selection = IdeRuntimeDiscoveryResolver.resolveSelection(classOutputDirectory);
+        return new ResolvedRuntime(selection.runtimeManifestPath(), selection);
     }
 
     /**
@@ -78,5 +86,9 @@ public final class LightkeeperRuntimeResolver
             );
         }
         return manifestPath;
+    }
+
+    record ResolvedRuntime(Path manifestPath, @Nullable IdeRuntimeSelection ideSelection)
+    {
     }
 }

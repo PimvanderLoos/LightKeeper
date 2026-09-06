@@ -5,6 +5,9 @@ import nl.pim16aap2.lightkeeper.maven.provisioning.WorldInputSpec;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.ServerProvider;
 import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeDiscovery;
 import nl.pim16aap2.lightkeeper.runtime.IdeRuntimePaths;
+import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
+import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestWriter;
+import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -121,9 +124,19 @@ class IdeRuntimePreparationSupportTest
         final Path manifest = IdeRuntimePaths.preparationsDirectory(tempDirectory)
             .resolve("fingerprint/runtime-manifest.json");
         Files.createDirectories(manifest.getParent());
-        Files.writeString(manifest, "{}");
+        final RuntimeManifest runtimeManifest = writeRuntimeManifest(manifest);
 
         // execute
+        IdeRuntimePreparationSupport.writeProvenance(
+            tempDirectory,
+            "prepare-paper",
+            "fingerprint",
+            manifest,
+            runtimeManifest,
+            List.of(),
+            List.of(),
+            null
+        );
         IdeRuntimePreparationSupport.publish(
             tempDirectory,
             "prepare-paper",
@@ -153,7 +166,17 @@ class IdeRuntimePreparationSupportTest
         final Path manifest = IdeRuntimePaths.preparationsDirectory(tempDirectory)
             .resolve("fingerprint/runtime-manifest.json");
         Files.createDirectories(manifest.getParent());
-        Files.writeString(manifest, "{}");
+        final RuntimeManifest runtimeManifest = writeRuntimeManifest(manifest);
+        IdeRuntimePreparationSupport.writeProvenance(
+            tempDirectory,
+            "prepare-paper",
+            "fingerprint",
+            manifest,
+            runtimeManifest,
+            List.of(),
+            List.of(),
+            null
+        );
         IdeRuntimePreparationSupport.publish(
             tempDirectory,
             "prepare-paper",
@@ -223,5 +246,34 @@ class IdeRuntimePreparationSupportTest
                 1024
             )
         );
+    }
+
+    private static RuntimeManifest writeRuntimeManifest(Path manifestPath)
+        throws Exception
+    {
+        final Path serverDirectory = Files.createDirectories(manifestPath.getParent().resolve("server"));
+        final Path serverJar = Files.writeString(serverDirectory.resolve("paper.jar"), "server");
+        final Path agentJar = serverDirectory.resolve("plugins/lightkeeper-agent-spigot.jar");
+        Files.createDirectories(agentJar.getParent());
+        Files.writeString(agentJar, "agent");
+        final RuntimeManifest manifest = new RuntimeManifest(
+            "paper",
+            "1.21.11",
+            116L,
+            "cache",
+            serverDirectory.toString(),
+            serverJar.toString(),
+            1024,
+            manifestPath.getParent().resolve("socket/lk.sock").toString(),
+            "token",
+            agentJar.toString(),
+            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+            RuntimeProtocol.VERSION,
+            "agent-cache",
+            null,
+            List.of()
+        );
+        new RuntimeManifestWriter().write(manifest, manifestPath);
+        return manifest;
     }
 }

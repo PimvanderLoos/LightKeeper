@@ -785,6 +785,12 @@ class PrepareServerMojoInternalTest
         final ServerProvider resolvedProvider = mock(ServerProvider.class);
         final ServerProvider durableProvider = mock(ServerProvider.class);
         final Path durableServerDirectory = tempDirectory.resolve("durable-server");
+        Files.createDirectories(durableServerDirectory.resolve("plugins"));
+        Files.writeString(durableServerDirectory.resolve("paper.jar"), "server");
+        Files.writeString(
+            durableServerDirectory.resolve("plugins/lightkeeper-agent-spigot.jar"),
+            "agent"
+        );
         when(resolvedProvider.withRuntimeLocations(any(Path.class), any(Path.class))).thenReturn(durableProvider);
         when(durableProvider.targetServerDirectoryPath()).thenReturn(durableServerDirectory);
         when(durableProvider.targetJarFilePath()).thenReturn(durableServerDirectory.resolve("paper.jar"));

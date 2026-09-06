@@ -28,7 +28,7 @@ class LightkeeperFrameworkIT
         final RuntimeManifest runtimeManifest = new RuntimeManifestReader().read(runtimeManifestPath);
 
         // execute
-        try (ILightkeeperFramework framework = Lightkeeper.start(runtimeManifestPath))
+        try (ILightkeeperFramework framework = Lightkeeper.start(LightkeeperFrameworkIT.class))
         {
             final WorldHandle worldHandle = framework.worlds().main();
             final String expectedServerType = System.getProperty("lightkeeper.expectedServerType", "paper");
@@ -48,7 +48,6 @@ class LightkeeperFrameworkIT
     void newWorld_shouldCreateWorldAndSetBlockWhenExecuteCommandIsUsed()
     {
         // setup
-        final Path runtimeManifestPath = getRuntimeManifestPath();
         final String worldName = "lk_world_" + UUID.randomUUID().toString().replace("-", "");
         final BlockPos position = new BlockPos(1, 70, 1);
         final WorldSpec worldSpec = new WorldSpec(
@@ -59,7 +58,7 @@ class LightkeeperFrameworkIT
         );
 
         // execute
-        try (ILightkeeperFramework framework = Lightkeeper.start(runtimeManifestPath))
+        try (ILightkeeperFramework framework = Lightkeeper.start(LightkeeperFrameworkIT.class))
         {
             final WorldHandle worldHandle = framework.worlds().create(worldSpec);
             worldHandle.setBlockAt(position, "STONE");

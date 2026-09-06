@@ -234,7 +234,7 @@ public final class LightkeeperExtension implements
 
     private static ILightkeeperFramework startFramework(ExtensionContext context)
     {
-        return Lightkeeper.start(LightkeeperRuntimeResolver.resolve(context.getRequiredTestClass()));
+        return Lightkeeper.start(context.getRequiredTestClass());
     }
 
     /**

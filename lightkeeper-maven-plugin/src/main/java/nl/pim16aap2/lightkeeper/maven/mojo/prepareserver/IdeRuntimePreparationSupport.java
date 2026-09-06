@@ -3,10 +3,18 @@ package nl.pim16aap2.lightkeeper.maven.mojo.prepareserver;
 import nl.pim16aap2.lightkeeper.maven.provisioning.ResolvedPluginArtifact;
 import nl.pim16aap2.lightkeeper.maven.provisioning.WorldInputSpec;
 import nl.pim16aap2.lightkeeper.maven.util.HashUtil;
+import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeArtifactHasher;
 import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeDiscovery;
 import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeDiscoveryReader;
 import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeDiscoveryWriter;
 import nl.pim16aap2.lightkeeper.runtime.IdeRuntimePaths;
+import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeProvenance;
+import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeProvenanceWriter;
+import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeValidator;
+import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
+import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestReader;
+import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestValidator;
+import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.jspecify.annotations.Nullable;
 
@@ -17,8 +25,8 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
-import java.util.stream.Stream;
 
 /**
  * Computes durable IDE preparation identity and atomically publishes module-owned discovery metadata.
@@ -89,9 +97,14 @@ final class IdeRuntimePreparationSupport
                 !discovery.preparationFingerprint().equals(fingerprint) ||
                 !Files.isRegularFile(Path.of(discovery.runtimeManifestPath())))
                 return null;
+            final RuntimeManifest manifest = new RuntimeManifestReader().read(
+                Path.of(discovery.runtimeManifestPath())
+            );
+            RuntimeManifestValidator.validateForRuntimeStartup(manifest, RuntimeProtocol.VERSION);
+            IdeRuntimeValidator.validate(discovery, moduleDirectory, manifest);
             return discovery;
         }
-        catch (IOException | IllegalArgumentException exception)
+        catch (IOException | RuntimeException exception)
         {
             return null;
         }
@@ -137,6 +150,64 @@ final class IdeRuntimePreparationSupport
         }
     }
 
+    static void writeProvenance(
+        Path moduleDirectory,
+        String executionId,
+        String fingerprint,
+        Path manifestPath,
+        RuntimeManifest manifest,
+        List<ResolvedPluginArtifact> plugins,
+        List<WorldInputSpec> worlds,
+        @Nullable Path configOverlayPath)
+        throws MojoExecutionException
+    {
+        final List<IdeRuntimeProvenance.Artifact> requiredArtifacts = new ArrayList<>();
+        requiredArtifacts.add(artifact(Path.of(manifest.serverJar())));
+        requiredArtifacts.add(artifact(Path.of(Objects.requireNonNull(
+            manifest.agentJar(),
+            "IDE runtime manifest agentJar may not be null."
+        ))));
+        final Path pluginsDirectory = Path.of(manifest.serverDirectory()).resolve("plugins");
+        plugins.stream()
+            .sorted(Comparator.comparing(ResolvedPluginArtifact::outputFileName))
+            .map(plugin -> artifact(pluginsDirectory.resolve(plugin.outputFileName())))
+            .forEach(requiredArtifacts::add);
+
+        final List<IdeRuntimeProvenance.Artifact> sourceInputs = new ArrayList<>();
+        plugins.stream()
+            .sorted(Comparator.comparing(plugin -> canonical(plugin.sourceJar())))
+            .map(plugin -> artifact(plugin.sourceJar()))
+            .forEach(sourceInputs::add);
+        worlds.stream()
+            .sorted(Comparator.comparing(world -> canonical(world.sourcePath())))
+            .map(world -> artifact(world.sourcePath()))
+            .forEach(sourceInputs::add);
+        if (configOverlayPath != null)
+            sourceInputs.add(artifact(configOverlayPath));
+
+        final IdeRuntimeProvenance provenance = new IdeRuntimeProvenance(
+            IdeRuntimeProvenance.SCHEMA_VERSION,
+            canonical(moduleDirectory),
+            executionId,
+            manifest.serverType(),
+            fingerprint,
+            manifest.runtimeProtocolVersion(),
+            requiredArtifacts,
+            sourceInputs
+        );
+        try
+        {
+            new IdeRuntimeProvenanceWriter().write(
+                provenance,
+                manifestPath.resolveSibling(IdeRuntimePaths.PROVENANCE_FILE_NAME)
+            );
+        }
+        catch (IOException exception)
+        {
+            throw new MojoExecutionException("Failed to write IDE runtime provenance.", exception);
+        }
+    }
+
     private static String pluginFingerprint(ResolvedPluginArtifact plugin)
     {
         return "plugin=" + plugin.outputFileName() + ":" + plugin.sourceDescription() + ":" +
@@ -154,23 +225,9 @@ final class IdeRuntimePreparationSupport
     {
         try
         {
-            if (Files.isRegularFile(input))
-                return HashUtil.sha256(input);
-            if (!Files.isDirectory(input))
-                throw new MojoExecutionException("Preparation input '%s' does not exist.".formatted(input));
-
-            final List<String> entries;
-            try (Stream<Path> stream = Files.walk(input))
-            {
-                entries = stream
-                    .filter(path -> !path.equals(input))
-                    .sorted(Comparator.comparing(path -> input.relativize(path).toString()))
-                    .map(path -> hashDirectoryEntry(input, path))
-                    .toList();
-            }
-            return HashUtil.sha256(String.join("\n", entries));
+            return IdeRuntimeArtifactHasher.sha256(input);
         }
-        catch (IOException | MojoExecutionException exception)
+        catch (IOException exception)
         {
             throw new IllegalStateException(
                 "Failed to fingerprint preparation input '%s'.".formatted(input),
@@ -179,20 +236,19 @@ final class IdeRuntimePreparationSupport
         }
     }
 
-    private static String hashDirectoryEntry(Path root, Path path)
+    private static IdeRuntimeProvenance.Artifact artifact(Path path)
     {
-        if (Files.isSymbolicLink(path))
-            throw new IllegalStateException("Symbolic links are not allowed in IDE preparation inputs: " + path);
-        final String relative = root.relativize(path).toString().replace(path.getFileSystem().getSeparator(), "/");
-        if (Files.isDirectory(path))
-            return "directory:" + relative;
+        final Path absolutePath = path.toAbsolutePath().normalize();
         try
         {
-            return "file:" + relative + ":" + HashUtil.sha256(path);
+            return new IdeRuntimeProvenance.Artifact(
+                absolutePath.toString(),
+                IdeRuntimeArtifactHasher.sha256(absolutePath)
+            );
         }
-        catch (MojoExecutionException exception)
+        catch (IOException exception)
         {
-            throw new IllegalStateException("Failed to fingerprint preparation input '%s'.".formatted(path), exception);
+            throw new IllegalStateException("Failed to hash IDE runtime artifact '%s'.".formatted(path), exception);
         }
     }
 
