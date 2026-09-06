@@ -1,5 +1,6 @@
 package nl.pim16aap2.lightkeeper.maven.test;
 
+import nl.pim16aap2.lightkeeper.framework.LightkeeperRuntimeResolver;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestReader;
 import org.junit.jupiter.api.Test;
@@ -16,9 +17,7 @@ class LightkeeperProvisioningIT
         throws Exception
     {
         // setup
-        final String runtimeManifestProperty = System.getProperty("lightkeeper.runtimeManifestPath");
-        assertThat(runtimeManifestProperty).isNotBlank();
-        final Path runtimeManifestPath = Path.of(runtimeManifestProperty);
+        final Path runtimeManifestPath = LightkeeperRuntimeResolver.resolve(LightkeeperProvisioningIT.class);
 
         // execute
         final RuntimeManifest runtimeManifest = new RuntimeManifestReader().read(runtimeManifestPath);

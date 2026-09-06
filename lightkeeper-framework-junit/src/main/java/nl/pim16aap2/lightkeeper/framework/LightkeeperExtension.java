@@ -53,7 +53,7 @@ public final class LightkeeperExtension implements
         diagnosticsMode();
         if (usesFreshLifecycleForClass(context) || hasMethodLevelFreshServers(context))
             return;
-        getClassStore(context).put(KEY_SHARED_FRAMEWORK, startFramework());
+        getClassStore(context).put(KEY_SHARED_FRAMEWORK, startFramework(context));
     }
 
     /**
@@ -65,7 +65,7 @@ public final class LightkeeperExtension implements
         if (usesFreshLifecycleForMethod(context))
         {
             closeSharedFrameworkIfPresent(context);
-            getMethodStore(context).put(KEY_METHOD_FRAMEWORK, startFramework());
+            getMethodStore(context).put(KEY_METHOD_FRAMEWORK, startFramework(context));
             return;
         }
 
@@ -188,7 +188,7 @@ public final class LightkeeperExtension implements
         if (usesFreshLifecycleForMethod(context))
         {
             closeSharedFrameworkIfPresent(context);
-            final ILightkeeperFramework startedFramework = startFramework();
+            final ILightkeeperFramework startedFramework = startFramework(context);
             getMethodStore(context).put(KEY_METHOD_FRAMEWORK, startedFramework);
             return startedFramework;
         }
@@ -203,7 +203,7 @@ public final class LightkeeperExtension implements
         if (sharedFramework != null)
             return sharedFramework;
 
-        final ILightkeeperFramework startedFramework = startFramework();
+        final ILightkeeperFramework startedFramework = startFramework(context);
         store.put(KEY_SHARED_FRAMEWORK, startedFramework);
         return startedFramework;
     }
@@ -232,12 +232,9 @@ public final class LightkeeperExtension implements
             .orElseGet(() -> context.getStore(NAMESPACE));
     }
 
-    private static ILightkeeperFramework startFramework()
+    private static ILightkeeperFramework startFramework(ExtensionContext context)
     {
-        final String runtimeManifestPath = System.getProperty("lightkeeper.runtimeManifestPath", "").trim();
-        if (runtimeManifestPath.isBlank())
-            throw new IllegalStateException("System property 'lightkeeper.runtimeManifestPath' is not set.");
-        return Lightkeeper.start(Path.of(runtimeManifestPath));
+        return Lightkeeper.start(LightkeeperRuntimeResolver.resolve(context.getRequiredTestClass()));
     }
 
     /**

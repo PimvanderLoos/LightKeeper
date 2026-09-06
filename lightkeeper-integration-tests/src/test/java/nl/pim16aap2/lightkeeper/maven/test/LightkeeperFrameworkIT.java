@@ -3,6 +3,7 @@ package nl.pim16aap2.lightkeeper.maven.test;
 import nl.pim16aap2.lightkeeper.framework.BlockPos;
 import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.Lightkeeper;
+import nl.pim16aap2.lightkeeper.framework.LightkeeperRuntimeResolver;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import nl.pim16aap2.lightkeeper.framework.WorldSpec;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
@@ -77,8 +78,6 @@ class LightkeeperFrameworkIT
 
     private static Path getRuntimeManifestPath()
     {
-        final String runtimeManifestPath = System.getProperty("lightkeeper.runtimeManifestPath", "").trim();
-        assertThat(runtimeManifestPath).isNotBlank();
-        return Path.of(runtimeManifestPath);
+        return LightkeeperRuntimeResolver.resolve(LightkeeperFrameworkIT.class);
     }
 }
