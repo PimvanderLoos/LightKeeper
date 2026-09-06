@@ -26,6 +26,9 @@ import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestReader;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestValidator;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
+import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeLock;
+import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeSelection;
+import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeValidator;
 import org.jspecify.annotations.Nullable;
 
 import javax.inject.Inject;
@@ -63,6 +66,7 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     private final UdsAgentClient agentClient;
     private final PlayerScopeRegistry playerScopeRegistry;
     private final AtomicBoolean closed = new AtomicBoolean(false);
+    private @Nullable IdeRuntimeLock ideRuntimeLock;
     /**
      * Whether the server was taken down — via {@link IServerControl#crash()} or {@link IServerControl#stop()} — and
      * has not been started again yet.
@@ -113,6 +117,39 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     {
         final RuntimeManifest runtimeManifest = readRuntimeManifest(runtimeManifestPath);
         RuntimeManifestValidator.validateForRuntimeStartup(runtimeManifest, RuntimeProtocol.VERSION);
+        return startValidated(runtimeManifest, null);
+    }
+
+    /**
+     * Starts a framework from a discovered IDE runtime while retaining its module lease until close.
+     *
+     * @param selection Discovered runtime selection.
+     * @param runtimeLock Acquired module runtime lock.
+     * @return Started framework.
+     */
+    public static DefaultLightkeeperFramework start(
+        IdeRuntimeSelection selection,
+        IdeRuntimeLock runtimeLock)
+    {
+        final RuntimeManifest runtimeManifest;
+        try
+        {
+            runtimeManifest = readRuntimeManifest(selection.runtimeManifestPath());
+            RuntimeManifestValidator.validateForRuntimeStartup(runtimeManifest, RuntimeProtocol.VERSION);
+            IdeRuntimeValidator.validate(selection.discovery(), selection.moduleDirectory(), runtimeManifest);
+        }
+        catch (RuntimeException exception)
+        {
+            runtimeLock.close();
+            throw exception;
+        }
+        return startValidated(runtimeManifest, runtimeLock);
+    }
+
+    private static DefaultLightkeeperFramework startValidated(
+        RuntimeManifest runtimeManifest,
+        @Nullable IdeRuntimeLock runtimeLock)
+    {
 
         final Path serverDirectory = Path.of(runtimeManifest.serverDirectory());
         final Path diagnosticsDirectory = serverDirectory.resolveSibling("lightkeeper-diagnostics");
@@ -144,6 +181,7 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
                 agentClient
             );
             final DefaultLightkeeperFramework framework = component.framework();
+            framework.ideRuntimeLock = runtimeLock;
             framework.preloadConfiguredWorlds();
             return framework;
         }
@@ -152,6 +190,8 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
             if (agentClient != null)
                 agentClient.close();
             minecraftServerProcess.stop(SHUTDOWN_TIMEOUT);
+            if (runtimeLock != null)
+                runtimeLock.close();
             throw exception;
         }
     }
@@ -659,6 +699,7 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     }
 
     @Override
+    @SuppressWarnings("PMD.UseTryWithResources") // This close method owns ordered shutdown of long-lived resources.
     public void close()
     {
         if (!closed.compareAndSet(false, true))
@@ -675,11 +716,21 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
         }
         finally
         {
-            LOG.log(
-                System.Logger.Level.INFO,
-                "LK_FRAMEWORK: Stopping Minecraft server."
-            );
-            minecraftServerProcess.stop(SHUTDOWN_TIMEOUT);
+            try
+            {
+                LOG.log(
+                    System.Logger.Level.INFO,
+                    "LK_FRAMEWORK: Stopping Minecraft server."
+                );
+                minecraftServerProcess.stop(SHUTDOWN_TIMEOUT);
+            }
+            finally
+            {
+                final @Nullable IdeRuntimeLock runtimeLock = ideRuntimeLock;
+                ideRuntimeLock = null;
+                if (runtimeLock != null)
+                    runtimeLock.close();
+            }
         }
     }
 

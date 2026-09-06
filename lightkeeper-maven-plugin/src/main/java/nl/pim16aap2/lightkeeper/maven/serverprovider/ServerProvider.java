@@ -412,6 +412,26 @@ public abstract class ServerProvider
         installEmbeddedAgentJar();
     }
 
+    /**
+     * Creates the same provider with durable runtime output locations while retaining all resolved server inputs.
+     *
+     * @param serverWorkDirectoryRoot Root directory for the prepared runtime.
+     * @param runtimeManifestPath Runtime manifest destination.
+     * @return A provider using the supplied runtime output locations.
+     */
+    public final ServerProvider withRuntimeLocations(Path serverWorkDirectoryRoot, Path runtimeManifestPath)
+    {
+        return recreate(serverSpecification.withRuntimeLocations(serverWorkDirectoryRoot, runtimeManifestPath));
+    }
+
+    /**
+     * Recreates this resolved provider with a copied server specification.
+     *
+     * @param specification Copied server specification.
+     * @return The recreated provider.
+     */
+    protected abstract ServerProvider recreate(ServerSpecification specification);
+
     private void pruneUnusedCacheDirectoriesIfConfigured()
     {
         if (!serverSpecification().cleanupUnusedCacheDirectories())

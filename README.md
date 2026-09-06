@@ -124,6 +124,12 @@ dependencies {
 
 ## Quick Start
 
+### Run tests from your IDE
+
+Run the configured Maven preparation once, then use IntelliJ's ordinary class or method gutter button without VM
+options or a Maven before-launch task. The durable runtime survives `mvn clean` and is reused until its packaged inputs
+change. See the [IDE test setup guide](docs/ide-testing.md) for setup, refresh, platform selection, and troubleshooting.
+
 ### 1) Add the Maven plugin and framework dependency
 
 ```xml

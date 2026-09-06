@@ -3,6 +3,7 @@ package nl.pim16aap2.lightkeeper.maven.test;
 import nl.pim16aap2.lightkeeper.framework.BlockPos;
 import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.Lightkeeper;
+import nl.pim16aap2.lightkeeper.framework.LightkeeperRuntimeResolver;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import nl.pim16aap2.lightkeeper.framework.WorldSpec;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
@@ -27,13 +28,16 @@ class LightkeeperFrameworkIT
         final RuntimeManifest runtimeManifest = new RuntimeManifestReader().read(runtimeManifestPath);
 
         // execute
-        try (ILightkeeperFramework framework = Lightkeeper.start(runtimeManifestPath))
+        try (ILightkeeperFramework framework = Lightkeeper.start(LightkeeperFrameworkIT.class))
         {
             final WorldHandle worldHandle = framework.worlds().main();
-            final String expectedServerType = System.getProperty("lightkeeper.expectedServerType", "paper");
+            final String expectedServerType = System.getProperty("lightkeeper.expectedServerType");
 
             // verify
-            assertThat(runtimeManifest.serverType()).isEqualTo(expectedServerType);
+            if (expectedServerType == null)
+                assertThat(runtimeManifest.serverType()).isIn("paper", "spigot");
+            else
+                assertThat(runtimeManifest.serverType()).isEqualTo(expectedServerType);
             assertThat(runtimeManifest.runtimeProtocolVersion()).isEqualTo(RuntimeProtocol.VERSION);
             assertThat(runtimeManifest.udsSocketPath()).isNotBlank();
             assertThat(runtimeManifest.agentAuthToken()).isNotBlank();
@@ -47,7 +51,6 @@ class LightkeeperFrameworkIT
     void newWorld_shouldCreateWorldAndSetBlockWhenExecuteCommandIsUsed()
     {
         // setup
-        final Path runtimeManifestPath = getRuntimeManifestPath();
         final String worldName = "lk_world_" + UUID.randomUUID().toString().replace("-", "");
         final BlockPos position = new BlockPos(1, 70, 1);
         final WorldSpec worldSpec = new WorldSpec(
@@ -58,7 +61,7 @@ class LightkeeperFrameworkIT
         );
 
         // execute
-        try (ILightkeeperFramework framework = Lightkeeper.start(runtimeManifestPath))
+        try (ILightkeeperFramework framework = Lightkeeper.start(LightkeeperFrameworkIT.class))
         {
             final WorldHandle worldHandle = framework.worlds().create(worldSpec);
             worldHandle.setBlockAt(position, "STONE");
@@ -77,8 +80,6 @@ class LightkeeperFrameworkIT
 
     private static Path getRuntimeManifestPath()
     {
-        final String runtimeManifestPath = System.getProperty("lightkeeper.runtimeManifestPath", "").trim();
-        assertThat(runtimeManifestPath).isNotBlank();
-        return Path.of(runtimeManifestPath);
+        return LightkeeperRuntimeResolver.resolve(LightkeeperFrameworkIT.class);
     }
 }

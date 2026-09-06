@@ -18,6 +18,8 @@ import nl.pim16aap2.lightkeeper.maven.serverprovider.ServerProvider;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.SpigotServerProvider;
 import nl.pim16aap2.lightkeeper.maven.util.CacheKeyUtil;
 import nl.pim16aap2.lightkeeper.maven.util.FileUtil;
+import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeDiscovery;
+import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeLock;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
 import org.apache.maven.plugin.AbstractMojo;
@@ -26,6 +28,7 @@ import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.project.MavenProject;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -59,6 +62,22 @@ public class PrepareServerMojo extends AbstractMojo
      */
     @Parameter(property = "lightkeeper.skip", defaultValue = "false")
     private boolean skip;
+
+    /** Enables durable preparation for ordinary IDE JUnit launches. */
+    @Parameter(property = "lightkeeper.ide", defaultValue = "false")
+    private boolean ide;
+
+    /** Creates and selects a fresh durable IDE runtime even when preparation inputs match. */
+    @Parameter(property = "lightkeeper.ide.refresh", defaultValue = "false")
+    private boolean ideRefresh;
+
+    @Parameter(defaultValue = "${project}", readonly = true, required = true)
+    @Nullable
+    private MavenProject project;
+
+    @Parameter(defaultValue = "${mojoExecution.executionId}", readonly = true, required = true)
+    @Nullable
+    private String executionId;
 
     @Parameter(property = "lightkeeper.serverType", defaultValue = SERVER_TYPE_PAPER)
     @Nullable
@@ -205,11 +224,21 @@ public class PrepareServerMojo extends AbstractMojo
         createRequiredDirectories(executionContext);
 
         final PrepareServerRuntimePreparation runtimePreparation = prepareRuntimePreparation(executionContext);
+        if (ide)
+        {
+            executeIdePreparation(executionContext, runtimePreparation);
+            return;
+        }
+
         final ServerProvider serverProvider = runtimePreparation.resolvedServerSetup().serverProvider();
         serverProvider.prepareServer();
 
         final Path targetServerDirectory = serverProvider.targetServerDirectoryPath();
-        installServerAssets(targetServerDirectory, executionContext, executionContext.pluginArtifactSpecs());
+        installServerAssets(
+            targetServerDirectory,
+            executionContext,
+            resolvePluginArtifacts(executionContext.pluginArtifactSpecs())
+        );
         // Runs after ALL provisioning mutations (base copy, plugins, overlay): a config overlay is the one
         // vector through which online-mode/proxy-forwarding could enter and silently break FULL_LOGIN joins.
         LoopbackLoginGuard.validate(targetServerDirectory, getLog());
@@ -229,6 +258,156 @@ public class PrepareServerMojo extends AbstractMojo
             executionContext.worldInputSpecs()
         );
         writeRuntimeManifest(runtimeManifest, executionContext.runtimeManifestPath());
+    }
+
+    private void executeIdePreparation(
+        PrepareServerExecutionContext executionContext,
+        PrepareServerRuntimePreparation runtimePreparation)
+        throws MojoExecutionException
+    {
+        final MavenProject mavenProject = Objects.requireNonNull(
+            project,
+            "Maven did not inject the current project for IDE test setup."
+        );
+        final Path moduleDirectory = Objects.requireNonNull(
+            mavenProject.getBasedir(),
+            "The current Maven project has no base directory for IDE test setup."
+        ).toPath().toAbsolutePath().normalize();
+        final String selectedExecutionId = Objects.requireNonNull(
+            executionId,
+            "Maven did not inject mojoExecution.executionId for IDE test setup."
+        );
+        try (IdeRuntimeLock ignored = IdeRuntimeLock.acquire(moduleDirectory))
+        {
+            executeLockedIdePreparation(
+                moduleDirectory,
+                selectedExecutionId,
+                executionContext,
+                runtimePreparation
+            );
+        }
+        catch (IllegalStateException exception)
+        {
+            throw new MojoExecutionException(exception.getMessage(), exception);
+        }
+    }
+
+    private void executeLockedIdePreparation(
+        Path moduleDirectory,
+        String selectedExecutionId,
+        PrepareServerExecutionContext executionContext,
+        PrepareServerRuntimePreparation runtimePreparation)
+        throws MojoExecutionException
+    {
+        final List<ResolvedPluginArtifact> resolvedPlugins =
+            resolvePluginArtifacts(executionContext.pluginArtifactSpecs());
+        final String fingerprint;
+        try
+        {
+            fingerprint = IdeRuntimePreparationSupport.fingerprint(
+                moduleDirectory,
+                selectedExecutionId,
+                executionContext,
+                runtimePreparation,
+                resolvedPlugins,
+                configOverlayPath,
+                memoryMb,
+                extraJvmArgs,
+                javaExecutablePath
+            );
+        }
+        catch (IllegalStateException exception)
+        {
+            throw new MojoExecutionException("Failed to fingerprint IDE test setup inputs.", exception);
+        }
+
+        if (!ideRefresh)
+        {
+            final @Nullable IdeRuntimeDiscovery reusableDiscovery = IdeRuntimePreparationSupport.reusableDiscovery(
+                moduleDirectory,
+                selectedExecutionId,
+                executionContext.normalizedServerType(),
+                fingerprint
+            );
+            if (reusableDiscovery != null)
+            {
+                getLog().info(
+                    "Reused IDE test setup: module='%s', platform='%s', output='%s'."
+                        .formatted(
+                            moduleDirectory,
+                            executionContext.normalizedServerType(),
+                            Path.of(reusableDiscovery.runtimeManifestPath()).getParent()
+                        )
+                );
+                return;
+            }
+        }
+
+        final Path preparationDirectory = IdeRuntimePreparationSupport.newPreparationDirectory(
+            moduleDirectory,
+            fingerprint,
+            ideRefresh
+        );
+        final Path manifestPath = preparationDirectory.resolve("runtime-manifest.json");
+        final Path workDirectoryRoot = preparationDirectory.resolve("server");
+        final PrepareServerExecutionContext ideContext =
+            executionContext.withRuntimeLocations(workDirectoryRoot, manifestPath);
+        final PrepareServerResolvedServerSetup ideServerSetup =
+            runtimePreparation.resolvedServerSetup().withRuntimeLocations(workDirectoryRoot, manifestPath);
+        final PrepareServerRuntimePreparation idePreparation = new PrepareServerRuntimePreparation(
+            runtimePreparation.agentMetadata(),
+            runtimePreparation.runtimeProtocolVersion(),
+            runtimePreparation.agentAuthToken(),
+            runtimePreparation.udsSocketPath(),
+            ideServerSetup
+        );
+
+        createRequiredDirectories(ideContext);
+        final ServerProvider serverProvider = ideServerSetup.serverProvider();
+        serverProvider.prepareServer();
+        final Path targetServerDirectory = serverProvider.targetServerDirectoryPath();
+        installServerAssets(targetServerDirectory, ideContext, resolvedPlugins);
+        LoopbackLoginGuard.validate(targetServerDirectory, getLog());
+
+        final RuntimeManifest runtimeManifest = createRuntimeManifest(
+            ideContext.normalizedServerType(),
+            ideServerSetup.manifestServerVersion(),
+            ideServerSetup.manifestBuildId(),
+            ideServerSetup.cacheKey(),
+            targetServerDirectory,
+            serverProvider,
+            ideServerSetup.memoryMb(),
+            idePreparation.udsSocketPath(),
+            idePreparation.agentAuthToken(),
+            idePreparation.agentMetadata(),
+            idePreparation.runtimeProtocolVersion(),
+            ideContext.worldInputSpecs()
+        );
+        writeRuntimeManifest(runtimeManifest, manifestPath);
+        IdeRuntimePreparationSupport.writeProvenance(
+            moduleDirectory,
+            selectedExecutionId,
+            fingerprint,
+            manifestPath,
+            runtimeManifest,
+            resolvedPlugins,
+            ideContext.worldInputSpecs(),
+            configOverlayPath
+        );
+        IdeRuntimePreparationSupport.publish(
+            moduleDirectory,
+            selectedExecutionId,
+            ideContext.normalizedServerType(),
+            fingerprint,
+            manifestPath
+        );
+        getLog().info(
+            "Created IDE test setup: module='%s', platform='%s', output='%s'."
+                .formatted(moduleDirectory, ideContext.normalizedServerType(), preparationDirectory)
+        );
+        getLog().info(
+            "Refresh inputs by rerunning this execution; reset persistent state with -Dlightkeeper.ide.refresh=true."
+        );
     }
 
     /**
@@ -439,13 +618,13 @@ public class PrepareServerMojo extends AbstractMojo
     void installServerAssets(
         Path targetServerDirectory,
         PrepareServerExecutionContext executionContext,
-        List<PluginArtifactSpec> pluginArtifactSpecs)
+        List<ResolvedPluginArtifact> resolvedPluginArtifacts)
         throws MojoExecutionException
     {
         ServerAssetInstaller.installWorlds(targetServerDirectory, executionContext.worldInputSpecs(), getLog());
         ServerAssetInstaller.installPluginArtifacts(
             targetServerDirectory,
-            resolvePluginArtifacts(pluginArtifactSpecs),
+            resolvedPluginArtifacts,
             getLog()
         );
         if (configOverlayPath != null)
@@ -559,6 +738,12 @@ public class PrepareServerMojo extends AbstractMojo
     void validateConfiguration()
         throws MojoExecutionException
     {
+        if (ideRefresh && !ide)
+        {
+            throw new MojoExecutionException(
+                "'lightkeeper.ide.refresh=true' requires 'lightkeeper.ide=true'."
+            );
+        }
         configurationValidator().validateConfiguration(
             serverType,
             userAgent,
@@ -585,6 +770,8 @@ public class PrepareServerMojo extends AbstractMojo
     List<ResolvedPluginArtifact> resolvePluginArtifacts(List<PluginArtifactSpec> specs)
         throws MojoExecutionException
     {
+        if (specs.isEmpty())
+            return List.of();
         final RepositorySystem resolver = Objects.requireNonNull(repositorySystem,
             "Maven RepositorySystem was not injected by the plugin runtime.");
         final RepositorySystemSession session = Objects.requireNonNull(repositorySystemSession,

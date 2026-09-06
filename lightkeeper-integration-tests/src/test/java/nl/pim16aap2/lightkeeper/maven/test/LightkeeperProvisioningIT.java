@@ -1,5 +1,6 @@
 package nl.pim16aap2.lightkeeper.maven.test;
 
+import nl.pim16aap2.lightkeeper.framework.LightkeeperRuntimeResolver;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestReader;
 import org.junit.jupiter.api.Test;
@@ -16,14 +17,12 @@ class LightkeeperProvisioningIT
         throws Exception
     {
         // setup
-        final String runtimeManifestProperty = System.getProperty("lightkeeper.runtimeManifestPath");
-        assertThat(runtimeManifestProperty).isNotBlank();
-        final Path runtimeManifestPath = Path.of(runtimeManifestProperty);
+        final Path runtimeManifestPath = LightkeeperRuntimeResolver.resolve(LightkeeperProvisioningIT.class);
 
         // execute
         final RuntimeManifest runtimeManifest = new RuntimeManifestReader().read(runtimeManifestPath);
         final Path serverDirectory = Path.of(runtimeManifest.serverDirectory());
-        final String expectedServerType = System.getProperty("lightkeeper.expectedServerType", "paper");
+        final String expectedServerType = System.getProperty("lightkeeper.expectedServerType");
 
         // verify
         assertThat(serverDirectory.resolve("lightkeeper-fixture-world/fixtures/marker.txt"))
@@ -35,6 +34,9 @@ class LightkeeperProvisioningIT
             .isRegularFile()
             .hasContent("overlay: true\n");
         assertThat(runtimeManifest.provisionedWorlds()).noneMatch(RuntimeManifest.ProvisionedWorld::loadOnStartup);
-        assertThat(runtimeManifest.serverType()).isEqualTo(expectedServerType);
+        if (expectedServerType == null)
+            assertThat(runtimeManifest.serverType()).isIn("paper", "spigot");
+        else
+            assertThat(runtimeManifest.serverType()).isEqualTo(expectedServerType);
     }
 }

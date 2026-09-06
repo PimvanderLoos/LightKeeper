@@ -1,6 +1,9 @@
 package nl.pim16aap2.lightkeeper.framework;
 
 import nl.pim16aap2.lightkeeper.framework.internal.DefaultLightkeeperFramework;
+import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeLock;
+import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeSelection;
+import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Path;
 
@@ -23,5 +26,23 @@ public final class Lightkeeper
     public static ILightkeeperFramework start(Path runtimeManifestPath)
     {
         return DefaultLightkeeperFramework.start(runtimeManifestPath);
+    }
+
+    /**
+     * Resolves and starts the runtime selected for a test class, including IDE discovery and locking.
+     *
+     * @param testClass Test class whose module owns the prepared runtime.
+     * @return A started framework.
+     */
+    public static ILightkeeperFramework start(Class<?> testClass)
+    {
+        final LightkeeperRuntimeResolver.ResolvedRuntime resolvedRuntime =
+            LightkeeperRuntimeResolver.resolveRuntime(testClass);
+        final @Nullable IdeRuntimeSelection selection = resolvedRuntime.ideSelection();
+        if (selection == null)
+            return start(resolvedRuntime.manifestPath());
+
+        final IdeRuntimeLock lock = IdeRuntimeLock.acquire(selection.moduleDirectory());
+        return DefaultLightkeeperFramework.start(selection, lock);
     }
 }
