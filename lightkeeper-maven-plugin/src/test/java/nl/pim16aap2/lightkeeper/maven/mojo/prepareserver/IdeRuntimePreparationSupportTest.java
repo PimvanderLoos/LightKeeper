@@ -118,6 +118,29 @@ class IdeRuntimePreparationSupportTest
     }
 
     @Test
+    void fingerprint_shouldChangeWhenSocketDirectoryChanges(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final PrepareServerExecutionContext context = context(tempDirectory, List.of());
+        final PrepareServerRuntimePreparation firstPreparation = preparation(
+            tempDirectory.resolve("socket-one/lk-test.sock")
+        );
+        final PrepareServerRuntimePreparation secondPreparation = preparation(
+            tempDirectory.resolve("socket-two/lk-test.sock")
+        );
+
+        // execute
+        final String first = IdeRuntimePreparationSupport.fingerprint(
+            tempDirectory, "prepare-paper", context, firstPreparation, List.of(), null, 1024, null, "java");
+        final String second = IdeRuntimePreparationSupport.fingerprint(
+            tempDirectory, "prepare-paper", context, secondPreparation, List.of(), null, 1024, null, "java");
+
+        // verify
+        assertThat(second).isNotEqualTo(first);
+    }
+
+    @Test
     void publish_shouldExposeOnlyCompletedPreparationAndCreateIgnoreFile(@TempDir Path tempDirectory)
         throws Exception
     {
@@ -235,11 +258,16 @@ class IdeRuntimePreparationSupportTest
 
     private static PrepareServerRuntimePreparation preparation()
     {
+        return preparation(Path.of("/tmp/lightkeeper.sock"));
+    }
+
+    private static PrepareServerRuntimePreparation preparation(Path socketPath)
+    {
         return new PrepareServerRuntimePreparation(
             new PrepareServerAgentMetadata("agent-sha", "agent-cache"),
             1,
             "token",
-            Path.of("/tmp/lightkeeper.sock"),
+            socketPath,
             new PrepareServerResolvedServerSetup(
                 mock(ServerProvider.class),
                 "1.21.11",

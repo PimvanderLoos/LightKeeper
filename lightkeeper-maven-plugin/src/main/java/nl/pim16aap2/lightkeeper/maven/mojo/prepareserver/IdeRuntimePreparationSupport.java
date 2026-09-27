@@ -63,6 +63,10 @@ final class IdeRuntimePreparationSupport
         inputs.add("serverCacheKey=" + preparation.resolvedServerSetup().cacheKey());
         inputs.add("agent=" + preparation.agentMetadata().sha256());
         inputs.add("protocol=" + preparation.runtimeProtocolVersion());
+        inputs.add("socketDirectory=" + canonical(Objects.requireNonNull(
+            preparation.udsSocketPath().toAbsolutePath().normalize().getParent(),
+            "The resolved IDE runtime socket path must have a parent directory."
+        )));
         inputs.add("memoryMb=" + memoryMb);
         inputs.add("java=" + javaExecutablePath);
         inputs.add("extraJvmArgs=" + extraJvmArgs);
