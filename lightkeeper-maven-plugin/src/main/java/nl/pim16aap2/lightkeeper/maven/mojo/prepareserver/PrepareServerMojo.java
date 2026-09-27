@@ -327,7 +327,8 @@ public class PrepareServerMojo extends AbstractMojo
                 moduleDirectory,
                 selectedExecutionId,
                 executionContext.normalizedServerType(),
-                fingerprint
+                fingerprint,
+                getLog()
             );
             if (reusableDiscovery != null)
             {

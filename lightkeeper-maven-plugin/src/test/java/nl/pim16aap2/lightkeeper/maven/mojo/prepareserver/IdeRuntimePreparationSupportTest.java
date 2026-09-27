@@ -8,6 +8,7 @@ import nl.pim16aap2.lightkeeper.runtime.IdeRuntimePaths;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestWriter;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
+import org.apache.maven.plugin.logging.Log;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -17,7 +18,9 @@ import java.util.List;
 import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 class IdeRuntimePreparationSupportTest
 {
@@ -174,7 +177,8 @@ class IdeRuntimePreparationSupportTest
             tempDirectory,
             "prepare-paper",
             "paper",
-            "fingerprint"
+            "fingerprint",
+            mock(Log.class)
         );
         assertThat(discovery).isNotNull();
         assertThat(Objects.requireNonNull(discovery).runtimeManifestPath())
@@ -212,14 +216,53 @@ class IdeRuntimePreparationSupportTest
 
         // execute
         final IdeRuntimeDiscovery wrongExecution = IdeRuntimePreparationSupport.reusableDiscovery(
-            tempDirectory, "prepare-spigot", "paper", "fingerprint");
+            tempDirectory, "prepare-spigot", "paper", "fingerprint", mock(Log.class));
         Files.delete(manifest);
         final IdeRuntimeDiscovery missingManifest = IdeRuntimePreparationSupport.reusableDiscovery(
-            tempDirectory, "prepare-paper", "paper", "fingerprint");
+            tempDirectory, "prepare-paper", "paper", "fingerprint", mock(Log.class));
 
         // verify
         assertThat(wrongExecution).isNull();
         assertThat(missingManifest).isNull();
+    }
+
+    @Test
+    void reusableDiscovery_shouldLogRejectedInvalidRuntime(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path manifest = IdeRuntimePaths.preparationsDirectory(tempDirectory)
+            .resolve("fingerprint/runtime-manifest.json");
+        Files.createDirectories(manifest.getParent());
+        final RuntimeManifest runtimeManifest = writeRuntimeManifest(manifest);
+        IdeRuntimePreparationSupport.writeProvenance(
+            tempDirectory,
+            "prepare-paper",
+            "fingerprint",
+            manifest,
+            runtimeManifest,
+            List.of(),
+            List.of(),
+            null
+        );
+        IdeRuntimePreparationSupport.publish(
+            tempDirectory,
+            "prepare-paper",
+            "paper",
+            "fingerprint",
+            manifest
+        );
+        Files.writeString(manifest, "not-json");
+        final Log log = mock(Log.class);
+
+        // execute
+        final IdeRuntimeDiscovery discovery = IdeRuntimePreparationSupport.reusableDiscovery(
+            tempDirectory, "prepare-paper", "paper", "fingerprint", log);
+
+        // verify
+        assertThat(discovery).isNull();
+        verify(log).warn(contains(IdeRuntimePaths.discoveryFile(tempDirectory).toString()));
+        verify(log).debug(contains("rejection details"), org.mockito.ArgumentMatchers.any(Exception.class));
     }
 
     @Test

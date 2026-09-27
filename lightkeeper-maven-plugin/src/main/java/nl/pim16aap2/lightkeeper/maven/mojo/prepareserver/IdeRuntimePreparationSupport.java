@@ -16,6 +16,7 @@ import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestReader;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestValidator;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.logging.Log;
 import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
@@ -88,7 +89,8 @@ final class IdeRuntimePreparationSupport
         Path moduleDirectory,
         String executionId,
         String serverType,
-        String fingerprint)
+        String fingerprint,
+        Log log)
     {
         final Path discoveryPath = IdeRuntimePaths.discoveryFile(moduleDirectory);
         if (!Files.isRegularFile(discoveryPath))
@@ -111,6 +113,14 @@ final class IdeRuntimePreparationSupport
         }
         catch (IOException | RuntimeException exception)
         {
+            final String reason = exception.getMessage() == null
+                ? exception.getClass().getSimpleName()
+                : exception.getMessage();
+            log.warn(
+                "Rejected reusable IDE test setup at '%s': %s. Preparing a new runtime."
+                    .formatted(discoveryPath, reason)
+            );
+            log.debug("Reusable IDE test setup rejection details.", exception);
             return null;
         }
     }
