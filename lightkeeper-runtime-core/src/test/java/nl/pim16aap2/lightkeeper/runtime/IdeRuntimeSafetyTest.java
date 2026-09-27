@@ -144,6 +144,106 @@ class IdeRuntimeSafetyTest
             .hasMessageContaining("Rebuild changed artifacts");
     }
 
+    @Test
+    void validate_shouldRejectMissingProvenance(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final RuntimeFixture fixture = createFixture(tempDirectory);
+        Files.delete(fixture.manifestPath().resolveSibling(IdeRuntimePaths.PROVENANCE_FILE_NAME));
+
+        // execute + verify
+        assertThatThrownBy(() ->
+            IdeRuntimeValidator.validate(fixture.discovery(), tempDirectory, fixture.manifest()))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("provenance")
+            .hasMessageContaining("missing or invalid");
+    }
+
+    @Test
+    void validate_shouldRejectMismatchedDiscoveryMetadata(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final RuntimeFixture fixture = createFixture(tempDirectory);
+        final IdeRuntimeDiscovery mismatchedDiscovery = new IdeRuntimeDiscovery(
+            fixture.discovery().schemaVersion(),
+            fixture.discovery().moduleDirectory(),
+            fixture.discovery().executionId(),
+            fixture.discovery().serverType(),
+            fixture.discovery().runtimeManifestPath(),
+            "different-fingerprint"
+        );
+
+        // execute + verify
+        assertThatThrownBy(() ->
+            IdeRuntimeValidator.validate(mismatchedDiscovery, tempDirectory, fixture.manifest()))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("metadata do not match");
+    }
+
+    @Test
+    void validate_shouldRejectProvenanceWithoutManifest(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final RuntimeFixture fixture = createFixture(tempDirectory);
+        final Path provenancePath = fixture.manifestPath().resolveSibling(IdeRuntimePaths.PROVENANCE_FILE_NAME);
+        final IdeRuntimeProvenance provenance = new IdeRuntimeProvenanceReader().read(provenancePath);
+        new IdeRuntimeProvenanceWriter().write(new IdeRuntimeProvenance(
+            provenance.schemaVersion(),
+            provenance.moduleDirectory(),
+            provenance.executionId(),
+            provenance.serverType(),
+            provenance.preparationFingerprint(),
+            provenance.runtimeProtocolVersion(),
+            provenance.requiredArtifacts().stream()
+                .filter(artifact -> !artifact.path().equals(fixture.manifestPath().toString()))
+                .toList(),
+            provenance.sourceInputs()
+        ), provenancePath);
+
+        // execute + verify
+        assertThatThrownBy(() ->
+            IdeRuntimeValidator.validate(fixture.discovery(), tempDirectory, fixture.manifest()))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("not covered by provenance");
+    }
+
+    @Test
+    void validate_shouldRejectMissingPreparedArtifact(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final RuntimeFixture fixture = createFixture(tempDirectory);
+        Files.delete(Path.of(fixture.manifest().agentJar()));
+
+        // execute + verify
+        assertThatThrownBy(() ->
+            IdeRuntimeValidator.validate(fixture.discovery(), tempDirectory, fixture.manifest()))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("required prepared artifact")
+            .hasMessageContaining("missing");
+    }
+
+    @Test
+    void sha256_shouldRejectMissingInputAndNestedSymbolicLink(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path directory = Files.createDirectories(tempDirectory.resolve("input"));
+        final Path target = Files.writeString(tempDirectory.resolve("target.txt"), "target");
+        Files.createSymbolicLink(directory.resolve("link.txt"), target);
+
+        // execute + verify
+        assertThatThrownBy(() -> IdeRuntimeArtifactHasher.sha256(tempDirectory.resolve("missing")))
+            .isInstanceOf(java.io.IOException.class)
+            .hasMessageContaining("does not exist");
+        assertThatThrownBy(() -> IdeRuntimeArtifactHasher.sha256(directory))
+            .isInstanceOf(java.io.IOException.class)
+            .hasMessageContaining("Symbolic links are not allowed");
+    }
+
     private static RuntimeFixture createFixture(Path moduleDirectory)
         throws Exception
     {

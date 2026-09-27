@@ -78,6 +78,21 @@ class LightkeeperRuntimeResolverTest
         assertThat(resolved).isEqualTo(manifest);
     }
 
+    @Test
+    void resolve_shouldPreferExplicitManifestForTestClass(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path explicitManifest = Files.writeString(tempDirectory.resolve("explicit.json"), "{}");
+        System.setProperty(LightkeeperRuntimeResolver.RUNTIME_MANIFEST_PROPERTY, explicitManifest.toString());
+
+        // execute
+        final Path resolved = LightkeeperRuntimeResolver.resolve(LightkeeperRuntimeResolverTest.class);
+
+        // verify
+        assertThat(resolved).isEqualTo(explicitManifest.toAbsolutePath().normalize());
+    }
+
     private static Path writeValidDiscovery(Path moduleDirectory)
         throws Exception
     {
