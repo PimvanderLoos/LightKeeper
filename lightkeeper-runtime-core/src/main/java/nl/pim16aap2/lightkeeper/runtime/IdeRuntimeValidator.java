@@ -48,6 +48,12 @@ public final class IdeRuntimeValidator
             throw invalid("discovery, provenance, and runtime protocol metadata do not match");
         }
 
+        final boolean manifestRecorded = provenance.requiredArtifacts().stream()
+            .map(artifact -> Path.of(artifact.path()).toAbsolutePath().normalize())
+            .anyMatch(manifestPath::equals);
+        if (!manifestRecorded)
+            throw invalid("runtime manifest '%s' is not covered by provenance".formatted(manifestPath));
+
         for (final IdeRuntimeProvenance.Artifact artifact : provenance.requiredArtifacts())
             validateRequiredArtifact(artifact);
         for (final IdeRuntimeProvenance.Artifact input : provenance.sourceInputs())

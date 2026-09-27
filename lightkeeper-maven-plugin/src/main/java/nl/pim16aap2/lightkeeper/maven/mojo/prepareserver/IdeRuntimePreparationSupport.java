@@ -52,7 +52,8 @@ final class IdeRuntimePreparationSupport
         throws MojoExecutionException
     {
         final List<String> inputs = new ArrayList<>();
-        inputs.add("schema=" + IdeRuntimeDiscovery.SCHEMA_VERSION);
+        inputs.add("discoverySchema=" + IdeRuntimeDiscovery.SCHEMA_VERSION);
+        inputs.add("provenanceSchema=" + IdeRuntimeProvenance.SCHEMA_VERSION);
         inputs.add("module=" + canonical(moduleDirectory));
         inputs.add("execution=" + executionId);
         inputs.add("serverType=" + context.normalizedServerType());
@@ -162,6 +163,7 @@ final class IdeRuntimePreparationSupport
         throws MojoExecutionException
     {
         final List<IdeRuntimeProvenance.Artifact> requiredArtifacts = new ArrayList<>();
+        requiredArtifacts.add(artifact(manifestPath));
         requiredArtifacts.add(artifact(Path.of(manifest.serverJar())));
         requiredArtifacts.add(artifact(Path.of(Objects.requireNonNull(
             manifest.agentJar(),

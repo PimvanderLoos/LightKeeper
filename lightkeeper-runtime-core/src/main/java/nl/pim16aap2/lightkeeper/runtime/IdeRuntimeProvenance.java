@@ -26,7 +26,7 @@ public record IdeRuntimeProvenance(
 )
 {
     /** Current provenance document schema version. */
-    public static final int SCHEMA_VERSION = 1;
+    public static final int SCHEMA_VERSION = 2;
 
     public IdeRuntimeProvenance
     {

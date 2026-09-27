@@ -107,6 +107,27 @@ class IdeRuntimeSafetyTest
     }
 
     @Test
+    void validate_shouldRejectChangedRuntimeManifest(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final RuntimeFixture fixture = createFixture(tempDirectory);
+        final String changedManifest = Files.readString(fixture.manifestPath())
+            .replace("\"memoryMb\":1024", "\"memoryMb\":2048");
+        Files.writeString(fixture.manifestPath(), changedManifest);
+        final RuntimeManifest parsedManifest = new RuntimeManifestReader().read(fixture.manifestPath());
+        assertThat(parsedManifest.memoryMb()).isEqualTo(2048);
+
+        // execute + verify
+        assertThatThrownBy(() ->
+            IdeRuntimeValidator.validate(fixture.discovery(), tempDirectory, parsedManifest))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("prepared artifact")
+            .hasMessageContaining("runtime-manifest.json")
+            .hasMessageContaining("changed");
+    }
+
+    @Test
     void validate_shouldRejectChangedExistingSourceInput(@TempDir Path tempDirectory)
         throws Exception
     {
@@ -171,6 +192,7 @@ class IdeRuntimeSafetyTest
             "fingerprint",
             RuntimeProtocol.VERSION,
             List.of(
+                artifact(manifestPath),
                 artifact(serverJar),
                 artifact(agentJar)
             ),
@@ -180,7 +202,7 @@ class IdeRuntimeSafetyTest
             provenance,
             preparationDirectory.resolve(IdeRuntimePaths.PROVENANCE_FILE_NAME)
         );
-        return new RuntimeFixture(discovery, manifest, sourceInput);
+        return new RuntimeFixture(discovery, manifest, manifestPath, sourceInput);
     }
 
     private static IdeRuntimeProvenance.Artifact artifact(Path path)
@@ -195,6 +217,7 @@ class IdeRuntimeSafetyTest
     private record RuntimeFixture(
         IdeRuntimeDiscovery discovery,
         RuntimeManifest manifest,
+        Path manifestPath,
         Path sourceInput)
     {
     }
