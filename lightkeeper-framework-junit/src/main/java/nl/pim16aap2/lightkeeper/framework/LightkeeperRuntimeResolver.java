@@ -21,17 +21,6 @@ public final class LightkeeperRuntimeResolver
     {
     }
 
-    /**
-     * Resolves the explicit runtime manifest override or the IDE setup owned by the test class's Maven module.
-     *
-     * @param testClass Test class used to locate the owning module.
-     * @return The selected runtime manifest path.
-     */
-    public static Path resolve(Class<?> testClass)
-    {
-        return resolveRuntime(testClass).manifestPath();
-    }
-
     static ResolvedRuntime resolveRuntime(Class<?> testClass)
     {
         Objects.requireNonNull(testClass, "testClass may not be null.");
@@ -61,18 +50,13 @@ public final class LightkeeperRuntimeResolver
         return new ResolvedRuntime(selection.runtimeManifestPath(), selection);
     }
 
-    /**
-     * Resolves IDE setup from an explicit test class output directory.
-     *
-     * @param classOutputDirectory Maven test class output directory.
-     * @return The selected runtime manifest path.
-     */
-    public static Path resolveFromClassOutput(Path classOutputDirectory)
+    static ResolvedRuntime resolveFromClassOutput(Path classOutputDirectory)
     {
         final String explicitPath = System.getProperty(RUNTIME_MANIFEST_PROPERTY, "").trim();
         if (!explicitPath.isBlank())
-            return validateExplicitPath(Path.of(explicitPath));
-        return IdeRuntimeDiscoveryResolver.resolve(classOutputDirectory);
+            return new ResolvedRuntime(validateExplicitPath(Path.of(explicitPath)), null);
+        final IdeRuntimeSelection selection = IdeRuntimeDiscoveryResolver.resolveSelection(classOutputDirectory);
+        return new ResolvedRuntime(selection.runtimeManifestPath(), selection);
     }
 
     private static Path validateExplicitPath(Path path)

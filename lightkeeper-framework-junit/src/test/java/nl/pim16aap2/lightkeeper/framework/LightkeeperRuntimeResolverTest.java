@@ -33,12 +33,13 @@ class LightkeeperRuntimeResolverTest
         );
 
         // execute
-        final Path resolved = LightkeeperRuntimeResolver.resolveFromClassOutput(
+        final LightkeeperRuntimeResolver.ResolvedRuntime resolved = LightkeeperRuntimeResolver.resolveFromClassOutput(
             tempDirectory.resolve("unsupported-output-layout")
         );
 
         // verify
-        assertThat(resolved).isEqualTo(explicitManifest.toAbsolutePath().normalize());
+        assertThat(resolved.manifestPath()).isEqualTo(explicitManifest.toAbsolutePath().normalize());
+        assertThat(resolved.ideSelection()).isNull();
     }
 
     @Test
@@ -72,10 +73,12 @@ class LightkeeperRuntimeResolverTest
         final Path manifest = writeValidDiscovery(moduleDirectory);
 
         // execute
-        final Path resolved = LightkeeperRuntimeResolver.resolveFromClassOutput(classOutput);
+        final LightkeeperRuntimeResolver.ResolvedRuntime resolved =
+            LightkeeperRuntimeResolver.resolveFromClassOutput(classOutput);
 
         // verify
-        assertThat(resolved).isEqualTo(manifest);
+        assertThat(resolved.manifestPath()).isEqualTo(manifest);
+        assertThat(resolved.ideSelection()).isNotNull();
     }
 
     @Test
@@ -87,10 +90,12 @@ class LightkeeperRuntimeResolverTest
         System.setProperty(LightkeeperRuntimeResolver.RUNTIME_MANIFEST_PROPERTY, explicitManifest.toString());
 
         // execute
-        final Path resolved = LightkeeperRuntimeResolver.resolve(LightkeeperRuntimeResolverTest.class);
+        final LightkeeperRuntimeResolver.ResolvedRuntime resolved =
+            LightkeeperRuntimeResolver.resolveRuntime(LightkeeperRuntimeResolverTest.class);
 
         // verify
-        assertThat(resolved).isEqualTo(explicitManifest.toAbsolutePath().normalize());
+        assertThat(resolved.manifestPath()).isEqualTo(explicitManifest.toAbsolutePath().normalize());
+        assertThat(resolved.ideSelection()).isNull();
     }
 
     private static Path writeValidDiscovery(Path moduleDirectory)

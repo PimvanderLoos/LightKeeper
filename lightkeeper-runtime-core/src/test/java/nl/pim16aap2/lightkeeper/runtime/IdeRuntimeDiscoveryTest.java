@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class IdeRuntimeDiscoveryTest
 {
     @Test
-    void resolve_shouldReturnManifestOwnedByTestModule(@TempDir Path tempDirectory)
+    void resolveSelection_shouldReturnManifestOwnedByTestModule(@TempDir Path tempDirectory)
         throws Exception
     {
         // setup
@@ -21,14 +21,14 @@ class IdeRuntimeDiscoveryTest
         final Path manifest = writeDiscovery(moduleDirectory, moduleDirectory);
 
         // execute
-        final Path resolved = IdeRuntimeDiscoveryResolver.resolve(classOutput);
+        final Path resolved = IdeRuntimeDiscoveryResolver.resolveSelection(classOutput).runtimeManifestPath();
 
         // verify
         assertThat(resolved).isEqualTo(manifest);
     }
 
     @Test
-    void resolve_shouldSurviveRecreatedMavenClassOutput(@TempDir Path tempDirectory)
+    void resolveSelection_shouldSurviveRecreatedMavenClassOutput(@TempDir Path tempDirectory)
         throws Exception
     {
         // setup
@@ -41,14 +41,14 @@ class IdeRuntimeDiscoveryTest
         final Path recompiledClassOutput = Files.createDirectories(moduleDirectory.resolve("target/test-classes"));
 
         // execute
-        final Path resolved = IdeRuntimeDiscoveryResolver.resolve(recompiledClassOutput);
+        final Path resolved = IdeRuntimeDiscoveryResolver.resolveSelection(recompiledClassOutput).runtimeManifestPath();
 
         // verify
         assertThat(resolved).isEqualTo(manifest);
     }
 
     @Test
-    void resolve_shouldSelectRuntimeFromEachOwningModule(@TempDir Path tempDirectory)
+    void resolveSelection_shouldSelectRuntimeFromEachOwningModule(@TempDir Path tempDirectory)
         throws Exception
     {
         // setup
@@ -60,8 +60,8 @@ class IdeRuntimeDiscoveryTest
         final Path spigotManifest = writeDiscovery(spigotModule, spigotModule, "spigot");
 
         // execute
-        final Path resolvedPaper = IdeRuntimeDiscoveryResolver.resolve(paperOutput);
-        final Path resolvedSpigot = IdeRuntimeDiscoveryResolver.resolve(spigotOutput);
+        final Path resolvedPaper = IdeRuntimeDiscoveryResolver.resolveSelection(paperOutput).runtimeManifestPath();
+        final Path resolvedSpigot = IdeRuntimeDiscoveryResolver.resolveSelection(spigotOutput).runtimeManifestPath();
 
         // verify
         assertThat(resolvedPaper).isEqualTo(paperManifest);
@@ -69,7 +69,7 @@ class IdeRuntimeDiscoveryTest
     }
 
     @Test
-    void resolve_shouldRejectDiscoveryOwnedByDifferentModule(@TempDir Path tempDirectory)
+    void resolveSelection_shouldRejectDiscoveryOwnedByDifferentModule(@TempDir Path tempDirectory)
         throws Exception
     {
         // setup
@@ -79,28 +79,28 @@ class IdeRuntimeDiscoveryTest
         writeDiscovery(moduleDirectory, otherModule);
 
         // execute + verify
-        assertThatThrownBy(() -> IdeRuntimeDiscoveryResolver.resolve(classOutput))
+        assertThatThrownBy(() -> IdeRuntimeDiscoveryResolver.resolveSelection(classOutput))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("belongs to module")
             .hasMessageContaining("lightkeeper.ide=true");
     }
 
     @Test
-    void resolve_shouldRejectMissingDiscoveryWithSetupInstruction(@TempDir Path tempDirectory)
+    void resolveSelection_shouldRejectMissingDiscoveryWithSetupInstruction(@TempDir Path tempDirectory)
         throws Exception
     {
         // setup
         final Path classOutput = Files.createDirectories(tempDirectory.resolve("module/target/test-classes"));
 
         // execute + verify
-        assertThatThrownBy(() -> IdeRuntimeDiscoveryResolver.resolve(classOutput))
+        assertThatThrownBy(() -> IdeRuntimeDiscoveryResolver.resolveSelection(classOutput))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("discovery file")
             .hasMessageContaining("lightkeeper.runtimeManifestPath");
     }
 
     @Test
-    void resolve_shouldRejectCorruptDiscovery(@TempDir Path tempDirectory)
+    void resolveSelection_shouldRejectCorruptDiscovery(@TempDir Path tempDirectory)
         throws Exception
     {
         // setup
@@ -111,7 +111,7 @@ class IdeRuntimeDiscoveryTest
         Files.writeString(discoveryPath, "not-json");
 
         // execute + verify
-        assertThatThrownBy(() -> IdeRuntimeDiscoveryResolver.resolve(classOutput))
+        assertThatThrownBy(() -> IdeRuntimeDiscoveryResolver.resolveSelection(classOutput))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("corrupt")
             .hasMessageContaining(discoveryPath.toString());

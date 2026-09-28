@@ -18,17 +18,6 @@ public final class IdeRuntimeDiscoveryResolver
     }
 
     /**
-     * Resolves the durable manifest belonging to the module that owns a class output directory.
-     *
-     * @param classOutputDirectory Test class code-source directory, normally {@code target/test-classes}.
-     * @return The validated durable runtime manifest path.
-     */
-    public static Path resolve(Path classOutputDirectory)
-    {
-        return resolveSelection(classOutputDirectory).runtimeManifestPath();
-    }
-
-    /**
      * Resolves discovery metadata and its owning module from a test class output directory.
      *
      * @param classOutputDirectory Test class code-source directory.
@@ -81,7 +70,7 @@ public final class IdeRuntimeDiscoveryResolver
      * @param classOutputDirectory Class code-source directory.
      * @return The owning module directory.
      */
-    public static Path resolveModuleDirectory(Path classOutputDirectory)
+    static Path resolveModuleDirectory(Path classOutputDirectory)
     {
         final Path outputDirectory = Objects.requireNonNull(
             classOutputDirectory,

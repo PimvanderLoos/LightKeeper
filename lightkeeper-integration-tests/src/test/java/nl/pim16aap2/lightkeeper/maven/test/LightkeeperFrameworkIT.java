@@ -3,15 +3,10 @@ package nl.pim16aap2.lightkeeper.maven.test;
 import nl.pim16aap2.lightkeeper.framework.BlockPos;
 import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.Lightkeeper;
-import nl.pim16aap2.lightkeeper.framework.LightkeeperRuntimeResolver;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import nl.pim16aap2.lightkeeper.framework.WorldSpec;
-import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
-import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestReader;
-import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
 import org.junit.jupiter.api.Test;
 
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.UUID;
 
@@ -20,29 +15,22 @@ import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertion
 class LightkeeperFrameworkIT
 {
     @Test
-    void start_shouldExposeValidRuntimeManifestAndMainWorld()
+    void start_shouldExposeServerAndMainWorld()
         throws Exception
     {
         // setup
-        final Path runtimeManifestPath = getRuntimeManifestPath();
-        final RuntimeManifest runtimeManifest = new RuntimeManifestReader().read(runtimeManifestPath);
-
-        // execute
         try (ILightkeeperFramework framework = Lightkeeper.start(LightkeeperFrameworkIT.class))
         {
+            // execute
             final WorldHandle worldHandle = framework.worlds().main();
             final String expectedServerType = System.getProperty("lightkeeper.expectedServerType");
 
             // verify
             if (expectedServerType == null)
-                assertThat(runtimeManifest.serverType()).isIn("paper", "spigot");
+                assertThat(framework.server().platform().name()).isIn("PAPER", "SPIGOT");
             else
-                assertThat(runtimeManifest.serverType()).isEqualTo(expectedServerType);
-            assertThat(runtimeManifest.runtimeProtocolVersion()).isEqualTo(RuntimeProtocol.VERSION);
-            assertThat(runtimeManifest.udsSocketPath()).isNotBlank();
-            assertThat(runtimeManifest.agentAuthToken()).isNotBlank();
-            assertThat(runtimeManifest.agentJar()).isNotBlank();
-            assertThat(runtimeManifest.agentJarSha256()).hasSize(64);
+                assertThat(framework.server().platform().name()).isEqualToIgnoringCase(expectedServerType);
+            assertThat(framework.server().directory()).isDirectory();
             assertThat(worldHandle).hasNonBlankName();
         }
     }
@@ -76,10 +64,5 @@ class LightkeeperFrameworkIT
                 .hasBlockAt(position)
                 .ofType("STONE");
         }
-    }
-
-    private static Path getRuntimeManifestPath()
-    {
-        return LightkeeperRuntimeResolver.resolve(LightkeeperFrameworkIT.class);
     }
 }

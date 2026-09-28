@@ -1,6 +1,7 @@
 package nl.pim16aap2.lightkeeper.runtime;
 
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.Objects;
 
@@ -48,9 +49,12 @@ public final class RuntimeManifestValidator
             throw new IllegalStateException("Agent socket path '%s' has no parent directory.".formatted(socketPath));
         try
         {
-            Files.createDirectories(socketParent);
+            if (Files.exists(socketParent, LinkOption.NOFOLLOW_LINKS))
+                Files.createDirectories(socketParent);
+            else
+                UserOnlyDirectory.prepare(socketParent);
         }
-        catch (java.io.IOException exception)
+        catch (java.io.IOException | IllegalStateException exception)
         {
             throw new IllegalStateException(
                 "Agent socket directory '%s' cannot be prepared.".formatted(socketParent),
