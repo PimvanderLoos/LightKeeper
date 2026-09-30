@@ -5,6 +5,7 @@ import nl.pim16aap2.lightkeeper.maven.util.FileUtil;
 import nl.pim16aap2.lightkeeper.maven.util.HashUtil;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestWriter;
+import nl.pim16aap2.lightkeeper.runtime.UserOnlyDirectory;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.jspecify.annotations.Nullable;
@@ -13,12 +14,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
-import java.nio.file.attribute.UserPrincipal;
 import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -30,12 +28,6 @@ final class PrepareServerRuntimeSupport
 {
     private static final int UNIX_SOCKET_PATH_MAX_BYTES = 100;
     private static final Pattern UNRESOLVED_PLACEHOLDER_PATTERN = Pattern.compile("\\$\\{[^}]+}");
-    private static final Set<PosixFilePermission> USER_ONLY_DIRECTORY_PERMISSIONS = Set.of(
-        PosixFilePermission.OWNER_READ,
-        PosixFilePermission.OWNER_WRITE,
-        PosixFilePermission.OWNER_EXECUTE
-    );
-
     private final Log log;
     private final Path defaultSocketDirectory;
 
@@ -233,60 +225,15 @@ final class PrepareServerRuntimeSupport
     private static void prepareUserOnlyDirectory(Path directory)
         throws MojoExecutionException
     {
-        if (!directory.getFileSystem().supportedFileAttributeViews().contains("posix"))
-        {
-            FileUtil.createDirectories(directory, "agent socket directory");
-            return;
-        }
-
         try
         {
-            Files.createDirectories(directory, PosixFilePermissions.asFileAttribute(USER_ONLY_DIRECTORY_PERMISSIONS));
-            verifyUserOnlyDirectory(directory);
+            UserOnlyDirectory.prepare(directory);
         }
-        catch (IOException exception)
+        catch (IOException | IllegalStateException exception)
         {
             throw new MojoExecutionException(
-                "Failed to prepare agent socket directory '%s'.".formatted(directory),
+                "Failed to prepare agent socket directory '%s': %s".formatted(directory, exception.getMessage()),
                 exception
-            );
-        }
-    }
-
-    private static void verifyUserOnlyDirectory(Path directory)
-        throws IOException, MojoExecutionException
-    {
-        final PosixFileAttributes attributes =
-            Files.readAttributes(directory, PosixFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
-        if (!attributes.isDirectory())
-        {
-            throw new MojoExecutionException(
-                "Agent socket directory '%s' exists but is not a directory.".formatted(directory)
-            );
-        }
-
-        final UserPrincipal currentUser = directory.getFileSystem()
-            .getUserPrincipalLookupService()
-            .lookupPrincipalByName(Objects.requireNonNull(System.getProperty("user.name"), "user.name must be set."));
-        if (!attributes.owner().equals(currentUser))
-        {
-            throw new MojoExecutionException(
-                ("Agent socket directory '%s' is owned by '%s' instead of the current user '%s'. "
-                    + "Remove it or configure 'agentSocketDirectory' explicitly.")
-                    .formatted(directory, attributes.owner().getName(), currentUser.getName())
-            );
-        }
-
-        if (!attributes.permissions().equals(USER_ONLY_DIRECTORY_PERMISSIONS))
-        {
-            throw new MojoExecutionException(
-                ("Agent socket directory '%s' has permissions '%s' but requires user-only permissions '%s'. "
-                    + "Remove it or configure 'agentSocketDirectory' explicitly.")
-                    .formatted(
-                        directory,
-                        PosixFilePermissions.toString(attributes.permissions()),
-                        PosixFilePermissions.toString(USER_ONLY_DIRECTORY_PERMISSIONS)
-                    )
             );
         }
     }

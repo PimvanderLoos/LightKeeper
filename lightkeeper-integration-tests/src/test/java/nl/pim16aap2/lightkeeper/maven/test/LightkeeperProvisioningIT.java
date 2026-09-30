@@ -1,7 +1,7 @@
 package nl.pim16aap2.lightkeeper.maven.test;
 
-import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
-import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestReader;
+import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
+import nl.pim16aap2.lightkeeper.framework.Lightkeeper;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -16,25 +16,20 @@ class LightkeeperProvisioningIT
         throws Exception
     {
         // setup
-        final String runtimeManifestProperty = System.getProperty("lightkeeper.runtimeManifestPath");
-        assertThat(runtimeManifestProperty).isNotBlank();
-        final Path runtimeManifestPath = Path.of(runtimeManifestProperty);
+        try (ILightkeeperFramework framework = Lightkeeper.start(LightkeeperProvisioningIT.class))
+        {
+            // execute
+            final Path serverDirectory = framework.server().directory();
 
-        // execute
-        final RuntimeManifest runtimeManifest = new RuntimeManifestReader().read(runtimeManifestPath);
-        final Path serverDirectory = Path.of(runtimeManifest.serverDirectory());
-        final String expectedServerType = System.getProperty("lightkeeper.expectedServerType", "paper");
-
-        // verify
-        assertThat(serverDirectory.resolve("lightkeeper-fixture-world/fixtures/marker.txt"))
-            .isRegularFile()
-            .hasContent("fixture-marker\n");
-        assertThat(serverDirectory.resolve("plugins/lightkeeper-agent-spigot.jar")).isRegularFile();
-        assertThat(serverDirectory.resolve("plugins/lightkeeper-spigot-test-plugin.jar")).isRegularFile();
-        assertThat(serverDirectory.resolve("plugins/lightkeeper-spigot-test-plugin/test-overlay.yml"))
-            .isRegularFile()
-            .hasContent("overlay: true\n");
-        assertThat(runtimeManifest.provisionedWorlds()).noneMatch(RuntimeManifest.ProvisionedWorld::loadOnStartup);
-        assertThat(runtimeManifest.serverType()).isEqualTo(expectedServerType);
+            // verify
+            assertThat(serverDirectory.resolve("lightkeeper-fixture-world/fixtures/marker.txt"))
+                .isRegularFile()
+                .hasContent("fixture-marker\n");
+            assertThat(serverDirectory.resolve("plugins/lightkeeper-agent-spigot.jar")).isRegularFile();
+            assertThat(serverDirectory.resolve("plugins/lightkeeper-spigot-test-plugin.jar")).isRegularFile();
+            assertThat(serverDirectory.resolve("plugins/lightkeeper-spigot-test-plugin/test-overlay.yml"))
+                .isRegularFile()
+                .hasContent("overlay: true\n");
+        }
     }
 }

@@ -27,4 +27,20 @@ record PrepareServerExecutionContext(
     List<PluginArtifactSpec> pluginArtifactSpecs
 )
 {
+    PrepareServerExecutionContext withRuntimeLocations(Path workDirectoryRoot, Path manifestPath)
+    {
+        return new PrepareServerExecutionContext(
+            normalizedServerType,
+            serverVersion,
+            jarCacheDirectoryRoot,
+            baseServerCacheDirectoryRoot,
+            pluginArtifactCacheDirectoryRoot,
+            workDirectoryRoot,
+            manifestPath,
+            configuredAgentSocketDirectory,
+            userAgent,
+            worldInputSpecs,
+            pluginArtifactSpecs
+        );
+    }
 }

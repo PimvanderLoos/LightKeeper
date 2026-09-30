@@ -288,6 +288,12 @@ class ServerProviderLifecycleTest
             writeServerProperties(createDefaultServerProperties());
         }
 
+        @Override
+        protected ServerProvider recreate(ServerSpecification specification)
+        {
+            return new LifecycleServerProvider(log(), specification, portSupplier);
+        }
+
         private int createBaseServerJarInvocations()
         {
             return createBaseServerJarInvocations;
