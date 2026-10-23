@@ -20,7 +20,7 @@ public final class LightkeeperAssertions extends Assertions
      */
     private static final long RETRY_POLL_INTERVAL_MILLIS = 50L;
 
-    private static final ThreadLocal<Boolean> INSIDE_EVENTUALLY = new ThreadLocal<>();
+    private static final ThreadLocal<@Nullable Boolean> INSIDE_EVENTUALLY = new ThreadLocal<>();
 
     private LightkeeperAssertions()
     {
@@ -78,15 +78,14 @@ public final class LightkeeperAssertions extends Assertions
      * Retries an assertion until it passes or the timeout expires.
      *
      * <p>Eager assertions never poll; this is the visible opt-in retry over the exact same assertion. The
-     * assertion is re-run in full — probe and matcher — every {@code 50 ms}, so it only makes sense over LIVE
-     * subjects that re-query the server per call (block types, inventories, menus, messages, server errors);
-     * retrying a frozen snapshot can never change the outcome and simply burns the timeout.
+     * assertion is re-run in full — probe and matcher — every {@code 50 ms}, so it only makes sense over LIVE subjects
+     * that re-query the server per call (block types, inventories, menus, messages, server errors); retrying a frozen
+     * snapshot can never change the outcome and simply burns the timeout.
      *
      * <p>On timeout, the thrown {@link AssertionError} carries the retry history (attempt count and elapsed
-     * time) and the last attempt's failure as its cause — strictly more information than a generic
-     * "condition not met". A non-assertion exception (e.g. a closed framework) fails fast on the first
-     * occurrence instead of burning the timeout; nesting {@code eventually} inside {@code eventually} is
-     * detected and rejected.
+     * time) and the last attempt's failure as its cause — strictly more information than a generic "condition not met".
+     * A non-assertion exception (e.g. a closed framework) fails fast on the first occurrence instead of burning the
+     * timeout; nesting {@code eventually} inside {@code eventually} is detected and rejected.
      *
      * @param timeout
      *     Maximum time to keep retrying; must be positive.
@@ -177,16 +176,16 @@ public final class LightkeeperAssertions extends Assertions
          * Runs the assertion once.
          *
          * @throws Exception
-         *     Assertion failures surface as {@link AssertionError} and are retried; any other failure is
-         *     wrapped in an {@link IllegalStateException} (with the original as its cause) and fails fast.
+         *     Assertion failures surface as {@link AssertionError} and are retried; any other failure is wrapped in an
+         *     {@link IllegalStateException} (with the original as its cause) and fails fast.
          */
         void run()
             throws Exception;
     }
 
     /**
-     * Thrown when {@code eventually} is nested inside another {@code eventually}; a distinct type so the
-     * outer retry loop can surface the nesting message directly instead of wrapping it.
+     * Thrown when {@code eventually} is nested inside another {@code eventually}; a distinct type so the outer retry
+     * loop can surface the nesting message directly instead of wrapping it.
      */
     private static final class NestedEventuallyException extends IllegalStateException
     {
