@@ -6,6 +6,7 @@ import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.AbstractStringAssert;
 import org.assertj.core.api.Assertions;
+import org.assertj.core.api.ListAssert;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Objects;
@@ -24,6 +25,18 @@ public final class PlayerHandleAssert extends AbstractAssert<PlayerHandleAssert,
     PlayerHandleAssert(@Nullable PlayerHandle actual)
     {
         super(actual, PlayerHandleAssert.class);
+    }
+
+    /** @return Frozen assertions over the current inventory; recreate navigation when retrying. */
+    public InventoryAssert inventory()
+    {
+        return extracting(PlayerHandle::inventory, InventoryAssert::new);
+    }
+
+    /** @return Frozen individual-message assertions for exact contents, order, counts and predicates. */
+    public ListAssert<String> receivedMessages()
+    {
+        return extracting(PlayerHandle::receivedMessages, Assertions::assertThat);
     }
 
     /**

@@ -10,6 +10,7 @@ import nl.pim16aap2.lightkeeper.framework.IServerControl;
 import nl.pim16aap2.lightkeeper.framework.InventorySnapshot;
 import nl.pim16aap2.lightkeeper.framework.MenuHandle;
 import nl.pim16aap2.lightkeeper.framework.MenuItemSnapshot;
+import nl.pim16aap2.lightkeeper.framework.MenuSnapshot;
 import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
 import nl.pim16aap2.lightkeeper.framework.ServerErrorSnapshot;
 import nl.pim16aap2.lightkeeper.framework.ServerErrorsHandle;
@@ -279,9 +280,10 @@ class HandleAssertionsTest
         // setup
         final MenuHandle handle = mock(MenuHandle.class);
         final ItemStack itemStack = mock(ItemStack.class);
-        when(handle.hasTitle("Main")).thenReturn(true);
-        when(handle.hasItemAt(0, "minecraft:stone")).thenReturn(true);
-        when(handle.hasItemAt(1, itemStack)).thenReturn(true);
+        when(handle.snapshot()).thenReturn(new MenuSnapshot(true, "Main", List.of(
+            new MenuItemSnapshot(0, "minecraft:stone", "", List.of()),
+            new MenuItemSnapshot(1, "minecraft:dirt", "", List.of()))));
+        when(itemStack.getType()).thenReturn(Material.DIRT);
 
         // execute + verify
         LightkeeperAssertions.assertThat(handle)
@@ -295,7 +297,7 @@ class HandleAssertionsTest
     {
         // setup
         final MenuHandle handle = mock(MenuHandle.class);
-        when(handle.hasItemAt(5, "minecraft:diamond")).thenReturn(false);
+        when(handle.snapshot()).thenReturn(new MenuSnapshot(true, "Main", List.of()));
 
         // execute + verify
         assertThatThrownBy(() -> LightkeeperAssertions.assertThat(handle).hasItemAt(5, "minecraft:diamond"))

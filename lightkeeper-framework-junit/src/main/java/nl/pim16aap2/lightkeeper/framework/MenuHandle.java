@@ -1,11 +1,8 @@
 package nl.pim16aap2.lightkeeper.framework;
 
 import org.bukkit.inventory.ItemStack;
-import org.jspecify.annotations.Nullable;
 
 import java.time.Duration;
-import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -305,7 +302,7 @@ public final class MenuHandle
     {
         final Optional<MenuItemSnapshot> itemSnapshot = findItem(slot);
         return itemSnapshot
-            .map(item -> normalizeMaterialKey(item.materialKey()).equals(normalizeMaterialKey(materialKey)))
+            .map(item -> item.matchesMaterial(materialKey))
             .orElse(false);
     }
 
@@ -324,20 +321,7 @@ public final class MenuHandle
         if (itemSnapshot.isEmpty())
             return false;
 
-        final MenuItemSnapshot actual = itemSnapshot.get();
-        if (!normalizeMaterialKey(actual.materialKey())
-            .equals(normalizeMaterialKey(itemStack.getType().getKey().toString())))
-            return false;
-
-        final @Nullable String expectedName = itemStack.getItemMeta() == null
-            ? null
-            : itemStack.getItemMeta().getDisplayName();
-        final @Nullable List<String> expectedLore = itemStack.getItemMeta() == null
-            ? null
-            : itemStack.getItemMeta().getLore();
-        if (!Objects.equals(emptyToNull(actual.displayName()), emptyToNull(expectedName)))
-            return false;
-        return Objects.equals(normalizeLore(actual.lore()), normalizeLore(expectedLore));
+        return itemSnapshot.get().matches(itemStack);
     }
 
     private Optional<MenuItemSnapshot> findItem(int slot)
@@ -347,23 +331,4 @@ public final class MenuHandle
             .findFirst();
     }
 
-    private static String normalizeMaterialKey(String materialKey)
-    {
-        final String trimmed = materialKey.trim().toLowerCase(Locale.ROOT);
-        return trimmed.startsWith("minecraft:") ? trimmed : "minecraft:" + trimmed;
-    }
-
-    private static @Nullable String emptyToNull(@Nullable String value)
-    {
-        if (value == null || value.isBlank())
-            return null;
-        return value;
-    }
-
-    private static List<String> normalizeLore(@Nullable List<String> value)
-    {
-        if (value == null || value.isEmpty())
-            return List.of();
-        return value;
-    }
 }

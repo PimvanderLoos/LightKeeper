@@ -2,6 +2,9 @@ package nl.pim16aap2.lightkeeper.framework.assertions;
 
 import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.MenuHandle;
+import nl.pim16aap2.lightkeeper.framework.MenuSnapshot;
+import nl.pim16aap2.lightkeeper.framework.MenuItemSnapshot;
+import nl.pim16aap2.lightkeeper.framework.InventorySnapshot;
 import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import org.assertj.core.api.Assertions;
@@ -24,6 +27,39 @@ public final class LightkeeperAssertions extends Assertions
 
     private LightkeeperAssertions()
     {
+    }
+
+    /**
+     * Creates assertions over a frozen inventory.
+     *
+     * @param actual Captured inventory.
+     * @return Inventory assertions.
+     */
+    public static InventoryAssert assertThat(@Nullable InventorySnapshot actual)
+    {
+        return new InventoryAssert(actual);
+    }
+
+    /**
+     * Creates assertions over a frozen menu.
+     *
+     * @param actual Captured menu.
+     * @return Menu snapshot assertions.
+     */
+    public static MenuSnapshotAssert assertThat(@Nullable MenuSnapshot actual)
+    {
+        return new MenuSnapshotAssert(actual);
+    }
+
+    /**
+     * Creates assertions over a frozen item.
+     *
+     * @param actual Captured item.
+     * @return Item snapshot assertions.
+     */
+    public static MenuItemSnapshotAssert assertThat(@Nullable MenuItemSnapshot actual)
+    {
+        return new MenuItemSnapshotAssert(actual);
     }
 
     /**

@@ -196,7 +196,7 @@ Sources: [PlayerHandle][PlayerHandle], [ChatComponentSnapshot][ChatComponentSnap
 | API / observation | Decision | Required semantics |
 |---|---|---|
 | `receivedMessagesText()` | Existing string navigation and `receivedMessage(fragment)` | The existing fragment search is over joined text, so it can span message boundaries. Keep that limitation explicit; it is not an exact-message assertion. |
-| `receivedMessages()` | Add P1: message-list assertion navigation on the player subject | Reuse standard list containment for exact messages, ordering, count, duplicates, and absence. For per-message substring matching use list predicates. Keep the player identity in the navigation description. |
+| `receivedMessages()` | Existing: message-list navigation on the player subject | Standard list assertions preserve exact message boundaries, ordering, counts and absence. The list is captured at navigation time; recreate navigation inside retries. |
 | `chatComponents()` and `ChatComponentSnapshot.json` | Add P2: component-list navigation; Standard raw-string checks for codec-specific tests | Component lists and snapshots are frozen observations. Raw JSON substring matching is insufficient for semantic text/action association. |
 | Existing `hasClickableChatText(fragment)`; `clickRunCommand`, `clickSuggestedCommand` | Existing coarse check; Add P2: a component assertion associating visible text with effective click action and payload | The current check finds a raw JSON substring and any click event in the same component; it does not prove association with that text. Existing helpers return the first matching action's command; do not treat them as an enumeration of all actions. Preserve suggest-command trailing spaces. |
 | Simple extracted command equality, message sequence/count, negative message checks | Standard after navigation | Use Optional/list/string assertions. Do not add separate custom wrappers for every list operation. Absence covers only captured history so far; there is no future observation window. |
@@ -227,7 +227,7 @@ Sources: [MenuHandle][MenuHandle], [MenuSnapshot][MenuSnapshot].
 |---|---|---|
 | `isOpen`, `snapshot().open` | Existing: `isOpen`, `isClosed` on [menu assertions][menu-assert] | Read one live snapshot per evaluation. A non-null handle can refer to a now-closed menu. A null handle is not an observed closed state; use the player's no-open-menu assertion for that case. |
 | `hasTitle`; `snapshot().title` | Existing `hasTitle` | Require an open menu; failures should distinguish closed from wrong title and show the actual title. Ordinary string assertions cover additional title matching. |
-| Both `hasItemAt` overloads | Existing; Add P1 shared slot/item navigation and empty-slot checks | Require an open menu for menu-slot assertions. Closed menus must not satisfy empty-slot checks merely because their item list is empty. Compare one snapshot; explain material/name/lore mismatches. |
+| Both `hasItemAt` overloads | Existing: shared slot/item navigation and `hasEmptySlot` | Live and frozen menu assertions share the same rules and require an open menu. Each slot assertion reads one snapshot; closed menus fail empty-slot checks. |
 | `player()` | Standard handle/UUID equality | Menu ownership is already observable without another matcher. |
 | `verifyMenuName`, `verifyMenuClosed`; click/drag and wait families | Exclude new verification-on-handle methods and action-shaped assertions | Existing `verify...` methods throw `IllegalStateException`, unlike assertions; record a future migration to the assertion package. Keep `clickAtIndex`, `clickItem`, `dragWithMaterial`, `andWaitTicks`, and both `andWaitForMenuClose` overloads as actions/waits. No methods are removed by this document. |
 
@@ -237,10 +237,10 @@ Sources: [InventorySnapshot][InventorySnapshot], [MenuItemSnapshot][MenuItemSnap
 
 | API / observation | Decision | Required semantics |
 |---|---|---|
-| `InventorySnapshot.items`, `findItem(materialKey)`; `PlayerHandle.inventory()` | Existing player material presence/absence; Add P1 shared inventory/slot/item assertions | `InventorySnapshot` is frozen; navigation from a player must read current inventory each evaluation. Distinguish any matching item from one at a specified slot. Normalize material keys consistently through the existing canonical helper. |
-| `MenuSnapshot.open`, `title`, `items` | Add P1 frozen menu assertions sharing live-menu value rules | Useful for consistent title-plus-content checks. Frozen assertions never query the server. Keep open/closed checks and empty-menu semantics explicit. |
-| `MenuItemSnapshot.slot`, `materialKey`, `displayName`, `lore` | Add P1 item navigation for material and display name, plus standard string/list navigation for lore | Share item rules between menu and inventory subjects. Define empty display-name handling consistently with existing blank-to-absent comparison. Lore assertions must state ordered/exact versus contains semantics. |
-| Occupied-slot count, empty inventory, empty slot, exact visible slot contents | Add P1 navigation and Standard collection checks | Snapshots contain non-air items only. Count occupied slots, not total item units. A slot absent from the snapshot is empty within the queried inventory, not proof that an arbitrary slot number is valid. |
+| `InventorySnapshot.items`, `findItem(materialKey)`; `PlayerHandle.inventory()` | Existing: [inventory/slot/item assertions][inventory-assert] | Player `inventory()` navigation captures a frozen snapshot. Recreate navigation inside retries. `MenuItemSnapshot.matchesMaterial` and `matches(ItemStack)` are shared matching rules using canonical normalization. |
+| `MenuSnapshot.open`, `title`, `items` | Existing: [frozen menu assertions][menu-snapshot-assert] sharing live-menu rules | Capture through `assertThat(menu).snapshot()` for consistent title/content checks. Menu and item snapshot lists are defensively copied. Frozen assertions never query the server. |
+| `MenuItemSnapshot.slot`, `materialKey`, `displayName`, `lore` | Existing: [item assertions][item-assert] with material/name checks and string/list navigation | `itemAt(slot)` captures one item; `isMaterial`, `hasDisplayName`, `displayName`, and `lore` expose represented fields. Blank names mean absent; use `lore().containsExactly(...)` for ordered equality. |
+| Occupied-slot count, empty inventory, empty slot, exact visible slot contents | Existing navigation and Standard collection checks | `hasOccupiedSlotCount`, `isEmpty`, `hasEmptySlot`, `itemAt`, and `items` apply shared rules. Counts measure occupied slots, not item units. Snapshots do not establish arbitrary upper slot bounds or capacity. |
 | `InventorySnapshot.fromItems`; item amount/capacity/fullness/full Bukkit `ItemStack` equality | Exclude conversion matchers; Deferred richer equality/capacity claims | Conversion belongs in unit tests. Neither slot capacity nor stack amounts or complete metadata are exposed. Validate negative slots; upper-bound validation needs the actual inventory/view size, not the largest occupied slot. |
 
 Do not describe the existing `hasItemAt(slot, ItemStack)` matcher as full item equality. It compares only the fields
@@ -340,7 +340,7 @@ The gateway inventory is grouped explicitly to prevent its public visibility fro
 | Group | Recommended scope | Why first / later |
 |---|---|---|
 | Existing: P1 server and player basics | Server/plugin navigation and presence/state/version, effective permissions, player open-menu checks, menu open/closed | Implemented with live reads, unit coverage, and [Paper/Spigot integration coverage][basics-it]. |
-| P1: shared items and messages | Menu/inventory/item snapshot assertions, slot checks, message-list navigation | Removes repetitive extraction and makes the existing partial item comparison explicit. |
+| Existing: P1 shared items and messages | Menu/inventory/item snapshots, slot checks, message-list navigation | Shared value matching and frozen navigation, verified by [item/menu unit tests][item-unit-tests], [snapshot tests][menu-snapshot-tests], and [Paper/Spigot coverage][item-it]. |
 | P1: events | Capture navigation/counts, typed fields/containers/references/enums, cancellation | Typed envelopes and missing/dropped values are the largest consumer-side interpretation burden. |
 | P2: richer existing observations | Direct block/snapshot entry points, live entity counts, position/transform comparisons, semantic chat components | Reuse value rules; settle tolerance and component-tree semantics before implementation. |
 | P2: results and diagnostics; deferred work | Interaction/command result assertions, error-subject navigation and no-warning checks; then separately evaluate missing-readback proposals | Useful diagnostics; unavailable observations are API work, not assertion-only changes. |
@@ -453,3 +453,9 @@ is evidence for a candidate assertion, not proof that every extracted scalar nee
 [player-assert-tests]: ../lightkeeper-framework-junit/src/test/java/nl/pim16aap2/lightkeeper/framework/assertions/PlayerHandleAssertTest.java
 [menu-assert-tests]: ../lightkeeper-framework-junit/src/test/java/nl/pim16aap2/lightkeeper/framework/assertions/MenuHandleAssertTest.java
 [basics-it]: ../lightkeeper-integration-tests/src/test/java/nl/pim16aap2/lightkeeper/maven/test/LightkeeperAssertionBasicsIT.java
+[inventory-assert]: ../lightkeeper-framework-junit/src/main/java/nl/pim16aap2/lightkeeper/framework/assertions/InventoryAssert.java
+[menu-snapshot-assert]: ../lightkeeper-framework-junit/src/main/java/nl/pim16aap2/lightkeeper/framework/assertions/MenuSnapshotAssert.java
+[item-assert]: ../lightkeeper-framework-junit/src/main/java/nl/pim16aap2/lightkeeper/framework/assertions/MenuItemSnapshotAssert.java
+[item-unit-tests]: ../lightkeeper-framework-junit/src/test/java/nl/pim16aap2/lightkeeper/framework/assertions/ItemContainerAssertionsTest.java
+[menu-snapshot-tests]: ../lightkeeper-framework-junit/src/test/java/nl/pim16aap2/lightkeeper/framework/assertions/MenuSnapshotAssertTest.java
+[item-it]: ../lightkeeper-integration-tests/src/test/java/nl/pim16aap2/lightkeeper/maven/test/LightkeeperItemAssertionsIT.java
