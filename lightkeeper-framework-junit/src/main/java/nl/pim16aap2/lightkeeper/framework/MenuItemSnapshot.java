@@ -79,7 +79,7 @@ public record MenuItemSnapshot(
             return null;
         }
 
-        var key = item.getType().getKeyOrNull();
+        final var key = item.getType().getKeyOrNull();
         return key == null ? null : key.toString();
     }
 
