@@ -31,7 +31,9 @@ class LightkeeperAssertionBasicsIT
         final var missing = server.plugin("LightkeeperMissingAssertionFixture");
 
         // verify
-        installed.isPresent().isEnabled();
+        installed
+            .isPresent()
+            .isEnabled();
         missing.isAbsent();
         assertThatThrownBy(missing::isDisabled)
             .isInstanceOf(AssertionError.class)
@@ -88,10 +90,15 @@ class LightkeeperAssertionBasicsIT
 
         // verify
         playerAssertion.hasOpenMenu();
-        menuAssertion.isOpen().hasTitle("Main Menu");
+        menuAssertion
+            .isOpen()
+            .hasTitle("Main Menu");
 
         // execute
-        menu.clickAtIndex(0).andWaitTicks(1).clickAtIndex(2).andWaitForMenuClose();
+        menu.clickAtIndex(0)
+            .andWaitTicks(1)
+            .clickAtIndex(2)
+            .andWaitForMenuClose();
 
         // verify
         menuAssertion.isClosed();

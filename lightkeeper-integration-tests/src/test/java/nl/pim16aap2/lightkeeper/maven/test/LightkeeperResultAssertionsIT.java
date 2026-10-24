@@ -18,38 +18,72 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class LightkeeperResultAssertionsIT
 {
     @Test
-    void resultAssertions_shouldObserveDispatchAndFiredInteraction(ILightkeeperFramework framework)
+    void commandResult_shouldObserveSuccessfulDispatch(ILightkeeperFramework framework)
+    {
+        // setup
+        final var server = framework.server();
+
+        // execute
+        final var result = server.executeCommand(CommandSource.CONSOLE, "time set day");
+
+        // verify
+        assertThat(result).isSuccessful();
+    }
+
+    @Test
+    void commandResult_shouldObserveFailedDispatch(ILightkeeperFramework framework)
+    {
+        // setup
+        final var server = framework.server();
+
+        // execute
+        final var result = server.executeCommand(CommandSource.CONSOLE, "lightkeeper_missing_command");
+
+        // verify
+        assertThat(result).isFailure();
+    }
+
+    @Test
+    void interactionResult_shouldObserveFiredInteraction(ILightkeeperFramework framework)
     {
         // setup
         final var world = framework.worlds().main();
         final var player = framework.bots().join("lkresultassert", world);
-        world.setBlockAt(new BlockPos(1, 100, 1), "stone");
+        final var position = new BlockPos(1, 100, 1);
+        world.setBlockAt(position, "stone");
 
         // execute
-        final var success = framework.server().executeCommand(CommandSource.CONSOLE, "time set day");
-        final var failure = framework.server().executeCommand(CommandSource.CONSOLE, "lightkeeper_missing_command");
-        final var interaction = player.rightClickBlock(new BlockPos(1, 100, 1));
+        final var result = player.rightClickBlock(position);
 
         // verify
-        assertThat(success).isSuccessful();
-        assertThat(failure).isFailure();
-        assertThat(interaction).hasFiredEvent().isNotCancelled();
+        assertThat(result)
+            .hasFiredEvent()
+            .isNotCancelled();
     }
 
     @Test
     void errors_shouldDistinguishWarningsWithoutStrengtheningNoErrorCheck(ILightkeeperFramework framework)
     {
         // setup
-        final var errors = assertThat(framework).server().errors();
+        final var errors = assertThat(framework)
+            .server()
+            .errors();
 
         // execute
-        framework.server().executeCommand(CommandSource.CONSOLE, "lktesterror warning");
-        eventually(Duration.ofSeconds(10), () -> errors.captured()
-            .anyMatch(entry -> entry.message().contains("LK_TEST_ERROR provoked warning")));
+        framework
+            .server()
+            .executeCommand(CommandSource.CONSOLE, "lktesterror warning");
+        eventually(
+            Duration.ofSeconds(10),
+            () -> errors
+                .captured()
+                .anyMatch(entry -> entry.message().contains("LK_TEST_ERROR provoked warning"))
+        );
 
         // verify
         errors.hasNoErrors();
-        assertThatThrownBy(errors::hasNoWarnings).isInstanceOf(AssertionError.class)
+        assertThatThrownBy(errors::hasNoWarnings)
+            .isInstanceOf(AssertionError.class)
             .hasMessageContaining("LK_TEST_ERROR provoked warning");
     }
 }

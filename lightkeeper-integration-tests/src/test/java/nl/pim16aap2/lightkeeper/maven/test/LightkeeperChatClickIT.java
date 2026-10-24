@@ -42,7 +42,9 @@ class LightkeeperChatClickIT
             .doesNotContain("\"clickEvent\"");
         final Optional<String> extracted = clickable.clickRunCommand();
         assertThat(extracted).contains("/lktestclick confirm");
-        assertThat(clickable).hasClickableText("LK_CLICK_ME").runsCommand("LK_CLICK_ME", "/lktestclick confirm");
+        assertThat(clickable)
+            .hasClickableText("LK_CLICK_ME")
+            .runsCommand("LK_CLICK_ME", "/lktestclick confirm");
         assertThat(player).hasClickableChatText("LK_CLICK_ME");
 
         // execute — clicking the component dispatches its run_command as the player
@@ -64,11 +66,18 @@ class LightkeeperChatClickIT
             """.replace('\n', ' ');
 
         // execute
-        assertThat(framework.server().executeCommand(CommandSource.CONSOLE,
-            "minecraft:tellraw " + player.name() + " " + json)).isSuccessful();
+        assertThat(
+            framework
+                .server()
+                .executeCommand(CommandSource.CONSOLE, "minecraft:tellraw " + player.name() + " " + json)
+        ).isSuccessful();
 
         // verify
-        eventually(Duration.ofSeconds(10), () -> assertThat(player).chatComponents().anySatisfy(component ->
-            assertThat(component).runsCommand("Click me", "/lktestclick confirm")));
+        eventually(
+            Duration.ofSeconds(10),
+            () -> assertThat(player)
+                .chatComponents()
+                .anySatisfy(component -> assertThat(component).runsCommand("Click me", "/lktestclick confirm"))
+        );
     }
 }

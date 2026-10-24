@@ -7,12 +7,11 @@ import nl.pim16aap2.lightkeeper.framework.MenuItemSnapshot;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +26,6 @@ import static org.mockito.Mockito.when;
 
 /** Tests shared item semantics, frozen navigation and live player observations. */
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.STRICT_STUBS)
 class ItemContainerAssertionsTest
 {
     /** Read-only player gateway. */
@@ -42,6 +40,13 @@ class ItemContainerAssertionsTest
     @Mock
     private ItemMeta expectedMeta;
 
+    /** Verifies that tests leave no unaccounted mock interactions. */
+    @AfterEach
+    void verifyInteractions()
+    {
+        verifyNoMoreInteractions(gateway, expectedItem, expectedMeta);
+    }
+
     @Test
     void itemAt_shouldExposeNormalizedMaterialNameAndOrderedLore()
     {
@@ -49,11 +54,21 @@ class ItemContainerAssertionsTest
         final var inventory = new InventorySnapshot(List.of(item()));
 
         // execute
-        final var selected = assertThat(inventory).hasOccupiedSlotCount(1).hasEmptySlot(2).itemAt(1);
+        final var selected = assertThat(inventory)
+            .hasOccupiedSlotCount(1)
+            .hasEmptySlot(2)
+            .itemAt(1);
 
         // verify
-        selected.isMaterial("STONE").hasDisplayName("Button").lore().containsExactly("First", "Second");
-        assertThat(inventory).hasItemAt(1, "stone").items().containsExactly(item());
+        selected
+            .isMaterial("STONE")
+            .hasDisplayName("Button")
+            .lore()
+            .containsExactly("First", "Second");
+        assertThat(inventory)
+            .hasItemAt(1, "stone")
+            .items()
+            .containsExactly(item());
     }
 
     @Test
@@ -66,7 +81,9 @@ class ItemContainerAssertionsTest
         final Throwable failure = catchThrowable(() -> assertThat(inventory).itemAt(3));
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class).hasMessageContainingAll("slot 3", "minecraft:stone");
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
+            .hasMessageContainingAll("slot 3", "minecraft:stone");
     }
 
     @Test
@@ -79,7 +96,8 @@ class ItemContainerAssertionsTest
         final Throwable failure = catchThrowable(() -> assertThat(inventory).hasItemAt(1, "dirt"));
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class)
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
             .hasMessageContainingAll("slot 1", "minecraft:dirt", "minecraft:stone");
     }
 
@@ -93,7 +111,9 @@ class ItemContainerAssertionsTest
         final Throwable failure = catchThrowable(() -> assertThat(inventory).hasEmptySlot(1));
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class).hasMessageContainingAll("slot 1", "minecraft:stone");
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
+            .hasMessageContainingAll("slot 1", "minecraft:stone");
     }
 
     @Test
@@ -142,7 +162,6 @@ class ItemContainerAssertionsTest
         // verify
         verify(expectedItem).getType();
         verify(expectedItem).getItemMeta();
-        verifyNoMoreInteractions(expectedItem);
     }
 
     @Test
@@ -155,11 +174,14 @@ class ItemContainerAssertionsTest
         when(expectedMeta.getLore()).thenReturn(List.of("Different"));
 
         // execute
-        final Throwable failure = catchThrowable(() ->
-            assertThat(new InventorySnapshot(List.of(item()))).hasItemAt(1, expectedItem));
+        final Throwable failure = catchThrowable(
+            () -> assertThat(new InventorySnapshot(List.of(item()))).hasItemAt(1, expectedItem)
+        );
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class).hasMessageContainingAll("slot 1", "lore");
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
+            .hasMessageContainingAll("slot 1", "lore");
     }
 
     @Test
@@ -169,7 +191,9 @@ class ItemContainerAssertionsTest
         final UUID id = UUID.randomUUID();
         final var player = FrameworkHandleFactory.playerHandle(gateway, id, "tester");
         when(gateway.playerInventory(id)).thenReturn(
-            new InventorySnapshot(List.of(item())), new InventorySnapshot(List.of()));
+            new InventorySnapshot(List.of(item())),
+            new InventorySnapshot(List.of())
+        );
         final var playerAssertion = assertThat(player);
 
         // execute
@@ -180,7 +204,6 @@ class ItemContainerAssertionsTest
         earlier.hasItemAt(1, "STONE");
         later.isEmpty();
         verify(gateway, times(2)).playerInventory(id);
-        verifyNoMoreInteractions(gateway);
     }
 
     @Test
@@ -197,10 +220,11 @@ class ItemContainerAssertionsTest
         final var later = playerAssertion.receivedMessages();
 
         // verify
-        earlier.containsExactly("hel", "lo").doesNotContain("hello");
+        earlier
+            .containsExactly("hel", "lo")
+            .doesNotContain("hello");
         later.containsExactly("hello");
         verify(gateway, times(2)).playerMessages(id);
-        verifyNoMoreInteractions(gateway);
     }
 
     @Test
@@ -217,7 +241,12 @@ class ItemContainerAssertionsTest
         items.clear();
 
         // verify
-        assertThat(inventory).hasOccupiedSlotCount(1).itemAt(1).hasDisplayName("").lore().containsExactly("First");
+        assertThat(inventory)
+            .hasOccupiedSlotCount(1)
+            .itemAt(1)
+            .hasDisplayName("")
+            .lore()
+            .containsExactly("First");
     }
 
     @Test

@@ -103,8 +103,7 @@ class HandleAssertionsTest
         )));
 
         // execute + verify
-        assertThatThrownBy(() ->
-            LightkeeperAssertions.assertThat(handle).doesNotHaveItemInInventory("minecraft:stone"))
+        assertThatThrownBy(() -> LightkeeperAssertions.assertThat(handle).doesNotHaveItemInInventory("minecraft:stone"))
             .isInstanceOf(AssertionError.class)
             .hasMessageContaining("slot 2");
     }
@@ -280,9 +279,16 @@ class HandleAssertionsTest
         // setup
         final MenuHandle handle = mock(MenuHandle.class);
         final ItemStack itemStack = mock(ItemStack.class);
-        when(handle.snapshot()).thenReturn(new MenuSnapshot(true, "Main", List.of(
-            new MenuItemSnapshot(0, "minecraft:stone", "", List.of()),
-            new MenuItemSnapshot(1, "minecraft:dirt", "", List.of()))));
+        when(handle.snapshot()).thenReturn(
+            new MenuSnapshot(
+                true,
+                "Main",
+                List.of(
+                    new MenuItemSnapshot(0, "minecraft:stone", "", List.of()),
+                    new MenuItemSnapshot(1, "minecraft:dirt", "", List.of())
+                )
+            )
+        );
         when(itemStack.getType()).thenReturn(Material.DIRT);
 
         // execute + verify
@@ -334,8 +340,11 @@ class HandleAssertionsTest
         when(block.worldName()).thenReturn("world");
 
         // execute + verify
-        assertThatThrownBy(() ->
-            LightkeeperAssertions.assertThat(handle).hasBlockAt(0, 0, 0).ofType("minecraft:dirt"))
+        assertThatThrownBy(
+            () -> LightkeeperAssertions.assertThat(handle)
+                .hasBlockAt(0, 0, 0)
+                .ofType("minecraft:dirt")
+        )
             .isInstanceOf(AssertionError.class)
             .hasMessageContaining("Expected block at (0,0,0)");
     }
@@ -375,8 +384,11 @@ class HandleAssertionsTest
         final BlockSpec expected = BlockSpec.parse("minecraft:lever[powered=true]");
 
         // execute + verify
-        assertThatThrownBy(() ->
-            LightkeeperAssertions.assertThat(handle).hasBlockAt(0, 0, 0).withState(expected))
+        assertThatThrownBy(
+            () -> LightkeeperAssertions.assertThat(handle)
+                .hasBlockAt(0, 0, 0)
+                .withState(expected)
+        )
             .isInstanceOf(AssertionError.class)
             .hasMessageContaining(expected.asString())
             .hasMessageContaining("minecraft:lever[face=floor,facing=north,powered=false]");

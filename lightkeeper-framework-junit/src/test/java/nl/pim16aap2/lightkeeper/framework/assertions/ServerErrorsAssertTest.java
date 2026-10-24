@@ -3,12 +3,11 @@ package nl.pim16aap2.lightkeeper.framework.assertions;
 import nl.pim16aap2.lightkeeper.framework.FrameworkHandleFactory;
 import nl.pim16aap2.lightkeeper.framework.IFrameworkGatewayView;
 import nl.pim16aap2.lightkeeper.framework.ServerErrorSnapshot;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 
 import java.util.List;
 
@@ -21,12 +20,18 @@ import static org.mockito.Mockito.when;
 
 /** Tests severity separation, allowlists and non-consuming fresh error observations. */
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.STRICT_STUBS)
 class ServerErrorsAssertTest
 {
     /** Gateway from which assertions may only read structured entries. */
     @Mock
     private IFrameworkGatewayView gateway;
+
+    /** Verifies that tests leave no unaccounted mock interactions. */
+    @AfterEach
+    void verifyInteractions()
+    {
+        verifyNoMoreInteractions(gateway);
+    }
 
     @Test
     void hasNoErrors_shouldIgnoreWarnings()
@@ -40,9 +45,10 @@ class ServerErrorsAssertTest
         final Throwable failure = catchThrowable(assertion::hasNoWarnings);
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class).hasMessageContainingAll("warnings", "marker");
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
+            .hasMessageContainingAll("warnings", "marker");
         verify(gateway, times(2)).capturedServerErrors();
-        verifyNoMoreInteractions(gateway);
     }
 
     @Test
@@ -57,15 +63,16 @@ class ServerErrorsAssertTest
         final Throwable failure = catchThrowable(assertion::hasNoErrors);
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class).hasMessageContainingAll("errors", "marker");
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
+            .hasMessageContainingAll("errors", "marker");
     }
 
     @Test
     void hasNoErrors_shouldApplyAllowlistAndReadFreshState()
     {
         // setup
-        when(gateway.capturedServerErrors()).thenReturn(
-            List.of(entry(ServerErrorSnapshot.Severity.ERROR)), List.of());
+        when(gateway.capturedServerErrors()).thenReturn(List.of(entry(ServerErrorSnapshot.Severity.ERROR)), List.of());
         final var assertion = assertThat(FrameworkHandleFactory.serverErrorsHandle(gateway));
 
         // execute
@@ -74,7 +81,6 @@ class ServerErrorsAssertTest
 
         // verify
         verify(gateway, times(2)).capturedServerErrors();
-        verifyNoMoreInteractions(gateway);
     }
 
     @Test
@@ -93,7 +99,6 @@ class ServerErrorsAssertTest
         earlier.isEmpty();
         later.containsExactly(warning);
         verify(gateway, times(2)).capturedServerErrors();
-        verifyNoMoreInteractions(gateway);
     }
 
     @Test
@@ -113,7 +118,16 @@ class ServerErrorsAssertTest
 
     private static ServerErrorSnapshot entry(ServerErrorSnapshot.Severity severity)
     {
-        return new ServerErrorSnapshot(1, severity, severity.name(), "logger", "thread", "marker",
-            null, null, List.of());
+        return new ServerErrorSnapshot(
+            1,
+            severity,
+            severity.name(),
+            "logger",
+            "thread",
+            "marker",
+            null,
+            null,
+            List.of()
+        );
     }
 }

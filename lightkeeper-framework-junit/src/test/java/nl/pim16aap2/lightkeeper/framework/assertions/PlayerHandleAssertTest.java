@@ -6,14 +6,13 @@ import nl.pim16aap2.lightkeeper.framework.IFrameworkGatewayView;
 import nl.pim16aap2.lightkeeper.framework.MenuSnapshot;
 import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 
 import java.time.Duration;
 import java.util.List;
@@ -30,7 +29,6 @@ import static org.mockito.Mockito.when;
 
 /** Tests permissions and menu availability through real handles and a strict mocked gateway. */
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.STRICT_STUBS)
 class PlayerHandleAssertTest
 {
     /** Stable identity for gateway expectations. */
@@ -42,6 +40,13 @@ class PlayerHandleAssertTest
 
     /** Real player handle whose permission and menu reads use the gateway. */
     private PlayerHandle player;
+
+    /** Verifies that tests leave no unaccounted mock interactions. */
+    @AfterEach
+    void verifyInteractions()
+    {
+        verifyNoMoreInteractions(gateway);
+    }
 
     @BeforeEach
     void setUp()
@@ -62,7 +67,6 @@ class PlayerHandleAssertTest
         // verify
         assertThat(result).isSameAs(assertion);
         verify(gateway).hasPermission(PLAYER_ID, "example.use");
-        verifyNoMoreInteractions(gateway);
     }
 
     @Test
@@ -78,7 +82,6 @@ class PlayerHandleAssertTest
         // verify
         assertThat(result).isSameAs(assertion);
         verify(gateway).hasPermission(PLAYER_ID, "example.use");
-        verifyNoMoreInteractions(gateway);
     }
 
     @Test
@@ -91,7 +94,8 @@ class PlayerHandleAssertTest
         final Throwable failure = catchThrowable(() -> assertThat(player).hasPermission("example.use"));
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class)
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
             .hasMessageContainingAll("tester", "example.use", "was false");
     }
 
@@ -105,7 +109,8 @@ class PlayerHandleAssertTest
         final Throwable failure = catchThrowable(() -> assertThat(player).doesNotHavePermission("example.use"));
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class)
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
             .hasMessageContainingAll("tester", "example.use", "was true");
     }
 
@@ -121,7 +126,6 @@ class PlayerHandleAssertTest
 
         // verify
         verify(gateway, times(2)).hasPermission(PLAYER_ID, "example.use");
-        verifyNoMoreInteractions(gateway);
     }
 
     @ParameterizedTest
@@ -135,7 +139,9 @@ class PlayerHandleAssertTest
         final Throwable failure = catchThrowable(() -> assertion.hasPermission(node));
 
         // verify
-        assertThat(failure).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("permission");
+        assertThat(failure)
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("permission");
         verifyNoInteractions(gateway);
     }
 
@@ -150,7 +156,9 @@ class PlayerHandleAssertTest
         final Throwable failure = catchThrowable(() -> assertion.doesNotHavePermission(null));
 
         // verify
-        assertThat(failure).isInstanceOf(NullPointerException.class).hasMessageContaining("permission");
+        assertThat(failure)
+            .isInstanceOf(NullPointerException.class)
+            .hasMessageContaining("permission");
         verifyNoInteractions(gateway);
     }
 
@@ -161,15 +169,18 @@ class PlayerHandleAssertTest
         when(gateway.menuSnapshot(PLAYER_ID)).thenReturn(
             new MenuSnapshot(false, "", List.of()),
             new MenuSnapshot(true, "Menu", List.of()),
-            new MenuSnapshot(false, "", List.of()));
+            new MenuSnapshot(false, "", List.of())
+        );
         final var assertion = assertThat(player);
 
         // execute
-        assertion.doesNotHaveOpenMenu().hasOpenMenu().doesNotHaveOpenMenu();
+        assertion
+            .doesNotHaveOpenMenu()
+            .hasOpenMenu()
+            .doesNotHaveOpenMenu();
 
         // verify
         verify(gateway, times(3)).menuSnapshot(PLAYER_ID);
-        verifyNoMoreInteractions(gateway);
     }
 
     @Test
@@ -182,10 +193,10 @@ class PlayerHandleAssertTest
         final Throwable failure = catchThrowable(() -> assertThat(player).hasOpenMenu());
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class)
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
             .hasMessageContainingAll("tester", "no menu was open");
         verify(gateway).menuSnapshot(PLAYER_ID);
-        verifyNoMoreInteractions(gateway);
     }
 
     @Test
@@ -198,10 +209,10 @@ class PlayerHandleAssertTest
         final Throwable failure = catchThrowable(() -> assertThat(player).doesNotHaveOpenMenu());
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class)
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
             .hasMessageContainingAll("tester", "a menu was open");
         verify(gateway).menuSnapshot(PLAYER_ID);
-        verifyNoMoreInteractions(gateway);
     }
 
     @Test
@@ -250,18 +261,25 @@ class PlayerHandleAssertTest
     void hasClickableChatText_shouldRejectUnrelatedSiblingClickAction()
     {
         // setup
-        when(gateway.playerChatComponents(PLAYER_ID)).thenReturn(List.of(new ChatComponentSnapshot("""
-            {"text":"","extra":[{"text":"Open"},{"text":"Close",
-              "click_event":{"action":"run_command","command":"/close"}}]}
-            """)));
+        when(gateway.playerChatComponents(PLAYER_ID)).thenReturn(
+            List.of(
+                new ChatComponentSnapshot(
+                    """
+                        {"text":"","extra":[{"text":"Open"},{"text":"Close",
+                          "click_event":{"action":"run_command","command":"/close"}}]}
+                        """
+                )
+            )
+        );
 
         // execute
         final Throwable failure = catchThrowable(() -> assertThat(player).hasClickableChatText("Open"));
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class).hasMessageContaining("tester");
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
+            .hasMessageContaining("tester");
         verify(gateway).playerChatComponents(PLAYER_ID);
-        verifyNoMoreInteractions(gateway);
     }
 
     @Test
@@ -280,6 +298,5 @@ class PlayerHandleAssertTest
         earlier.isEmpty();
         later.containsExactly(component);
         verify(gateway, times(2)).playerChatComponents(PLAYER_ID);
-        verifyNoMoreInteractions(gateway);
     }
 }

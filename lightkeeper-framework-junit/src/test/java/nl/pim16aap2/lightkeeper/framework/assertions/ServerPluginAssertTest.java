@@ -2,6 +2,7 @@ package nl.pim16aap2.lightkeeper.framework.assertions;
 
 import nl.pim16aap2.lightkeeper.framework.IServerControl;
 import nl.pim16aap2.lightkeeper.protocol.ServerPluginSnapshot;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -9,8 +10,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 
 import java.time.Duration;
 import java.util.List;
@@ -29,12 +28,18 @@ import static org.mockito.Mockito.when;
 
 /** Tests live lookup, presence semantics, and diagnostic failures for plugin assertions. */
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.STRICT_STUBS)
 class ServerPluginAssertTest
 {
     /** Server supplying the plugin observations. */
     @Mock
     private IServerControl server;
+
+    /** Verifies that tests leave no unaccounted mock interactions. */
+    @AfterEach
+    void verifyInteractions()
+    {
+        verifyNoMoreInteractions(server);
+    }
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
@@ -50,7 +55,6 @@ class ServerPluginAssertTest
         // verify
         assertThat(result).isSameAs(assertion);
         verify(server).plugin("Example");
-        verifyNoMoreInteractions(server);
     }
 
     @Test
@@ -66,7 +70,6 @@ class ServerPluginAssertTest
         // verify
         assertThat(result).isSameAs(assertion);
         verify(server).plugin("Example");
-        verifyNoMoreInteractions(server);
     }
 
     @ParameterizedTest
@@ -77,11 +80,16 @@ class ServerPluginAssertTest
         when(server.plugin("Example")).thenReturn(Optional.of(plugin(enabled)));
 
         // execute
-        final Throwable failure = catchThrowable(() ->
-            new ServerControlAssert(server).plugin("Example").isAbsent());
+        final Throwable failure = catchThrowable(
+            () -> new ServerControlAssert(server)
+                .plugin("Example")
+                .isAbsent()
+        );
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class).hasMessageContainingAll("Example", "was present");
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
+            .hasMessageContainingAll("Example", "was present");
     }
 
     @ParameterizedTest
@@ -96,9 +104,10 @@ class ServerPluginAssertTest
         final Throwable failure = catchThrowable(() -> check.accept(assertion));
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class).hasMessageContainingAll("Example", "not present");
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
+            .hasMessageContainingAll("Example", "not present");
         verify(server).plugin("Example");
-        verifyNoMoreInteractions(server);
     }
 
     @Test
@@ -114,7 +123,6 @@ class ServerPluginAssertTest
         // verify
         assertThat(result).isSameAs(assertion);
         verify(server).plugin("Example");
-        verifyNoMoreInteractions(server);
     }
 
     @Test
@@ -124,11 +132,15 @@ class ServerPluginAssertTest
         when(server.plugin("Example")).thenReturn(Optional.of(plugin(false)));
 
         // execute
-        final Throwable failure = catchThrowable(() ->
-            new ServerControlAssert(server).plugin("Example").isEnabled());
+        final Throwable failure = catchThrowable(
+            () -> new ServerControlAssert(server)
+                .plugin("Example")
+                .isEnabled()
+        );
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class)
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
             .hasMessageContainingAll("Example", "to be enabled", "was disabled");
     }
 
@@ -145,7 +157,6 @@ class ServerPluginAssertTest
         // verify
         assertThat(result).isSameAs(assertion);
         verify(server).plugin("Example");
-        verifyNoMoreInteractions(server);
     }
 
     @Test
@@ -155,11 +166,15 @@ class ServerPluginAssertTest
         when(server.plugin("Example")).thenReturn(Optional.of(plugin(true)));
 
         // execute
-        final Throwable failure = catchThrowable(() ->
-            new ServerControlAssert(server).plugin("Example").isDisabled());
+        final Throwable failure = catchThrowable(
+            () -> new ServerControlAssert(server)
+                .plugin("Example")
+                .isDisabled()
+        );
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class)
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
             .hasMessageContainingAll("Example", "to be disabled", "was enabled");
     }
 
@@ -176,7 +191,6 @@ class ServerPluginAssertTest
         // verify
         assertThat(result).isSameAs(assertion);
         verify(server).plugin("Example");
-        verifyNoMoreInteractions(server);
     }
 
     @Test
@@ -186,11 +200,15 @@ class ServerPluginAssertTest
         when(server.plugin("Example")).thenReturn(Optional.of(plugin(true)));
 
         // execute
-        final Throwable failure = catchThrowable(() ->
-            new ServerControlAssert(server).plugin("Example").hasVersion("1.0"));
+        final Throwable failure = catchThrowable(
+            () -> new ServerControlAssert(server)
+                .plugin("Example")
+                .hasVersion("1.0")
+        );
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class)
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
             .hasMessageContainingAll("Example", "'1.0'", "'1.0.0'");
     }
 
@@ -212,15 +230,21 @@ class ServerPluginAssertTest
     void pluginAssertions_shouldReadFreshStateOnRetainedSubject()
     {
         // setup
-        when(server.plugin("Example")).thenReturn(Optional.empty(), Optional.of(plugin(false)), Optional.of(plugin(true)));
+        when(server.plugin("Example")).thenReturn(
+            Optional.empty(),
+            Optional.of(plugin(false)),
+            Optional.of(plugin(true))
+        );
         final var assertion = new ServerControlAssert(server).plugin("Example");
 
         // execute
-        assertion.isAbsent().isDisabled().isEnabled();
+        assertion
+            .isAbsent()
+            .isDisabled()
+            .isEnabled();
 
         // verify
         verify(server, times(3)).plugin("Example");
-        verifyNoMoreInteractions(server);
     }
 
     @Test
@@ -235,7 +259,6 @@ class ServerPluginAssertTest
 
         // verify
         verify(server, times(2)).plugin("Example");
-        verifyNoMoreInteractions(server);
     }
 
     @Test
@@ -246,8 +269,11 @@ class ServerPluginAssertTest
         when(server.plugin("Example")).thenThrow(expected);
 
         // execute
-        final Throwable failure = catchThrowable(() ->
-            new ServerControlAssert(server).plugin("Example").isAbsent());
+        final Throwable failure = catchThrowable(
+            () -> new ServerControlAssert(server)
+                .plugin("Example")
+                .isAbsent()
+        );
 
         // verify
         assertThat(failure).isSameAs(expected);
@@ -264,7 +290,9 @@ class ServerPluginAssertTest
         final Throwable failure = catchThrowable(() -> assertion.plugin(name));
 
         // verify
-        assertThat(failure).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("pluginName");
+        assertThat(failure)
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("pluginName");
         verifyNoInteractions(server);
     }
 
@@ -279,7 +307,9 @@ class ServerPluginAssertTest
         final Throwable failure = catchThrowable(() -> assertion.plugin(null));
 
         // verify
-        assertThat(failure).isInstanceOf(NullPointerException.class).hasMessageContaining("pluginName");
+        assertThat(failure)
+            .isInstanceOf(NullPointerException.class)
+            .hasMessageContaining("pluginName");
         verifyNoInteractions(server);
     }
 
@@ -294,7 +324,9 @@ class ServerPluginAssertTest
         final Throwable failure = catchThrowable(() -> assertion.hasVersion(null));
 
         // verify
-        assertThat(failure).isInstanceOf(NullPointerException.class).hasMessageContaining("expectedVersion");
+        assertThat(failure)
+            .isInstanceOf(NullPointerException.class)
+            .hasMessageContaining("expectedVersion");
         verifyNoInteractions(server);
     }
 

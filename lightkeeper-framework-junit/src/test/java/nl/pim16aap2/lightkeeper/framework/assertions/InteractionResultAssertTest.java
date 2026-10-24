@@ -17,8 +17,12 @@ class InteractionResultAssertTest
         final var uncancelled = assertThat(new InteractionResult(true, false));
 
         // execute
-        final var first = cancelled.hasFiredEvent().isCancelled();
-        final var second = uncancelled.hasFiredEvent().isNotCancelled();
+        final var first = cancelled
+            .hasFiredEvent()
+            .isCancelled();
+        final var second = uncancelled
+            .hasFiredEvent()
+            .isNotCancelled();
 
         // verify
         assertThat(first).isSameAs(cancelled);
@@ -35,7 +39,9 @@ class InteractionResultAssertTest
         final Throwable failure = catchThrowable(assertion::isNotCancelled);
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class).hasMessageContaining("no event was fired");
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
+            .hasMessageContaining("no event was fired");
     }
 
     @Test

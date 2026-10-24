@@ -5,12 +5,11 @@ import nl.pim16aap2.lightkeeper.framework.EntitySnapshot;
 import nl.pim16aap2.lightkeeper.framework.FrameworkHandleFactory;
 import nl.pim16aap2.lightkeeper.framework.IFrameworkGatewayView;
 import nl.pim16aap2.lightkeeper.framework.Vec3;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 
 import java.util.List;
 import java.util.UUID;
@@ -27,12 +26,18 @@ import static org.mockito.Mockito.when;
 
 /** Tests cheap fresh counts, scoped diagnostics and independent snapshot bursts. */
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.STRICT_STUBS)
 class EntityQueryAssertTest
 {
     /** Gateway receiving count or snapshot reads, never chunk mutations. */
     @Mock
     private IFrameworkGatewayView gateway;
+
+    /** Verifies that tests leave no unaccounted mock interactions. */
+    @AfterEach
+    void verifyInteractions()
+    {
+        verifyNoMoreInteractions(gateway);
+    }
 
     @Test
     void countAssertions_shouldRequeryWithoutFetchingEntitySnapshots()
@@ -43,11 +48,13 @@ class EntityQueryAssertTest
         final var assertion = assertThat(query);
 
         // execute
-        assertion.isEmpty().hasCount(2).isNotEmpty();
+        assertion
+            .isEmpty()
+            .hasCount(2)
+            .isNotEmpty();
 
         // verify
         verify(gateway, times(3)).countEntities(eq("world"), isNull(), isNull(), isNull());
-        verifyNoMoreInteractions(gateway);
     }
 
     @Test
@@ -56,15 +63,18 @@ class EntityQueryAssertTest
         // setup
         final var min = new BlockPos(1, 2, 3);
         final var max = new BlockPos(4, 5, 6);
-        final var query = FrameworkHandleFactory.worldHandle(gateway, "world").entities()
-            .ofType("minecraft:block_display").within(min, max);
+        final var query = FrameworkHandleFactory.worldHandle(gateway, "world")
+            .entities()
+            .ofType("minecraft:block_display")
+            .within(min, max);
         when(gateway.countEntities("world", "minecraft:block_display", min, max)).thenReturn(0);
 
         // execute
         final Throwable failure = catchThrowable(() -> assertThat(query).hasCount(1));
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class)
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
             .hasMessageContainingAll("world", "minecraft:block_display", "x=1", "x=4", "matched 0");
     }
 
@@ -72,8 +82,15 @@ class EntityQueryAssertTest
     void snapshot_shouldUseOneBurstWithoutExtraCountRead()
     {
         // setup
-        final var snapshot = new EntitySnapshot(UUID.randomUUID(), "minecraft:armor_stand",
-            new Vec3(1, 2, 3), null, List.of(), null, 1);
+        final var snapshot = new EntitySnapshot(
+            UUID.randomUUID(),
+            "minecraft:armor_stand",
+            new Vec3(1, 2, 3),
+            null,
+            List.of(),
+            null,
+            1
+        );
         final var query = FrameworkHandleFactory.worldHandle(gateway, "world").entities();
         when(gateway.snapshotEntities(eq("world"), isNull(), isNull(), isNull())).thenReturn(List.of(snapshot));
 
@@ -83,7 +100,6 @@ class EntityQueryAssertTest
         // verify
         captured.containsExactly(snapshot);
         verify(gateway).snapshotEntities(eq("world"), isNull(), isNull(), isNull());
-        verifyNoMoreInteractions(gateway);
     }
 
     @Test

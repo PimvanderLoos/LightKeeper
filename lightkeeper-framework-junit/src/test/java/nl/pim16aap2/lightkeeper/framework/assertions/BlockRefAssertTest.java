@@ -5,12 +5,11 @@ import nl.pim16aap2.lightkeeper.framework.BlockSpec;
 import nl.pim16aap2.lightkeeper.framework.FrameworkHandleFactory;
 import nl.pim16aap2.lightkeeper.framework.IFrameworkGatewayView;
 import org.bukkit.Material;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
@@ -22,12 +21,18 @@ import static org.mockito.Mockito.when;
 
 /** Tests direct and world-selected block assertions sharing live reads and state semantics. */
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.STRICT_STUBS)
 class BlockRefAssertTest
 {
     /** Gateway that must receive only the asserted reads. */
     @Mock
     private IFrameworkGatewayView gateway;
+
+    /** Verifies that tests leave no unaccounted mock interactions. */
+    @AfterEach
+    void verifyInteractions()
+    {
+        verifyNoMoreInteractions(gateway);
+    }
 
     @Test
     void ofType_shouldReadFreshMaterialOnRetainedAddress()
@@ -39,11 +44,12 @@ class BlockRefAssertTest
         final var assertion = assertThat(block);
 
         // execute
-        assertion.ofType(Material.STONE).ofType("DIRT");
+        assertion
+            .ofType(Material.STONE)
+            .ofType("DIRT");
 
         // verify
         verify(gateway, times(2)).getBlock("world", position);
-        verifyNoMoreInteractions(gateway);
     }
 
     @Test
@@ -55,11 +61,12 @@ class BlockRefAssertTest
         when(gateway.getBlock("world", position)).thenReturn("minecraft:stone");
 
         // execute
-        assertThat(world).hasBlockAt(position).ofType("stone");
+        assertThat(world)
+            .hasBlockAt(position)
+            .ofType("stone");
 
         // verify
         verify(gateway).getBlock("world", position);
-        verifyNoMoreInteractions(gateway);
     }
 
     @Test
@@ -69,7 +76,9 @@ class BlockRefAssertTest
         final var position = new BlockPos(1, 2, 3);
         final var block = FrameworkHandleFactory.worldHandle(gateway, "world").blockAt(position);
         when(gateway.getBlockData("world", position)).thenReturn(
-            "minecraft:lever[facing=north,powered=true]", "minecraft:lever[facing=south,powered=false]");
+            "minecraft:lever[facing=north,powered=true]",
+            "minecraft:lever[facing=south,powered=false]"
+        );
 
         // execute
         final var captured = block.state();
@@ -78,7 +87,6 @@ class BlockRefAssertTest
         // verify
         assertThat(captured).withState(BlockSpec.parse("lever[powered=true]"));
         verify(gateway, times(2)).getBlockData("world", position);
-        verifyNoMoreInteractions(gateway);
     }
 
     @Test
@@ -90,13 +98,15 @@ class BlockRefAssertTest
         when(gateway.getBlockData("world", position)).thenReturn("minecraft:lever[powered=false]");
 
         // execute
-        final Throwable failure = catchThrowable(() -> assertThat(block).withState(BlockSpec.parse("lever[powered=true]")));
+        final Throwable failure = catchThrowable(
+            () -> assertThat(block).withState(BlockSpec.parse("lever[powered=true]"))
+        );
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class)
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
             .hasMessageContainingAll("world", "(1,2,3)", "powered=true", "powered=false");
         verify(gateway).getBlockData("world", position);
-        verifyNoMoreInteractions(gateway);
     }
 
     @Test

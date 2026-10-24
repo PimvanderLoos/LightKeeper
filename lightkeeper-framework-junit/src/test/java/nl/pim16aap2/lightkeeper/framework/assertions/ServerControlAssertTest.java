@@ -3,12 +3,11 @@ package nl.pim16aap2.lightkeeper.framework.assertions;
 import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.IServerControl;
 import nl.pim16aap2.lightkeeper.framework.Platform;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 
 import java.util.List;
 
@@ -22,7 +21,6 @@ import static org.mockito.Mockito.when;
 
 /** Tests framework-to-server navigation and shared server observations. */
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.STRICT_STUBS)
 class ServerControlAssertTest
 {
     /** Framework providing the server facet. */
@@ -32,6 +30,13 @@ class ServerControlAssertTest
     /** Server supplying current platform and output. */
     @Mock
     private IServerControl server;
+
+    /** Verifies that tests leave no unaccounted mock interactions. */
+    @AfterEach
+    void verifyInteractions()
+    {
+        verifyNoMoreInteractions(framework, server);
+    }
 
     @Test
     void server_shouldNavigateWithoutReadingServerState()
@@ -75,7 +80,6 @@ class ServerControlAssertTest
         // verify
         assertThat(result).isSameAs(assertion);
         verify(server).platform();
-        verifyNoMoreInteractions(server);
     }
 
     @Test
@@ -91,7 +95,6 @@ class ServerControlAssertTest
         // verify
         assertThat(result).isSameAs(assertion);
         verify(server).platform();
-        verifyNoMoreInteractions(server);
     }
 
     @Test
@@ -104,9 +107,10 @@ class ServerControlAssertTest
         final Throwable failure = catchThrowable(() -> new ServerControlAssert(server).isPaper());
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class).hasMessageContainingAll("PAPER", "UNKNOWN");
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
+            .hasMessageContainingAll("PAPER", "UNKNOWN");
         verify(server).platform();
-        verifyNoMoreInteractions(server);
     }
 
     @Test
@@ -117,14 +121,15 @@ class ServerControlAssertTest
         when(server.output()).thenReturn(List.of("Started"), List.of("Started", "Done"));
 
         // execute
-        final var earlier = assertThat(framework).server().output();
+        final var earlier = assertThat(framework)
+            .server()
+            .output();
         final var later = assertThat(framework).serverOutput();
 
         // verify
         earlier.containsExactly("Started");
         later.containsExactly("Started", "Done");
         verify(server, times(2)).output();
-        verifyNoMoreInteractions(server);
     }
 
     @Test
@@ -148,10 +153,15 @@ class ServerControlAssertTest
         when(server.platform()).thenReturn(Platform.SPIGOT);
 
         // execute
-        final Throwable failure = catchThrowable(() -> assertThat(framework).as("Startup check").isPaper());
+        final Throwable failure = catchThrowable(
+            () -> assertThat(framework)
+                .as("Startup check")
+                .isPaper()
+        );
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class)
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
             .hasMessageContainingAll("Startup check", "PAPER", "SPIGOT");
     }
 
@@ -163,11 +173,16 @@ class ServerControlAssertTest
         when(server.platform()).thenReturn(Platform.SPIGOT);
 
         // execute
-        final Throwable failure = catchThrowable(() ->
-            assertThat(framework).overridingErrorMessage("Wrong startup platform").isPaper());
+        final Throwable failure = catchThrowable(
+            () -> assertThat(framework)
+                .overridingErrorMessage("Wrong startup platform")
+                .isPaper()
+        );
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class).hasMessage("Wrong startup platform");
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
+            .hasMessage("Wrong startup platform");
     }
 
     @Test
@@ -178,11 +193,17 @@ class ServerControlAssertTest
         when(server.plugin("Missing")).thenReturn(java.util.Optional.empty());
 
         // execute
-        final Throwable failure = catchThrowable(() ->
-            assertThat(framework).as("Plugin startup").server().plugin("Missing").isEnabled());
+        final Throwable failure = catchThrowable(
+            () -> assertThat(framework)
+                .as("Plugin startup")
+                .server()
+                .plugin("Missing")
+                .isEnabled()
+        );
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class)
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
             .hasMessageContainingAll("Plugin startup", "Missing", "not present");
     }
 
@@ -194,8 +215,12 @@ class ServerControlAssertTest
         when(server.platform()).thenReturn(Platform.SPIGOT);
         when(server.plugin("Missing")).thenReturn(java.util.Optional.empty());
         final var frameworkAssertion = assertThat(framework).as("Framework context");
-        final var serverAssertion = frameworkAssertion.server().as("Server context");
-        final var pluginAssertion = serverAssertion.plugin("Missing").as("Plugin context");
+        final var serverAssertion = frameworkAssertion
+            .server()
+            .as("Server context");
+        final var pluginAssertion = serverAssertion
+            .plugin("Missing")
+            .as("Plugin context");
 
         // execute
         final Throwable frameworkFailure = catchThrowable(frameworkAssertion::isPaper);
@@ -203,13 +228,16 @@ class ServerControlAssertTest
         final Throwable pluginFailure = catchThrowable(pluginAssertion::isEnabled);
 
         // verify
-        assertThat(frameworkFailure).isInstanceOf(AssertionError.class)
+        assertThat(frameworkFailure)
+            .isInstanceOf(AssertionError.class)
             .hasMessageContaining("Framework context")
             .hasMessageNotContaining("Plugin context");
-        assertThat(serverFailure).isInstanceOf(AssertionError.class)
+        assertThat(serverFailure)
+            .isInstanceOf(AssertionError.class)
             .hasMessageContaining("Server context")
             .hasMessageNotContaining("Plugin context");
-        assertThat(pluginFailure).isInstanceOf(AssertionError.class)
+        assertThat(pluginFailure)
+            .isInstanceOf(AssertionError.class)
             .hasMessageContaining("Plugin context");
     }
 }

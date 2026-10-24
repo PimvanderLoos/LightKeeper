@@ -35,7 +35,9 @@ class CommandResultAssertTest
         final Throwable failure = catchThrowable(assertion::isSuccessful);
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class).hasMessageContainingAll("false", "Unknown command");
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
+            .hasMessageContainingAll("false", "Unknown command");
     }
 
     @Test
@@ -48,7 +50,9 @@ class CommandResultAssertTest
         final Throwable failure = catchThrowable(assertion::isFailure);
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class).hasMessageContainingAll("true", "Dispatched");
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
+            .hasMessageContainingAll("true", "Dispatched");
     }
 
     @Test

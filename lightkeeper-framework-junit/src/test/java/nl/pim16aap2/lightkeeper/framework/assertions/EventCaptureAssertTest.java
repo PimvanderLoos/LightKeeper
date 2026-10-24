@@ -3,12 +3,11 @@ package nl.pim16aap2.lightkeeper.framework.assertions;
 import nl.pim16aap2.lightkeeper.framework.CapturedEventSnapshot;
 import nl.pim16aap2.lightkeeper.framework.FrameworkHandleFactory;
 import nl.pim16aap2.lightkeeper.framework.IFrameworkGatewayView;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 
 import java.time.Duration;
 import java.util.List;
@@ -25,12 +24,18 @@ import static org.mockito.Mockito.when;
 
 /** Tests fresh, non-consuming capture observations and retry behavior. */
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.STRICT_STUBS)
 class EventCaptureAssertTest
 {
     /** Gateway from which assertions may only read captured events. */
     @Mock
     private IFrameworkGatewayView gateway;
+
+    /** Verifies that tests leave no unaccounted mock interactions. */
+    @AfterEach
+    void verifyInteractions()
+    {
+        verifyNoMoreInteractions(gateway);
+    }
 
     @Test
     void hasEventCount_shouldReadFreshBufferAndWorkWithEventually()
@@ -45,7 +50,6 @@ class EventCaptureAssertTest
 
         // verify
         verify(gateway, times(2)).getCapturedEvents("Event");
-        verifyNoMoreInteractions(gateway);
     }
 
     @Test
@@ -64,7 +68,6 @@ class EventCaptureAssertTest
         earlier.isEmpty();
         later.containsExactly(event);
         verify(gateway, times(2)).getCapturedEvents("Event");
-        verifyNoMoreInteractions(gateway);
     }
 
     @Test
@@ -78,7 +81,9 @@ class EventCaptureAssertTest
         final Throwable failure = catchThrowable(assertion::hasNoEvents);
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class).hasMessageContainingAll("Event", "contained 1");
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
+            .hasMessageContainingAll("Event", "contained 1");
     }
 
     @Test

@@ -5,12 +5,11 @@ import nl.pim16aap2.lightkeeper.framework.IFrameworkGatewayView;
 import nl.pim16aap2.lightkeeper.framework.MenuHandle;
 import nl.pim16aap2.lightkeeper.framework.MenuSnapshot;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 
 import java.util.List;
 import java.util.UUID;
@@ -24,7 +23,6 @@ import static org.mockito.Mockito.when;
 
 /** Tests open/closed observations on retained menu handles. */
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.STRICT_STUBS)
 class MenuHandleAssertTest
 {
     /** Stable identity of the menu's owner. */
@@ -36,6 +34,13 @@ class MenuHandleAssertTest
 
     /** Real retained menu handle. */
     private MenuHandle menu;
+
+    /** Verifies that tests leave no unaccounted mock interactions. */
+    @AfterEach
+    void verifyInteractions()
+    {
+        verifyNoMoreInteractions(gateway);
+    }
 
     @BeforeEach
     void setUp()
@@ -57,7 +62,6 @@ class MenuHandleAssertTest
         // verify
         assertThat(result).isSameAs(assertion);
         verify(gateway).menuSnapshot(PLAYER_ID);
-        verifyNoMoreInteractions(gateway);
     }
 
     @Test
@@ -73,7 +77,6 @@ class MenuHandleAssertTest
         // verify
         assertThat(result).isSameAs(assertion);
         verify(gateway).menuSnapshot(PLAYER_ID);
-        verifyNoMoreInteractions(gateway);
     }
 
     @Test
@@ -86,7 +89,8 @@ class MenuHandleAssertTest
         final Throwable failure = catchThrowable(() -> assertThat(menu).isOpen());
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class)
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
             .hasMessageContainingAll("tester", "to be open", "was closed");
     }
 
@@ -100,10 +104,10 @@ class MenuHandleAssertTest
         final Throwable failure = catchThrowable(() -> assertThat(menu).isClosed());
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class)
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
             .hasMessageContainingAll("tester", "to be closed", "was open", "Main");
         verify(gateway).menuSnapshot(PLAYER_ID);
-        verifyNoMoreInteractions(gateway);
     }
 
     @Test
@@ -111,15 +115,18 @@ class MenuHandleAssertTest
     {
         // setup
         when(gateway.menuSnapshot(PLAYER_ID)).thenReturn(
-            new MenuSnapshot(true, "Main", List.of()), new MenuSnapshot(false, "", List.of()));
+            new MenuSnapshot(true, "Main", List.of()),
+            new MenuSnapshot(false, "", List.of())
+        );
         final var assertion = assertThat(menu);
 
         // execute
-        assertion.isOpen().isClosed();
+        assertion
+            .isOpen()
+            .isClosed();
 
         // verify
         verify(gateway, times(2)).menuSnapshot(PLAYER_ID);
-        verifyNoMoreInteractions(gateway);
     }
 
     @Test

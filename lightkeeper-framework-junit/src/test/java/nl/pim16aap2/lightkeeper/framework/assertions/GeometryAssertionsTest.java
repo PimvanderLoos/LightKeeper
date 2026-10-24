@@ -29,7 +29,8 @@ class GeometryAssertionsTest
         final Throwable failure = catchThrowable(() -> assertion.isCloseTo(new Vec3(0, 0, 0), 4.9));
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class)
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
             .hasMessageContainingAll("Euclidean", "4.9", "5.0");
     }
 
@@ -87,8 +88,11 @@ class GeometryAssertionsTest
         final Throwable observedFailure = catchThrowable(() -> assertThat(invalid).isCloseTo(origin, 1));
 
         // verify
-        assertThat(expectedFailure).isInstanceOf(IllegalArgumentException.class);
-        assertThat(observedFailure).isInstanceOf(AssertionError.class).hasMessageContaining("finite observed");
+        assertThat(expectedFailure)
+            .isInstanceOf(IllegalArgumentException.class);
+        assertThat(observedFailure)
+            .isInstanceOf(AssertionError.class)
+            .hasMessageContaining("finite observed");
     }
 
     @Test
@@ -100,27 +104,45 @@ class GeometryAssertionsTest
         final var entity = entity(transform);
 
         // execute
-        final var assertion = assertThat(entity).isAt(new Vec3(4, 5, 6), 0).transform();
+        final var assertion = assertThat(entity)
+            .isAt(new Vec3(4, 5, 6), 0)
+            .transform();
 
         // verify
-        assertion.translation().isCloseTo(new Vec3(1, 2, 3), 0);
-        assertion.scale().hasComponentsCloseTo(new Vec3(2, 3, 4), 0);
-        assertion.leftRotation().isEqualTo(rotation);
-        assertion.rightRotation().isEqualTo(rotation);
+        assertion
+            .translation()
+            .isCloseTo(new Vec3(1, 2, 3), 0);
+        assertion
+            .scale()
+            .hasComponentsCloseTo(new Vec3(2, 3, 4), 0);
+        assertion
+            .leftRotation()
+            .isEqualTo(rotation);
+        assertion
+            .rightRotation()
+            .isEqualTo(rotation);
     }
 
     @Test
     void transform_shouldReportEntityIdentityForNonDisplayEntity()
     {
         // setup
-        final var entity = new EntitySnapshot(UUID.randomUUID(), "minecraft:armor_stand",
-            new Vec3(0, 0, 0), null, List.of(), null, 1);
+        final var entity = new EntitySnapshot(
+            UUID.randomUUID(),
+            "minecraft:armor_stand",
+            new Vec3(0, 0, 0),
+            null,
+            List.of(),
+            null,
+            1
+        );
 
         // execute
         final Throwable failure = catchThrowable(() -> assertThat(entity).transform());
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class)
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
             .hasMessageContainingAll(entity.uuid().toString(), "none was present");
     }
 
@@ -130,16 +152,20 @@ class GeometryAssertionsTest
         // setup
         final var entity = entity(null);
         final var assertion = assertThat(entity).as("Parent context");
-        final var position = assertion.position().as("Child context");
+        final var position = assertion
+            .position()
+            .as("Child context");
 
         // execute
         final Throwable parentFailure = catchThrowable(() -> assertion.isAt(new Vec3(0, 0, 0), 0));
         final Throwable childFailure = catchThrowable(() -> position.isCloseTo(new Vec3(0, 0, 0), 0));
 
         // verify
-        assertThat(parentFailure).hasMessageContainingAll("Parent context", entity.uuid().toString())
+        assertThat(parentFailure)
+            .hasMessageContainingAll("Parent context", entity.uuid().toString())
             .hasMessageNotContaining("Child context");
-        assertThat(childFailure).hasMessageContaining("Child context");
+        assertThat(childFailure)
+            .hasMessageContaining("Child context");
     }
 
     @Test
@@ -149,11 +175,19 @@ class GeometryAssertionsTest
         final var assertion = new ProtocolValueAssert(new IProtocolValue.PVec(3, 4, 0), "Event.position");
 
         // execute
-        assertion.asVector().isCloseTo(new Vec3(0, 0, 0), 5);
-        final Throwable failure = catchThrowable(() -> assertion.asVector().isCloseTo(new Vec3(0, 0, 0), 1));
+        assertion
+            .asVector()
+            .isCloseTo(new Vec3(0, 0, 0), 5);
+        final Throwable failure = catchThrowable(
+            () -> assertion
+                .asVector()
+                .isCloseTo(new Vec3(0, 0, 0), 1)
+        );
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class).hasMessageContaining("Event.position");
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
+            .hasMessageContaining("Event.position");
     }
 
     @Test
@@ -171,7 +205,14 @@ class GeometryAssertionsTest
 
     private static EntitySnapshot entity(@Nullable Transform transform)
     {
-        return new EntitySnapshot(UUID.randomUUID(), "minecraft:block_display", new Vec3(4, 5, 6),
-            null, List.of(), transform, 1);
+        return new EntitySnapshot(
+            UUID.randomUUID(),
+            "minecraft:block_display",
+            new Vec3(4, 5, 6),
+            null,
+            List.of(),
+            transform,
+            1
+        );
     }
 }

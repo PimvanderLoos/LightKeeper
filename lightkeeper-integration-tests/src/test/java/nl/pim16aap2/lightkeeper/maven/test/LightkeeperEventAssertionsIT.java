@@ -31,15 +31,28 @@ class LightkeeperEventAssertionsIT
             eventually(Duration.ofSeconds(10), () -> assertThat(capture).hasEventCount(2));
 
             // verify
-            assertThat(capture).events().hasSize(2);
+            assertThat(capture)
+                .events()
+                .hasSize(2);
             final var events = capture.getCapturedEvents();
-            assertThat(events.getFirst()).isCancelled().value("getMessage").asString()
+            assertThat(events.getFirst())
+                .isCancelled()
+                .value("getMessage")
+                .asString()
                 .isEqualTo("cancelled assertion message");
-            assertThat(events.get(1)).isNotCancelled().value("getMessage").asString()
+            assertThat(events.get(1))
+                .isNotCancelled()
+                .value("getMessage")
+                .asString()
                 .isEqualTo("uncancelled assertion message");
-            assertThat(events.getFirst().value("getPlayer")).isInstanceOfSatisfying(IProtocolValue.PRef.class,
-                reference -> assertThat(events.getFirst()).value("getPlayer")
-                    .hasReference(reference.className(), player.uniqueId().toString()));
+
+            assertThat(events.getFirst().value("getPlayer"))
+                .isInstanceOfSatisfying(
+                    IProtocolValue.PRef.class,
+                    reference -> assertThat(events.getFirst())
+                        .value("getPlayer")
+                        .hasReference(reference.className(), player.uniqueId().toString())
+                );
         }
     }
 }

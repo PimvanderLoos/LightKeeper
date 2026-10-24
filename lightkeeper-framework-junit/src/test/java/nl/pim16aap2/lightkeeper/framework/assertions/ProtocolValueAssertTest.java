@@ -49,7 +49,9 @@ class ProtocolValueAssertTest
         final Throwable failure = catchThrowable(assertion::asBoolean);
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class).hasMessageContainingAll("Event.field", "PBool");
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
+            .hasMessageContainingAll("Event.field", "PBool");
     }
 
     @Test
@@ -79,7 +81,9 @@ class ProtocolValueAssertTest
         final Throwable failure = catchThrowable(() -> assertion.hasEnum("other.Action", "OPEN"));
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class).hasMessageContainingAll("server.only.Action", "other.Action");
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
+            .hasMessageContainingAll("server.only.Action", "other.Action");
     }
 
     @Test
@@ -93,26 +97,41 @@ class ProtocolValueAssertTest
         final Throwable failure = catchThrowable(() -> assertion.hasReference("World", "player-1"));
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class).hasMessageContainingAll("Player", "World");
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
+            .hasMessageContainingAll("Player", "World");
     }
 
     @Test
     void fieldAndElement_shouldRetainFullAccessorPath()
     {
         // setup
-        final var value = new IProtocolValue.PRecord(Map.of(
-            "items", new IProtocolValue.PList(List.of(new IProtocolValue.PString("stone")))));
+        final var value = new IProtocolValue.PRecord(
+            Map.of("items", new IProtocolValue.PList(List.of(new IProtocolValue.PString("stone"))))
+        );
         final var assertion = new ProtocolValueAssert(value, "Event.payload").as("Action result");
 
         // execute
-        final var selected = assertion.field("items").element(0);
-        final Throwable failure = catchThrowable(() -> selected.asString().isEqualTo("dirt"));
+        final var selected = assertion
+            .field("items")
+            .element(0);
+        final Throwable failure = catchThrowable(
+            () -> selected
+                .asString()
+                .isEqualTo("dirt")
+        );
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class)
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
             .hasMessageContainingAll("Action result", "Event.payload.items[0]", "stone", "dirt");
-        assertion.fields().containsKey("items");
-        assertion.field("items").elements().hasSize(1);
+        assertion
+            .fields()
+            .containsKey("items");
+        assertion
+            .field("items")
+            .elements()
+            .hasSize(1);
     }
 
     @Test
@@ -126,8 +145,11 @@ class ProtocolValueAssertTest
         final Throwable invalid = catchThrowable(() -> assertion.element(-1));
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class).hasMessageContainingAll("[0]", "size was 0");
-        assertThat(invalid).isInstanceOf(IllegalArgumentException.class);
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
+            .hasMessageContainingAll("[0]", "size was 0");
+        assertThat(invalid)
+            .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -161,7 +183,8 @@ class ProtocolValueAssertTest
         final Throwable failure = catchThrowable(assertion::asString);
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class)
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
             .hasMessageContainingAll("getUnknown", "unsupported.Type", "PString");
     }
 
@@ -175,15 +198,23 @@ class ProtocolValueAssertTest
         final Throwable failure = catchThrowable(assertion::asUuid);
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class).hasMessageContainingAll("Event.id", "null");
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
+            .hasMessageContainingAll("Event.id", "null");
     }
 
     private static Stream<IProtocolValue> nonBooleanValues()
     {
-        return Stream.of(new IProtocolValue.PString("false"), new IProtocolValue.PNumber(0),
-            new IProtocolValue.PUuid(UUID.randomUUID()), new IProtocolValue.PEnum("Type", "FALSE"),
-            new IProtocolValue.PList(List.of()), new IProtocolValue.PRecord(Map.of()),
-            new IProtocolValue.PRef("Player", "id"), new IProtocolValue.PVec(0, 0, 0),
-            new IProtocolValue.PDropped("field", "Type"));
+        return Stream.of(
+            new IProtocolValue.PString("false"),
+            new IProtocolValue.PNumber(0),
+            new IProtocolValue.PUuid(UUID.randomUUID()),
+            new IProtocolValue.PEnum("Type", "FALSE"),
+            new IProtocolValue.PList(List.of()),
+            new IProtocolValue.PRecord(Map.of()),
+            new IProtocolValue.PRef("Player", "id"),
+            new IProtocolValue.PVec(0, 0, 0),
+            new IProtocolValue.PDropped("field", "Type")
+        );
     }
 }

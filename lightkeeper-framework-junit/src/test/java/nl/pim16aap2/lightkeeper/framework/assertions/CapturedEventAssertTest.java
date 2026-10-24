@@ -28,8 +28,13 @@ class CapturedEventAssertTest
         final var second = assertThat(uncancelled).isNotCancelled();
 
         // verify
-        first.hasField("isCancelled").doesNotHaveField("other");
-        second.value("isCancelled").asBoolean().isFalse();
+        first
+            .hasField("isCancelled")
+            .doesNotHaveField("other");
+        second
+            .value("isCancelled")
+            .asBoolean()
+            .isFalse();
     }
 
     @ParameterizedTest
@@ -43,7 +48,9 @@ class CapturedEventAssertTest
         final Throwable failure = catchThrowable(assertion::isNotCancelled);
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class).hasMessageContainingAll("Event.isCancelled", "PBool");
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
+            .hasMessageContainingAll("Event.isCancelled", "PBool");
     }
 
     @Test
@@ -56,7 +63,9 @@ class CapturedEventAssertTest
         final Throwable failure = catchThrowable(assertion::isNotCancelled);
 
         // verify
-        assertThat(failure).isInstanceOf(AssertionError.class).hasMessageContainingAll("Event", "isCancelled");
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
+            .hasMessageContainingAll("Event", "isCancelled");
     }
 
     @Test
@@ -69,12 +78,16 @@ class CapturedEventAssertTest
         final var assertion = assertThat(new CapturedEventSnapshot("Event", 1, values));
 
         // execute
-        final var present = assertion.hasField("nullable").value("nullable");
+        final var present = assertion
+            .hasField("nullable")
+            .value("nullable");
         final Throwable failure = catchThrowable(() -> assertion.value("missing"));
 
         // verify
         present.isNull();
-        assertThat(failure).isInstanceOf(AssertionError.class).hasMessageContainingAll("Event", "missing");
+        assertThat(failure)
+            .isInstanceOf(AssertionError.class)
+            .hasMessageContainingAll("Event", "missing");
     }
 
     @Test
@@ -97,6 +110,9 @@ class CapturedEventAssertTest
 
     private static Stream<IProtocolValue> unavailableBooleans()
     {
-        return Stream.of(new IProtocolValue.PString("false"), new IProtocolValue.PDropped("isCancelled", "Unavailable"));
+        return Stream.of(
+            new IProtocolValue.PString("false"),
+            new IProtocolValue.PDropped("isCancelled", "Unavailable")
+        );
     }
 }

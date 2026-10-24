@@ -42,7 +42,9 @@ class LightkeeperBlockStateIT
         eventually(Duration.ofSeconds(10), () ->
             assertThat(world).hasBlockAt(leverPosition).withState(BlockSpec.of("lever").with("powered", "true")));
         final BlockRef lever = world.blockAt(leverPosition);
-        assertThat(lever).ofType("lever").withState(BlockSpec.parse("lever[powered=true]"));
+        assertThat(lever)
+            .ofType("lever")
+            .withState(BlockSpec.parse("lever[powered=true]"));
         // One frozen snapshot for the multi-property reads, per the BlockRef consistency guidance.
         final var leverState = lever.state();
         assertThat(leverState.property("face")).isEqualTo("floor");
