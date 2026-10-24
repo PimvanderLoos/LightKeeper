@@ -2,15 +2,11 @@ package nl.pim16aap2.lightkeeper.framework.assertions;
 
 import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.IServerControl;
-import nl.pim16aap2.lightkeeper.framework.Platform;
 import nl.pim16aap2.lightkeeper.framework.ServerErrorSnapshot;
 import org.assertj.core.api.AbstractAssert;
-import org.assertj.core.api.Assertions;
 import org.assertj.core.api.ListAssert;
 import org.jspecify.annotations.Nullable;
 
-import java.util.List;
-import java.util.Objects;
 import java.util.function.Predicate;
 
 /**
@@ -25,13 +21,25 @@ public final class LightkeeperFrameworkAssert
     }
 
     /**
+     * Navigates to eager assertions over the framework's live server.
+     *
+     * @return Server assertions, including named plugin assertions.
+     */
+    public ServerControlAssert server()
+    {
+        final var assertion = new ServerControlAssert(nonNullActual().server());
+        assertion.info = info;
+        return assertion;
+    }
+
+    /**
      * Returns an AssertJ list assertion over captured server output.
      *
      * @return AssertJ list assertion for captured server output lines.
      */
     public ListAssert<String> serverOutput()
     {
-        return Assertions.assertThat(nonNullActual().server().output());
+        return server().output();
     }
 
     /**
@@ -41,9 +49,7 @@ public final class LightkeeperFrameworkAssert
      */
     public LightkeeperFrameworkAssert isPaper()
     {
-        final var actual = nonNullActual();
-        if (actual.server().platform() != Platform.PAPER)
-            failWithMessage("Expected server platform to be PAPER but was %s.", actual.server().platform());
+        server().isPaper();
         return this;
     }
 
@@ -54,9 +60,7 @@ public final class LightkeeperFrameworkAssert
      */
     public LightkeeperFrameworkAssert isSpigot()
     {
-        final var actual = nonNullActual();
-        if (actual.server().platform() != Platform.SPIGOT)
-            failWithMessage("Expected server platform to be SPIGOT but was %s.", actual.server().platform());
+        server().isSpigot();
         return this;
     }
 
@@ -90,33 +94,8 @@ public final class LightkeeperFrameworkAssert
      */
     public LightkeeperFrameworkAssert hasNoServerErrors(Predicate<ServerErrorSnapshot> allowedErrors)
     {
-        Objects.requireNonNull(allowedErrors, "allowedErrors may not be null.");
-        final List<ServerErrorSnapshot> failingErrors = nonNullActual().server().errors().getCaptured().stream()
-            .filter(error -> error.severity() == ServerErrorSnapshot.Severity.ERROR)
-            .filter(error -> !allowedErrors.test(error))
-            .toList();
-        if (!failingErrors.isEmpty())
-        {
-            failWithMessage(
-                "Expected no captured server errors, but found %d:%n%s",
-                failingErrors.size(),
-                renderServerErrors(failingErrors)
-            );
-        }
+        server().hasNoErrors(allowedErrors);
         return this;
-    }
-
-    /**
-     * Renders captured errors for assertion failure messages: one header line per error plus an indented,
-     * capped stack trace so the failure carries its own diagnostic context.
-     */
-    private static String renderServerErrors(List<ServerErrorSnapshot> errors)
-    {
-        final int maxRenderedStackTraceLines = 15;
-        final StringBuilder rendered = new StringBuilder(256);
-        for (final ServerErrorSnapshot error : errors)
-            rendered.append(error.toDisplayString(maxRenderedStackTraceLines));
-        return rendered.toString();
     }
 
     @SuppressWarnings({"NullAway", "DataFlowIssue"}) // we call isNotNull() first, so actual is not null after that

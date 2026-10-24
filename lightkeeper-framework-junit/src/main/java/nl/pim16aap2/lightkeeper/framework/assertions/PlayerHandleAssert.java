@@ -42,6 +42,78 @@ public final class PlayerHandleAssert extends AbstractAssert<PlayerHandleAssert,
     }
 
     /**
+     * Asserts that the player's current effective Bukkit permissions grant the node.
+     *
+     * @param permission
+     *     Permission node; must not be blank.
+     * @return This assertion for fluent chaining.
+     */
+    public PlayerHandleAssert hasPermission(String permission)
+    {
+        return hasPermissionState(permission, true);
+    }
+
+    /**
+     * Asserts that the player's current effective Bukkit permissions do not grant the node.
+     *
+     * @param permission
+     *     Permission node; must not be blank.
+     * @return This assertion for fluent chaining.
+     */
+    public PlayerHandleAssert doesNotHavePermission(String permission)
+    {
+        return hasPermissionState(permission, false);
+    }
+
+    /**
+     * Asserts that the player currently has an actionable menu open.
+     *
+     * @return This assertion for fluent chaining.
+     */
+    public PlayerHandleAssert hasOpenMenu()
+    {
+        return hasOpenMenuState(true);
+    }
+
+    /**
+     * Asserts that the player currently has no actionable menu open, without waiting.
+     *
+     * @return This assertion for fluent chaining.
+     */
+    public PlayerHandleAssert doesNotHaveOpenMenu()
+    {
+        return hasOpenMenuState(false);
+    }
+
+    private PlayerHandleAssert hasPermissionState(String permission, boolean expected)
+    {
+        Objects.requireNonNull(permission, "permission may not be null.");
+        if (permission.isBlank())
+            throw new IllegalArgumentException("permission may not be blank.");
+        final var actual = nonNullActual();
+        final boolean observed = actual.permissions().has(permission);
+        if (observed != expected)
+        {
+            failWithMessage("Expected player '%s' to %s permission '%s', but effective permission was %s.",
+                actual.name(), expected ? "have" : "not have", permission, observed);
+        }
+        return this;
+    }
+
+    private PlayerHandleAssert hasOpenMenuState(boolean expected)
+    {
+        final var actual = nonNullActual();
+        final boolean observed = actual.getMenu() != null;
+        if (observed != expected)
+        {
+            failWithMessage("Expected player '%s' to have %s, but %s.",
+                actual.name(), expected ? "an open menu" : "no open menu",
+                observed ? "a menu was open" : "no menu was open");
+        }
+        return this;
+    }
+
+    /**
      * Asserts that the player has an item with the specified material in their inventory.
      *
      * @param materialKey

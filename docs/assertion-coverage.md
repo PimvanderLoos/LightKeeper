@@ -6,8 +6,8 @@ not an omission.
 
 Initial source audit: 2026-10-23, `1.2.0-SNAPSHOT`. The audit covers all 41 top-level types in the public framework
 package, its assertion package, protocol values exposed to consumers, and the responsibilities of the other modules.
-Recommendations below are **not implemented APIs**. Names illustrate the intended behavior and may change during
-implementation. This document is an assertion design inventory, not a unit-test coverage report.
+Entries marked Existing describe implemented APIs. Entries marked Add or Deferred are recommendations whose names
+may change during implementation. This document is an assertion design inventory, not a unit-test coverage report.
 
 Start with the [delivery order](#delivery-order-and-validation) for implementation planning. Use these sections to
 review coverage or maintain the register:
@@ -32,12 +32,11 @@ New assertion code belongs in the existing [assertions package][assertions]. Kee
 rule. Navigating from a framework or handle and asserting a frozen snapshot must reuse the same value semantics.
 Use existing normalization and matchers such as `MaterialKeys.normalize` and `BlockStateSnapshot.matches`.
 
-## Recommended shape and behavior
+## Assertion shape and behavior
 
 Use the existing `LightkeeperAssertions.assertThat(ILightkeeperFramework)` entry point for server navigation:
 
 ```java
-// Proposed APIs; these do not compile against the current assertion package.
 assertThat(framework).server().plugin("AnimatedArchitecture").isEnabled();
 assertThat(player).hasPermission("animatedarchitecture.user");
 assertThat(menu).isOpen().hasTitle("Main Menu");
@@ -71,10 +70,10 @@ as `assertThat(framework).bots().join(...)`. Standard scalar and collection asse
 | Source | Existing coverage | Important limits |
 |---|---|---|
 | [LightkeeperAssertions][entrypoint] | `assertThat` for framework, world, player, and menu; `eventually`; inherited ordinary AssertJ entry points | No custom entry points for the other subjects below. Retries do not mutate frozen values. |
-| [LightkeeperFrameworkAssert][framework-assert] | `isPaper`, `isSpigot`, `serverOutput`, `hasNoServerErrors`, including its predicate allowlist | Error checks ignore warnings. Output is a captured list at navigation time. |
+| [LightkeeperFrameworkAssert][framework-assert], [ServerControlAssert][server-assert], [ServerPluginAssert][plugin-assert] | Framework-to-server/plugin navigation; platform/output/no-error checks; plugin presence, enabled/disabled state, exact version | Plugin assertions re-query each evaluation. Error checks ignore warnings. Output is a captured list at navigation time. Framework-level server checks delegate to the same matching rules. |
 | [WorldHandleAssert][world-assert], [WorldBlockAssert][block-assert] | Name equality/nonblank, loaded/unloaded chunks, block material by key or `Material`, partial block-state matching | `hasBlockAt` selects a block address; it does not establish a separately meaningful block-presence condition. |
-| [PlayerHandleAssert][player-assert] | `hasName`, `hasItemInInventory`, `doesNotHaveItemInInventory`, `receivedMessage`, `hasClickableChatText`, `receivedMessagesText` | Inventory presence does not inspect amount. `receivedMessage` searches joined text, not exact individual messages. |
-| [MenuHandleAssert][menu-assert] | Title, material at slot, `ItemStack` comparison at slot | The `ItemStack` comparison already checks material, display name, and lore, but not stack amount or all Bukkit metadata. |
+| [PlayerHandleAssert][player-assert] | `hasName`, `hasItemInInventory`, `doesNotHaveItemInInventory`, `receivedMessage`, `hasClickableChatText`, `receivedMessagesText`, plus effective-permission and open-menu checks below | Inventory presence does not inspect amount. `receivedMessage` searches joined text, not exact individual messages. Permission/menu checks re-query each evaluation. |
+| [MenuHandleAssert][menu-assert] | Open/closed state, title, material at slot, `ItemStack` comparison at slot | Open/closed checks read one snapshot and reject null handles. The `ItemStack` comparison checks material, display name, and lore, but not amount or all Bukkit metadata. |
 
 ## Framework and server
 
@@ -82,7 +81,7 @@ as `assertThat(framework).bots().join(...)`. Standard scalar and collection asse
 
 | API and members | Decision | Rationale / assertion destination |
 |---|---|---|
-| [ILightkeeperFramework][ILightkeeperFramework]: `server()` | Add P1: `server()` assertion navigation | Use a dedicated server subject for plugin and server observations; share existing platform, output, and error rules rather than copying them. |
+| [ILightkeeperFramework][ILightkeeperFramework]: `server()` | Existing: `server()` assertion navigation | [ServerControlAssert][server-assert] owns plugin/server observations. Framework-level platform/output/error methods share its implementation. |
 | `ILightkeeperFramework.worlds()`, `bots()`, `events()`; [IWorlds][IWorlds]: `main`, `create` overloads, `fromTemplate`, `builder` | Exclude creation assertions | These obtain/create fixtures. Assert the returned world or its observed contents; template configuration is not proof of live contents. |
 | [IBots][IBots]: both `join` overloads, `builder`; [IEvents][IEvents]: `capture` | Exclude action-shaped assertions | Assert the returned player/capture. Login denial and timeout use ordinary exception assertions. Do not join or register listeners inside assertions. |
 | `ILightkeeperFramework.waitUntil`, `close`; [Condition][Condition]: `evaluate` | Exclude dedicated assertions | Synchronization and lifecycle operations. Use eager observations plus explicit retries, and ordinary thrown-exception assertions when testing failures. |
@@ -93,9 +92,9 @@ Sources: [IServerControl][IServerControl], [ServerPluginSnapshot][ServerPluginSn
 
 | Observation | Decision | Required semantics |
 |---|---|---|
-| `plugin(name)` optional lookup | Add P1: `plugin(name).isPresent()`, `isAbsent()` | Present means registered, whether enabled or disabled. Use the declared plugin name and existing lookup/validation behavior. Failures include the requested name. |
-| `isEnabled` | Add P1: `isEnabled()`, `isDisabled()` | Both require presence. Distinguish missing from present-but-wrong-state. Do not overload `isNotNull` to mean registered. |
-| `version` | Add P1: `hasVersion(expected)` | Require presence; exact string equality, without inventing semantic-version ordering or ranges. |
+| `plugin(name)` optional lookup | Existing: `plugin(name).isPresent()`, `isAbsent()` | [ServerPluginAssert][plugin-assert] retains the server/name and re-queries each evaluation. Present means registered, whether enabled or disabled. Failures include the requested name. |
+| `isEnabled` | Existing: `isEnabled()`, `isDisabled()` | Both require presence. Distinguish missing from present-but-wrong-state. `isNotNull` retains its ordinary server-subject null check. |
+| `version` | Existing: `hasVersion(expected)` | Require presence; exact string equality, without semantic-version ordering or ranges. |
 | `name`, `description`, `authors` | Standard | Ordinary equality, string, and list assertions on the snapshot. Registration is asserted through lookup; no separate matcher per descriptive field is needed. |
 | Plugin metadata beyond the snapshot; complete plugin lists/counts; readiness and feature functionality | Standard for existing metadata; Deferred new observations; Exclude inference from `isEnabled()` | The framework exposes named lookup, not full plugin enumeration. Enabled only proves Bukkit's enabled state. Assert errors, plugin-specific messages, events, or effects separately; dependency/load-order metadata needs a readback. |
 
@@ -103,8 +102,8 @@ Sources: [IServerControl][IServerControl], [ServerPluginSnapshot][ServerPluginSn
 
 | API and members | Decision | Rationale / limits |
 |---|---|---|
-| `platform()`; [Platform][Platform]: `PAPER`, `SPIGOT`, `UNKNOWN` | Existing `isPaper`, `isSpigot`; Standard enum equality for other checks | Keep these semantics accessible from the new server subject. Do not add a convenience matcher for every platform constant. |
-| `output()` | Existing `serverOutput`; Standard list assertions | Content, order, and count are already expressible. Console substrings are not a substitute for structured error severity. |
+| `platform()`; [Platform][Platform]: `PAPER`, `SPIGOT`, `UNKNOWN` | Existing `isPaper`, `isSpigot` on framework and server subjects; Standard enum equality for other checks | Read the platform once per assertion. No convenience matcher for every platform constant is needed. |
+| `output()` | Existing `serverOutput()` on framework and `output()` on server; Standard list assertions | Content, order, and count are already expressible. Console substrings are not a substitute for structured error severity. |
 | `directory()`, `pluginDataDirectory(name)` | Standard path assertions | Assert existence/content only when the test expects it. A plugin data directory can legitimately be absent before first boot. |
 | `currentTick()` | Standard numeric assertions | Compare explicit observed ticks in one session. Do not interpret this as the absolute game tick or compare across restart. |
 | `executeCommand(source, command)`, `crash`, `stop`, `start`, `restart` | Exclude action-shaped assertions; command result considered below; Deferred running/stopped assertions | Assertions must not execute commands or manage the process. There is no public non-mutating process-state probe. A working RPC is not a safe stopped-state test. |
@@ -116,7 +115,7 @@ Sources: [ServerErrorsHandle][ServerErrorsHandle], [ServerErrorSnapshot][ServerE
 | API / observation | Decision | Required semantics |
 |---|---|---|
 | `errors()`, `getCaptured()` | Add P2: live error-subject navigation and captured-list navigation | Reuse the existing no-error matcher and allowlist; ordinary list filtering and matching handle positive checks. Each captured list is frozen. |
-| No errors | Existing `hasNoServerErrors()` and predicate overload | Only `Severity.ERROR` fails; warnings remain visible. Preserve the structured rendering and bounded stack traces. |
+| No errors | Existing framework `hasNoServerErrors()` and server `hasNoErrors()`, including predicate overloads | Both use the same implementation. Only `Severity.ERROR` fails; warnings remain visible. Preserve structured rendering and bounded stack traces. |
 | No warnings | Add P2: `hasNoWarnings()` on the error subject | Match `Severity.WARNING` explicitly. This must not silently strengthen `hasNoServerErrors`. For no entries of either severity, use a standard empty-list assertion. |
 | `timestampMillis`, `severity`, `levelName`, `loggerName`, `threadName`, `message`, `throwableClass`, `throwableMessage`, `stackTrace`; nested `Severity`; `LOGGER_NAME_STDERR` | Standard | Equality, ranges, nullability, string, list, and enum assertions suffice. Match nullable throwable fields directly; these are snapshots, not Java `Throwable` instances. |
 | `clear()`, `toDisplayString(maxStackTraceLines)` | Exclude consumer matchers | Clearing is a mutation. Rendering is diagnostic formatting and belongs in implementation unit tests. Capture gaps before agent loading and caught/unlogged exceptions remain gaps. |
@@ -173,10 +172,10 @@ Sources: [EntityQuery][EntityQuery], [EntitySnapshot][EntitySnapshot].
 | API / observation | Decision | Required semantics |
 |---|---|---|
 | [PlayerHandle][PlayerHandle]: `name`, `uniqueId` | Existing `hasName`; Standard UUID equality | Identity is handle data, not proof that the player is currently online or alive. |
-| `permissions()`; [PermissionControl][PermissionControl]: `has(permission)` | Add P1: `hasPermission`, `doesNotHavePermission` on player assertions | Read the current effective Bukkit result. Include player and node in failures. Reuse `permissions().has` rather than reproducing permission resolution. |
+| `permissions()`; [PermissionControl][PermissionControl]: `has(permission)` | Existing: `hasPermission`, `doesNotHavePermission` on [player assertions][player-assert] | Read the current effective Bukkit result each evaluation. Failures include player and node. Reuse `permissions().has` rather than reproducing permission resolution. |
 | `PermissionControl.grant`, `revoke`, `unset` | Exclude mutation assertions and claims about permission source | These change LightKeeper's attachment. Effective permission checks cannot prove that LuckPerms or another source supplied the value, nor whether a node was explicitly unset. |
 | `tabComplete(commandLine)` | Standard list assertions | Contains, exact contents, order, emptiness, and exclusions are already expressible. Keep trailing spaces meaningful. Do not execute tab-completion as a hidden step in an unrelated permission assertion. |
-| `getMenu()` | Add P1: `hasOpenMenu`, `doesNotHaveOpenMenu` on player assertions | Re-query inside the assertion. `getMenu()` returns null when no actionable menu is open. Retrying an assertion on a previously captured null menu cannot observe a later opening. |
+| `getMenu()` | Existing: `hasOpenMenu`, `doesNotHaveOpenMenu` on [player assertions][player-assert] | Re-query inside the assertion. `getMenu()` returns null when no actionable menu is open. Retrying an assertion on a previously captured null menu cannot observe a later opening. |
 
 ### Player actions
 
@@ -224,7 +223,7 @@ Sources: [MenuHandle][MenuHandle], [MenuSnapshot][MenuSnapshot].
 
 | API / observation | Decision | Required semantics |
 |---|---|---|
-| `isOpen`, `snapshot().open` | Add P1: `isOpen`, `isClosed` on a retained menu handle | Read live state. A non-null handle can refer to a now-closed menu. A null handle is not an observed closed state; use the player's no-open-menu assertion for that case. |
+| `isOpen`, `snapshot().open` | Existing: `isOpen`, `isClosed` on [menu assertions][menu-assert] | Read one live snapshot per evaluation. A non-null handle can refer to a now-closed menu. A null handle is not an observed closed state; use the player's no-open-menu assertion for that case. |
 | `hasTitle`; `snapshot().title` | Existing `hasTitle` | Require an open menu; failures should distinguish closed from wrong title and show the actual title. Ordinary string assertions cover additional title matching. |
 | Both `hasItemAt` overloads | Existing; Add P1 shared slot/item navigation and empty-slot checks | Require an open menu for menu-slot assertions. Closed menus must not satisfy empty-slot checks merely because their item list is empty. Compare one snapshot; explain material/name/lore mismatches. |
 | `player()` | Standard handle/UUID equality | Menu ownership is already observable without another matcher. |
@@ -338,7 +337,7 @@ The gateway inventory is grouped explicitly to prevent its public visibility fro
 
 | Group | Recommended scope | Why first / later |
 |---|---|---|
-| P1: server and player basics | Server/plugin navigation and presence/state/version, effective permissions, player open-menu checks, menu open/closed | Common test outcomes with existing readbacks and clear semantics. |
+| Existing: P1 server and player basics | Server/plugin navigation and presence/state/version, effective permissions, player open-menu checks, menu open/closed | Implemented with live reads, unit coverage, and [Paper/Spigot integration coverage][basics-it]. |
 | P1: shared items and messages | Menu/inventory/item snapshot assertions, slot checks, message-list navigation | Removes repetitive extraction and makes the existing partial item comparison explicit. |
 | P1: events | Capture navigation/counts, typed fields/containers/references/enums, cancellation | Typed envelopes and missing/dropped values are the largest consumer-side interpretation burden. |
 | P2: richer existing observations | Direct block/snapshot entry points, live entity counts, position/transform comparisons, semantic chat components | Reuse value rules; settle tolerance and component-tree semantics before implementation. |
@@ -348,7 +347,25 @@ For every implemented group, verify happy paths and meaningful mismatches, input
 data, and failure messages. For live subjects, verify changed observations are re-read and work with `eventually`;
 for snapshots, verify they remain frozen. Verify assertion evaluation never invokes actions. Exercise runtime-backed
 semantics on both Paper and Spigot in the integration suite; unit mocks alone cannot prove encoding or Bukkit rules.
-No new tests are required merely for this documentation inventory.
+The original documentation inventory needed no new tests; assertion implementations require the checks above.
+
+The first group is covered by [server navigation tests][server-assert-tests], [plugin tests][plugin-assert-tests],
+[player permission/menu tests][player-assert-tests], [menu lifecycle tests][menu-assert-tests], and
+[the focused integration class][basics-it]. Between commits, run the affected tests rather than the full suite:
+
+```bash
+mvn -pl lightkeeper-framework-junit -am test -Perrorprone \
+  -Dtest=ServerControlAssertTest,ServerPluginAssertTest,PlayerHandleAssertTest,MenuHandleAssertTest,HandleAssertionsTest \
+  -Dsurefire.failIfNoSpecifiedTests=false
+mvn -pl lightkeeper-integration-tests -am verify -Perrorprone \
+  -Dtest=ServerControlAssertTest,ServerPluginAssertTest,PlayerHandleAssertTest,MenuHandleAssertTest,HandleAssertionsTest \
+  -Dsurefire.failIfNoSpecifiedTests=false -Dit.test=LightkeeperAssertionBasicsIT
+```
+
+The integration command builds required reactor dependencies and selects the new class in both the Paper and Spigot
+executions. `-Dtest` separately selects Surefire unit tests; `surefire.failIfNoSpecifiedTests=false` allows dependency
+modules without those classes. Use only the relevant command/classes for a given change. Run the full quality pipeline
+before creating a PR, as required by the repository's build guidance.
 
 Useful existing evidence includes [handle assertion tests][assertion-tests], [retry tests][retry-tests], and integration
 tests for [permissions][permission-it], [menus/interactions][bot-it], [server plugins/lifecycle][server-it],
@@ -371,6 +388,8 @@ is evidence for a candidate assertion, not proof that every extracted scalar nee
 [assertions]: ../lightkeeper-framework-junit/src/main/java/nl/pim16aap2/lightkeeper/framework/assertions/
 [entrypoint]: ../lightkeeper-framework-junit/src/main/java/nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.java
 [framework-assert]: ../lightkeeper-framework-junit/src/main/java/nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperFrameworkAssert.java
+[server-assert]: ../lightkeeper-framework-junit/src/main/java/nl/pim16aap2/lightkeeper/framework/assertions/ServerControlAssert.java
+[plugin-assert]: ../lightkeeper-framework-junit/src/main/java/nl/pim16aap2/lightkeeper/framework/assertions/ServerPluginAssert.java
 [world-assert]: ../lightkeeper-framework-junit/src/main/java/nl/pim16aap2/lightkeeper/framework/assertions/WorldHandleAssert.java
 [block-assert]: ../lightkeeper-framework-junit/src/main/java/nl/pim16aap2/lightkeeper/framework/assertions/WorldBlockAssert.java
 [player-assert]: ../lightkeeper-framework-junit/src/main/java/nl/pim16aap2/lightkeeper/framework/assertions/PlayerHandleAssert.java
@@ -427,3 +446,8 @@ is evidence for a candidate assertion, not proof that every extracted scalar nee
 [event-it]: ../lightkeeper-integration-tests/src/test/java/nl/pim16aap2/lightkeeper/maven/test/LightkeeperChatAndCancelIT.java
 [entity-it]: ../lightkeeper-integration-tests/src/test/java/nl/pim16aap2/lightkeeper/maven/test/LightkeeperEntityQueryIT.java
 [chat-it]: ../lightkeeper-integration-tests/src/test/java/nl/pim16aap2/lightkeeper/maven/test/LightkeeperChatClickIT.java
+[server-assert-tests]: ../lightkeeper-framework-junit/src/test/java/nl/pim16aap2/lightkeeper/framework/assertions/ServerControlAssertTest.java
+[plugin-assert-tests]: ../lightkeeper-framework-junit/src/test/java/nl/pim16aap2/lightkeeper/framework/assertions/ServerPluginAssertTest.java
+[player-assert-tests]: ../lightkeeper-framework-junit/src/test/java/nl/pim16aap2/lightkeeper/framework/assertions/PlayerHandleAssertTest.java
+[menu-assert-tests]: ../lightkeeper-framework-junit/src/test/java/nl/pim16aap2/lightkeeper/framework/assertions/MenuHandleAssertTest.java
+[basics-it]: ../lightkeeper-integration-tests/src/test/java/nl/pim16aap2/lightkeeper/maven/test/LightkeeperAssertionBasicsIT.java

@@ -1,6 +1,7 @@
 package nl.pim16aap2.lightkeeper.framework.assertions;
 
 import nl.pim16aap2.lightkeeper.framework.MenuHandle;
+import nl.pim16aap2.lightkeeper.framework.MenuSnapshot;
 import org.assertj.core.api.AbstractAssert;
 import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.Nullable;
@@ -13,6 +14,42 @@ public final class MenuHandleAssert extends AbstractAssert<MenuHandleAssert, @Nu
     MenuHandleAssert(@Nullable MenuHandle actual)
     {
         super(actual, MenuHandleAssert.class);
+    }
+
+    /**
+     * Asserts that this retained handle currently refers to an open menu, without waiting.
+     *
+     * @return This assertion for fluent chaining.
+     */
+    public MenuHandleAssert isOpen()
+    {
+        return hasOpenState(true);
+    }
+
+    /**
+     * Asserts that the menu for this retained handle is currently closed, without waiting.
+     *
+     * <p>A null handle fails this assertion. Use {@link PlayerHandleAssert#doesNotHaveOpenMenu()} when the
+     * player has no menu handle.
+     *
+     * @return This assertion for fluent chaining.
+     */
+    public MenuHandleAssert isClosed()
+    {
+        return hasOpenState(false);
+    }
+
+    private MenuHandleAssert hasOpenState(boolean expected)
+    {
+        final var actual = nonNullActual();
+        final MenuSnapshot snapshot = actual.snapshot();
+        if (snapshot.open() != expected)
+        {
+            failWithMessage("Expected menu for player '%s' to be %s, but it was %s (title='%s').",
+                actual.player().name(), expected ? "open" : "closed",
+                snapshot.open() ? "open" : "closed", snapshot.title());
+        }
+        return this;
     }
 
     /**
