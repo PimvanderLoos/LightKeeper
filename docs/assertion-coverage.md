@@ -255,11 +255,11 @@ Sources: [EventCaptureHandle][EventCaptureHandle], [CapturedEventSnapshot][Captu
 
 | API / observation | Decision | Required semantics |
 |---|---|---|
-| `getCapturedEvents()` | Add P1: live capture subject with `hasEventCount`, `hasNoEvents`, and event-list navigation | Read the current buffer each evaluation, without clearing it. List predicates handle matching any/all captured events. Counts apply since registration or the last clear. |
+| `getCapturedEvents()`, `eventClassName()` | Existing: [live capture assertions][capture-assert] | `hasEventCount` and `hasNoEvents` read the current buffer without clearing it; `events()` captures a frozen list. Metadata identifies the capture without an RPC. Counts apply since registration or last clear. |
 | `cancelNext(count)`, `clear`, `close` | Exclude action-shaped assertions | Arm cancellation, clear, and unregister explicitly. Assert observed events, not that cancellation was armed. Do not register a second listener from inside a matcher. |
 | `eventClassName`, `tick` | Standard string/numeric checks | Class-name equality and within-session tick ranges need no dedicated matcher. A recorded event proves occurrence, not the final state after all event processing. |
-| `values`, `value(accessorName)` | Add P1 typed field navigation and presence checks | Check `values.containsKey` when distinguishing an absent field from an explicit null value: `value()` alone conflates them. Include event class and accessor path in failures. Preserve case and the recorded accessor names. |
-| Cancellation | Add P1: `isCancelled`, `isNotCancelled` for a cancellable captured event | Require a present `PBool` cancellation field. Missing, null, dropped, or wrong-type data must fail clearly; it does not mean false. Do not claim a non-cancellable event was uncancelled. |
+| `values`, `value(accessorName)` | Existing: [typed event fields][event-assert] | `hasField`, `doesNotHaveField` and `value` distinguish absent keys from explicit null, preserve exact accessor names, and include event class/accessor paths in failures. |
+| Cancellation | Existing: `isCancelled` and `isNotCancelled` on captured events | Both require a present `PBool` cancellation field. Missing, null, dropped and wrong-type data fail clearly; none means false or proves a non-cancellable event was uncancelled. |
 
 ### Protocol values exposed through events
 
@@ -268,10 +268,10 @@ event snapshots, so they require an explicit decision rather than a blanket prot
 
 | Value families and all carried fields | Decision | Required semantics |
 |---|---|---|
-| `PString.value`, `PBool.value`, `PUuid.value`, `PNumber.value` | Add P1 typed unwrapping; Standard scalar assertions thereafter | Check the variant before extraction; do not coerce string `"true"` to boolean. Preserve integral `Long` versus floating `Double` normalization and do not promise arbitrary precision. |
-| `PEnum.enumClass`, `name` | Add P1 enum matching | Compare both declaring enum type and constant, not just display text. Do not require server-only enum classes to load in the test JVM. |
-| `PRef.className`, `id`; `PDropped.accessorName`, `runtimeType` | Add P1 reference-identity and dropped-value diagnostics | Match the encoded reference identity/type explicitly. A dropped value is unavailable information, not null or a mismatch to silently skip. Standard field assertions cover encoder-specific details. |
-| `PList.values`, `PRecord.fields` | Add P1 nested typed navigation; Standard list/map assertions | Retain accessor/index paths in failure messages, including missing versus explicit-null map entries. Do not flatten nested structure into display strings. |
+| `PString.value`, `PBool.value`, `PUuid.value`, `PNumber.value` | Existing: [typed unwrapping][value-assert], then Standard scalar assertions | `asString`, `asBoolean`, `asUuid`, `asLong` and `asDouble` validate variants without coercion. Integral and floating numeric kinds remain distinct, preserving all integral bits. |
+| `PEnum.enumClass`, `name` | Existing: `hasEnum(enumClass, name)` | Compares both declaring type and constant without loading server-only classes. |
+| `PRef.className`, `id`; `PDropped.accessorName`, `runtimeType` | Existing: `hasReference(className, id)` and `isDropped` | Reference checks compare both encoded fields. Dropped values remain explicit and typed-unwrapping failures include their unavailable-data reason. |
+| `PList.values`, `PRecord.fields` | Existing: nested `field`/`element` and Standard `fields`/`elements` navigation | Diagnostics retain accessor/index paths, including missing versus explicit-null entries. Ordinary map/list assertions operate on frozen values. |
 | `PVec.x`, `y`, `z`; every variant's `toDisplayString()` | Add P2 shared tolerance-aware vector comparison; Exclude display-format matchers | Reuse the geometry contract. Rendering is for diagnostics and implementation tests, never the canonical equality rule. |
 
 ## Returned action results
@@ -341,7 +341,7 @@ The gateway inventory is grouped explicitly to prevent its public visibility fro
 |---|---|---|
 | Existing: P1 server and player basics | Server/plugin navigation and presence/state/version, effective permissions, player open-menu checks, menu open/closed | Implemented with live reads, unit coverage, and [Paper/Spigot integration coverage][basics-it]. |
 | Existing: P1 shared items and messages | Menu/inventory/item snapshots, slot checks, message-list navigation | Shared value matching and frozen navigation, verified by [item/menu unit tests][item-unit-tests], [snapshot tests][menu-snapshot-tests], and [Paper/Spigot coverage][item-it]. |
-| P1: events | Capture navigation/counts, typed fields/containers/references/enums, cancellation | Typed envelopes and missing/dropped values are the largest consumer-side interpretation burden. |
+| Existing: P1 events | Capture navigation/counts, typed fields/containers/references/enums, cancellation | Verified by [typed-value tests][value-tests], [capture/event tests][event-tests], and [Paper/Spigot coverage][event-assert-it]. |
 | P2: richer existing observations | Direct block/snapshot entry points, live entity counts, position/transform comparisons, semantic chat components | Reuse value rules; settle tolerance and component-tree semantics before implementation. |
 | P2: results and diagnostics; deferred work | Interaction/command result assertions, error-subject navigation and no-warning checks; then separately evaluate missing-readback proposals | Useful diagnostics; unavailable observations are API work, not assertion-only changes. |
 
@@ -459,3 +459,9 @@ is evidence for a candidate assertion, not proof that every extracted scalar nee
 [item-unit-tests]: ../lightkeeper-framework-junit/src/test/java/nl/pim16aap2/lightkeeper/framework/assertions/ItemContainerAssertionsTest.java
 [menu-snapshot-tests]: ../lightkeeper-framework-junit/src/test/java/nl/pim16aap2/lightkeeper/framework/assertions/MenuSnapshotAssertTest.java
 [item-it]: ../lightkeeper-integration-tests/src/test/java/nl/pim16aap2/lightkeeper/maven/test/LightkeeperItemAssertionsIT.java
+[capture-assert]: ../lightkeeper-framework-junit/src/main/java/nl/pim16aap2/lightkeeper/framework/assertions/EventCaptureAssert.java
+[event-assert]: ../lightkeeper-framework-junit/src/main/java/nl/pim16aap2/lightkeeper/framework/assertions/CapturedEventAssert.java
+[value-assert]: ../lightkeeper-framework-junit/src/main/java/nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.java
+[value-tests]: ../lightkeeper-framework-junit/src/test/java/nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssertTest.java
+[event-tests]: ../lightkeeper-framework-junit/src/test/java/nl/pim16aap2/lightkeeper/framework/assertions/CapturedEventAssertTest.java
+[event-assert-it]: ../lightkeeper-integration-tests/src/test/java/nl/pim16aap2/lightkeeper/maven/test/LightkeeperEventAssertionsIT.java

@@ -7,6 +7,9 @@ import nl.pim16aap2.lightkeeper.framework.MenuItemSnapshot;
 import nl.pim16aap2.lightkeeper.framework.InventorySnapshot;
 import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
+import nl.pim16aap2.lightkeeper.framework.EventCaptureHandle;
+import nl.pim16aap2.lightkeeper.framework.CapturedEventSnapshot;
+import nl.pim16aap2.lightkeeper.protocol.IProtocolValue;
 import org.assertj.core.api.Assertions;
 import org.jspecify.annotations.Nullable;
 
@@ -27,6 +30,39 @@ public final class LightkeeperAssertions extends Assertions
 
     private LightkeeperAssertions()
     {
+    }
+
+    /**
+     * Creates live event-capture assertions.
+     *
+     * @param actual Capture handle.
+     * @return Capture assertions.
+     */
+    public static EventCaptureAssert assertThat(@Nullable EventCaptureHandle actual)
+    {
+        return new EventCaptureAssert(actual);
+    }
+
+    /**
+     * Creates frozen typed-event assertions.
+     *
+     * @param actual Captured event.
+     * @return Event assertions.
+     */
+    public static CapturedEventAssert assertThat(@Nullable CapturedEventSnapshot actual)
+    {
+        return new CapturedEventAssert(actual);
+    }
+
+    /**
+     * Creates frozen typed-value assertions.
+     *
+     * @param actual Captured typed value.
+     * @return Value assertions.
+     */
+    public static ProtocolValueAssert assertThat(@Nullable IProtocolValue actual)
+    {
+        return new ProtocolValueAssert(actual);
     }
 
     /**
