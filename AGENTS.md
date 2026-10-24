@@ -1,12 +1,19 @@
 ## Build & Validation
 
-- Before committing, run all checks: `mvn clean verify install -Perrorprone -Dmaven.javadoc.skip=true checkstyle:checkstyle pmd:check jacoco:report`
-  All checks must pass. Fix any errors before proposing changes.
+- Between commits, run only the tests and quality checks affected by the changes. Do not run the entire test suite
+  just to establish a baseline or after every implementation step.
+- Select unit tests with `-Dtest=...` and integration tests with `-Dit.test=...`. The integration module runs selected
+  integration tests in both its Paper and Spigot executions. With `-am`, use
+  `-Dsurefire.failIfNoSpecifiedTests=false` for reactor modules without matching unit tests.
+- Before creating a PR, run the full quality pipeline:
+  `mvn clean verify install -Perrorprone -Dmaven.javadoc.skip=true checkstyle:checkstyle pmd:check jacoco:report`
+  All checks must pass before creating the PR. Fix failures in affected checks before committing.
 
 
 ## Git handling
 
-- When adding new files, also add them to git.
+- Before filling in a new file, create it empty and run `git add <path>` so subsequent content changes are visible
+  in `git diff`. Stage the completed contents again before committing.
 - Never add `AGENTS.md` or any file in the `.codex` directory.
 - Rationale: `.codex` is local Codex-cli working state (plans/scratch output) and must stay out of version control.
 
