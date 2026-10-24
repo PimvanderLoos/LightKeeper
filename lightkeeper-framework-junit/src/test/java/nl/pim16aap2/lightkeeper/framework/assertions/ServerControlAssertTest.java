@@ -185,4 +185,31 @@ class ServerControlAssertTest
         assertThat(failure).isInstanceOf(AssertionError.class)
             .hasMessageContainingAll("Plugin startup", "Missing", "not present");
     }
+
+    @Test
+    void server_shouldIsolateDescriptionsAcrossNavigation()
+    {
+        // setup
+        when(framework.server()).thenReturn(server);
+        when(server.platform()).thenReturn(Platform.SPIGOT);
+        when(server.plugin("Missing")).thenReturn(java.util.Optional.empty());
+        final var frameworkAssertion = assertThat(framework).as("Framework context");
+        final var serverAssertion = frameworkAssertion.server().as("Server context");
+        final var pluginAssertion = serverAssertion.plugin("Missing").as("Plugin context");
+
+        // execute
+        final Throwable frameworkFailure = catchThrowable(frameworkAssertion::isPaper);
+        final Throwable serverFailure = catchThrowable(serverAssertion::isPaper);
+        final Throwable pluginFailure = catchThrowable(pluginAssertion::isEnabled);
+
+        // verify
+        assertThat(frameworkFailure).isInstanceOf(AssertionError.class)
+            .hasMessageContaining("Framework context")
+            .hasMessageNotContaining("Plugin context");
+        assertThat(serverFailure).isInstanceOf(AssertionError.class)
+            .hasMessageContaining("Server context")
+            .hasMessageNotContaining("Plugin context");
+        assertThat(pluginFailure).isInstanceOf(AssertionError.class)
+            .hasMessageContaining("Plugin context");
+    }
 }

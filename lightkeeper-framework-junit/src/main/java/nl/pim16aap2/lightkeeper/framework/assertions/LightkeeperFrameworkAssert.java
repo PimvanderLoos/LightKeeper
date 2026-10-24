@@ -27,9 +27,7 @@ public final class LightkeeperFrameworkAssert
      */
     public ServerControlAssert server()
     {
-        final var assertion = new ServerControlAssert(nonNullActual().server());
-        assertion.info = info;
-        return assertion;
+        return extracting(ILightkeeperFramework::server, ServerControlAssert::new);
     }
 
     /**
@@ -96,12 +94,5 @@ public final class LightkeeperFrameworkAssert
     {
         server().hasNoErrors(allowedErrors);
         return this;
-    }
-
-    @SuppressWarnings({"NullAway", "DataFlowIssue"}) // we call isNotNull() first, so actual is not null after that
-    private ILightkeeperFramework nonNullActual()
-    {
-        isNotNull();
-        return actual;
     }
 }

@@ -31,6 +31,8 @@ review coverage or maintain the register:
 New assertion code belongs in the existing [assertions package][assertions]. Keep one implementation of each matching
 rule. Navigating from a framework or handle and asserting a frozen snapshot must reuse the same value semantics.
 Use existing normalization and matchers such as `MaterialKeys.normalize` and `BlockStateSnapshot.matches`.
+For assertion navigation, use AssertJ's protected `extracting(Function, AssertFactory)` API to preserve descriptions
+and custom failure messages. Do not assign `AbstractAssert.info`; child assertions must retain independent state.
 
 ## Assertion shape and behavior
 

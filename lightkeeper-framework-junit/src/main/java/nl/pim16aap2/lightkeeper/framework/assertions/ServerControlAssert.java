@@ -10,6 +10,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
@@ -33,9 +34,7 @@ public final class ServerControlAssert extends AbstractAssert<ServerControlAsser
      */
     public ServerPluginAssert plugin(String pluginName)
     {
-        final var assertion = new ServerPluginAssert(nonNullActual(), pluginName);
-        assertion.info = info;
-        return assertion;
+        return extracting(Function.identity(), server -> new ServerPluginAssert(server, pluginName));
     }
 
     /**
