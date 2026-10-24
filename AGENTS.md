@@ -123,7 +123,11 @@ control/assert server state through a typed framework API.
 - With `MockitoExtension`, rely on its default `STRICT_STUBS` behavior. Do not repeat
   `@MockitoSettings(strictness = Strictness.STRICT_STUBS)` unless overriding an inherited setting requires it.
 - When the same mocks need `verifyNoMoreInteractions(...)` after every test, put that common check in one
-  `@AfterEach` method. Keep behavior-specific `verify(...)` and `verifyNoInteractions(...)` checks in the tests.
+  `@AfterEach` method. Keep behavior-specific `verify(...)` checks in the tests. Omit a test's
+  `verifyNoInteractions(...)` when the shared check already enforces the same expectation; retain it only when
+  it proves something additional, such as no interactions before a later operation in that test.
+- When an explicit variable type supplies Mockito's target type, use `final PlayerHandle handle = mock();`
+  instead of repeating the class literal. Keep the class literal when type inference needs it, such as with `var`.
 - Prefer separate tests for independent outcomes. For integration tests, check the extension's lifecycle before
   combining scenarios to save time: ordinary tests share a server within their class. Combine scenarios for
   performance only when the added per-test overhead is measured to exceed about one second, or when they form
@@ -133,21 +137,63 @@ control/assert server state through a typed framework API.
 
 Review feedback applies to every relevant change in the PR, including files and lines without review comments.
 Audit the complete diff for each learned rule; commented locations are examples, not the limits of the fix.
+The refinements below also reflect the author's cleanup in commit `7bb94f4`. Prefer these examples over a
+mechanical rule that expands every chain, argument list or closing parenthesis onto separate lines.
 
 - Use `S` for the assertion's self type and `A` for the actual subject type, consistently in assertion base classes,
   bounds, return types and Javadocs. Explain those meanings explicitly in `@param` descriptions. This preserves
   AssertJ's self/actual terminology while satisfying this repository's single-letter generic-name rule.
-- Put each Javadoc `@param` description on the following line, indented four spaces beyond the tag's leading
-  `* `, including generic and record-component parameters. Do not keep the description beside the parameter name.
-- When a method call's arguments do not fit on one line, put the opening parenthesis at the end of the call line,
-  each argument on its own indented line, and the closing `);` on its own line. Apply the same layout to multiline
-  lambda arguments; avoid packing other arguments or nested fluent calls beside the lambda.
-- For fluent chains with more than one chained call, put each chained call on its own line. A single chained call
-  may stay inline. Short, simple parallel assertions may also stay inline when they fit the line width and keeping
-  corresponding differences vertically aligned improves comparison; avoid this exception for nested calls.
-- Format related assertions consistently: if one in a comparable group needs multiple lines, split the others too.
-  Keep builder/stream creation together on its first line (for example, `framework.bots().builder()` or
-  `items.stream()`); put subsequent configuration, transformations and terminal operations on separate lines.
+- Put Javadoc `@param` and `@throws` descriptions on the following line, indented four spaces beyond the tag's
+  leading `* `, including generic and record-component parameters. Keep the exception type beside `@throws`.
+- For multiline calls and declarations, keep `(` on the opening line and indent arguments or parameters one level.
+  Normally use one argument per line and close a standalone call with `);` on its own line; close a multiline
+  declaration with `)` on its own line. Keep meaningful pairs together, such as each key/value pair in `Map.of`.
+  Nested fixture calls may collect closing parentheses on the final inner line, for example `)));`; do not expand
+  each closing parenthesis onto its own line. Lambda arguments may have their own line even when the call fits.
+- Short, readable chains with two chained calls may stay inline, including assignments and lambda bodies:
+  `value("isCancelled").asBoolean().isTrue()` or `() -> selected.asString().isEqualTo("dirt")`. Split longer or
+  more complex chains with one operation per line. Keep instance builder/stream creation together, such as
+  `framework.bots().builder()` or `player.chatComponents().stream()`; static stream factories can start a chain
+  with `IntStream` followed by `.range(...)` on the next line. These are readability choices, not a call-count gate.
+- Format comparable assertion groups consistently. Separate independent multiline assertions with a blank line;
+  compact, parallel single-line assertions may remain adjacent. Use blank lines between logical blocks within a
+  test phase or method: validation, observation, computation and result; also separate result assertions from
+  Mockito interaction verification. Do not insert a blank line after every statement.
+
+### Control flow, expressions and comments
+
+- Always use braces for control-flow bodies, including a single `throw`, `return`, `continue`, method call or loop
+  iteration. Put opening and closing braces on their own lines, matching the surrounding Allman style.
+- When splitting boolean expressions, leave `&&` or `||` at the end of the preceding line. Keep each simple
+  predicate intact, such as `!click.path("action").asString().isBlank()`, instead of splitting its short chain.
+- Parenthesize a compound ternary branch when it improves grouping, as in
+  `context.isEmpty() ? field : (context + "." + field)`. Do not turn this example into redundant parentheses around
+  every ternary operand.
+- Put suppression explanations on a separate line after the annotation, indented one extra level, rather than
+  adding a trailing comment to the annotation:
+
+  ```java
+  @Test
+  @SuppressWarnings("NullAway")
+      // Deliberately tests the non-null input boundary.
+  void plugin_shouldRejectNullNameBeforeLookup()
+  ```
+
+### Imports, nullability and API choices
+
+- Keep normal imports sorted within their existing groups and static imports in a separate group. In tests,
+  prefer wildcard static imports for AssertJ `Assertions`, Mockito `Mockito` and Mockito `ArgumentMatchers`,
+  even when only one helper is used. Keep an explicit `LightkeeperAssertions.assertThat` import when combining
+  the custom assertions with AssertJ's wildcard; use unqualified `assertThat(...)` in the test body.
+- Express nullable contracts on fields, parameters, return types and type arguments where needed. Do not annotate
+  local variables with `@Nullable`; let flow analysis track their possible null values. A nullable initializer does
+  not by itself justify changing a method's input contract.
+- Choose current registry-key accessors according to the operation's contract: use `getKeyOrNull()` and handle
+  absence when matching should report no match; use `getKeyOrThrow()` when a registered key is required. Avoid
+  deprecated `getKey()`. A small named helper can keep this lookup/null handling out of a deeply nested call.
+- Treat semantic changes separately from formatting preferences. For example, `MenuItemSnapshot.matchesMaterial`
+  now accepts null and returns false; preserve that explicit matching contract without making every API accept
+  null or silently swallowing other invalid input.
 
 ## How to extend LightKeeper
 
