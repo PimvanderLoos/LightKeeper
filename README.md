@@ -443,6 +443,9 @@ GitHub Actions can cache URL and Modrinth plugin downloads separately from the n
 
 ## Running Locally
 
+For public API changes, update the [assertion coverage and decisions](docs/assertion-coverage.md) register, including
+explicit reasons for APIs that should not receive custom assertions.
+
 - Fast module verification:
     - `mvn -pl lightkeeper-integration-tests -am verify`
 - Full quality pipeline used in this repository:
