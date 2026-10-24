@@ -10,6 +10,9 @@ import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import nl.pim16aap2.lightkeeper.framework.EventCaptureHandle;
 import nl.pim16aap2.lightkeeper.framework.CapturedEventSnapshot;
 import nl.pim16aap2.lightkeeper.protocol.IProtocolValue;
+import nl.pim16aap2.lightkeeper.framework.CommandResult;
+import nl.pim16aap2.lightkeeper.framework.InteractionResult;
+import nl.pim16aap2.lightkeeper.framework.ServerErrorsHandle;
 import org.assertj.core.api.Assertions;
 import org.jspecify.annotations.Nullable;
 
@@ -30,6 +33,39 @@ public final class LightkeeperAssertions extends Assertions
 
     private LightkeeperAssertions()
     {
+    }
+
+    /**
+     * Creates command dispatch result assertions.
+     *
+     * @param actual Returned result.
+     * @return Frozen command assertions.
+     */
+    public static CommandResultAssert assertThat(@Nullable CommandResult actual)
+    {
+        return new CommandResultAssert(actual);
+    }
+
+    /**
+     * Creates interaction outcome assertions.
+     *
+     * @param actual Returned result.
+     * @return Frozen interaction assertions.
+     */
+    public static InteractionResultAssert assertThat(@Nullable InteractionResult actual)
+    {
+        return new InteractionResultAssert(actual);
+    }
+
+    /**
+     * Creates live structured-error assertions.
+     *
+     * @param actual Error capture handle.
+     * @return Error/warning assertions.
+     */
+    public static ServerErrorsAssert assertThat(@Nullable ServerErrorsHandle actual)
+    {
+        return new ServerErrorsAssert(actual);
     }
 
     /**

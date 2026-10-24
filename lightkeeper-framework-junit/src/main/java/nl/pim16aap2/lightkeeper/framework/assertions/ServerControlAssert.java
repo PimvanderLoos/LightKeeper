@@ -8,8 +8,6 @@ import org.assertj.core.api.Assertions;
 import org.assertj.core.api.ListAssert;
 import org.jspecify.annotations.Nullable;
 
-import java.util.List;
-import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -23,6 +21,12 @@ public final class ServerControlAssert extends AbstractAssert<ServerControlAsser
     ServerControlAssert(@Nullable IServerControl actual)
     {
         super(actual, ServerControlAssert.class);
+    }
+
+    /** @return Live structured error/warning assertions, without consuming or clearing entries. */
+    public ServerErrorsAssert errors()
+    {
+        return extracting(IServerControl::errors, ServerErrorsAssert::new);
     }
 
     /**
@@ -66,7 +70,7 @@ public final class ServerControlAssert extends AbstractAssert<ServerControlAsser
      */
     public ListAssert<String> output()
     {
-        return Assertions.assertThat(nonNullActual().output());
+        return extracting(IServerControl::output, Assertions::assertThat);
     }
 
     /**
@@ -76,7 +80,8 @@ public final class ServerControlAssert extends AbstractAssert<ServerControlAsser
      */
     public ServerControlAssert hasNoErrors()
     {
-        return hasNoErrors(error -> false);
+        errors().hasNoErrors();
+        return this;
     }
 
     /**
@@ -88,19 +93,7 @@ public final class ServerControlAssert extends AbstractAssert<ServerControlAsser
      */
     public ServerControlAssert hasNoErrors(Predicate<ServerErrorSnapshot> allowedErrors)
     {
-        Objects.requireNonNull(allowedErrors, "allowedErrors may not be null.");
-        final List<ServerErrorSnapshot> failingErrors = nonNullActual().errors().getCaptured().stream()
-            .filter(error -> error.severity() == ServerErrorSnapshot.Severity.ERROR)
-            .filter(error -> !allowedErrors.test(error))
-            .toList();
-        if (!failingErrors.isEmpty())
-        {
-            failWithMessage(
-                "Expected no captured server errors, but found %d:%n%s",
-                failingErrors.size(),
-                renderServerErrors(failingErrors)
-            );
-        }
+        errors().hasNoErrors(allowedErrors);
         return this;
     }
 
@@ -110,18 +103,6 @@ public final class ServerControlAssert extends AbstractAssert<ServerControlAsser
         if (observed != expected)
             failWithMessage("Expected server platform to be %s but was %s.", expected, observed);
         return this;
-    }
-
-    /**
-     * Renders one header per captured error and caps each stack trace at fifteen lines.
-     */
-    private static String renderServerErrors(List<ServerErrorSnapshot> errors)
-    {
-        final int maxRenderedStackTraceLines = 15;
-        final StringBuilder rendered = new StringBuilder(256);
-        for (final ServerErrorSnapshot error : errors)
-            rendered.append(error.toDisplayString(maxRenderedStackTraceLines));
-        return rendered.toString();
     }
 
     @SuppressWarnings({"NullAway", "DataFlowIssue"}) // isNotNull() establishes the non-null subject.

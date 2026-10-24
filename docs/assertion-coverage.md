@@ -116,9 +116,9 @@ Sources: [ServerErrorsHandle][ServerErrorsHandle], [ServerErrorSnapshot][ServerE
 
 | API / observation | Decision | Required semantics |
 |---|---|---|
-| `errors()`, `getCaptured()` | Add P2: live error-subject navigation and captured-list navigation | Reuse the existing no-error matcher and allowlist; ordinary list filtering and matching handle positive checks. Each captured list is frozen. |
+| `errors()`, `getCaptured()` | Existing: [live error-subject navigation][errors-assert] and `captured()` list navigation | Framework/server no-error entry points delegate to the same severity matcher and allowlist. Standard list predicates handle positive checks. Each captured list is frozen. |
 | No errors | Existing framework `hasNoServerErrors()` and server `hasNoErrors()`, including predicate overloads | Both use the same implementation. Only `Severity.ERROR` fails; warnings remain visible. Preserve structured rendering and bounded stack traces. |
-| No warnings | Add P2: `hasNoWarnings()` on the error subject | Match `Severity.WARNING` explicitly. This must not silently strengthen `hasNoServerErrors`. For no entries of either severity, use a standard empty-list assertion. |
+| No warnings | Existing: `hasNoWarnings()` on the error subject | Checks `Severity.WARNING` explicitly, independently of error checks. For no entries of either severity, use `captured().isEmpty()`. |
 | `timestampMillis`, `severity`, `levelName`, `loggerName`, `threadName`, `message`, `throwableClass`, `throwableMessage`, `stackTrace`; nested `Severity`; `LOGGER_NAME_STDERR` | Standard | Equality, ranges, nullability, string, list, and enum assertions suffice. Match nullable throwable fields directly; these are snapshots, not Java `Throwable` instances. |
 | `clear()`, `toDisplayString(maxStackTraceLines)` | Exclude consumer matchers | Clearing is a mutation. Rendering is diagnostic formatting and belongs in implementation unit tests. Capture gaps before agent loading and caught/unlogged exceptions remain gaps. |
 
@@ -185,7 +185,7 @@ Sources: [EntityQuery][EntityQuery], [EntitySnapshot][EntitySnapshot].
 |---|---|---|
 | `executeCommand`, `chat`, `clickChatComponent` | Exclude command/chat/click execution inside assertions | Received messages, effective permissions, captured events, menu/world changes. Player command execution returns the handle, not a success result. |
 | Both `teleport` overloads, `placeBlock` | Exclude action-shaped assertions | Observe captured events or destination block state. Direct player position assertions require the readback described below. A teleport event alone is not proof of the final player position. |
-| All left/right `ClickBlock` overloads | Add P2 result assertions, described below | The returned `InteractionResult` is the observation. Do not repeat the click to inspect its outcome. |
+| All left/right `ClickBlock` overloads | Existing result assertions, described below | The returned `InteractionResult` is the observation. Assertions never repeat the click. |
 | `dropMainHandItem`, `remove` | Standard `DropResult` equality; Exclude action-shaped assertions | Distinguish `DROPPED`, `CANCELLED`, and `EMPTY_HAND`. Removal has no readback of player availability today. |
 | `andWaitTicks`, both `andWaitForMenuOpen` overloads | Exclude wait-shaped assertions | These synchronize actions. Keep timing explicit; use live player/menu assertions for observations. |
 
@@ -278,8 +278,8 @@ event snapshots, so they require an explicit decision rather than a blanket prot
 
 | Type / fields | Decision | Required semantics |
 |---|---|---|
-| [InteractionResult][InteractionResult]: `eventFired`, `cancelled` | Add P2: `hasFiredEvent`, `isCancelled`, `isNotCancelled` | Cancellation matchers require a fired event. `(false, false)` must not satisfy `isNotCancelled`. Ordinary record equality still expresses an exact pair. |
-| [CommandResult][CommandResult]: `success`, `message` | Add P2: `isSuccessful`, `isFailure`; Standard message assertions | Inspect the already returned flag and include its diagnostic message on failure. This reports command dispatch's result, not completion or success of the plugin's intended business operation. |
+| [InteractionResult][InteractionResult]: `eventFired`, `cancelled` | Existing: [`hasFiredEvent`, `isCancelled`, `isNotCancelled`][interaction-assert] | Both cancellation matchers require a fired event. `(false, false)` does not satisfy `isNotCancelled`. Standard record equality still expresses an exact pair. |
+| [CommandResult][CommandResult]: `success`, `message` | Existing: [`isSuccessful` and `isFailure`][command-assert]; Standard message assertions | Check the returned dispatch flag and include its diagnostic message on failure. Dispatch success does not prove completion or success of the plugin's business operation. |
 | [DropResult][DropResult]: `DROPPED`, `CANCELLED`, `EMPTY_HAND` | Standard enum equality | Already domain-specific and unambiguous. Do not add aliases such as `isDropped` or collapse cancellation and empty hand into one unsuccessful outcome. |
 | [PlayerUnavailableException][PlayerUnavailableException]: `reason`, nested `Reason` values `NOT_REGISTERED`, `DEAD`, `DISCONNECTED`; [BotJoinDeniedException][BotJoinDeniedException], [BotJoinTimeoutException][BotJoinTimeoutException] | Standard throwable, enum, and message assertions | Use the typed exception and stable reason where available. Do not execute a mutating action to implement an availability matcher. Login denial currently has no separate structured kick-reason/phase fields; do not invent them in an assertion. |
 
@@ -343,7 +343,7 @@ The gateway inventory is grouped explicitly to prevent its public visibility fro
 | Existing: P1 shared items and messages | Menu/inventory/item snapshots, slot checks, message-list navigation | Shared value matching and frozen navigation, verified by [item/menu unit tests][item-unit-tests], [snapshot tests][menu-snapshot-tests], and [Paper/Spigot coverage][item-it]. |
 | Existing: P1 events | Capture navigation/counts, typed fields/containers/references/enums, cancellation | Verified by [typed-value tests][value-tests], [capture/event tests][event-tests], and [Paper/Spigot coverage][event-assert-it]. |
 | P2: richer existing observations | Direct block/snapshot entry points, live entity counts, position/transform comparisons, semantic chat components | Reuse value rules; settle tolerance and component-tree semantics before implementation. |
-| P2: results and diagnostics; deferred work | Interaction/command result assertions, error-subject navigation and no-warning checks; then separately evaluate missing-readback proposals | Useful diagnostics; unavailable observations are API work, not assertion-only changes. |
+| Existing: P2 results and diagnostics | Interaction/command results, error navigation and warning checks | Verified by focused result/error unit tests and [Paper/Spigot coverage][result-it]. Missing-readback proposals remain separately Deferred API work. |
 
 For every implemented group, verify happy paths and meaningful mismatches, input validation, null/missing/wrong-type
 data, and failure messages. For live subjects, verify changed observations are re-read and work with `eventually`;
@@ -465,3 +465,7 @@ is evidence for a candidate assertion, not proof that every extracted scalar nee
 [value-tests]: ../lightkeeper-framework-junit/src/test/java/nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssertTest.java
 [event-tests]: ../lightkeeper-framework-junit/src/test/java/nl/pim16aap2/lightkeeper/framework/assertions/CapturedEventAssertTest.java
 [event-assert-it]: ../lightkeeper-integration-tests/src/test/java/nl/pim16aap2/lightkeeper/maven/test/LightkeeperEventAssertionsIT.java
+[errors-assert]: ../lightkeeper-framework-junit/src/main/java/nl/pim16aap2/lightkeeper/framework/assertions/ServerErrorsAssert.java
+[interaction-assert]: ../lightkeeper-framework-junit/src/main/java/nl/pim16aap2/lightkeeper/framework/assertions/InteractionResultAssert.java
+[command-assert]: ../lightkeeper-framework-junit/src/main/java/nl/pim16aap2/lightkeeper/framework/assertions/CommandResultAssert.java
+[result-it]: ../lightkeeper-integration-tests/src/test/java/nl/pim16aap2/lightkeeper/maven/test/LightkeeperResultAssertionsIT.java
