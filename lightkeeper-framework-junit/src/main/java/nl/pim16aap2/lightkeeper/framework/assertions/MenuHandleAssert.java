@@ -27,6 +27,8 @@ public final class MenuHandleAssert extends AbstractMenuAssert<MenuHandleAssert,
     @Override
     protected String menuDescription()
     {
-        return "player '" + nonNullActual().player().name() + "'";
+        return "player '" + nonNullActual()
+            .player()
+            .name() + "'";
     }
 }

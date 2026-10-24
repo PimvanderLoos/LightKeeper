@@ -18,7 +18,8 @@ public final class ChatComponentAssert extends AbstractAssert<ChatComponentAsser
     /**
      * Checks literal text associated with a click action.
      *
-     * @param text Nonempty literal text fragment.
+     * @param text
+     *     Nonempty literal text fragment.
      * @return This assertion.
      */
     public ChatComponentAssert hasClickableText(String text)
@@ -30,31 +31,39 @@ public final class ChatComponentAssert extends AbstractAssert<ChatComponentAsser
     /**
      * Checks the exact command associated with a literal text fragment.
      *
-     * @param text Nonempty literal text fragment.
-     * @param command Exact run-command payload.
+     * @param text
+     *     Nonempty literal text fragment.
+     * @param command
+     *     Exact run-command payload.
      * @return This assertion.
      */
     public ChatComponentAssert runsCommand(String text, String command)
     {
         validateText(text);
         Objects.requireNonNull(command, "command may not be null.");
-        return hasMatchingClick(component -> component.hasRunCommand(text, command),
-            "literal text '%s' running command '%s'".formatted(text, command));
+        return hasMatchingClick(
+            component -> component.hasRunCommand(text, command),
+            "literal text '%s' running command '%s'".formatted(text, command)
+        );
     }
 
     /**
      * Checks the exact suggested command associated with literal text.
      *
-     * @param text Nonempty literal text fragment.
-     * @param command Exact suggested payload, including trailing spaces.
+     * @param text
+     *     Nonempty literal text fragment.
+     * @param command
+     *     Exact suggested payload, including trailing spaces.
      * @return This assertion.
      */
     public ChatComponentAssert suggestsCommand(String text, String command)
     {
         validateText(text);
         Objects.requireNonNull(command, "command may not be null.");
-        return hasMatchingClick(component -> component.hasSuggestedCommand(text, command),
-            "literal text '%s' suggesting command '%s'".formatted(text, command));
+        return hasMatchingClick(
+            component -> component.hasSuggestedCommand(text, command),
+            "literal text '%s' suggesting command '%s'".formatted(text, command)
+        );
     }
 
     @SuppressWarnings({"NullAway", "DataFlowIssue"}) // isNotNull() establishes the frozen component.

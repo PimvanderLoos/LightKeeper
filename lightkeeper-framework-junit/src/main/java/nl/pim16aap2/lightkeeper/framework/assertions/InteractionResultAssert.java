@@ -36,8 +36,11 @@ public final class InteractionResultAssert extends AbstractAssert<InteractionRes
     {
         hasFiredEvent();
         if (nonNullActual().cancelled() != expected)
-            failWithMessage("Expected fired interaction cancellation to be %s, but was %s.",
-                expected, nonNullActual().cancelled());
+            failWithMessage(
+                "Expected fired interaction cancellation to be %s, but was %s.",
+                expected,
+                nonNullActual().cancelled()
+            );
         return this;
     }
 

@@ -43,7 +43,8 @@ public final class LightkeeperAssertions extends Assertions
     }
 
     /**
-     * @param actual Frozen native chat component.
+     * @param actual
+     *     Frozen native chat component.
      * @return Literal-text and effective-click assertions.
      */
     public static ChatComponentAssert assertThat(@Nullable ChatComponentSnapshot actual)
@@ -52,7 +53,8 @@ public final class LightkeeperAssertions extends Assertions
     }
 
     /**
-     * @param actual Live block address.
+     * @param actual
+     *     Live block address.
      * @return Eager block assertions.
      */
     public static BlockRefAssert assertThat(@Nullable BlockRef actual)
@@ -61,7 +63,8 @@ public final class LightkeeperAssertions extends Assertions
     }
 
     /**
-     * @param actual Frozen block state.
+     * @param actual
+     *     Frozen block state.
      * @return Partial-state assertions.
      */
     public static BlockStateSnapshotAssert assertThat(@Nullable BlockStateSnapshot actual)
@@ -70,7 +73,8 @@ public final class LightkeeperAssertions extends Assertions
     }
 
     /**
-     * @param actual Live entity query.
+     * @param actual
+     *     Live entity query.
      * @return Eager query assertions.
      */
     public static EntityQueryAssert assertThat(@Nullable EntityQuery actual)
@@ -79,7 +83,8 @@ public final class LightkeeperAssertions extends Assertions
     }
 
     /**
-     * @param actual Frozen entity observation.
+     * @param actual
+     *     Frozen entity observation.
      * @return Position and transform assertions.
      */
     public static EntitySnapshotAssert assertThat(@Nullable EntitySnapshot actual)
@@ -88,7 +93,8 @@ public final class LightkeeperAssertions extends Assertions
     }
 
     /**
-     * @param actual Frozen display transformation.
+     * @param actual
+     *     Frozen display transformation.
      * @return Transform navigation.
      */
     public static EntityTransformAssert assertThat(@Nullable Transform actual)
@@ -97,7 +103,8 @@ public final class LightkeeperAssertions extends Assertions
     }
 
     /**
-     * @param actual Frozen vector.
+     * @param actual
+     *     Frozen vector.
      * @return Explicit tolerance comparisons.
      */
     public static Vec3Assert assertThat(@Nullable Vec3 actual)
@@ -108,7 +115,8 @@ public final class LightkeeperAssertions extends Assertions
     /**
      * Creates command dispatch result assertions.
      *
-     * @param actual Returned result.
+     * @param actual
+     *     Returned result.
      * @return Frozen command assertions.
      */
     public static CommandResultAssert assertThat(@Nullable CommandResult actual)
@@ -119,7 +127,8 @@ public final class LightkeeperAssertions extends Assertions
     /**
      * Creates interaction outcome assertions.
      *
-     * @param actual Returned result.
+     * @param actual
+     *     Returned result.
      * @return Frozen interaction assertions.
      */
     public static InteractionResultAssert assertThat(@Nullable InteractionResult actual)
@@ -130,7 +139,8 @@ public final class LightkeeperAssertions extends Assertions
     /**
      * Creates live structured-error assertions.
      *
-     * @param actual Error capture handle.
+     * @param actual
+     *     Error capture handle.
      * @return Error/warning assertions.
      */
     public static ServerErrorsAssert assertThat(@Nullable ServerErrorsHandle actual)
@@ -141,7 +151,8 @@ public final class LightkeeperAssertions extends Assertions
     /**
      * Creates live event-capture assertions.
      *
-     * @param actual Capture handle.
+     * @param actual
+     *     Capture handle.
      * @return Capture assertions.
      */
     public static EventCaptureAssert assertThat(@Nullable EventCaptureHandle actual)
@@ -152,7 +163,8 @@ public final class LightkeeperAssertions extends Assertions
     /**
      * Creates frozen typed-event assertions.
      *
-     * @param actual Captured event.
+     * @param actual
+     *     Captured event.
      * @return Event assertions.
      */
     public static CapturedEventAssert assertThat(@Nullable CapturedEventSnapshot actual)
@@ -163,7 +175,8 @@ public final class LightkeeperAssertions extends Assertions
     /**
      * Creates frozen typed-value assertions.
      *
-     * @param actual Captured typed value.
+     * @param actual
+     *     Captured typed value.
      * @return Value assertions.
      */
     public static ProtocolValueAssert assertThat(@Nullable IProtocolValue actual)
@@ -174,7 +187,8 @@ public final class LightkeeperAssertions extends Assertions
     /**
      * Creates assertions over a frozen inventory.
      *
-     * @param actual Captured inventory.
+     * @param actual
+     *     Captured inventory.
      * @return Inventory assertions.
      */
     public static InventoryAssert assertThat(@Nullable InventorySnapshot actual)
@@ -185,7 +199,8 @@ public final class LightkeeperAssertions extends Assertions
     /**
      * Creates assertions over a frozen menu.
      *
-     * @param actual Captured menu.
+     * @param actual
+     *     Captured menu.
      * @return Menu snapshot assertions.
      */
     public static MenuSnapshotAssert assertThat(@Nullable MenuSnapshot actual)
@@ -196,7 +211,8 @@ public final class LightkeeperAssertions extends Assertions
     /**
      * Creates assertions over a frozen item.
      *
-     * @param actual Captured item.
+     * @param actual
+     *     Captured item.
      * @return Item snapshot assertions.
      */
     public static MenuItemSnapshotAssert assertThat(@Nullable MenuItemSnapshot actual)

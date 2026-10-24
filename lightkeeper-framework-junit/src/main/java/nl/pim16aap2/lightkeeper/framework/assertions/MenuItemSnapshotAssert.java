@@ -20,22 +20,28 @@ public final class MenuItemSnapshotAssert extends AbstractAssert<MenuItemSnapsho
     /**
      * Checks the item's normalized material.
      *
-     * @param expected Material name or namespaced key.
+     * @param expected
+     *     Material name or namespaced key.
      * @return This assertion.
      */
     public MenuItemSnapshotAssert isMaterial(String expected)
     {
         final var observed = nonNullActual();
         if (!observed.matchesMaterial(expected))
-            failWithMessage("Expected item at slot %d to have material '%s', but was '%s'.",
-                observed.slot(), expected, observed.materialKey());
+            failWithMessage(
+                "Expected item at slot %d to have material '%s', but was '%s'.",
+                observed.slot(),
+                expected,
+                observed.materialKey()
+            );
         return this;
     }
 
     /**
      * Checks the exact display name; a blank expected name means no custom name.
      *
-     * @param expected Expected display name.
+     * @param expected
+     *     Expected display name.
      * @return This assertion.
      */
     public MenuItemSnapshotAssert hasDisplayName(String expected)

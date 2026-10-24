@@ -10,8 +10,10 @@ import java.util.Objects;
 /**
  * Shared open-state and title rules for live and frozen menu subjects.
  *
- * @param <S> Concrete assertion type.
- * @param <A> Menu subject type.
+ * @param <S>
+ *     Self type: the concrete assertion returned by fluent operations.
+ * @param <A>
+ *     Actual type: the menu subject being asserted.
  */
 abstract class AbstractMenuAssert<S extends AbstractMenuAssert<S, A>, A>
     extends AbstractItemContainerAssert<S, A>
@@ -42,7 +44,8 @@ abstract class AbstractMenuAssert<S extends AbstractMenuAssert<S, A>, A>
     /**
      * Checks an open menu's exact title in one observation.
      *
-     * @param expectedTitle Expected title.
+     * @param expectedTitle
+     *     Expected title.
      * @return This assertion.
      */
     public S hasTitle(String expectedTitle)
@@ -50,8 +53,12 @@ abstract class AbstractMenuAssert<S extends AbstractMenuAssert<S, A>, A>
         Objects.requireNonNull(expectedTitle, "expectedTitle may not be null.");
         final var observed = openSnapshot();
         if (!expectedTitle.equals(observed.title()))
-            failWithMessage("Expected open menu title '%s' for %s, but was '%s'.",
-                expectedTitle, menuDescription(), observed.title());
+            failWithMessage(
+                "Expected open menu title '%s' for %s, but was '%s'.",
+                expectedTitle,
+                menuDescription(),
+                observed.title()
+            );
         return myself;
     }
 
@@ -65,8 +72,13 @@ abstract class AbstractMenuAssert<S extends AbstractMenuAssert<S, A>, A>
     {
         final var observed = menuSnapshot();
         if (observed.open() != expected)
-            failWithMessage("Expected menu for %s to be %s, but it was %s (title='%s').",
-                menuDescription(), expected ? "open" : "closed", observed.open() ? "open" : "closed", observed.title());
+            failWithMessage(
+                "Expected menu for %s to be %s, but it was %s (title='%s').",
+                menuDescription(),
+                expected ? "open" : "closed",
+                observed.open() ? "open" : "closed",
+                observed.title()
+            );
         return myself;
     }
 

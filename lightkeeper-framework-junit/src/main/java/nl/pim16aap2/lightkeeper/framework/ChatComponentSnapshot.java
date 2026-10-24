@@ -16,7 +16,8 @@ import java.util.Optional;
  * <p>Literal strings, component arrays and extra children are supported, including inherited click events.
  * Translation keys, selectors, scores, keybinds and hover contents are not rendered as literal main-message text.
  *
- * @param json Native component-codec JSON, retained verbatim.
+ * @param json
+ *     Native component-codec JSON, retained verbatim.
  */
 public record ChatComponentSnapshot(String json)
 {
@@ -89,20 +90,24 @@ public record ChatComponentSnapshot(String json)
     /**
      * Matches decoded literal text associated with an effective click event.
      *
-     * @param fragment Nonempty literal text fragment.
+     * @param fragment
+     *     Nonempty literal text fragment.
      * @return Whether a matching clickable literal run exists.
      */
     public boolean hasClickableText(String fragment)
     {
         validateFragment(fragment);
-        return clickActions().stream().anyMatch(action -> action.text().contains(fragment));
+        return clickActions().stream()
+            .anyMatch(action -> action.text().contains(fragment));
     }
 
     /**
      * Matches literal text and its exact run-command payload.
      *
-     * @param fragment Nonempty literal text fragment.
-     * @param command Exact command payload.
+     * @param fragment
+     *     Nonempty literal text fragment.
+     * @param command
+     *     Exact command payload.
      * @return Whether the same effective click action matches both requirements.
      */
     public boolean hasRunCommand(String fragment, String command)
@@ -113,8 +118,10 @@ public record ChatComponentSnapshot(String json)
     /**
      * Matches literal text and its exact suggest-command payload, preserving spaces.
      *
-     * @param fragment Nonempty literal text fragment.
-     * @param command Exact suggested payload.
+     * @param fragment
+     *     Nonempty literal text fragment.
+     * @param command
+     *     Exact suggested payload.
      * @return Whether the same effective click action matches both requirements.
      */
     public boolean hasSuggestedCommand(String fragment, String command)
@@ -125,9 +132,12 @@ public record ChatComponentSnapshot(String json)
     /**
      * Frozen literal text and its associated effective action.
      *
-     * @param text Contiguous literal text; empty for a textless style node.
-     * @param action Encoded click action name.
-     * @param value Text payload when represented by command, value or URL; otherwise null.
+     * @param text
+     *     Contiguous literal text; empty for a textless style node.
+     * @param action
+     *     Encoded click action name.
+     * @param value
+     *     Text payload when represented by command, value or URL; otherwise null.
      */
     public record ClickAction(String text, String action, @Nullable String value)
     {
@@ -142,16 +152,20 @@ public record ChatComponentSnapshot(String json)
     }
 
     /**
-     * @param action Encoded action.
-     * @param value Optional text payload.
+     * @param action
+     *     Encoded action.
+     * @param value
+     *     Optional text payload.
      */
     private record ClickEvent(String action, @Nullable String value)
     {
     }
 
     /**
-     * @param text Literal text, or empty for an opaque boundary.
-     * @param event Effective event, null at a boundary.
+     * @param text
+     *     Literal text, or empty for an opaque boundary.
+     * @param event
+     *     Effective event, null at a boundary.
      */
     private record LiteralRun(String text, @Nullable ClickEvent event)
     {
@@ -161,8 +175,11 @@ public record ChatComponentSnapshot(String json)
     {
         validateFragment(fragment);
         Objects.requireNonNull(command, "command may not be null.");
-        return clickActions().stream().anyMatch(click -> click.text().contains(fragment)
-            && action.equals(click.action()) && command.equals(click.value()));
+        return clickActions().stream()
+            .anyMatch(
+                click -> click.text().contains(fragment)
+                    && action.equals(click.action()) && command.equals(click.value())
+            );
     }
 
     private Optional<String> findClickCommand(String action)
@@ -248,7 +265,9 @@ public record ChatComponentSnapshot(String json)
             final JsonNode click = node.path(key);
             if (click.isMissingNode() || click.isNull())
                 continue;
-            if (!click.isObject() || !click.path("action").isString() || click.path("action").asString().isBlank())
+            if (!click.isObject() || !click.path("action").isString() || click.path("action")
+                .asString()
+                .isBlank())
                 throw new IllegalArgumentException("Click event must contain a nonblank action name.");
             @Nullable String value = null;
             for (final String field : List.of("command", "value", "url"))

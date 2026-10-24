@@ -15,8 +15,10 @@ import java.util.function.Predicate;
 /**
  * Shared slot and item rules for inventories and open menus.
  *
- * @param <S> Concrete assertion type.
- * @param <A> Container subject type.
+ * @param <S>
+ *     Self type: the concrete assertion returned by fluent operations.
+ * @param <A>
+ *     Actual type: the container subject being asserted.
  */
 abstract class AbstractItemContainerAssert<S extends AbstractItemContainerAssert<S, A>, A>
     extends AbstractAssert<S, @Nullable A>
@@ -45,7 +47,8 @@ abstract class AbstractItemContainerAssert<S extends AbstractItemContainerAssert
     /**
      * Checks occupied slots rather than total item units.
      *
-     * @param expected Expected nonnegative occupied-slot count.
+     * @param expected
+     *     Expected nonnegative occupied-slot count.
      * @return This assertion.
      */
     public S hasOccupiedSlotCount(int expected)
@@ -59,7 +62,8 @@ abstract class AbstractItemContainerAssert<S extends AbstractItemContainerAssert
     /**
      * Selects an occupied slot from one snapshot.
      *
-     * @param slot Nonnegative slot index.
+     * @param slot
+     *     Nonnegative slot index.
      * @return Frozen item assertions.
      */
     public MenuItemSnapshotAssert itemAt(int slot)
@@ -73,13 +77,16 @@ abstract class AbstractItemContainerAssert<S extends AbstractItemContainerAssert
      *
      * <p>The snapshot does not expose capacity, so an empty slot does not establish upper-bound validity.
      *
-     * @param slot Nonnegative slot index.
+     * @param slot
+     *     Nonnegative slot index.
      * @return This assertion.
      */
     public S hasEmptySlot(int slot)
     {
         validateSlot(slot);
-        final var item = itemsSnapshot().stream().filter(candidate -> candidate.slot() == slot).findFirst();
+        final var item = itemsSnapshot().stream()
+            .filter(candidate -> candidate.slot() == slot)
+            .findFirst();
         if (item.isPresent())
             failWithMessage("Expected slot %d to be empty, but contained %s.", slot, item.get());
         return myself;
@@ -88,8 +95,10 @@ abstract class AbstractItemContainerAssert<S extends AbstractItemContainerAssert
     /**
      * Checks a slot's material.
      *
-     * @param slot Nonnegative slot index.
-     * @param materialKey Material name or namespaced key.
+     * @param slot
+     *     Nonnegative slot index.
+     * @param materialKey
+     *     Material name or namespaced key.
      * @return This assertion.
      */
     public S hasItemAt(int slot, String materialKey)
@@ -101,15 +110,20 @@ abstract class AbstractItemContainerAssert<S extends AbstractItemContainerAssert
     /**
      * Compares represented item fields, excluding amount and unobserved metadata.
      *
-     * @param slot Nonnegative slot index.
-     * @param expected Expected Bukkit item.
+     * @param slot
+     *     Nonnegative slot index.
+     * @param expected
+     *     Expected Bukkit item.
      * @return This assertion.
      */
     public S hasItemAt(int slot, ItemStack expected)
     {
         Objects.requireNonNull(expected, "expected may not be null.");
-        return hasMatchingItem(slot, item -> item.matches(expected),
-            "the expected item's material, display name and lore");
+        return hasMatchingItem(
+            slot,
+            item -> item.matches(expected),
+            "the expected item's material, display name and lore"
+        );
     }
 
     private S hasMatchingItem(int slot, Predicate<MenuItemSnapshot> predicate, String expectation)
@@ -124,7 +138,9 @@ abstract class AbstractItemContainerAssert<S extends AbstractItemContainerAssert
     private MenuItemSnapshot requireItem(int slot)
     {
         final var observed = itemsSnapshot();
-        final var item = observed.stream().filter(candidate -> candidate.slot() == slot).findFirst();
+        final var item = observed.stream()
+            .filter(candidate -> candidate.slot() == slot)
+            .findFirst();
         if (item.isEmpty())
             failWithMessage("Expected an item at slot %d, but none was present. Observed items: %s.", slot, observed);
         return item.orElseThrow();

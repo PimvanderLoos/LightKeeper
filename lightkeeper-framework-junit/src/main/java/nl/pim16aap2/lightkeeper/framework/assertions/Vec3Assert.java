@@ -17,8 +17,10 @@ public final class Vec3Assert extends AbstractAssert<Vec3Assert, @Nullable Vec3>
     /**
      * Checks an inclusive Euclidean distance bound.
      *
-     * @param expected Finite target vector.
-     * @param tolerance Finite nonnegative maximum distance.
+     * @param expected
+     *     Finite target vector.
+     * @param tolerance
+     *     Finite nonnegative maximum distance.
      * @return This assertion.
      */
     public Vec3Assert isCloseTo(Vec3 expected, double tolerance)
@@ -29,8 +31,10 @@ public final class Vec3Assert extends AbstractAssert<Vec3Assert, @Nullable Vec3>
     /**
      * Checks an inclusive absolute-error bound on each component, suitable for scale vectors.
      *
-     * @param expected Finite target vector.
-     * @param tolerance Finite nonnegative maximum error per component.
+     * @param expected
+     *     Finite target vector.
+     * @param tolerance
+     *     Finite nonnegative maximum error per component.
      * @return This assertion.
      */
     public Vec3Assert hasComponentsCloseTo(Vec3 expected, double tolerance)
@@ -44,7 +48,8 @@ public final class Vec3Assert extends AbstractAssert<Vec3Assert, @Nullable Vec3>
         Objects.requireNonNull(expected, "expected may not be null.");
         if (!finite(expected) || !Double.isFinite(tolerance) || tolerance < 0)
             throw new IllegalArgumentException(
-                "Expected coordinates and tolerance must be finite; tolerance must be >= 0.");
+                "Expected coordinates and tolerance must be finite; tolerance must be >= 0."
+            );
         isNotNull();
         if (!finite(actual))
             failWithMessage("Expected finite observed coordinates, but was %s.", actual);
@@ -53,8 +58,14 @@ public final class Vec3Assert extends AbstractAssert<Vec3Assert, @Nullable Vec3>
         final double dz = Math.abs(actual.z() - expected.z());
         final double error = componentWise ? Math.max(dx, Math.max(dy, dz)) : Math.hypot(Math.hypot(dx, dy), dz);
         if (error > tolerance)
-            failWithMessage("Expected vector %s within %s %s of %s, but deviation was %s.",
-                actual, tolerance, componentWise ? "per component" : "Euclidean distance", expected, error);
+            failWithMessage(
+                "Expected vector %s within %s %s of %s, but deviation was %s.",
+                actual,
+                tolerance,
+                componentWise ? "per component" : "Euclidean distance",
+                expected,
+                error
+            );
         return this;
     }
 

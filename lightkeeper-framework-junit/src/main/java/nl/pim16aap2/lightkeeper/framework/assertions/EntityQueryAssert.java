@@ -18,7 +18,8 @@ public final class EntityQueryAssert extends AbstractAssert<EntityQueryAssert, @
     /**
      * Checks the current number of matching entities.
      *
-     * @param expected Nonnegative expected count.
+     * @param expected
+     *     Nonnegative expected count.
      * @return This assertion.
      */
     public EntityQueryAssert hasCount(int expected)
@@ -28,8 +29,12 @@ public final class EntityQueryAssert extends AbstractAssert<EntityQueryAssert, @
         final var query = nonNullActual();
         final int observed = query.count();
         if (observed != expected)
-            failWithMessage("Expected entity query (%s) to match %d entities, but matched %d.",
-                query.description(), expected, observed);
+            failWithMessage(
+                "Expected entity query (%s) to match %d entities, but matched %d.",
+                query.description(),
+                expected,
+                observed
+            );
         return this;
     }
 
@@ -45,8 +50,11 @@ public final class EntityQueryAssert extends AbstractAssert<EntityQueryAssert, @
         final var query = nonNullActual();
         final int observed = query.count();
         if (observed <= 0)
-            failWithMessage("Expected entity query (%s) to match at least one entity, but matched %d.",
-                query.description(), observed);
+            failWithMessage(
+                "Expected entity query (%s) to match at least one entity, but matched %d.",
+                query.description(),
+                observed
+            );
         return this;
     }
 

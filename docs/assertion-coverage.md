@@ -39,9 +39,14 @@ and custom failure messages. Do not assign `AbstractAssert.info`; child assertio
 Use the existing `LightkeeperAssertions.assertThat(ILightkeeperFramework)` entry point for server navigation:
 
 ```java
-assertThat(framework).server().plugin("AnimatedArchitecture").isEnabled();
+assertThat(framework)
+    .server()
+    .plugin("AnimatedArchitecture")
+    .isEnabled();
 assertThat(player).hasPermission("animatedarchitecture.user");
-assertThat(menu).isOpen().hasTitle("Main Menu");
+assertThat(menu)
+    .isOpen()
+    .hasTitle("Main Menu");
 ```
 
 `server()` should return a server assertion subject; `plugin(name)` should retain the server and requested name for

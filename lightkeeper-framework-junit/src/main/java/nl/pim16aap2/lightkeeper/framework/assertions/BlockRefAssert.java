@@ -20,18 +20,24 @@ public final class BlockRefAssert extends AbstractAssert<BlockRefAssert, @Nullab
     /**
      * Checks a block material with one live read.
      *
-     * @param expected Expected Bukkit material.
+     * @param expected
+     *     Expected Bukkit material.
      * @return This assertion.
      */
     public BlockRefAssert ofType(Material expected)
     {
-        return ofType(Objects.requireNonNull(expected, "expected may not be null.").getKey().toString());
+        return ofType(
+            Objects.requireNonNull(expected, "expected may not be null.")
+                .getKeyOrThrow()
+                .toString()
+        );
     }
 
     /**
      * Checks a normalized block material with one live read.
      *
-     * @param expected Material name or namespaced key.
+     * @param expected
+     *     Material name or namespaced key.
      * @return This assertion.
      */
     public BlockRefAssert ofType(String expected)
@@ -40,15 +46,23 @@ public final class BlockRefAssert extends AbstractAssert<BlockRefAssert, @Nullab
         final var block = nonNullActual();
         final String observed = block.material();
         if (!normalized.equals(observed))
-            failWithMessage("Expected block at (%d,%d,%d) in world '%s' to be '%s' but was '%s'.",
-                block.pos().x(), block.pos().y(), block.pos().z(), block.worldName(), normalized, observed);
+            failWithMessage(
+                "Expected block at (%d,%d,%d) in world '%s' to be '%s' but was '%s'.",
+                block.pos().x(),
+                block.pos().y(),
+                block.pos().z(),
+                block.worldName(),
+                normalized,
+                observed
+            );
         return this;
     }
 
     /**
      * Checks material and only the state properties named by the spec, reading one snapshot.
      *
-     * @param expected Partial expected block state.
+     * @param expected
+     *     Partial expected block state.
      * @return This assertion.
      */
     public BlockRefAssert withState(BlockSpec expected)
@@ -57,9 +71,15 @@ public final class BlockRefAssert extends AbstractAssert<BlockRefAssert, @Nullab
         final var block = nonNullActual();
         final var observed = block.state();
         if (!observed.matches(expected))
-            failWithMessage("Expected block at (%d,%d,%d) in world '%s' to match '%s' but was '%s'.",
-                block.pos().x(), block.pos().y(), block.pos().z(), block.worldName(),
-                expected.asString(), observed.blockData());
+            failWithMessage(
+                "Expected block at (%d,%d,%d) in world '%s' to match '%s' but was '%s'.",
+                block.pos().x(),
+                block.pos().y(),
+                block.pos().z(),
+                block.worldName(),
+                expected.asString(),
+                observed.blockData()
+            );
         return this;
     }
 

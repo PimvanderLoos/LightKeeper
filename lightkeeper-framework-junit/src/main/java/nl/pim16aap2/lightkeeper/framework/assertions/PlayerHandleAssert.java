@@ -106,8 +106,13 @@ public final class PlayerHandleAssert extends AbstractAssert<PlayerHandleAssert,
         final boolean observed = actual.permissions().has(permission);
         if (observed != expected)
         {
-            failWithMessage("Expected player '%s' to %s permission '%s', but effective permission was %s.",
-                actual.name(), expected ? "have" : "not have", permission, observed);
+            failWithMessage(
+                "Expected player '%s' to %s permission '%s', but effective permission was %s.",
+                actual.name(),
+                expected ? "have" : "not have",
+                permission,
+                observed
+            );
         }
         return this;
     }
@@ -118,9 +123,12 @@ public final class PlayerHandleAssert extends AbstractAssert<PlayerHandleAssert,
         final boolean observed = actual.getMenu() != null;
         if (observed != expected)
         {
-            failWithMessage("Expected player '%s' to have %s, but %s.",
-                actual.name(), expected ? "an open menu" : "no open menu",
-                observed ? "a menu was open" : "no menu was open");
+            failWithMessage(
+                "Expected player '%s' to have %s, but %s.",
+                actual.name(),
+                expected ? "an open menu" : "no open menu",
+                observed ? "a menu was open" : "no menu was open"
+            );
         }
         return this;
     }
@@ -213,8 +221,12 @@ public final class PlayerHandleAssert extends AbstractAssert<PlayerHandleAssert,
         {
             final String parseNote = parseFailures > 0
                 ? " (%d component(s) failed to parse as JSON)".formatted(parseFailures) : "";
-            failWithMessage("Expected player '%s' to have a clickable chat text matching '%s', but none was found.%s",
-                actual.name(), expectedText, parseNote);
+            failWithMessage(
+                "Expected player '%s' to have a clickable chat text matching '%s', but none was found.%s",
+                actual.name(),
+                expectedText,
+                parseNote
+            );
         }
         return this;
     }

@@ -19,7 +19,8 @@ public final class BlockStateSnapshotAssert
     /**
      * Checks material and every explicitly named property.
      *
-     * @param expected Partial expected block state.
+     * @param expected
+     *     Partial expected block state.
      * @return This assertion.
      */
     @SuppressWarnings({"NullAway", "DataFlowIssue"}) // isNotNull() establishes the snapshot.
@@ -28,8 +29,11 @@ public final class BlockStateSnapshotAssert
         Objects.requireNonNull(expected, "expected may not be null.");
         isNotNull();
         if (!actual.matches(expected))
-            failWithMessage("Expected captured block state to match '%s', but was '%s'.",
-                expected.asString(), actual.blockData());
+            failWithMessage(
+                "Expected captured block state to match '%s', but was '%s'.",
+                expected.asString(),
+                actual.blockData()
+            );
         return this;
     }
 }

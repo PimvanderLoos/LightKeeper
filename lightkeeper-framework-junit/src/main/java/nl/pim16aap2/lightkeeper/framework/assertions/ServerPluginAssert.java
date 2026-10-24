@@ -85,8 +85,12 @@ public final class ServerPluginAssert extends AbstractAssert<ServerPluginAssert,
         final ServerPluginSnapshot plugin = pluginSnapshot("have version '%s'".formatted(expectedVersion));
         if (!expectedVersion.equals(plugin.version()))
         {
-            failWithMessage("Expected plugin '%s' to have version '%s', but version was '%s'.",
-                pluginName, expectedVersion, plugin.version());
+            failWithMessage(
+                "Expected plugin '%s' to have version '%s', but version was '%s'.",
+                pluginName,
+                expectedVersion,
+                plugin.version()
+            );
         }
         return this;
     }
@@ -97,8 +101,12 @@ public final class ServerPluginAssert extends AbstractAssert<ServerPluginAssert,
         final ServerPluginSnapshot plugin = pluginSnapshot("be " + expectedState);
         if (plugin.isEnabled() != expected)
         {
-            failWithMessage("Expected plugin '%s' to be %s, but it was %s.",
-                pluginName, expectedState, plugin.isEnabled() ? "enabled" : "disabled");
+            failWithMessage(
+                "Expected plugin '%s' to be %s, but it was %s.",
+                pluginName,
+                expectedState,
+                plugin.isEnabled() ? "enabled" : "disabled"
+            );
         }
         return this;
     }

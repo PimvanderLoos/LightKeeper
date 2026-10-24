@@ -18,7 +18,8 @@ public final class EventCaptureAssert extends AbstractAssert<EventCaptureAssert,
     /**
      * Checks the number of events since registration or the last explicit clear.
      *
-     * @param expected Nonnegative captured-event count.
+     * @param expected
+     *     Nonnegative captured-event count.
      * @return This assertion.
      */
     public EventCaptureAssert hasEventCount(int expected)
@@ -28,8 +29,12 @@ public final class EventCaptureAssert extends AbstractAssert<EventCaptureAssert,
         final var capture = nonNullActual();
         final int observed = capture.getCapturedEvents().size();
         if (observed != expected)
-            failWithMessage("Expected capture of '%s' to contain %d events, but contained %d.",
-                capture.eventClassName(), expected, observed);
+            failWithMessage(
+                "Expected capture of '%s' to contain %d events, but contained %d.",
+                capture.eventClassName(),
+                expected,
+                observed
+            );
         return this;
     }
 

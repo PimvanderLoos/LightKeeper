@@ -22,7 +22,8 @@ public final class WorldBlockAssert extends AbstractAssert<WorldBlockAssert, @Nu
     /**
      * Checks a Bukkit material using one live block read.
      *
-     * @param material Expected material.
+     * @param material
+     *     Expected material.
      * @return This assertion.
      */
     public WorldBlockAssert ofType(Material material)
@@ -34,7 +35,8 @@ public final class WorldBlockAssert extends AbstractAssert<WorldBlockAssert, @Nu
     /**
      * Checks a normalized material key using one live block read.
      *
-     * @param materialKey Material name or namespaced key.
+     * @param materialKey
+     *     Material name or namespaced key.
      * @return This assertion.
      */
     public WorldBlockAssert ofType(String materialKey)
@@ -46,7 +48,8 @@ public final class WorldBlockAssert extends AbstractAssert<WorldBlockAssert, @Nu
     /**
      * Checks a partial state spec using one frozen observation.
      *
-     * @param expected Partial expected state.
+     * @param expected
+     *     Partial expected state.
      * @return This assertion.
      */
     public WorldBlockAssert withState(BlockSpec expected)

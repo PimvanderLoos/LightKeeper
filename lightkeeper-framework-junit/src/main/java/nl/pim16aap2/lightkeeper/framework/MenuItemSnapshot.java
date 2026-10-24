@@ -36,7 +36,8 @@ public record MenuItemSnapshot(
     /**
      * Compares normalized material keys.
      *
-     * @param expected Material name or namespaced key.
+     * @param expected
+     *     Material name or namespaced key.
      * @return Whether the materials match.
      */
     public boolean matchesMaterial(String expected)
@@ -47,13 +48,18 @@ public record MenuItemSnapshot(
     /**
      * Compares only material, display name and ordered lore, excluding unobserved metadata and amount.
      *
-     * @param expected Expected Bukkit item.
+     * @param expected
+     *     Expected Bukkit item.
      * @return Whether all represented fields match.
      */
     public boolean matches(ItemStack expected)
     {
         Objects.requireNonNull(expected, "expected may not be null.");
-        if (!matchesMaterial(expected.getType().getKey().toString()))
+        if (!matchesMaterial(
+            expected.getType()
+                .getKey()
+                .toString()
+        ))
             return false;
         final var meta = expected.getItemMeta();
         final String expectedName = meta == null ? "" : normalizedName(meta.getDisplayName());

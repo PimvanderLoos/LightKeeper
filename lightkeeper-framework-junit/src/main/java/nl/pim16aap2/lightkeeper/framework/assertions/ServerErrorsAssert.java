@@ -34,7 +34,8 @@ public final class ServerErrorsAssert extends AbstractAssert<ServerErrorsAssert,
     /**
      * Checks for error-severity entries outside an explicit allowlist.
      *
-     * @param allowedErrors Predicate matching known-benign errors.
+     * @param allowedErrors
+     *     Predicate matching known-benign errors.
      * @return This assertion.
      */
     public ServerErrorsAssert hasNoErrors(Predicate<ServerErrorSnapshot> allowedErrors)
@@ -59,8 +60,12 @@ public final class ServerErrorsAssert extends AbstractAssert<ServerErrorsAssert,
             .filter(entry -> !allowed.test(entry))
             .toList();
         if (!failing.isEmpty())
-            failWithMessage("Expected no captured server %s, but found %d:%n%s",
-                label, failing.size(), render(failing));
+            failWithMessage(
+                "Expected no captured server %s, but found %d:%n%s",
+                label,
+                failing.size(),
+                render(failing)
+            );
         return this;
     }
 

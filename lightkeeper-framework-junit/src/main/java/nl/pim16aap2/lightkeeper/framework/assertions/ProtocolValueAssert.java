@@ -79,8 +79,10 @@ public final class ProtocolValueAssert extends AbstractAssert<ProtocolValueAsser
     /**
      * Compares both enum type and constant without loading a server-only class.
      *
-     * @param enumClass Fully qualified enum type.
-     * @param name Constant name.
+     * @param enumClass
+     *     Fully qualified enum type.
+     * @param name
+     *     Constant name.
      * @return This assertion.
      */
     public ProtocolValueAssert hasEnum(String enumClass, String name)
@@ -95,8 +97,10 @@ public final class ProtocolValueAssert extends AbstractAssert<ProtocolValueAsser
     /**
      * Compares the encoded reference type and identity.
      *
-     * @param className Encoded referenced class.
-     * @param id Encoded reference identity.
+     * @param className
+     *     Encoded referenced class.
+     * @param id
+     *     Encoded reference identity.
      * @return This assertion.
      */
     public ProtocolValueAssert hasReference(String className, String id)
@@ -119,7 +123,8 @@ public final class ProtocolValueAssert extends AbstractAssert<ProtocolValueAsser
     /**
      * Selects a nested list element and retains its index in diagnostics.
      *
-     * @param index Nonnegative element index; out-of-range observations fail as assertions.
+     * @param index
+     *     Nonnegative element index; out-of-range observations fail as assertions.
      * @return Nested typed assertions.
      */
     public ProtocolValueAssert element(int index)
@@ -129,8 +134,10 @@ public final class ProtocolValueAssert extends AbstractAssert<ProtocolValueAsser
         final var values = requireType(IProtocolValue.PList.class).values();
         if (index >= values.size())
             failWithMessage("%s[%d]: expected an element, but list size was %d.", path, index, values.size());
-        return extracting(ignored -> values.get(index),
-            value -> new ProtocolValueAssert(value, path + "[" + index + "]"));
+        return extracting(
+            ignored -> values.get(index),
+            value -> new ProtocolValueAssert(value, path + "[" + index + "]")
+        );
     }
 
     /** @return Ordinary map assertions over frozen PRecord fields. */
@@ -144,7 +151,8 @@ public final class ProtocolValueAssert extends AbstractAssert<ProtocolValueAsser
     /**
      * Selects a record field, distinguishing a missing key from explicit null.
      *
-     * @param name Exact field name.
+     * @param name
+     *     Exact field name.
      * @return Nested typed assertions.
      */
     public ProtocolValueAssert field(String name)
@@ -176,8 +184,7 @@ public final class ProtocolValueAssert extends AbstractAssert<ProtocolValueAsser
     private <T extends IProtocolValue> T requireType(Class<T> expected)
     {
         if (!expected.isInstance(actual))
-            failWithMessage("%s: expected %s, but was %s.", path, expected.getSimpleName(),
-                String.valueOf(actual));
+            failWithMessage("%s: expected %s, but was %s.", path, expected.getSimpleName(), String.valueOf(actual));
         return Objects.requireNonNull(expected.cast(actual));
     }
 

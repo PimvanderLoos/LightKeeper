@@ -17,7 +17,8 @@ public final class CapturedEventAssert extends AbstractAssert<CapturedEventAsser
     /**
      * Checks whether an accessor was captured, including explicit-null and dropped values.
      *
-     * @param accessorName Exact captured accessor name.
+     * @param accessorName
+     *     Exact captured accessor name.
      * @return This assertion.
      */
     public CapturedEventAssert hasField(String accessorName)
@@ -28,7 +29,8 @@ public final class CapturedEventAssert extends AbstractAssert<CapturedEventAsser
     /**
      * Checks that an accessor is absent from the capture.
      *
-     * @param accessorName Exact captured accessor name.
+     * @param accessorName
+     *     Exact captured accessor name.
      * @return This assertion.
      */
     public CapturedEventAssert doesNotHaveField(String accessorName)
@@ -39,28 +41,35 @@ public final class CapturedEventAssert extends AbstractAssert<CapturedEventAsser
     /**
      * Selects a captured typed value, retaining the event class and accessor in diagnostics.
      *
-     * @param accessorName Exact accessor name; missing accessors fail rather than becoming null.
+     * @param accessorName
+     *     Exact accessor name; missing accessors fail rather than becoming null.
      * @return Frozen typed-value assertions.
      */
     public ProtocolValueAssert value(String accessorName)
     {
         hasField(accessorName);
         final var event = nonNullActual();
-        return extracting(ignored -> event.value(accessorName),
-            value -> new ProtocolValueAssert(value, event.eventClassName() + "." + accessorName));
+        return extracting(
+            ignored -> event.value(accessorName),
+            value -> new ProtocolValueAssert(value, event.eventClassName() + "." + accessorName)
+        );
     }
 
     /** @return This assertion after checking a present boolean cancellation field is true. */
     public CapturedEventAssert isCancelled()
     {
-        value("isCancelled").asBoolean().isTrue();
+        value("isCancelled")
+            .asBoolean()
+            .isTrue();
         return this;
     }
 
     /** @return This assertion after checking a present boolean cancellation field is false. */
     public CapturedEventAssert isNotCancelled()
     {
-        value("isCancelled").asBoolean().isFalse();
+        value("isCancelled")
+            .asBoolean()
+            .isFalse();
         return this;
     }
 
@@ -71,8 +80,13 @@ public final class CapturedEventAssert extends AbstractAssert<CapturedEventAsser
             throw new IllegalArgumentException("accessorName may not be blank.");
         final var event = nonNullActual();
         if (event.values().containsKey(name) != expected)
-            failWithMessage("Expected event '%s' to %s field '%s', but captured fields were %s.",
-                event.eventClassName(), expected ? "have" : "not have", name, event.values().keySet());
+            failWithMessage(
+                "Expected event '%s' to %s field '%s', but captured fields were %s.",
+                event.eventClassName(),
+                expected ? "have" : "not have",
+                name,
+                event.values().keySet()
+            );
         return this;
     }
 

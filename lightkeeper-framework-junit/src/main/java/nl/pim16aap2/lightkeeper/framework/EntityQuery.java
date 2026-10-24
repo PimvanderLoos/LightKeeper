@@ -105,7 +105,11 @@ public final class EntityQuery
     public String description()
     {
         return "world='%s', type=%s, bounds=%s..%s".formatted(
-            worldName, entityTypeKey == null ? "all" : entityTypeKey, boundsMin, boundsMax);
+            worldName,
+            entityTypeKey == null ? "all" : entityTypeKey,
+            boundsMin,
+            boundsMax
+        );
     }
 
     /**

@@ -29,8 +29,12 @@ public final class CommandResultAssert extends AbstractAssert<CommandResultAsser
     {
         isNotNull();
         if (actual.success() != expected)
-            failWithMessage("Expected command dispatch success to be %s, but was %s: %s",
-                expected, actual.success(), actual.message());
+            failWithMessage(
+                "Expected command dispatch success to be %s, but was %s: %s",
+                expected,
+                actual.success(),
+                actual.message()
+            );
         return this;
     }
 }

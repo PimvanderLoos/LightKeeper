@@ -16,8 +16,10 @@ public final class EntitySnapshotAssert extends AbstractAssert<EntitySnapshotAss
     /**
      * Checks the entity's captured position using an inclusive Euclidean tolerance.
      *
-     * @param expected Finite expected position.
-     * @param tolerance Finite nonnegative maximum distance.
+     * @param expected
+     *     Finite expected position.
+     * @param tolerance
+     *     Finite nonnegative maximum distance.
      * @return This assertion.
      */
     public EntitySnapshotAssert isAt(Vec3 expected, double tolerance)
