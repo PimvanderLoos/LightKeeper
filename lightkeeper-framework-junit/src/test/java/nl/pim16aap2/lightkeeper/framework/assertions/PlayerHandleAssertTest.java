@@ -1,6 +1,7 @@
 package nl.pim16aap2.lightkeeper.framework.assertions;
 
 import nl.pim16aap2.lightkeeper.framework.FrameworkHandleFactory;
+import nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot;
 import nl.pim16aap2.lightkeeper.framework.IFrameworkGatewayView;
 import nl.pim16aap2.lightkeeper.framework.MenuSnapshot;
 import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
@@ -243,5 +244,42 @@ class PlayerHandleAssertTest
         // verify
         assertThat(failure).isInstanceOf(AssertionError.class);
         verifyNoInteractions(gateway);
+    }
+
+    @Test
+    void hasClickableChatText_shouldRejectUnrelatedSiblingClickAction()
+    {
+        // setup
+        when(gateway.playerChatComponents(PLAYER_ID)).thenReturn(List.of(new ChatComponentSnapshot("""
+            {"text":"","extra":[{"text":"Open"},{"text":"Close",
+              "click_event":{"action":"run_command","command":"/close"}}]}
+            """)));
+
+        // execute
+        final Throwable failure = catchThrowable(() -> assertThat(player).hasClickableChatText("Open"));
+
+        // verify
+        assertThat(failure).isInstanceOf(AssertionError.class).hasMessageContaining("tester");
+        verify(gateway).playerChatComponents(PLAYER_ID);
+        verifyNoMoreInteractions(gateway);
+    }
+
+    @Test
+    void chatComponents_shouldCaptureFrozenListsAndReadAgainOnNavigation()
+    {
+        // setup
+        final var component = new ChatComponentSnapshot("{\"text\":\"hello\"}");
+        when(gateway.playerChatComponents(PLAYER_ID)).thenReturn(List.of(), List.of(component));
+        final var assertion = assertThat(player);
+
+        // execute
+        final var earlier = assertion.chatComponents();
+        final var later = assertion.chatComponents();
+
+        // verify
+        earlier.isEmpty();
+        later.containsExactly(component);
+        verify(gateway, times(2)).playerChatComponents(PLAYER_ID);
+        verifyNoMoreInteractions(gateway);
     }
 }

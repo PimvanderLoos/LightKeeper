@@ -71,7 +71,7 @@ as `assertThat(framework).bots().join(...)`. Standard scalar and collection asse
 
 | Source | Existing coverage | Important limits |
 |---|---|---|
-| [LightkeeperAssertions][entrypoint] | `assertThat` for framework, world, player, and menu; `eventually`; inherited ordinary AssertJ entry points | No custom entry points for the other subjects below. Retries do not mutate frozen values. |
+| [LightkeeperAssertions][entrypoint] | `assertThat` for framework/handles, frozen snapshots, typed event values, action results, errors, and geometry; `eventually`; inherited ordinary AssertJ entry points | Each supported subject is detailed below. Retries do not mutate frozen values. |
 | [LightkeeperFrameworkAssert][framework-assert], [ServerControlAssert][server-assert], [ServerPluginAssert][plugin-assert] | Framework-to-server/plugin navigation; platform/output/no-error checks; plugin presence, enabled/disabled state, exact version | Plugin assertions re-query each evaluation. Error checks ignore warnings. Output is a captured list at navigation time. Framework-level server checks delegate to the same matching rules. |
 | [WorldHandleAssert][world-assert], [WorldBlockAssert][block-assert] | Name equality/nonblank, loaded/unloaded chunks, block material by key or `Material`, partial block-state matching | `hasBlockAt` selects a block address; it does not establish a separately meaningful block-presence condition. |
 | [PlayerHandleAssert][player-assert] | `hasName`, `hasItemInInventory`, `doesNotHaveItemInInventory`, `receivedMessage`, `hasClickableChatText`, `receivedMessagesText`, plus effective-permission and open-menu checks below | Inventory presence does not inspect amount. `receivedMessage` searches joined text, not exact individual messages. Permission/menu checks re-query each evaluation. |
@@ -132,7 +132,7 @@ Source: [WorldHandle][WorldHandle].
 |---|---|---|
 | `name()` | Existing `hasNameEqualTo`, `hasNonBlankName` | Preserve current names and behavior unless a separate API migration is agreed. |
 | `isChunkLoaded(chunkX, chunkZ)` | Existing `hasLoadedChunkAt`, `doesNotHaveLoadedChunkAt` | These query current loaded state; they do not promise a chunk remains loaded. |
-| `blockAt`, `blockTypeAt`, `entities` | Existing block selection; Add direct block/entity subjects below | Reuse the current queries instead of introducing another transport path. |
+| `blockAt`, `blockTypeAt`, `entities` | Existing block selection and direct block/entity subjects below | Reuse the current queries instead of introducing another transport path. |
 | Both `setBlockAt` overloads, `loadChunk`, `unloadChunk` | Exclude mutation assertions | Perform the action, then assert material/state or chunk state. Physics can change a placed block; the requested placement is not the observed result. |
 | World seed, environment, world type, loaded/existing worlds | Deferred | [WorldSpec][WorldSpec] and the builder contain input settings, but `WorldHandle` has no readback for them or a world-presence probe. Do not assert cached inputs as server state. |
 
@@ -197,15 +197,19 @@ Sources: [PlayerHandle][PlayerHandle], [ChatComponentSnapshot][ChatComponentSnap
 |---|---|---|
 | `receivedMessagesText()` | Existing string navigation and `receivedMessage(fragment)` | The existing fragment search is over joined text, so it can span message boundaries. Keep that limitation explicit; it is not an exact-message assertion. |
 | `receivedMessages()` | Existing: message-list navigation on the player subject | Standard list assertions preserve exact message boundaries, ordering, counts and absence. The list is captured at navigation time; recreate navigation inside retries. |
-| `chatComponents()` and `ChatComponentSnapshot.json` | Add P2: component-list navigation; Standard raw-string checks for codec-specific tests | Component lists and snapshots are frozen observations. Raw JSON substring matching is insufficient for semantic text/action association. |
-| Existing `hasClickableChatText(fragment)`; `clickRunCommand`, `clickSuggestedCommand` | Existing coarse check; Add P2: a component assertion associating visible text with effective click action and payload | The current check finds a raw JSON substring and any click event in the same component; it does not prove association with that text. Existing helpers return the first matching action's command; do not treat them as an enumeration of all actions. Preserve suggest-command trailing spaces. |
+| `chatComponents()` and `ChatComponentSnapshot.json` | Existing: player component-list navigation; Standard raw-string checks for codec-specific tests | Component lists and snapshots are frozen observations. Recreate navigation inside retries. Raw JSON substring matching is insufficient for semantic text/action association. |
+| `hasClickableChatText(fragment)`; `clickRunCommand`, `clickSuggestedCommand`; `hasClickableText`, `hasRunCommand`, `hasSuggestedCommand` | Existing: [component assertions][chat-assert] `hasClickableText`, `runsCommand`, `suggestsCommand` | All reuse the snapshot's literal-text/effective-click interpretation. A text fragment and exact command must belong to the same contiguous click run. Inheritance, child overrides, modern/legacy keys, escaped text, and adjacent literal runs are supported. Suggested-command trailing spaces are preserved. |
+| `clickActions()`; nested `ClickAction.text`, `action`, nullable `value` | Standard list/record/string/null assertions | An immutable list enumerates contiguous literal click runs. Non-clickable or opaque content separates runs; textless style nodes can expose empty runs. Only command, value, and URL text payloads are represented; other action-specific payloads need their own contract. |
 | Simple extracted command equality, message sequence/count, negative message checks | Standard after navigation | Use Optional/list/string assertions. Do not add separate custom wrappers for every list operation. Absence covers only captured history so far; there is no future observation window. |
 
-Command-text extraction currently returns an empty Optional for both absent actions and malformed JSON. A new
-semantic component assertion must report malformed input distinctly and reuse a shared component interpretation;
-it must not copy another private JSON parser or silently treat decoding failure as absence. Matching text to an
-effective click event must account for component-tree inheritance. Hover, styling, and arbitrary click actions are
-deferred until that interpretation has an explicit contract; ordinary raw JSON assertions remain available.
+Command-text extraction retains its compatibility behavior: an empty Optional for both absent actions and malformed
+JSON. New semantic component assertions fail with `IllegalStateException` on malformed data so decoding failure
+cannot satisfy a negative collection assertion. The existing player helper reports malformed-component counts when
+no matching component is found. Both paths use the same parser. Literal strings, arrays, and `extra` children are
+interpreted; translation keys, scores, selectors, keybinds, and hover contents are not rendered as main-message text.
+Locale-aware rendering, other styling semantics, and arbitrary action-specific payload assertions remain Deferred;
+ordinary raw JSON assertions are available. [Unit tests][chat-assert-tests] cover association and decoding failures;
+[Paper/Spigot tests][chat-it] exercise native click payloads and inherited adjacent text.
 
 ### Player observation gaps
 
@@ -244,8 +248,7 @@ Sources: [InventorySnapshot][InventorySnapshot], [MenuItemSnapshot][MenuItemSnap
 | `InventorySnapshot.fromItems`; item amount/capacity/fullness/full Bukkit `ItemStack` equality | Exclude conversion matchers; Deferred richer equality/capacity claims | Conversion belongs in unit tests. Neither slot capacity nor stack amounts or complete metadata are exposed. Validate negative slots; upper-bound validation needs the actual inventory/view size, not the largest occupied slot. |
 
 Do not describe the existing `hasItemAt(slot, ItemStack)` matcher as full item equality. It compares only the fields
-the snapshot carries. A future shared matcher should preserve that explicit subset and remove duplicate matching
-logic during the implementation change, with migration decisions recorded here.
+the snapshot carries. Live handles and frozen values now reuse `MenuItemSnapshot.matches` for this explicit subset.
 
 ## Events and typed values
 
@@ -342,7 +345,7 @@ The gateway inventory is grouped explicitly to prevent its public visibility fro
 | Existing: P1 server and player basics | Server/plugin navigation and presence/state/version, effective permissions, player open-menu checks, menu open/closed | Implemented with live reads, unit coverage, and [Paper/Spigot integration coverage][basics-it]. |
 | Existing: P1 shared items and messages | Menu/inventory/item snapshots, slot checks, message-list navigation | Shared value matching and frozen navigation, verified by [item/menu unit tests][item-unit-tests], [snapshot tests][menu-snapshot-tests], and [Paper/Spigot coverage][item-it]. |
 | Existing: P1 events | Capture navigation/counts, typed fields/containers/references/enums, cancellation | Verified by [typed-value tests][value-tests], [capture/event tests][event-tests], and [Paper/Spigot coverage][event-assert-it]. |
-| P2: richer existing observations | Direct block/snapshot entry points, live entity counts, position/transform comparisons, semantic chat components | Reuse value rules; settle tolerance and component-tree semantics before implementation. |
+| Existing: P2 richer existing observations | Direct block/snapshot entry points, live entity counts, position/transform comparisons, semantic chat components | Shared matching rules, explicit geometric tolerances, and literal-text/effective-click association; verified by focused unit and Paper/Spigot integration tests. |
 | Existing: P2 results and diagnostics | Interaction/command results, error navigation and warning checks | Verified by focused result/error unit tests and [Paper/Spigot coverage][result-it]. Missing-readback proposals remain separately Deferred API work. |
 
 For every implemented group, verify happy paths and meaningful mismatches, input validation, null/missing/wrong-type
@@ -483,3 +486,5 @@ is evidence for a candidate assertion, not proof that every extracted scalar nee
 [query-assert-tests]: ../lightkeeper-framework-junit/src/test/java/nl/pim16aap2/lightkeeper/framework/assertions/EntityQueryAssertTest.java
 [geometry-tests]: ../lightkeeper-framework-junit/src/test/java/nl/pim16aap2/lightkeeper/framework/assertions/GeometryAssertionsTest.java
 [block-state-it]: ../lightkeeper-integration-tests/src/test/java/nl/pim16aap2/lightkeeper/maven/test/LightkeeperBlockStateIT.java
+[chat-assert]: ../lightkeeper-framework-junit/src/main/java/nl/pim16aap2/lightkeeper/framework/assertions/ChatComponentAssert.java
+[chat-assert-tests]: ../lightkeeper-framework-junit/src/test/java/nl/pim16aap2/lightkeeper/framework/assertions/ChatComponentAssertTest.java

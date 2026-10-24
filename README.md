@@ -197,6 +197,7 @@ Use Failsafe/Surefire system properties:
 ### 3) Write tests with the framework
 
 ```java
+import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
 
 @ExtendWith(LightkeeperExtension.class)
 class MyPluginIT
@@ -221,14 +222,35 @@ class MyPluginIT
             .andWaitTicks(1);
 
         // verify
-        assertPlayer(player).receivedMessage("clicked");
-        assertWorld(world).hasBlockAt(1, 100, 0).ofType("minecraft:stone");
+        assertThat(player).receivedMessage("clicked");
+        assertThat(world).hasBlockAt(1, 100, 0).ofType("minecraft:stone");
     }
 }
 ```
 
 > The framework surface is organised into facets — `framework.server()`, `.worlds()`, `.bots()`, and
 > `.events()`. Use these facet accessors to reach the server, worlds, bots, and event-capture APIs.
+
+### Assertions
+
+Use the static `LightkeeperAssertions.assertThat` entry point for domain checks and ordinary AssertJ checks:
+
+```java
+assertThat(framework).server().plugin("MyPlugin").isEnabled();
+assertThat(player).hasPermission("myplugin.use");
+assertThat(player).inventory().itemAt(0).isMaterial("minecraft:stone");
+assertThat(menu).snapshot().isOpen().hasTitle("Main Menu");
+assertThat(capture).events().anySatisfy(event ->
+    assertThat(event).value("message").asString().isEqualTo("hello"));
+assertThat(component).runsCommand("Click me", "/myplugin confirm");
+```
+
+Assertions are eager and read-only. Handle checks query current state; navigation to snapshots or collections freezes
+that observation. For asynchronous effects, recreate the complete observation inside
+`LightkeeperAssertions.eventually(Duration.ofSeconds(10), () -> assertThat(player).receivedMessages().contains("done"))`.
+Item checks cover material, display name, and lore, without implying full Bukkit item equality.
+The [assertion coverage register](docs/assertion-coverage.md) records every supported surface, intentional exclusions,
+and deferred assertions that require additional readbacks.
 
 ## Core Features
 
@@ -389,6 +411,7 @@ uses a reproducible artifact; update both values when Vault publishes a newer re
 ```
 
 ```java
+import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
 
 @ExtendWith(LightkeeperExtension.class)
 class VaultIT
@@ -407,7 +430,7 @@ class VaultIT
         player.executeCommand("vault-info");
 
         // verify
-        assertPlayer(player).receivedMessage("Vault v1.7.3 Information");
+        assertThat(player).receivedMessage("Vault v1.7.3 Information");
     }
 }
 ```

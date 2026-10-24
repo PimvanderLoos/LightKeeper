@@ -19,6 +19,7 @@ import nl.pim16aap2.lightkeeper.framework.EntityQuery;
 import nl.pim16aap2.lightkeeper.framework.EntitySnapshot;
 import nl.pim16aap2.lightkeeper.framework.EntitySnapshot.Transform;
 import nl.pim16aap2.lightkeeper.framework.Vec3;
+import nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot;
 import org.assertj.core.api.Assertions;
 import org.jspecify.annotations.Nullable;
 
@@ -39,6 +40,15 @@ public final class LightkeeperAssertions extends Assertions
 
     private LightkeeperAssertions()
     {
+    }
+
+    /**
+     * @param actual Frozen native chat component.
+     * @return Literal-text and effective-click assertions.
+     */
+    public static ChatComponentAssert assertThat(@Nullable ChatComponentSnapshot actual)
+    {
+        return new ChatComponentAssert(actual);
     }
 
     /**
