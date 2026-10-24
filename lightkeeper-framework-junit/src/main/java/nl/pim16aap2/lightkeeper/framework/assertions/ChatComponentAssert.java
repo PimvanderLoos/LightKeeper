@@ -79,8 +79,11 @@ public final class ChatComponentAssert extends AbstractAssert<ChatComponentAsser
         {
             throw new IllegalStateException("Failed to parse component JSON: " + malformed.getMessage(), malformed);
         }
+
         if (!matched)
+        {
             failWithMessage("Expected %s, but component was %s.", expectation, actual.json());
+        }
         return this;
     }
 
@@ -88,6 +91,8 @@ public final class ChatComponentAssert extends AbstractAssert<ChatComponentAsser
     {
         Objects.requireNonNull(text, "text may not be null.");
         if (text.isEmpty())
+        {
             throw new IllegalArgumentException("text may not be empty.");
+        }
     }
 }

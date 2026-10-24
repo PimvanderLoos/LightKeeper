@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.assertj.core.api.Assertions.*;
 
 /** Tests typed cancellation and captured-field presence semantics. */
 class CapturedEventAssertTest
@@ -31,6 +31,7 @@ class CapturedEventAssertTest
         first
             .hasField("isCancelled")
             .doesNotHaveField("other");
+
         second
             .value("isCancelled")
             .asBoolean()
@@ -69,7 +70,8 @@ class CapturedEventAssertTest
     }
 
     @Test
-    @SuppressWarnings("NullAway") // Explicit-null values are distinct from absent accessors.
+    @SuppressWarnings("NullAway")
+        // Explicit-null values are distinct from absent accessors.
     void value_shouldDistinguishNullAndMissingAccessors()
     {
         // setup

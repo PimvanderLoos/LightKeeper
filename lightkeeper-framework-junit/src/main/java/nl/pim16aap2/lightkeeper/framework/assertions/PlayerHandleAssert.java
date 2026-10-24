@@ -49,7 +49,10 @@ public final class PlayerHandleAssert extends AbstractAssert<PlayerHandleAssert,
     {
         final var actual = nonNullActual();
         if (!Objects.equals(actual.name(), expectedName))
+        {
             failWithMessage("Expected player name '%s' but was '%s'.", expectedName, actual.name());
+        }
+
         return this;
     }
 
@@ -101,7 +104,10 @@ public final class PlayerHandleAssert extends AbstractAssert<PlayerHandleAssert,
     {
         Objects.requireNonNull(permission, "permission may not be null.");
         if (permission.isBlank())
+        {
             throw new IllegalArgumentException("permission may not be blank.");
+        }
+
         final var actual = nonNullActual();
         final boolean observed = actual.permissions().has(permission);
         if (observed != expected)
@@ -146,8 +152,11 @@ public final class PlayerHandleAssert extends AbstractAssert<PlayerHandleAssert,
         final var item = actual.inventory().findItem(materialKey);
         if (item == null)
         {
-            failWithMessage("Expected player '%s' to have item '%s' in inventory, but it was not found.",
-                actual.name(), materialKey);
+            failWithMessage(
+                "Expected player '%s' to have item '%s' in inventory, but it was not found.",
+                actual.name(),
+                materialKey
+            );
         }
         return this;
     }
@@ -165,8 +174,12 @@ public final class PlayerHandleAssert extends AbstractAssert<PlayerHandleAssert,
         final var item = actual.inventory().findItem(materialKey);
         if (item != null)
         {
-            failWithMessage("Expected player '%s' to not have item '%s' in inventory, but it was found at slot %d.",
-                actual.name(), materialKey, item.slot());
+            failWithMessage(
+                "Expected player '%s' to not have item '%s' in inventory, but it was found at slot %d.",
+                actual.name(),
+                materialKey,
+                item.slot()
+            );
         }
         return this;
     }
@@ -184,6 +197,7 @@ public final class PlayerHandleAssert extends AbstractAssert<PlayerHandleAssert,
         Assertions
             .assertThat(actual.receivedMessagesText())
             .contains(expectedFragment);
+
         return this;
     }
 
@@ -198,7 +212,10 @@ public final class PlayerHandleAssert extends AbstractAssert<PlayerHandleAssert,
     {
         Objects.requireNonNull(expectedText, "expectedText may not be null.");
         if (expectedText.isEmpty())
+        {
             throw new IllegalArgumentException("expectedText may not be empty.");
+        }
+
         final var actual = nonNullActual();
         int parseFailures = 0;
         boolean found = false;
@@ -221,6 +238,7 @@ public final class PlayerHandleAssert extends AbstractAssert<PlayerHandleAssert,
         {
             final String parseNote = parseFailures > 0
                 ? " (%d component(s) failed to parse as JSON)".formatted(parseFailures) : "";
+
             failWithMessage(
                 "Expected player '%s' to have a clickable chat text matching '%s', but none was found.%s",
                 actual.name(),

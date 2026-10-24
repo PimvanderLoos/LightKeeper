@@ -48,7 +48,9 @@ public final class ServerPluginAssert extends AbstractAssert<ServerPluginAssert,
     {
         final var plugin = nonNullActual().plugin(pluginName);
         if (plugin.isPresent())
+        {
             failWithMessage("Expected plugin '%s' to be absent, but it was present.", pluginName);
+        }
         return this;
     }
 
@@ -115,7 +117,9 @@ public final class ServerPluginAssert extends AbstractAssert<ServerPluginAssert,
     {
         final var plugin = nonNullActual().plugin(pluginName);
         if (plugin.isEmpty())
+        {
             failWithMessage("Expected plugin '%s' to %s, but it was not present.", pluginName, expectation);
+        }
         return plugin.orElseThrow();
     }
 

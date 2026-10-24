@@ -4,7 +4,7 @@ import nl.pim16aap2.lightkeeper.framework.InteractionResult;
 import org.junit.jupiter.api.Test;
 
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.assertj.core.api.Assertions.*;
 
 /** Tests that cancellation assertions never infer an event from a false cancellation flag. */
 class InteractionResultAssertTest
@@ -17,12 +17,8 @@ class InteractionResultAssertTest
         final var uncancelled = assertThat(new InteractionResult(true, false));
 
         // execute
-        final var first = cancelled
-            .hasFiredEvent()
-            .isCancelled();
-        final var second = uncancelled
-            .hasFiredEvent()
-            .isNotCancelled();
+        final var first = cancelled.hasFiredEvent().isCancelled();
+        final var second = uncancelled.hasFiredEvent().isNotCancelled();
 
         // verify
         assertThat(first).isSameAs(cancelled);

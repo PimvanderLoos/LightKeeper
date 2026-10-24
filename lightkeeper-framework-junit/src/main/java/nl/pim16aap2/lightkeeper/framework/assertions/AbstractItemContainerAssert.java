@@ -54,7 +54,10 @@ abstract class AbstractItemContainerAssert<S extends AbstractItemContainerAssert
     public S hasOccupiedSlotCount(int expected)
     {
         if (expected < 0)
+        {
             throw new IllegalArgumentException("expected must be >= 0.");
+        }
+
         items().hasSize(expected);
         return myself;
     }
@@ -84,11 +87,16 @@ abstract class AbstractItemContainerAssert<S extends AbstractItemContainerAssert
     public S hasEmptySlot(int slot)
     {
         validateSlot(slot);
+
         final var item = itemsSnapshot().stream()
             .filter(candidate -> candidate.slot() == slot)
             .findFirst();
+
         if (item.isPresent())
+        {
             failWithMessage("Expected slot %d to be empty, but contained %s.", slot, item.get());
+        }
+
         return myself;
     }
 
@@ -104,7 +112,12 @@ abstract class AbstractItemContainerAssert<S extends AbstractItemContainerAssert
     public S hasItemAt(int slot, String materialKey)
     {
         final String normalized = MaterialKeys.normalize(materialKey);
-        return hasMatchingItem(slot, item -> item.matchesMaterial(normalized), "material '" + normalized + "'");
+
+        return hasMatchingItem(
+            slot,
+            item -> item.matchesMaterial(normalized),
+            "material '" + normalized + "'"
+        );
     }
 
     /**
@@ -119,6 +132,7 @@ abstract class AbstractItemContainerAssert<S extends AbstractItemContainerAssert
     public S hasItemAt(int slot, ItemStack expected)
     {
         Objects.requireNonNull(expected, "expected may not be null.");
+
         return hasMatchingItem(
             slot,
             item -> item.matches(expected),
@@ -129,9 +143,13 @@ abstract class AbstractItemContainerAssert<S extends AbstractItemContainerAssert
     private S hasMatchingItem(int slot, Predicate<MenuItemSnapshot> predicate, String expectation)
     {
         validateSlot(slot);
+
         final var item = requireItem(slot);
         if (!predicate.test(item))
+        {
             failWithMessage("Expected item at slot %d to match %s, but was %s.", slot, expectation, item);
+        }
+
         return myself;
     }
 
@@ -142,14 +160,18 @@ abstract class AbstractItemContainerAssert<S extends AbstractItemContainerAssert
             .filter(candidate -> candidate.slot() == slot)
             .findFirst();
         if (item.isEmpty())
+        {
             failWithMessage("Expected an item at slot %d, but none was present. Observed items: %s.", slot, observed);
+        }
         return item.orElseThrow();
     }
 
     private static void validateSlot(int slot)
     {
         if (slot < 0)
+        {
             throw new IllegalArgumentException("slot must be >= 0.");
+        }
     }
 
     /** @return The subject after AssertJ's null guard. */

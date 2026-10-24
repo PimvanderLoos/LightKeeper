@@ -11,7 +11,7 @@ import java.time.Duration;
 
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.eventually;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 
 /** Verifies returned outcomes and structured warning assertions on both server platforms. */
 @ExtendWith(LightkeeperExtension.class)
@@ -73,6 +73,7 @@ class LightkeeperResultAssertionsIT
         framework
             .server()
             .executeCommand(CommandSource.CONSOLE, "lktesterror warning");
+
         eventually(
             Duration.ofSeconds(10),
             () -> errors

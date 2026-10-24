@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 
 /**
  * Validates plugin, effective-permission, and menu assertions against both provisioned server platforms.
@@ -34,13 +34,17 @@ class LightkeeperAssertionBasicsIT
         installed
             .isPresent()
             .isEnabled();
+
         missing.isAbsent();
+
         assertThatThrownBy(missing::isDisabled)
             .isInstanceOf(AssertionError.class)
             .hasMessageContaining("not present");
+
         assertThatThrownBy(installed::isDisabled)
             .isInstanceOf(AssertionError.class)
             .hasMessageContaining("was enabled");
+
         assertThatThrownBy(() -> installed.hasVersion("deliberately-wrong-version"))
             .isInstanceOf(AssertionError.class)
             .hasMessageContainingAll(FIXTURE_PLUGIN, "deliberately-wrong-version", "version was");
@@ -81,6 +85,7 @@ class LightkeeperAssertionBasicsIT
             .atSpawn(framework.worlds().main())
             .withPermissions(GUI_PERMISSION)
             .build();
+
         final var playerAssertion = assertThat(player);
         playerAssertion.doesNotHaveOpenMenu();
 
@@ -90,9 +95,7 @@ class LightkeeperAssertionBasicsIT
 
         // verify
         playerAssertion.hasOpenMenu();
-        menuAssertion
-            .isOpen()
-            .hasTitle("Main Menu");
+        menuAssertion.isOpen().hasTitle("Main Menu");
 
         // execute
         menu.clickAtIndex(0)

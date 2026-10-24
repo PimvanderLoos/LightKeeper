@@ -101,7 +101,9 @@ public final class ServerControlAssert extends AbstractAssert<ServerControlAsser
     {
         final Platform observed = nonNullActual().platform();
         if (observed != expected)
+        {
             failWithMessage("Expected server platform to be %s but was %s.", expected, observed);
+        }
         return this;
     }
 

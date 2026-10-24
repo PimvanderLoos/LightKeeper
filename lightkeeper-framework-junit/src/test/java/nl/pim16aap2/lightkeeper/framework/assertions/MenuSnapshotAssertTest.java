@@ -15,11 +15,8 @@ import java.util.List;
 import java.util.UUID;
 
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 /** Tests shared menu rules, snapshot isolation and non-mutating live navigation. */
 @ExtendWith(MockitoExtension.class)
@@ -89,6 +86,7 @@ class MenuSnapshotAssertTest
             .isOpen()
             .hasTitle("Main")
             .isEmpty();
+
         verify(gateway, times(2)).menuSnapshot(id);
     }
 
@@ -127,6 +125,7 @@ class MenuSnapshotAssertTest
         assertThat(menuFailure)
             .hasMessageContaining("Parent menu")
             .hasMessageNotContaining("Child item");
+
         assertThat(itemFailure)
             .hasMessageContaining("Child item");
     }

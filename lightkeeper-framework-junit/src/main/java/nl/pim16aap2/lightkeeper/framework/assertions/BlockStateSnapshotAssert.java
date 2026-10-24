@@ -29,11 +29,13 @@ public final class BlockStateSnapshotAssert
         Objects.requireNonNull(expected, "expected may not be null.");
         isNotNull();
         if (!actual.matches(expected))
+        {
             failWithMessage(
                 "Expected captured block state to match '%s', but was '%s'.",
                 expected.asString(),
                 actual.blockData()
             );
+        }
         return this;
     }
 }

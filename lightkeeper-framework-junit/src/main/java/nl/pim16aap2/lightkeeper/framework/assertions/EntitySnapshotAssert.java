@@ -40,7 +40,10 @@ public final class EntitySnapshotAssert extends AbstractAssert<EntitySnapshotAss
     {
         isNotNull();
         if (actual.transform() == null)
+        {
             failWithMessage("Expected a display transform for entity '%s', but none was present.", actual.uuid());
+        }
+
         return extracting(EntitySnapshot::transform, EntityTransformAssert::new).as(fieldDescription("transform"));
     }
 

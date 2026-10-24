@@ -58,18 +58,14 @@ public final class CapturedEventAssert extends AbstractAssert<CapturedEventAsser
     /** @return This assertion after checking a present boolean cancellation field is true. */
     public CapturedEventAssert isCancelled()
     {
-        value("isCancelled")
-            .asBoolean()
-            .isTrue();
+        value("isCancelled").asBoolean().isTrue();
         return this;
     }
 
     /** @return This assertion after checking a present boolean cancellation field is false. */
     public CapturedEventAssert isNotCancelled()
     {
-        value("isCancelled")
-            .asBoolean()
-            .isFalse();
+        value("isCancelled").asBoolean().isFalse();
         return this;
     }
 
@@ -77,9 +73,13 @@ public final class CapturedEventAssert extends AbstractAssert<CapturedEventAsser
     {
         Objects.requireNonNull(name, "accessorName may not be null.");
         if (name.isBlank())
+        {
             throw new IllegalArgumentException("accessorName may not be blank.");
+        }
+
         final var event = nonNullActual();
         if (event.values().containsKey(name) != expected)
+        {
             failWithMessage(
                 "Expected event '%s' to %s field '%s', but captured fields were %s.",
                 event.eventClassName(),
@@ -87,6 +87,7 @@ public final class CapturedEventAssert extends AbstractAssert<CapturedEventAsser
                 name,
                 event.values().keySet()
             );
+        }
         return this;
     }
 

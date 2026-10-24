@@ -55,17 +55,21 @@ public final class ServerErrorsAssert extends AbstractAssert<ServerErrorsAssert,
         ServerErrorSnapshot.Severity severity, String label, Predicate<ServerErrorSnapshot> allowed)
     {
         isNotNull();
+
         final List<ServerErrorSnapshot> failing = actual.getCaptured().stream()
             .filter(entry -> entry.severity() == severity)
             .filter(entry -> !allowed.test(entry))
             .toList();
+
         if (!failing.isEmpty())
+        {
             failWithMessage(
                 "Expected no captured server %s, but found %d:%n%s",
                 label,
                 failing.size(),
                 render(failing)
             );
+        }
         return this;
     }
 
@@ -73,7 +77,9 @@ public final class ServerErrorsAssert extends AbstractAssert<ServerErrorsAssert,
     {
         final StringBuilder rendered = new StringBuilder(256);
         for (final var error : errors)
+        {
             rendered.append(error.toDisplayString(15));
+        }
         return rendered.toString();
     }
 }

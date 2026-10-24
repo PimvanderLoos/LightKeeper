@@ -12,7 +12,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.assertj.core.api.Assertions.*;
 
 /** Tests strict typed navigation, nested paths and unavailable-data diagnostics. */
 class ProtocolValueAssertTest
@@ -112,22 +112,21 @@ class ProtocolValueAssertTest
         final var assertion = new ProtocolValueAssert(value, "Event.payload").as("Action result");
 
         // execute
-        final var selected = assertion
-            .field("items")
-            .element(0);
+        final var selected = assertion.field("items").element(0);
+
         final Throwable failure = catchThrowable(
-            () -> selected
-                .asString()
-                .isEqualTo("dirt")
+            () -> selected.asString().isEqualTo("dirt")
         );
 
         // verify
         assertThat(failure)
             .isInstanceOf(AssertionError.class)
             .hasMessageContainingAll("Action result", "Event.payload.items[0]", "stone", "dirt");
+
         assertion
             .fields()
             .containsKey("items");
+
         assertion
             .field("items")
             .elements()
@@ -148,12 +147,14 @@ class ProtocolValueAssertTest
         assertThat(failure)
             .isInstanceOf(AssertionError.class)
             .hasMessageContainingAll("[0]", "size was 0");
+
         assertThat(invalid)
             .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
-    @SuppressWarnings("NullAway") // Explicit-null protocol entries are part of the wire contract.
+    @SuppressWarnings("NullAway")
+        // Explicit-null protocol entries are part of the wire contract.
     void field_shouldDistinguishExplicitNullFromMissingField()
     {
         // setup

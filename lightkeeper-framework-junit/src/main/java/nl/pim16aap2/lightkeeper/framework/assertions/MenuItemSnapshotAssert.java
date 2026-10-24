@@ -28,12 +28,14 @@ public final class MenuItemSnapshotAssert extends AbstractAssert<MenuItemSnapsho
     {
         final var observed = nonNullActual();
         if (!observed.matchesMaterial(expected))
+        {
             failWithMessage(
                 "Expected item at slot %d to have material '%s', but was '%s'.",
                 observed.slot(),
                 expected,
                 observed.materialKey()
             );
+        }
         return this;
     }
 

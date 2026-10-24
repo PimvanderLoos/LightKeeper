@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 
 /** Verifies shared live/frozen menu, inventory and message assertions on Paper and Spigot. */
 @ExtendWith(LightkeeperExtension.class)
@@ -32,12 +32,14 @@ class LightkeeperItemAssertionsIT
             .hasTitle("Main Menu")
             .hasOccupiedSlotCount(2)
             .hasEmptySlot(8);
+
         frozen
             .itemAt(0)
             .isMaterial("STONE")
             .hasDisplayName("Button 1")
             .lore()
             .isEmpty();
+
         assertThat(player)
             .inventory()
             .isEmpty();
@@ -49,10 +51,12 @@ class LightkeeperItemAssertionsIT
         assertThat(menu)
             .hasTitle("Sub Menu")
             .hasItemAt(0, "BARRIER");
+
         frozen
             .hasTitle("Main Menu")
             .itemAt(0)
             .isMaterial("stone");
+
         assertThat(player)
             .receivedMessages()
             .contains("You clicked Button 1");
@@ -62,6 +66,7 @@ class LightkeeperItemAssertionsIT
 
         // verify
         assertThat(menu).isClosed();
+
         assertThatThrownBy(() -> assertThat(menu).hasEmptySlot(8))
             .isInstanceOf(AssertionError.class)
             .hasMessageContaining("closed");

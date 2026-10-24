@@ -46,6 +46,7 @@ public final class BlockRefAssert extends AbstractAssert<BlockRefAssert, @Nullab
         final var block = nonNullActual();
         final String observed = block.material();
         if (!normalized.equals(observed))
+        {
             failWithMessage(
                 "Expected block at (%d,%d,%d) in world '%s' to be '%s' but was '%s'.",
                 block.pos().x(),
@@ -55,6 +56,7 @@ public final class BlockRefAssert extends AbstractAssert<BlockRefAssert, @Nullab
                 normalized,
                 observed
             );
+        }
         return this;
     }
 
@@ -71,6 +73,7 @@ public final class BlockRefAssert extends AbstractAssert<BlockRefAssert, @Nullab
         final var block = nonNullActual();
         final var observed = block.state();
         if (!observed.matches(expected))
+        {
             failWithMessage(
                 "Expected block at (%d,%d,%d) in world '%s' to match '%s' but was '%s'.",
                 block.pos().x(),
@@ -80,6 +83,7 @@ public final class BlockRefAssert extends AbstractAssert<BlockRefAssert, @Nullab
                 expected.asString(),
                 observed.blockData()
             );
+        }
         return this;
     }
 

@@ -25,16 +25,21 @@ public final class EventCaptureAssert extends AbstractAssert<EventCaptureAssert,
     public EventCaptureAssert hasEventCount(int expected)
     {
         if (expected < 0)
+        {
             throw new IllegalArgumentException("expected must be >= 0.");
+        }
+
         final var capture = nonNullActual();
         final int observed = capture.getCapturedEvents().size();
         if (observed != expected)
+        {
             failWithMessage(
                 "Expected capture of '%s' to contain %d events, but contained %d.",
                 capture.eventClassName(),
                 expected,
                 observed
             );
+        }
         return this;
     }
 

@@ -23,9 +23,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class HandleAssertionsTest
 {
@@ -33,12 +33,12 @@ class HandleAssertionsTest
     void playerHandleAssert_hasNameAndMessages()
     {
         // setup
-        final PlayerHandle handle = mock(PlayerHandle.class);
+        final PlayerHandle handle = mock();
         when(handle.name()).thenReturn("bot");
         when(handle.receivedMessagesText()).thenReturn("hello world");
 
         // execute + verify
-        LightkeeperAssertions.assertThat(handle)
+        assertThat(handle)
             .hasName("bot")
             .receivedMessage("hello")
             .receivedMessagesText()
@@ -49,11 +49,11 @@ class HandleAssertionsTest
     void playerHandleAssert_shouldFailWhenNameDoesNotMatch()
     {
         // setup
-        final PlayerHandle handle = mock(PlayerHandle.class);
+        final PlayerHandle handle = mock();
         when(handle.name()).thenReturn("bot");
 
         // execute + verify
-        assertThatThrownBy(() -> LightkeeperAssertions.assertThat(handle).hasName("other"))
+        assertThatThrownBy(() -> assertThat(handle).hasName("other"))
             .isInstanceOf(AssertionError.class)
             .hasMessageContaining("Expected player name");
     }
@@ -62,7 +62,7 @@ class HandleAssertionsTest
     void playerHandleAssert_shouldValidateInventoryAndClickableChatText()
     {
         // setup
-        final PlayerHandle handle = mock(PlayerHandle.class);
+        final PlayerHandle handle = mock();
         when(handle.name()).thenReturn("bot");
         when(handle.inventory()).thenReturn(new InventorySnapshot(List.of(
             new MenuItemSnapshot(3, "minecraft:stone", "Stone", List.of())
@@ -72,7 +72,7 @@ class HandleAssertionsTest
         ));
 
         // execute + verify
-        LightkeeperAssertions.assertThat(handle)
+        assertThat(handle)
             .hasItemInInventory("minecraft:stone")
             .doesNotHaveItemInInventory("minecraft:diamond")
             .hasClickableChatText("Open");
@@ -83,27 +83,27 @@ class HandleAssertionsTest
     {
         // setup — the 1.21.5+ component codec spells the field click_event (snake_case); keying only on the
         // pre-1.21.5 clickEvent (as the assertion used to) never matched real 1.21.11 wire JSON
-        final PlayerHandle handle = mock(PlayerHandle.class);
+        final PlayerHandle handle = mock();
         when(handle.name()).thenReturn("bot");
         when(handle.chatComponents()).thenReturn(List.of(new ChatComponentSnapshot(
             "{\"text\":\"Open\",\"click_event\":{\"action\":\"run_command\",\"command\":\"/aa\"}}")));
 
         // execute + verify
-        LightkeeperAssertions.assertThat(handle).hasClickableChatText("Open");
+        assertThat(handle).hasClickableChatText("Open");
     }
 
     @Test
     void playerHandleAssert_shouldFailWhenUnexpectedItemExists()
     {
         // setup
-        final PlayerHandle handle = mock(PlayerHandle.class);
+        final PlayerHandle handle = mock();
         when(handle.name()).thenReturn("bot");
         when(handle.inventory()).thenReturn(new InventorySnapshot(List.of(
             new MenuItemSnapshot(2, "minecraft:stone", "Stone", List.of())
         )));
 
         // execute + verify
-        assertThatThrownBy(() -> LightkeeperAssertions.assertThat(handle).doesNotHaveItemInInventory("minecraft:stone"))
+        assertThatThrownBy(() -> assertThat(handle).doesNotHaveItemInInventory("minecraft:stone"))
             .isInstanceOf(AssertionError.class)
             .hasMessageContaining("slot 2");
     }
@@ -112,12 +112,12 @@ class HandleAssertionsTest
     void playerHandleAssert_shouldFailWhenClickableChatTextMissing()
     {
         // setup
-        final PlayerHandle handle = mock(PlayerHandle.class);
+        final PlayerHandle handle = mock();
         when(handle.name()).thenReturn("bot");
         when(handle.chatComponents()).thenReturn(List.of(new ChatComponentSnapshot("{\"text\":\"Open\"}")));
 
         // execute + verify
-        assertThatThrownBy(() -> LightkeeperAssertions.assertThat(handle).hasClickableChatText("Open"))
+        assertThatThrownBy(() -> assertThat(handle).hasClickableChatText("Open"))
             .isInstanceOf(AssertionError.class)
             .hasMessageContaining("clickable chat text");
     }
@@ -126,25 +126,25 @@ class HandleAssertionsTest
     void playerHandleAssert_shouldMatchClickEventNestedInExtraChild()
     {
         // setup — NMS serializes the clickable text inside an 'extra' child, not the root object
-        final PlayerHandle handle = mock(PlayerHandle.class);
+        final PlayerHandle handle = mock();
         when(handle.name()).thenReturn("bot");
         when(handle.chatComponents()).thenReturn(List.of(new ChatComponentSnapshot(
             "{\"text\":\"\",\"extra\":[{\"text\":\"Open\",\"clickEvent\":{\"action\":\"run_command\"}}]}")));
 
         // execute + verify — a root-only check would miss this
-        LightkeeperAssertions.assertThat(handle).hasClickableChatText("Open");
+        assertThat(handle).hasClickableChatText("Open");
     }
 
     @Test
     void playerHandleAssert_shouldReportParseFailuresWhenComponentJsonIsMalformed()
     {
         // setup — a malformed component containing the text must not silently read as "not clickable"
-        final PlayerHandle handle = mock(PlayerHandle.class);
+        final PlayerHandle handle = mock();
         when(handle.name()).thenReturn("bot");
         when(handle.chatComponents()).thenReturn(List.of(new ChatComponentSnapshot("{\"text\":\"Open\" BROKEN")));
 
         // execute + verify
-        assertThatThrownBy(() -> LightkeeperAssertions.assertThat(handle).hasClickableChatText("Open"))
+        assertThatThrownBy(() -> assertThat(handle).hasClickableChatText("Open"))
             .isInstanceOf(AssertionError.class)
             .hasMessageContaining("failed to parse");
     }
@@ -153,9 +153,9 @@ class HandleAssertionsTest
     void lightkeeperFrameworkAssert_shouldExposeServerOutputAndValidateNoErrors()
     {
         // setup — a captured WARNING must not fail hasNoServerErrors()
-        final ILightkeeperFramework framework = mock(ILightkeeperFramework.class);
-        final ServerErrorsHandle serverErrorsHandle = mock(ServerErrorsHandle.class);
-        final IServerControl serverControl = mock(IServerControl.class);
+        final ILightkeeperFramework framework = mock();
+        final ServerErrorsHandle serverErrorsHandle = mock();
+        final IServerControl serverControl = mock();
         when(framework.server()).thenReturn(serverControl);
         when(serverControl.errors()).thenReturn(serverErrorsHandle);
         when(serverErrorsHandle.getCaptured()).thenReturn(List.of(serverError(
@@ -163,7 +163,7 @@ class HandleAssertionsTest
         when(serverControl.output()).thenReturn(List.of("Server started", "Done"));
 
         // execute + verify
-        LightkeeperAssertions.assertThat(framework)
+        assertThat(framework)
             .hasNoServerErrors()
             .serverOutput()
             .contains("Done");
@@ -173,11 +173,12 @@ class HandleAssertionsTest
     void lightkeeperFrameworkAssert_shouldFailWhenServerErrorsWereCaptured()
     {
         // setup
-        final ILightkeeperFramework framework = mock(ILightkeeperFramework.class);
-        final ServerErrorsHandle serverErrorsHandle = mock(ServerErrorsHandle.class);
-        final IServerControl serverControl = mock(IServerControl.class);
+        final ILightkeeperFramework framework = mock();
+        final ServerErrorsHandle serverErrorsHandle = mock();
+        final IServerControl serverControl = mock();
         when(framework.server()).thenReturn(serverControl);
         when(serverControl.errors()).thenReturn(serverErrorsHandle);
+
         when(serverErrorsHandle.getCaptured()).thenReturn(List.of(new ServerErrorSnapshot(
             1L,
             ServerErrorSnapshot.Severity.ERROR,
@@ -191,7 +192,7 @@ class HandleAssertionsTest
         )));
 
         // execute + verify — the failure message carries the structured context, including the stack trace
-        assertThatThrownBy(() -> LightkeeperAssertions.assertThat(framework).hasNoServerErrors())
+        assertThatThrownBy(() -> assertThat(framework).hasNoServerErrors())
             .isInstanceOf(AssertionError.class)
             .hasMessageContaining("net.example.SomePlugin")
             .hasMessageContaining("boom")
@@ -202,16 +203,16 @@ class HandleAssertionsTest
     void lightkeeperFrameworkAssert_shouldIgnoreAllowlistedServerErrors()
     {
         // setup
-        final ILightkeeperFramework framework = mock(ILightkeeperFramework.class);
-        final ServerErrorsHandle serverErrorsHandle = mock(ServerErrorsHandle.class);
-        final IServerControl serverControl = mock(IServerControl.class);
+        final ILightkeeperFramework framework = mock();
+        final ServerErrorsHandle serverErrorsHandle = mock();
+        final IServerControl serverControl = mock();
         when(framework.server()).thenReturn(serverControl);
         when(serverControl.errors()).thenReturn(serverErrorsHandle);
         when(serverErrorsHandle.getCaptured()).thenReturn(List.of(serverError(
             ServerErrorSnapshot.Severity.ERROR, "ERROR", "known moving_piston complaint")));
 
         // execute + verify
-        LightkeeperAssertions.assertThat(framework)
+        assertThat(framework)
             .hasNoServerErrors(error -> error.message().contains("moving_piston"));
     }
 
@@ -219,28 +220,33 @@ class HandleAssertionsTest
     void lightkeeperFrameworkAssert_shouldTruncateOverlongStackTraceInFailureMessage()
     {
         // setup — more stack trace lines than the 15-line rendering cap
-        final ILightkeeperFramework framework = mock(ILightkeeperFramework.class);
-        final ServerErrorsHandle serverErrorsHandle = mock(ServerErrorsHandle.class);
-        final IServerControl serverControl = mock(IServerControl.class);
+        final ILightkeeperFramework framework = mock();
+        final ServerErrorsHandle serverErrorsHandle = mock();
+        final IServerControl serverControl = mock();
         when(framework.server()).thenReturn(serverControl);
         when(serverControl.errors()).thenReturn(serverErrorsHandle);
-        final List<String> stackTrace = IntStream.range(0, 20)
+
+        final List<String> stackTrace = IntStream
+            .range(0, 20)
             .mapToObj(i -> "\tat net.example.SomePlugin.frame" + i + "(SomePlugin.java:" + i + ")")
             .toList();
-        when(serverErrorsHandle.getCaptured()).thenReturn(List.of(new ServerErrorSnapshot(
-            1L,
-            ServerErrorSnapshot.Severity.ERROR,
-            "ERROR",
-            "net.example.SomePlugin",
-            "Server thread",
-            "boom",
-            "java.lang.IllegalStateException",
-            "boom",
-            stackTrace
-        )));
+
+        when(serverErrorsHandle.getCaptured()).thenReturn(
+            List.of(
+                new ServerErrorSnapshot(
+                    1L,
+                    ServerErrorSnapshot.Severity.ERROR,
+                    "ERROR",
+                    "net.example.SomePlugin",
+                    "Server thread",
+                    "boom",
+                    "java.lang.IllegalStateException",
+                    "boom",
+                    stackTrace
+                )));
 
         // execute + verify
-        assertThatThrownBy(() -> LightkeeperAssertions.assertThat(framework).hasNoServerErrors())
+        assertThatThrownBy(() -> assertThat(framework).hasNoServerErrors())
             .isInstanceOf(AssertionError.class)
             .hasMessageContaining("... (5 more stack trace lines)");
     }
@@ -249,17 +255,28 @@ class HandleAssertionsTest
     void lightkeeperFrameworkAssert_shouldRenderQuestionMarkWhenThreadNameIsEmpty()
     {
         // setup
-        final ILightkeeperFramework framework = mock(ILightkeeperFramework.class);
-        final ServerErrorsHandle serverErrorsHandle = mock(ServerErrorsHandle.class);
-        final IServerControl serverControl = mock(IServerControl.class);
+        final ILightkeeperFramework framework = mock();
+        final ServerErrorsHandle serverErrorsHandle = mock();
+        final IServerControl serverControl = mock();
         when(framework.server()).thenReturn(serverControl);
         when(serverControl.errors()).thenReturn(serverErrorsHandle);
-        when(serverErrorsHandle.getCaptured()).thenReturn(List.of(new ServerErrorSnapshot(
-            1L, ServerErrorSnapshot.Severity.ERROR, "ERROR", "net.example.SomePlugin", "", "boom",
-            null, null, List.of())));
+
+        when(serverErrorsHandle.getCaptured()).thenReturn(
+            List.of(
+                new ServerErrorSnapshot(
+                    1L,
+                    ServerErrorSnapshot.Severity.ERROR,
+                    "ERROR",
+                    "net.example.SomePlugin",
+                    "",
+                    "boom",
+                    null,
+                    null,
+                    List.of()
+                )));
 
         // execute + verify
-        assertThatThrownBy(() -> LightkeeperAssertions.assertThat(framework).hasNoServerErrors())
+        assertThatThrownBy(() -> assertThat(framework).hasNoServerErrors())
             .isInstanceOf(AssertionError.class)
             .hasMessageContaining("(thread: ?)");
     }
@@ -267,32 +284,40 @@ class HandleAssertionsTest
     private static ServerErrorSnapshot serverError(
         ServerErrorSnapshot.Severity severity,
         String levelName,
-        String message)
+        String message
+    )
     {
         return new ServerErrorSnapshot(
-            1L, severity, levelName, "net.example.SomePlugin", "Server thread", message, null, null, List.of());
+            1L,
+            severity,
+            levelName,
+            "net.example.SomePlugin",
+            "Server thread",
+            message,
+            null,
+            null,
+            List.of()
+        );
     }
 
     @Test
     void menuHandleAssert_shouldValidateTitleAndItems()
     {
         // setup
-        final MenuHandle handle = mock(MenuHandle.class);
-        final ItemStack itemStack = mock(ItemStack.class);
+        final MenuHandle handle = mock();
+        final ItemStack itemStack = mock();
         when(handle.snapshot()).thenReturn(
             new MenuSnapshot(
                 true,
                 "Main",
                 List.of(
                     new MenuItemSnapshot(0, "minecraft:stone", "", List.of()),
-                    new MenuItemSnapshot(1, "minecraft:dirt", "", List.of())
-                )
-            )
-        );
+                    new MenuItemSnapshot(1, "minecraft:dirt", "", List.of()))
+            ));
         when(itemStack.getType()).thenReturn(Material.DIRT);
 
         // execute + verify
-        LightkeeperAssertions.assertThat(handle)
+        assertThat(handle)
             .hasTitle("Main")
             .hasItemAt(0, "minecraft:stone")
             .hasItemAt(1, itemStack);
@@ -302,11 +327,11 @@ class HandleAssertionsTest
     void menuHandleAssert_shouldFailWhenItemIsMissing()
     {
         // setup
-        final MenuHandle handle = mock(MenuHandle.class);
+        final MenuHandle handle = mock();
         when(handle.snapshot()).thenReturn(new MenuSnapshot(true, "Main", List.of()));
 
         // execute + verify
-        assertThatThrownBy(() -> LightkeeperAssertions.assertThat(handle).hasItemAt(5, "minecraft:diamond"))
+        assertThatThrownBy(() -> assertThat(handle).hasItemAt(5, "minecraft:diamond"))
             .isInstanceOf(AssertionError.class)
             .hasMessageContaining("slot 5");
     }
@@ -315,36 +340,32 @@ class HandleAssertionsTest
     void worldBlockAssert_shouldValidateMaterialByEnumAndKey()
     {
         // setup
-        final WorldHandle handle = mock(WorldHandle.class);
-        final BlockRef first = mock(BlockRef.class);
-        final BlockRef second = mock(BlockRef.class);
+        final WorldHandle handle = mock();
+        final BlockRef first = mock();
+        final BlockRef second = mock();
         when(handle.blockAt(new BlockPos(1, 2, 3))).thenReturn(first);
         when(handle.blockAt(new BlockPos(4, 5, 6))).thenReturn(second);
         when(first.material()).thenReturn("minecraft:stone");
         when(second.material()).thenReturn("minecraft:dirt");
 
         // execute + verify
-        LightkeeperAssertions.assertThat(handle).hasBlockAt(1, 2, 3).ofType(Material.STONE);
-        LightkeeperAssertions.assertThat(handle).hasBlockAt(4, 5, 6).ofType("dirt");
+        assertThat(handle).hasBlockAt(1, 2, 3).ofType(Material.STONE);
+        assertThat(handle).hasBlockAt(4, 5, 6).ofType("dirt");
     }
 
     @Test
     void worldBlockAssert_shouldFailWhenMaterialDoesNotMatch()
     {
         // setup
-        final WorldHandle handle = mock(WorldHandle.class);
-        final BlockRef block = mock(BlockRef.class);
+        final WorldHandle handle = mock();
+        final BlockRef block = mock();
         when(handle.blockAt(new BlockPos(0, 0, 0))).thenReturn(block);
         when(block.material()).thenReturn("minecraft:stone");
         when(block.pos()).thenReturn(new BlockPos(0, 0, 0));
         when(block.worldName()).thenReturn("world");
 
         // execute + verify
-        assertThatThrownBy(
-            () -> LightkeeperAssertions.assertThat(handle)
-                .hasBlockAt(0, 0, 0)
-                .ofType("minecraft:dirt")
-        )
+        assertThatThrownBy(() -> assertThat(handle).hasBlockAt(0, 0, 0).ofType("minecraft:dirt"))
             .isInstanceOf(AssertionError.class)
             .hasMessageContaining("Expected block at (0,0,0)");
     }
@@ -353,17 +374,23 @@ class HandleAssertionsTest
     void worldBlockAssert_withState_shouldPassWhenStateMatchesSpec()
     {
         // setup
-        final WorldHandle handle = mock(WorldHandle.class);
+        final WorldHandle handle = mock();
         final BlockPos position = new BlockPos(1, 2, 3);
-        final BlockRef blockRef = mock(BlockRef.class);
+        final BlockRef blockRef = mock();
         when(handle.blockAt(position)).thenReturn(blockRef);
-        when(blockRef.state()).thenReturn(new BlockStateSnapshot(
-            "minecraft:lever",
-            "minecraft:lever[face=floor,facing=north,powered=true]",
-            Map.of("face", "floor", "facing", "north", "powered", "true")));
+        when(blockRef.state()).thenReturn(
+            new BlockStateSnapshot(
+                "minecraft:lever",
+                "minecraft:lever[face=floor,facing=north,powered=true]",
+                Map.of(
+                    "face", "floor",
+                    "facing", "north",
+                    "powered", "true"
+                )));
 
         // execute + verify
-        LightkeeperAssertions.assertThat(handle).hasBlockAt(1, 2, 3)
+        assertThat(handle)
+            .hasBlockAt(1, 2, 3)
             .withState(BlockSpec.parse("minecraft:lever[powered=true]"));
     }
 
@@ -371,9 +398,9 @@ class HandleAssertionsTest
     void worldBlockAssert_withState_shouldFailWhenStateDoesNotMatchSpec()
     {
         // setup
-        final WorldHandle handle = mock(WorldHandle.class);
+        final WorldHandle handle = mock();
         final BlockPos position = new BlockPos(0, 0, 0);
-        final BlockRef blockRef = mock(BlockRef.class);
+        final BlockRef blockRef = mock();
         when(handle.blockAt(position)).thenReturn(blockRef);
         when(blockRef.state()).thenReturn(new BlockStateSnapshot(
             "minecraft:lever",
@@ -384,11 +411,7 @@ class HandleAssertionsTest
         final BlockSpec expected = BlockSpec.parse("minecraft:lever[powered=true]");
 
         // execute + verify
-        assertThatThrownBy(
-            () -> LightkeeperAssertions.assertThat(handle)
-                .hasBlockAt(0, 0, 0)
-                .withState(expected)
-        )
+        assertThatThrownBy(() -> assertThat(handle).hasBlockAt(0, 0, 0).withState(expected))
             .isInstanceOf(AssertionError.class)
             .hasMessageContaining(expected.asString())
             .hasMessageContaining("minecraft:lever[face=floor,facing=north,powered=false]");

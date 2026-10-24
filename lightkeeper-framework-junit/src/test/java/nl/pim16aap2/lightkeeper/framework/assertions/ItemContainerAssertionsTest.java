@@ -18,11 +18,8 @@ import java.util.List;
 import java.util.UUID;
 
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 /** Tests shared item semantics, frozen navigation and live player observations. */
 @ExtendWith(MockitoExtension.class)
@@ -65,6 +62,7 @@ class ItemContainerAssertionsTest
             .hasDisplayName("Button")
             .lore()
             .containsExactly("First", "Second");
+
         assertThat(inventory)
             .hasItemAt(1, "stone")
             .items()
@@ -223,6 +221,7 @@ class ItemContainerAssertionsTest
         earlier
             .containsExactly("hel", "lo")
             .doesNotContain("hello");
+
         later.containsExactly("hello");
         verify(gateway, times(2)).playerMessages(id);
     }

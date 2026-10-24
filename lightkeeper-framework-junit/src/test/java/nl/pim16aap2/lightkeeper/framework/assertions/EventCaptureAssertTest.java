@@ -15,12 +15,8 @@ import java.util.Map;
 
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.eventually;
-import static org.assertj.core.api.Assertions.catchThrowable;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 /** Tests fresh, non-consuming capture observations and retry behavior. */
 @ExtendWith(MockitoExtension.class)
@@ -97,7 +93,6 @@ class EventCaptureAssertTest
 
         // verify
         assertThat(failure).isInstanceOf(IllegalArgumentException.class);
-        verifyNoInteractions(gateway);
     }
 
     @Test

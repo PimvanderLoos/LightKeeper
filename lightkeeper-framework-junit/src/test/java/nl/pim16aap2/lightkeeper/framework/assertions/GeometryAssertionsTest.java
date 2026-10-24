@@ -4,16 +4,16 @@ import nl.pim16aap2.lightkeeper.framework.EntitySnapshot;
 import nl.pim16aap2.lightkeeper.framework.EntitySnapshot.Transform;
 import nl.pim16aap2.lightkeeper.framework.Vec3;
 import nl.pim16aap2.lightkeeper.protocol.IProtocolValue;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 import java.util.UUID;
 
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.assertj.core.api.Assertions.*;
 
 /** Tests explicit geometric tolerance contracts and frozen display-transform navigation. */
 class GeometryAssertionsTest
@@ -152,9 +152,7 @@ class GeometryAssertionsTest
         // setup
         final var entity = entity(null);
         final var assertion = assertThat(entity).as("Parent context");
-        final var position = assertion
-            .position()
-            .as("Child context");
+        final var position = assertion.position().as("Child context");
 
         // execute
         final Throwable parentFailure = catchThrowable(() -> assertion.isAt(new Vec3(0, 0, 0), 0));
@@ -175,13 +173,10 @@ class GeometryAssertionsTest
         final var assertion = new ProtocolValueAssert(new IProtocolValue.PVec(3, 4, 0), "Event.position");
 
         // execute
-        assertion
-            .asVector()
-            .isCloseTo(new Vec3(0, 0, 0), 5);
-        final Throwable failure = catchThrowable(
-            () -> assertion
-                .asVector()
-                .isCloseTo(new Vec3(0, 0, 0), 1)
+        assertion.asVector().isCloseTo(new Vec3(0, 0, 0), 5);
+
+        final Throwable failure = catchThrowable(() ->
+            assertion.asVector().isCloseTo(new Vec3(0, 0, 0), 1)
         );
 
         // verify

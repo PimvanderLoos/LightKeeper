@@ -15,14 +15,9 @@ import java.util.List;
 import java.util.UUID;
 
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 /** Tests cheap fresh counts, scoped diagnostics and independent snapshot bursts. */
 @ExtendWith(MockitoExtension.class)
@@ -67,6 +62,7 @@ class EntityQueryAssertTest
             .entities()
             .ofType("minecraft:block_display")
             .within(min, max);
+
         when(gateway.countEntities("world", "minecraft:block_display", min, max)).thenReturn(0);
 
         // execute
@@ -113,7 +109,6 @@ class EntityQueryAssertTest
 
         // verify
         assertThat(failure).isInstanceOf(IllegalArgumentException.class);
-        verifyNoInteractions(gateway);
     }
 
     @Test

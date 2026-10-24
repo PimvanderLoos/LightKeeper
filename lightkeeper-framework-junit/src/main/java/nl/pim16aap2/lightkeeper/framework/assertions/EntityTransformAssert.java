@@ -44,6 +44,6 @@ public final class EntityTransformAssert extends AbstractAssert<EntityTransformA
     private String fieldDescription(String field)
     {
         final String context = descriptionText();
-        return context.isEmpty() ? field : context + "." + field;
+        return context.isEmpty() ? field : (context + "." + field);
     }
 }

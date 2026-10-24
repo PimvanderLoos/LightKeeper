@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.assertj.core.api.Assertions.*;
 
 /** Tests literal-text/action association, inheritance, boundaries and malformed observations. */
 class ChatComponentAssertTest
@@ -44,12 +44,15 @@ class ChatComponentAssertTest
         );
 
         // execute
-        final Throwable failure = catchThrowable(() -> assertThat(component).hasClickableText("Open"));
+        final Throwable failure = catchThrowable(
+            () -> assertThat(component).hasClickableText("Open")
+        );
 
         // verify
         assertThat(failure)
             .isInstanceOf(AssertionError.class)
             .hasMessageContaining("Open");
+
         assertThat(component).runsCommand("Close", "/close");
     }
 
@@ -64,7 +67,9 @@ class ChatComponentAssertTest
         );
 
         // execute
-        final Throwable failure = catchThrowable(() -> assertThat(component).hasClickableText("Open"));
+        final Throwable failure = catchThrowable(
+            () -> assertThat(component).hasClickableText("Open")
+        );
 
         // verify
         assertThat(failure).isInstanceOf(AssertionError.class);
@@ -122,7 +127,10 @@ class ChatComponentAssertTest
         assertThat(component)
             .runsCommand("Parent", "/parent")
             .suggestsCommand("Child", "/child ");
-        final Throwable failure = catchThrowable(() -> assertThat(component).runsCommand("Child", "/parent"));
+
+        final Throwable failure = catchThrowable(
+            () -> assertThat(component).runsCommand("Child", "/parent")
+        );
 
         // verify
         assertThat(failure).isInstanceOf(AssertionError.class);
@@ -143,7 +151,9 @@ class ChatComponentAssertTest
         );
 
         // execute
-        final Throwable failure = catchThrowable(() -> assertThat(component).hasClickableText("Click me"));
+        final Throwable failure = catchThrowable(
+            () -> assertThat(component).hasClickableText("Click me")
+        );
 
         // verify
         assertThat(failure).isInstanceOf(AssertionError.class);
@@ -167,8 +177,13 @@ class ChatComponentAssertTest
         );
 
         // execute
-        final Throwable hoverFailure = catchThrowable(() -> assertThat(hover).hasClickableText("Open"));
-        final Throwable keyFailure = catchThrowable(() -> assertThat(translated).hasClickableText("Open"));
+        final Throwable hoverFailure = catchThrowable(
+            () -> assertThat(hover).hasClickableText("Open")
+        );
+
+        final Throwable keyFailure = catchThrowable(
+            () -> assertThat(translated).hasClickableText("Open")
+        );
 
         // verify
         assertThat(hoverFailure).isInstanceOf(AssertionError.class);
@@ -210,6 +225,7 @@ class ChatComponentAssertTest
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("Failed to parse")
             .hasCauseInstanceOf(IllegalArgumentException.class);
+
         assertThat(component.clickRunCommand()).isEmpty();
     }
 
@@ -258,6 +274,7 @@ class ChatComponentAssertTest
         assertThat(failure)
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("array");
+
         assertThat(component.clickRunCommand()).isEmpty();
     }
 }

@@ -40,8 +40,12 @@ public record MenuItemSnapshot(
      *     Material name or namespaced key.
      * @return Whether the materials match.
      */
-    public boolean matchesMaterial(String expected)
+    public boolean matchesMaterial(@Nullable String expected)
     {
+        if (expected == null)
+        {
+            return false;
+        }
         return materialKey.equals(MaterialKeys.normalize(expected));
     }
 
@@ -55,17 +59,28 @@ public record MenuItemSnapshot(
     public boolean matches(ItemStack expected)
     {
         Objects.requireNonNull(expected, "expected may not be null.");
-        if (!matchesMaterial(
-            expected.getType()
-                .getKey()
-                .toString()
-        ))
+        if (!matchesMaterial(typeKeyAsString(expected)))
+        {
             return false;
+        }
+
         final var meta = expected.getItemMeta();
         final String expectedName = meta == null ? "" : normalizedName(meta.getDisplayName());
-        final @Nullable List<String> expectedLore = meta == null ? null : meta.getLore();
-        return displayName.equals(expectedName)
-            && lore.equals(expectedLore == null ? List.of() : expectedLore);
+        final List<String> expectedLore = meta == null ? null : meta.getLore();
+
+        return displayName.equals(expectedName) &&
+            lore.equals(expectedLore == null ? List.of() : expectedLore);
+    }
+
+    private static @Nullable String typeKeyAsString(@Nullable ItemStack item)
+    {
+        if (item == null)
+        {
+            return null;
+        }
+
+        var key = item.getType().getKeyOrNull();
+        return key == null ? null : key.toString();
     }
 
     private static String normalizedName(@Nullable String name)

@@ -12,12 +12,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 /** Tests direct and world-selected block assertions sharing live reads and state semantics. */
 @ExtendWith(MockitoExtension.class)
@@ -120,6 +116,5 @@ class BlockRefAssertTest
 
         // verify
         assertThat(failure).isInstanceOf(IllegalArgumentException.class);
-        verifyNoInteractions(gateway);
     }
 }

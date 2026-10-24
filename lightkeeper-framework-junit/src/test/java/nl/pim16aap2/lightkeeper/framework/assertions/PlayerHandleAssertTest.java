@@ -1,12 +1,12 @@
 package nl.pim16aap2.lightkeeper.framework.assertions;
 
-import nl.pim16aap2.lightkeeper.framework.FrameworkHandleFactory;
 import nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot;
+import nl.pim16aap2.lightkeeper.framework.FrameworkHandleFactory;
 import nl.pim16aap2.lightkeeper.framework.IFrameworkGatewayView;
 import nl.pim16aap2.lightkeeper.framework.MenuSnapshot;
 import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -20,12 +20,8 @@ import java.util.UUID;
 
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.eventually;
-import static org.assertj.core.api.Assertions.catchThrowable;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 /** Tests permissions and menu availability through real handles and a strict mocked gateway. */
 @ExtendWith(MockitoExtension.class)
@@ -146,7 +142,8 @@ class PlayerHandleAssertTest
     }
 
     @Test
-    @SuppressWarnings("NullAway") // Deliberately tests the non-null input boundary.
+    @SuppressWarnings("NullAway")
+        // Deliberately tests the non-null input boundary.
     void doesNotHavePermission_shouldRejectNullNodeBeforeQuery()
     {
         // setup
@@ -268,9 +265,7 @@ class PlayerHandleAssertTest
                         {"text":"","extra":[{"text":"Open"},{"text":"Close",
                           "click_event":{"action":"run_command","command":"/close"}}]}
                         """
-                )
-            )
-        );
+                )));
 
         // execute
         final Throwable failure = catchThrowable(() -> assertThat(player).hasClickableChatText("Open"));

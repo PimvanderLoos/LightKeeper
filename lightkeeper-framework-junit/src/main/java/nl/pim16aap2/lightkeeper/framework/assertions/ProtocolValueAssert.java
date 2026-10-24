@@ -1,7 +1,7 @@
 package nl.pim16aap2.lightkeeper.framework.assertions;
 
-import nl.pim16aap2.lightkeeper.protocol.IProtocolValue;
 import nl.pim16aap2.lightkeeper.framework.Vec3;
+import nl.pim16aap2.lightkeeper.protocol.IProtocolValue;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.AbstractBooleanAssert;
 import org.assertj.core.api.AbstractComparableAssert;
@@ -55,7 +55,10 @@ public final class ProtocolValueAssert extends AbstractAssert<ProtocolValueAsser
     {
         final Number number = requireType(IProtocolValue.PNumber.class).value();
         if (!(number instanceof Long))
+        {
             failWithMessage("%s: expected an integral number, but was %s.", path, number);
+        }
+
         return extracting(ignored -> number.longValue(), Assertions::assertThat).as(valueDescription());
     }
 
@@ -64,7 +67,10 @@ public final class ProtocolValueAssert extends AbstractAssert<ProtocolValueAsser
     {
         final Number number = requireType(IProtocolValue.PNumber.class).value();
         if (!(number instanceof Double))
+        {
             failWithMessage("%s: expected a floating number, but was %s.", path, number);
+        }
+
         return extracting(ignored -> number.doubleValue(), Assertions::assertThat).as(valueDescription());
     }
 
@@ -90,7 +96,9 @@ public final class ProtocolValueAssert extends AbstractAssert<ProtocolValueAsser
         final var expected = new IProtocolValue.PEnum(enumClass, name);
         final var observed = requireType(IProtocolValue.PEnum.class);
         if (!expected.equals(observed))
+        {
             failWithMessage("%s: expected enum %s, but was %s.", path, expected, observed);
+        }
         return this;
     }
 
@@ -108,7 +116,9 @@ public final class ProtocolValueAssert extends AbstractAssert<ProtocolValueAsser
         final var expected = new IProtocolValue.PRef(className, id);
         final var observed = requireType(IProtocolValue.PRef.class);
         if (!expected.equals(observed))
+        {
             failWithMessage("%s: expected reference %s, but was %s.", path, expected, observed);
+        }
         return this;
     }
 
@@ -130,10 +140,16 @@ public final class ProtocolValueAssert extends AbstractAssert<ProtocolValueAsser
     public ProtocolValueAssert element(int index)
     {
         if (index < 0)
+        {
             throw new IllegalArgumentException("index must be >= 0.");
+        }
+
         final var values = requireType(IProtocolValue.PList.class).values();
         if (index >= values.size())
+        {
             failWithMessage("%s[%d]: expected an element, but list size was %d.", path, index, values.size());
+        }
+
         return extracting(
             ignored -> values.get(index),
             value -> new ProtocolValueAssert(value, path + "[" + index + "]")
@@ -159,10 +175,16 @@ public final class ProtocolValueAssert extends AbstractAssert<ProtocolValueAsser
     {
         Objects.requireNonNull(name, "name may not be null.");
         if (name.isBlank())
+        {
             throw new IllegalArgumentException("name may not be blank.");
+        }
+
         final var values = requireType(IProtocolValue.PRecord.class).fields();
         if (!values.containsKey(name))
+        {
             failWithMessage("%s.%s: expected a field, but keys were %s.", path, name, values.keySet());
+        }
+
         return extracting(ignored -> values.get(name), value -> new ProtocolValueAssert(value, path + "." + name));
     }
 
@@ -184,7 +206,10 @@ public final class ProtocolValueAssert extends AbstractAssert<ProtocolValueAsser
     private <T extends IProtocolValue> T requireType(Class<T> expected)
     {
         if (!expected.isInstance(actual))
+        {
             failWithMessage("%s: expected %s, but was %s.", path, expected.getSimpleName(), String.valueOf(actual));
+        }
+
         return Objects.requireNonNull(expected.cast(actual));
     }
 

@@ -12,11 +12,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 /** Tests severity separation, allowlists and non-consuming fresh error observations. */
 @ExtendWith(MockitoExtension.class)
@@ -48,6 +45,7 @@ class ServerErrorsAssertTest
         assertThat(failure)
             .isInstanceOf(AssertionError.class)
             .hasMessageContainingAll("warnings", "marker");
+
         verify(gateway, times(2)).capturedServerErrors();
     }
 

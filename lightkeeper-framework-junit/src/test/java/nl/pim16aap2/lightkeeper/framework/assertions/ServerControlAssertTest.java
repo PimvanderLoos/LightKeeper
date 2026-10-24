@@ -12,12 +12,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 /** Tests framework-to-server navigation and shared server observations. */
 @ExtendWith(MockitoExtension.class)
@@ -35,7 +31,10 @@ class ServerControlAssertTest
     @AfterEach
     void verifyInteractions()
     {
-        verifyNoMoreInteractions(framework, server);
+        verifyNoMoreInteractions(
+            framework,
+            server
+        );
     }
 
     @Test
@@ -49,7 +48,6 @@ class ServerControlAssertTest
 
         // verify
         assertThat(assertion).isNotNull();
-        verifyNoInteractions(server);
     }
 
     @Test
@@ -63,7 +61,6 @@ class ServerControlAssertTest
 
         // verify
         assertThat(failure).isInstanceOf(AssertionError.class);
-        verifyNoInteractions(server);
     }
 
     @Test
@@ -79,6 +76,7 @@ class ServerControlAssertTest
 
         // verify
         assertThat(result).isSameAs(assertion);
+
         verify(server).platform();
     }
 
@@ -94,6 +92,7 @@ class ServerControlAssertTest
 
         // verify
         assertThat(result).isSameAs(assertion);
+
         verify(server).platform();
     }
 
@@ -110,6 +109,7 @@ class ServerControlAssertTest
         assertThat(failure)
             .isInstanceOf(AssertionError.class)
             .hasMessageContainingAll("PAPER", "UNKNOWN");
+
         verify(server).platform();
     }
 
@@ -121,14 +121,13 @@ class ServerControlAssertTest
         when(server.output()).thenReturn(List.of("Started"), List.of("Started", "Done"));
 
         // execute
-        final var earlier = assertThat(framework)
-            .server()
-            .output();
+        final var earlier = assertThat(framework).server().output();
         final var later = assertThat(framework).serverOutput();
 
         // verify
         earlier.containsExactly("Started");
         later.containsExactly("Started", "Done");
+
         verify(server, times(2)).output();
     }
 
@@ -154,9 +153,7 @@ class ServerControlAssertTest
 
         // execute
         final Throwable failure = catchThrowable(
-            () -> assertThat(framework)
-                .as("Startup check")
-                .isPaper()
+            () -> assertThat(framework).as("Startup check").isPaper()
         );
 
         // verify
@@ -174,9 +171,7 @@ class ServerControlAssertTest
 
         // execute
         final Throwable failure = catchThrowable(
-            () -> assertThat(framework)
-                .overridingErrorMessage("Wrong startup platform")
-                .isPaper()
+            () -> assertThat(framework).overridingErrorMessage("Wrong startup platform").isPaper()
         );
 
         // verify
@@ -214,7 +209,9 @@ class ServerControlAssertTest
         when(framework.server()).thenReturn(server);
         when(server.platform()).thenReturn(Platform.SPIGOT);
         when(server.plugin("Missing")).thenReturn(java.util.Optional.empty());
-        final var frameworkAssertion = assertThat(framework).as("Framework context");
+
+        final var frameworkAssertion = assertThat(framework)
+            .as("Framework context");
         final var serverAssertion = frameworkAssertion
             .server()
             .as("Server context");
@@ -232,10 +229,12 @@ class ServerControlAssertTest
             .isInstanceOf(AssertionError.class)
             .hasMessageContaining("Framework context")
             .hasMessageNotContaining("Plugin context");
+
         assertThat(serverFailure)
             .isInstanceOf(AssertionError.class)
             .hasMessageContaining("Server context")
             .hasMessageNotContaining("Plugin context");
+
         assertThat(pluginFailure)
             .isInstanceOf(AssertionError.class)
             .hasMessageContaining("Plugin context");

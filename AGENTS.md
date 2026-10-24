@@ -118,6 +118,37 @@ control/assert server state through a typed framework API.
   - Happy-path behavior.
   - Failure/validation behavior with clear assertions.
 
+### Review-derived test preferences
+
+- With `MockitoExtension`, rely on its default `STRICT_STUBS` behavior. Do not repeat
+  `@MockitoSettings(strictness = Strictness.STRICT_STUBS)` unless overriding an inherited setting requires it.
+- When the same mocks need `verifyNoMoreInteractions(...)` after every test, put that common check in one
+  `@AfterEach` method. Keep behavior-specific `verify(...)` and `verifyNoInteractions(...)` checks in the tests.
+- Prefer separate tests for independent outcomes. For integration tests, check the extension's lifecycle before
+  combining scenarios to save time: ordinary tests share a server within their class. Combine scenarios for
+  performance only when the added per-test overhead is measured to exceed about one second, or when they form
+  one behavior that should be tested together.
+
+## Java formatting learned from PR reviews
+
+Review feedback applies to every relevant change in the PR, including files and lines without review comments.
+Audit the complete diff for each learned rule; commented locations are examples, not the limits of the fix.
+
+- Use `S` for the assertion's self type and `A` for the actual subject type, consistently in assertion base classes,
+  bounds, return types and Javadocs. Explain those meanings explicitly in `@param` descriptions. This preserves
+  AssertJ's self/actual terminology while satisfying this repository's single-letter generic-name rule.
+- Put each Javadoc `@param` description on the following line, indented four spaces beyond the tag's leading
+  `* `, including generic and record-component parameters. Do not keep the description beside the parameter name.
+- When a method call's arguments do not fit on one line, put the opening parenthesis at the end of the call line,
+  each argument on its own indented line, and the closing `);` on its own line. Apply the same layout to multiline
+  lambda arguments; avoid packing other arguments or nested fluent calls beside the lambda.
+- For fluent chains with more than one chained call, put each chained call on its own line. A single chained call
+  may stay inline. Short, simple parallel assertions may also stay inline when they fit the line width and keeping
+  corresponding differences vertically aligned improves comparison; avoid this exception for nested calls.
+- Format related assertions consistently: if one in a comparable group needs multiple lines, split the others too.
+  Keep builder/stream creation together on its first line (for example, `framework.bots().builder()` or
+  `items.stream()`); put subsequent configuration, transformations and terminal operations on separate lines.
+
 ## How to extend LightKeeper
 
 ### Add a new runtime RPC action

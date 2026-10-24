@@ -4,7 +4,7 @@ import nl.pim16aap2.lightkeeper.framework.CommandResult;
 import org.junit.jupiter.api.Test;
 
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.assertj.core.api.Assertions.*;
 
 /** Tests returned command flags and actionable dispatch diagnostics. */
 class CommandResultAssertTest

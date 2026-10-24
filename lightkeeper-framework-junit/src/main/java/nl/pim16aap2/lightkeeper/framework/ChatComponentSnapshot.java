@@ -52,16 +52,20 @@ public record ChatComponentSnapshot(String json)
      * non-literal content prevent accidental association across unrelated portions of a message.
      *
      * @return Immutable literal click actions; textless style nodes may carry an empty text run.
-     * @throws IllegalArgumentException When JSON or supported component structure cannot be decoded.
+     *
+     * @throws IllegalArgumentException
+     *     When JSON or supported component structure cannot be decoded.
      */
     public List<ClickAction> clickActions()
     {
         final List<LiteralRun> runs = new ArrayList<>();
         try
         {
-            final @Nullable JsonNode root = OBJECT_MAPPER.readTree(json);
+            final JsonNode root = OBJECT_MAPPER.readTree(json);
             if (root == null)
+            {
                 throw new IllegalArgumentException("Component JSON is empty.");
+            }
             readRuns(root, null, runs);
         }
         catch (JacksonException exception)
@@ -70,7 +74,7 @@ public record ChatComponentSnapshot(String json)
         }
 
         final List<ClickAction> actions = new ArrayList<>();
-        @Nullable ClickEvent active = null;
+        ClickEvent active = null;
         final StringBuilder text = new StringBuilder();
         for (final var run : runs)
         {
@@ -81,7 +85,9 @@ public record ChatComponentSnapshot(String json)
                 active = run.event();
             }
             if (active != null)
+            {
                 text.append(run.text());
+            }
         }
         appendAction(actions, active, text);
         return List.copyOf(actions);
@@ -147,7 +153,9 @@ public record ChatComponentSnapshot(String json)
             Objects.requireNonNull(text, "text may not be null.");
             Objects.requireNonNull(action, "action may not be null.");
             if (action.isBlank())
+            {
                 throw new IllegalArgumentException("action may not be blank.");
+            }
         }
     }
 
@@ -177,8 +185,9 @@ public record ChatComponentSnapshot(String json)
         Objects.requireNonNull(command, "command may not be null.");
         return clickActions().stream()
             .anyMatch(
-                click -> click.text().contains(fragment)
-                    && action.equals(click.action()) && command.equals(click.value())
+                click -> click.text().contains(fragment) &&
+                    action.equals(click.action()) &&
+                    command.equals(click.value())
             );
     }
 
@@ -188,9 +197,11 @@ public record ChatComponentSnapshot(String json)
         {
             for (final var click : clickActions())
             {
-                final @Nullable String value = click.value();
+                final String value = click.value();
                 if (action.equals(click.action()) && value != null)
+                {
                     return Optional.of(value);
+                }
             }
             return Optional.empty();
         }
@@ -204,7 +215,9 @@ public record ChatComponentSnapshot(String json)
     {
         Objects.requireNonNull(fragment, "fragment may not be null.");
         if (fragment.isEmpty())
+        {
             throw new IllegalArgumentException("fragment may not be empty.");
+        }
     }
 
     private static void readRuns(JsonNode node, @Nullable ClickEvent inherited, List<LiteralRun> runs)
@@ -217,23 +230,31 @@ public record ChatComponentSnapshot(String json)
         if (node.isArray())
         {
             if (node.isEmpty())
+            {
                 throw new IllegalArgumentException("Component array must not be empty.");
+            }
             final JsonNode first = node.path(0);
             readRuns(first, inherited, runs);
-            final @Nullable ClickEvent parent = firstStyle(first, inherited);
+            final ClickEvent parent = firstStyle(first, inherited);
             for (int index = 1; index < node.size(); index++)
+            {
                 readRuns(node.path(index), parent, runs);
+            }
             return;
         }
         if (!node.isObject())
+        {
             throw new IllegalArgumentException("Expected a literal string, component object or component array.");
+        }
 
-        final @Nullable ClickEvent effective = clickFor(node, inherited);
+        final ClickEvent effective = clickFor(node, inherited);
         if (node.has("text"))
         {
             final JsonNode text = node.path("text");
             if (!text.isString())
+            {
                 throw new IllegalArgumentException("Literal component text must be a string.");
+            }
             appendLiteral(runs, text.asString(), effective);
         }
         else
@@ -244,17 +265,25 @@ public record ChatComponentSnapshot(String json)
 
         final JsonNode extra = node.path("extra");
         if (extra.isMissingNode())
+        {
             return;
+        }
         if (!extra.isArray())
+        {
             throw new IllegalArgumentException("Component extra children must be an array.");
+        }
         for (final JsonNode child : extra)
+        {
             readRuns(child, effective, runs);
+        }
     }
 
     private static @Nullable ClickEvent firstStyle(JsonNode node, @Nullable ClickEvent inherited)
     {
         if (node.isArray())
+        {
             return firstStyle(node.path(0), inherited);
+        }
         return node.isObject() ? clickFor(node, inherited) : inherited;
     }
 
@@ -264,19 +293,27 @@ public record ChatComponentSnapshot(String json)
         {
             final JsonNode click = node.path(key);
             if (click.isMissingNode() || click.isNull())
+            {
                 continue;
-            if (!click.isObject() || !click.path("action").isString() || click.path("action")
-                .asString()
-                .isBlank())
+            }
+            if (!click.isObject() ||
+                !click.path("action").isString() ||
+                click.path("action").asString().isBlank())
+            {
                 throw new IllegalArgumentException("Click event must contain a nonblank action name.");
-            @Nullable String value = null;
+            }
+            String value = null;
             for (final String field : List.of("command", "value", "url"))
             {
                 final JsonNode payload = click.path(field);
                 if (payload.isMissingNode() || payload.isNull())
+                {
                     continue;
+                }
                 if (!payload.isString())
+                {
                     throw new IllegalArgumentException("Click text payload must be a string.");
+                }
                 value = payload.asString();
                 break;
             }
@@ -288,12 +325,16 @@ public record ChatComponentSnapshot(String json)
     private static void appendLiteral(List<LiteralRun> runs, String text, @Nullable ClickEvent event)
     {
         if (!text.isEmpty() || event != null)
+        {
             runs.add(new LiteralRun(text, event));
+        }
     }
 
     private static void appendAction(List<ClickAction> actions, @Nullable ClickEvent event, StringBuilder text)
     {
         if (event != null)
+        {
             actions.add(new ClickAction(text.toString(), event.action(), event.value()));
+        }
     }
 }

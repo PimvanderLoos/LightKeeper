@@ -53,12 +53,14 @@ abstract class AbstractMenuAssert<S extends AbstractMenuAssert<S, A>, A>
         Objects.requireNonNull(expectedTitle, "expectedTitle may not be null.");
         final var observed = openSnapshot();
         if (!expectedTitle.equals(observed.title()))
+        {
             failWithMessage(
                 "Expected open menu title '%s' for %s, but was '%s'.",
                 expectedTitle,
                 menuDescription(),
                 observed.title()
             );
+        }
         return myself;
     }
 
@@ -72,6 +74,7 @@ abstract class AbstractMenuAssert<S extends AbstractMenuAssert<S, A>, A>
     {
         final var observed = menuSnapshot();
         if (observed.open() != expected)
+        {
             failWithMessage(
                 "Expected menu for %s to be %s, but it was %s (title='%s').",
                 menuDescription(),
@@ -79,6 +82,7 @@ abstract class AbstractMenuAssert<S extends AbstractMenuAssert<S, A>, A>
                 observed.open() ? "open" : "closed",
                 observed.title()
             );
+        }
         return myself;
     }
 
@@ -86,7 +90,9 @@ abstract class AbstractMenuAssert<S extends AbstractMenuAssert<S, A>, A>
     {
         final var observed = menuSnapshot();
         if (!observed.open())
+        {
             failWithMessage("Expected an open menu for %s, but it was closed.", menuDescription());
+        }
         return observed;
     }
 }

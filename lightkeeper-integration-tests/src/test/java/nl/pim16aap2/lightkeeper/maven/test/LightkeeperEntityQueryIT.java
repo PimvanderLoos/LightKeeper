@@ -62,8 +62,7 @@ class LightkeeperEntityQueryIT
         assertThat(snapshot.uuid()).isNotNull();
         assertThat(snapshot.typeKey()).isEqualTo(BLOCK_DISPLAY);
         assertThat(snapshot.position()).isEqualTo(new Vec3(8.5, 100.0, 8.5));
-        assertThat(snapshot)
-            .isAt(new Vec3(8.5, 100.0, 8.5), 0.0001);
+        assertThat(snapshot).isAt(new Vec3(8.5, 100.0, 8.5), 0.0001);
         assertThat(snapshot)
             .transform()
             .translation()
@@ -117,10 +116,16 @@ class LightkeeperEntityQueryIT
             WorldSpec.WorldEnvironment.NORMAL,
             99L
         ));
-        final CommandResult forceloadResult = framework.server().executeCommand(
-            CommandSource.CONSOLE,
-            "execute in minecraft:%s run forceload add 4 4".formatted(world.name()));
+
+        final CommandResult forceloadResult = framework
+            .server()
+            .executeCommand(
+                CommandSource.CONSOLE,
+                "execute in minecraft:%s run forceload add 4 4".formatted(world.name())
+            );
+
         assertThat(forceloadResult.success()).isTrue();
+
         final String summonCommand =
             "execute in minecraft:%s run summon minecraft:armor_stand 4.5 100.0 4.5 {Marker:1b,NoGravity:1b}"
                 .formatted(world.name());

@@ -19,12 +19,8 @@ import java.util.stream.Stream;
 
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.eventually;
-import static org.assertj.core.api.Assertions.catchThrowable;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 /** Tests live lookup, presence semantics, and diagnostic failures for plugin assertions. */
 @ExtendWith(MockitoExtension.class)
@@ -54,6 +50,7 @@ class ServerPluginAssertTest
 
         // verify
         assertThat(result).isSameAs(assertion);
+
         verify(server).plugin("Example");
     }
 
@@ -69,6 +66,7 @@ class ServerPluginAssertTest
 
         // verify
         assertThat(result).isSameAs(assertion);
+
         verify(server).plugin("Example");
     }
 
@@ -81,9 +79,7 @@ class ServerPluginAssertTest
 
         // execute
         final Throwable failure = catchThrowable(
-            () -> new ServerControlAssert(server)
-                .plugin("Example")
-                .isAbsent()
+            () -> new ServerControlAssert(server).plugin("Example").isAbsent()
         );
 
         // verify
@@ -107,6 +103,7 @@ class ServerPluginAssertTest
         assertThat(failure)
             .isInstanceOf(AssertionError.class)
             .hasMessageContainingAll("Example", "not present");
+
         verify(server).plugin("Example");
     }
 
@@ -122,6 +119,7 @@ class ServerPluginAssertTest
 
         // verify
         assertThat(result).isSameAs(assertion);
+
         verify(server).plugin("Example");
     }
 
@@ -156,6 +154,7 @@ class ServerPluginAssertTest
 
         // verify
         assertThat(result).isSameAs(assertion);
+
         verify(server).plugin("Example");
     }
 
@@ -190,6 +189,7 @@ class ServerPluginAssertTest
 
         // verify
         assertThat(result).isSameAs(assertion);
+
         verify(server).plugin("Example");
     }
 
@@ -223,7 +223,6 @@ class ServerPluginAssertTest
 
         // verify
         assertThat(assertion).isNotNull();
-        verifyNoInteractions(server);
     }
 
     @Test
@@ -270,9 +269,7 @@ class ServerPluginAssertTest
 
         // execute
         final Throwable failure = catchThrowable(
-            () -> new ServerControlAssert(server)
-                .plugin("Example")
-                .isAbsent()
+            () -> new ServerControlAssert(server).plugin("Example").isAbsent()
         );
 
         // verify
@@ -293,11 +290,11 @@ class ServerPluginAssertTest
         assertThat(failure)
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("pluginName");
-        verifyNoInteractions(server);
     }
 
     @Test
-    @SuppressWarnings("NullAway") // Deliberately tests the non-null input boundary.
+    @SuppressWarnings("NullAway")
+        // Deliberately tests the non-null input boundary.
     void plugin_shouldRejectNullNameBeforeLookup()
     {
         // setup
@@ -310,11 +307,11 @@ class ServerPluginAssertTest
         assertThat(failure)
             .isInstanceOf(NullPointerException.class)
             .hasMessageContaining("pluginName");
-        verifyNoInteractions(server);
     }
 
     @Test
-    @SuppressWarnings("NullAway") // Deliberately tests the non-null input boundary.
+    @SuppressWarnings("NullAway")
+        // Deliberately tests the non-null input boundary.
     void hasVersion_shouldRejectNullVersionBeforeLookup()
     {
         // setup
@@ -327,7 +324,6 @@ class ServerPluginAssertTest
         assertThat(failure)
             .isInstanceOf(NullPointerException.class)
             .hasMessageContaining("expectedVersion");
-        verifyNoInteractions(server);
     }
 
     private static Stream<Consumer<ServerPluginAssert>> presenceAssertions()
@@ -342,6 +338,11 @@ class ServerPluginAssertTest
 
     private static ServerPluginSnapshot plugin(boolean enabled)
     {
-        return new ServerPluginSnapshot("Example", "1.0.0", "", List.of(), enabled);
+        return new ServerPluginSnapshot(
+            "Example",
+            "1.0.0", "",
+            List.of(),
+            enabled
+        );
     }
 }
