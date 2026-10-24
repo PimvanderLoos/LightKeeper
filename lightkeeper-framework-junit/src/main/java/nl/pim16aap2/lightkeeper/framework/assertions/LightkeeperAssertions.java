@@ -13,6 +13,12 @@ import nl.pim16aap2.lightkeeper.protocol.IProtocolValue;
 import nl.pim16aap2.lightkeeper.framework.CommandResult;
 import nl.pim16aap2.lightkeeper.framework.InteractionResult;
 import nl.pim16aap2.lightkeeper.framework.ServerErrorsHandle;
+import nl.pim16aap2.lightkeeper.framework.BlockRef;
+import nl.pim16aap2.lightkeeper.framework.BlockStateSnapshot;
+import nl.pim16aap2.lightkeeper.framework.EntityQuery;
+import nl.pim16aap2.lightkeeper.framework.EntitySnapshot;
+import nl.pim16aap2.lightkeeper.framework.EntitySnapshot.Transform;
+import nl.pim16aap2.lightkeeper.framework.Vec3;
 import org.assertj.core.api.Assertions;
 import org.jspecify.annotations.Nullable;
 
@@ -33,6 +39,60 @@ public final class LightkeeperAssertions extends Assertions
 
     private LightkeeperAssertions()
     {
+    }
+
+    /**
+     * @param actual Live block address.
+     * @return Eager block assertions.
+     */
+    public static BlockRefAssert assertThat(@Nullable BlockRef actual)
+    {
+        return new BlockRefAssert(actual);
+    }
+
+    /**
+     * @param actual Frozen block state.
+     * @return Partial-state assertions.
+     */
+    public static BlockStateSnapshotAssert assertThat(@Nullable BlockStateSnapshot actual)
+    {
+        return new BlockStateSnapshotAssert(actual);
+    }
+
+    /**
+     * @param actual Live entity query.
+     * @return Eager query assertions.
+     */
+    public static EntityQueryAssert assertThat(@Nullable EntityQuery actual)
+    {
+        return new EntityQueryAssert(actual);
+    }
+
+    /**
+     * @param actual Frozen entity observation.
+     * @return Position and transform assertions.
+     */
+    public static EntitySnapshotAssert assertThat(@Nullable EntitySnapshot actual)
+    {
+        return new EntitySnapshotAssert(actual);
+    }
+
+    /**
+     * @param actual Frozen display transformation.
+     * @return Transform navigation.
+     */
+    public static EntityTransformAssert assertThat(@Nullable Transform actual)
+    {
+        return new EntityTransformAssert(actual);
+    }
+
+    /**
+     * @param actual Frozen vector.
+     * @return Explicit tolerance comparisons.
+     */
+    public static Vec3Assert assertThat(@Nullable Vec3 actual)
+    {
+        return new Vec3Assert(actual);
     }
 
     /**

@@ -310,8 +310,12 @@ class HandleAssertionsTest
     {
         // setup
         final WorldHandle handle = mock(WorldHandle.class);
-        when(handle.blockTypeAt(new BlockPos(1, 2, 3))).thenReturn("stone");
-        when(handle.blockTypeAt(new BlockPos(4, 5, 6))).thenReturn("minecraft:dirt");
+        final BlockRef first = mock(BlockRef.class);
+        final BlockRef second = mock(BlockRef.class);
+        when(handle.blockAt(new BlockPos(1, 2, 3))).thenReturn(first);
+        when(handle.blockAt(new BlockPos(4, 5, 6))).thenReturn(second);
+        when(first.material()).thenReturn("minecraft:stone");
+        when(second.material()).thenReturn("minecraft:dirt");
 
         // execute + verify
         LightkeeperAssertions.assertThat(handle).hasBlockAt(1, 2, 3).ofType(Material.STONE);
@@ -323,7 +327,11 @@ class HandleAssertionsTest
     {
         // setup
         final WorldHandle handle = mock(WorldHandle.class);
-        when(handle.blockTypeAt(new BlockPos(0, 0, 0))).thenReturn("minecraft:stone");
+        final BlockRef block = mock(BlockRef.class);
+        when(handle.blockAt(new BlockPos(0, 0, 0))).thenReturn(block);
+        when(block.material()).thenReturn("minecraft:stone");
+        when(block.pos()).thenReturn(new BlockPos(0, 0, 0));
+        when(block.worldName()).thenReturn("world");
 
         // execute + verify
         assertThatThrownBy(() ->
@@ -362,6 +370,8 @@ class HandleAssertionsTest
             "minecraft:lever",
             "minecraft:lever[face=floor,facing=north,powered=false]",
             Map.of("face", "floor", "facing", "north", "powered", "false")));
+        when(blockRef.pos()).thenReturn(position);
+        when(blockRef.worldName()).thenReturn("world");
         final BlockSpec expected = BlockSpec.parse("minecraft:lever[powered=true]");
 
         // execute + verify

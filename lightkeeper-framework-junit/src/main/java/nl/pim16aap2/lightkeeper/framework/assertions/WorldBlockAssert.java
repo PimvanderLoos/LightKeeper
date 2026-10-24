@@ -2,97 +2,61 @@ package nl.pim16aap2.lightkeeper.framework.assertions;
 
 import nl.pim16aap2.lightkeeper.framework.BlockPos;
 import nl.pim16aap2.lightkeeper.framework.BlockSpec;
-import nl.pim16aap2.lightkeeper.framework.BlockStateSnapshot;
-import nl.pim16aap2.lightkeeper.framework.MaterialKeys;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import org.assertj.core.api.AbstractAssert;
 import org.bukkit.Material;
 import org.jspecify.annotations.Nullable;
 
-import java.util.Objects;
-
-/**
- * Assertions for a specific block position in a world.
- */
+/** World-selected block assertions delegating to the canonical live block subject. */
 public final class WorldBlockAssert extends AbstractAssert<WorldBlockAssert, @Nullable WorldHandle>
 {
+    /** Address selected from the world. */
     private final BlockPos position;
 
-    WorldBlockAssert(WorldHandle worldHandle, BlockPos position)
+    WorldBlockAssert(WorldHandle actual, BlockPos position)
     {
-        super(worldHandle, WorldBlockAssert.class);
+        super(actual, WorldBlockAssert.class);
         this.position = position;
     }
 
     /**
-     * Asserts that the block has the expected Bukkit material.
+     * Checks a Bukkit material using one live block read.
      *
-     * @param material
-     *     Expected material.
-     * @return This assertion for fluent chaining.
+     * @param material Expected material.
+     * @return This assertion.
      */
     public WorldBlockAssert ofType(Material material)
     {
-        return ofType(material.getKey().toString());
+        block().ofType(material);
+        return this;
     }
 
     /**
-     * Asserts that the block has the expected namespaced material key.
+     * Checks a normalized material key using one live block read.
      *
-     * @param materialKey
-     *     Expected material key (for example {@code minecraft:stone}).
-     * @return This assertion for fluent chaining.
+     * @param materialKey Material name or namespaced key.
+     * @return This assertion.
      */
     public WorldBlockAssert ofType(String materialKey)
     {
-        final var actual = nonNullActual();
-        final String actualMaterial = MaterialKeys.normalize(actual.blockTypeAt(position));
-        final String expectedMaterial = MaterialKeys.normalize(materialKey);
-        if (!Objects.equals(actualMaterial, expectedMaterial))
-        {
-            failWithMessage(
-                "Expected block at (%d,%d,%d) to be '%s' but was '%s'.",
-                position.x(),
-                position.y(),
-                position.z(),
-                expectedMaterial,
-                actualMaterial
-            );
-        }
+        block().ofType(materialKey);
         return this;
     }
 
     /**
-     * Asserts that the block currently matches a spec: material equal, and every property the spec names has
-     * the spec's value (partial matching — unnamed properties are ignored).
+     * Checks a partial state spec using one frozen observation.
      *
-     * @param expected
-     *     The expected block spec.
-     * @return This assertion for fluent chaining.
+     * @param expected Partial expected state.
+     * @return This assertion.
      */
     public WorldBlockAssert withState(BlockSpec expected)
     {
-        Objects.requireNonNull(expected, "expected may not be null.");
-        final var actual = nonNullActual();
-        final BlockStateSnapshot state = actual.blockAt(position).state();
-        if (!state.matches(expected))
-        {
-            failWithMessage(
-                "Expected block at (%d,%d,%d) to match '%s' but was '%s'.",
-                position.x(),
-                position.y(),
-                position.z(),
-                expected.asString(),
-                state.blockData()
-            );
-        }
+        block().withState(expected);
         return this;
     }
 
-    @SuppressWarnings({"NullAway", "DataFlowIssue"}) // we call isNotNull() first, so actual is not null after that
-    private WorldHandle nonNullActual()
+    private BlockRefAssert block()
     {
-        isNotNull();
-        return actual;
+        return extracting(world -> world.blockAt(position), BlockRefAssert::new);
     }
 }

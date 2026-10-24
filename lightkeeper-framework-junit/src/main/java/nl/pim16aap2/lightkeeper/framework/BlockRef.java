@@ -41,6 +41,12 @@ public final class BlockRef
         return position;
     }
 
+    /** @return This block address's world name, without querying the server. */
+    public String worldName()
+    {
+        return worldName;
+    }
+
     /**
      * Gets the block's current material.
      *

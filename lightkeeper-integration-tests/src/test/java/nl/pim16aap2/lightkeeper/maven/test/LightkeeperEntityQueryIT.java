@@ -55,7 +55,7 @@ class LightkeeperEntityQueryIT
         // verify
         assertThat(summonResult.success()).isTrue();
         eventually(Duration.ofSeconds(10), () ->
-            assertThat(world.entities().ofType(BLOCK_DISPLAY).count()).isEqualTo(1));
+            assertThat(world.entities().ofType(BLOCK_DISPLAY)).hasCount(1));
 
         final List<EntitySnapshot> snapshots = world.entities().ofType(BLOCK_DISPLAY).snapshot();
         assertThat(snapshots).hasSize(1);
@@ -63,6 +63,9 @@ class LightkeeperEntityQueryIT
         assertThat(snapshot.uuid()).isNotNull();
         assertThat(snapshot.typeKey()).isEqualTo(BLOCK_DISPLAY);
         assertThat(snapshot.position()).isEqualTo(new Vec3(8.5, 100.0, 8.5));
+        assertThat(snapshot).isAt(new Vec3(8.5, 100.0, 8.5), 0.0001);
+        assertThat(snapshot).transform().translation().isCloseTo(new Vec3(0.25, 0.5, 0.75), 0.0001);
+        assertThat(snapshot).transform().scale().hasComponentsCloseTo(new Vec3(2.0, 3.0, 4.0), 0.0001);
         assertThat(snapshot.customName()).isEqualTo("lk-display");
         assertThat(snapshot.pdcKeys()).isEmpty();
         assertThat(snapshot.tick()).isPositive();
@@ -82,8 +85,8 @@ class LightkeeperEntityQueryIT
         final var boundedFar = world.entities()
             .ofType(BLOCK_DISPLAY)
             .within(new BlockPos(100, 90, 100), new BlockPos(116, 110, 116));
-        assertThat(boundedNear.count()).isEqualTo(1);
-        assertThat(boundedFar.count()).isZero();
+        assertThat(boundedNear).hasCount(1).isNotEmpty();
+        assertThat(boundedFar).isEmpty();
 
         // Type filtering: no armor stands were summoned, so the same box must be empty for that type.
         assertThat(world.entities()

@@ -42,12 +42,12 @@ class LightkeeperBlockStateIT
         eventually(Duration.ofSeconds(10), () ->
             assertThat(world).hasBlockAt(leverPosition).withState(BlockSpec.of("lever").with("powered", "true")));
         final BlockRef lever = world.blockAt(leverPosition);
-        assertThat(lever.material()).isEqualTo("minecraft:lever");
+        assertThat(lever).ofType("lever").withState(BlockSpec.parse("lever[powered=true]"));
         // One frozen snapshot for the multi-property reads, per the BlockRef consistency guidance.
         final var leverState = lever.state();
         assertThat(leverState.property("face")).isEqualTo("floor");
         assertThat(leverState.blockData()).contains("powered=true");
-        assertThat(leverState.matches(BlockSpec.parse("minecraft:lever[powered=true]"))).isTrue();
+        assertThat(leverState).withState(BlockSpec.parse("minecraft:lever[powered=true]"));
         // The live is() path re-probes the server by design; covered here via the negative case.
         assertThat(lever.is(BlockSpec.parse("minecraft:lever[powered=false]"))).isFalse();
     }

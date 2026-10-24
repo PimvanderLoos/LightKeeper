@@ -140,8 +140,8 @@ Source: [WorldHandle][WorldHandle].
 
 | API / observation | Decision | Required semantics |
 |---|---|---|
-| [BlockRef][BlockRef]: `material`, `state`, `is`; `pos` | Add P2: direct block assertion entry point using `ofType` / `withState`; Standard address equality | The reference is live. Reuse existing material normalization and spec matching. Include world/address context where available; do not duplicate the existing world-selected block implementation. |
-| [BlockStateSnapshot][BlockStateSnapshot]: `materialKey`, `blockData`, `properties`, `property(name)`, `matches(spec)` | Add P2: frozen-state `withState(spec)`; Standard string/map/property assertions | Partial matching uses `matches`: ignore unspecified properties. Failures show expected spec and observed full state. Exact record/string equality is available when partial matching is not intended. |
+| [BlockRef][BlockRef]: `material`, `state`, `is`; `pos`, `worldName` | Existing: [live `ofType` / `withState` assertions][block-ref-assert]; Standard address equality | World-selected assertions delegate to this implementation. Each check re-reads once; failures include world/coordinates. Address metadata getters do not query the server. |
+| [BlockStateSnapshot][BlockStateSnapshot]: `materialKey`, `blockData`, `properties`, `property(name)`, `matches(spec)` | Existing: [frozen `withState(spec)`][block-state-assert]; Standard string/map/property assertions | Partial matching reuses `matches` and ignores unspecified properties. Failures show expected spec and actual full state. Standard equality remains exact. |
 | [BlockSpec][BlockSpec]: `materialKey`, `properties`, both `of` overloads, `parse`, `with`, `asString` | Standard values; Exclude construction/parsing matchers | This is expected input. Constructor/parser validation uses ordinary exception assertions; do not reimplement block parsing inside the assertion layer. |
 | [BlockPos][BlockPos]: `x`, `y`, `z` | Standard record and numeric assertions | Integer coordinate equality needs no domain matcher. Constructors and generated record methods are not additional assertion subjects. |
 | `isAir`, `isSolid`, `isPassable`, negative spec/material aliases | Exclude additional convenience matchers for now | Exact air material is expressible through `ofType`; solidity/passability need server-derived properties not currently exposed. Avoid expanding synonyms for existing spec/material checks without a concrete semantic need. |
@@ -153,8 +153,8 @@ Sources: [EntityQuery][EntityQuery], [EntitySnapshot][EntitySnapshot].
 | API / observation | Decision | Required semantics |
 |---|---|---|
 | `ofType(typeKey)`, `within(min, max)` | Exclude assertions about query construction | These select the observation. Assert its result; do not silently change filters in a matcher. Bounds use hitbox intersection, not position containment. |
-| `count()` | Add P2: `hasCount`, `isEmpty`, `isNotEmpty` on a live query | Use the cheap count RPC. Standard numeric assertions on `count()` remain sufficient for ranges. Include query filters/bounds in failure diagnostics through an explicit read-only query description if needed. |
-| `snapshot()` | Standard list assertions plus Add P2 snapshot element assertions | Read one burst for consistency. Use list operations for size, ordering where specified, predicates, extraction, and UUID-based correlation. Do not assume separate queries return entities in stable order. |
+| `count()`, `description()` | Existing: [live `hasCount`, `isEmpty`, `isNotEmpty`][query-assert] | Uses only the count RPC. A read-only description includes world, type and bounds without an RPC. Standard numeric assertions remain sufficient for ranges. |
+| `snapshot()` | Existing snapshot-list navigation plus [frozen element assertions][entity-assert] | One burst preserves consistency. Standard list operations handle size, predicates and UUID correlation. Do not assume stable ordering across queries. |
 | Zero results / disappearance | Exclude inference of deletion | Queries only see loaded chunks and matching entities. An empty result does not distinguish removal, movement outside bounds, and unloading. |
 
 ### Entity snapshot fields and geometry
@@ -162,8 +162,8 @@ Sources: [EntityQuery][EntityQuery], [EntitySnapshot][EntitySnapshot].
 | Observation | Decision | Required semantics |
 |---|---|---|
 | `uuid`, `typeKey`, `customName`, `pdcKeys`, `tick` | Standard initially | Equality, nullability, list containment, and session-local tick comparisons are clear. Do not add one wrapper per field merely for parity. PDC keys do not expose their values. |
-| `position`; [Vec3][Vec3]: `x`, `y`, `z` | Add P2: `isAt(expected, tolerance)` with shared vector comparison | Define an inclusive Euclidean distance bound; require finite coordinates and finite nonnegative tolerance. Include the actual position and deviation. Exact record equality remains available for deliberately exact fixtures. |
-| `transform`; nested `EntitySnapshot.Transform`: `translation`, `scale`, `leftRotation`, `rightRotation` | Add P2: structured transform navigation with tolerance-aware comparisons | A non-display entity has no transform; navigating it must fail clearly. Check translation, scale, and rotation separately when they explain the expected behavior better. Define scale tolerance per component; reuse vector comparison rather than copy it. |
+| `position`; [Vec3][Vec3]: `x`, `y`, `z` | Existing: `isAt(expected, tolerance)` and [vector assertions][vector-assert] | Inclusive Euclidean distance via `isCloseTo`, avoiding squared-distance overflow. Expected coordinates/tolerance must be finite and tolerance nonnegative; non-finite observations fail assertions. Diagnostics retain entity identity and actual deviation. |
+| `transform`; nested `EntitySnapshot.Transform`: `translation`, `scale`, `leftRotation`, `rightRotation` | Existing: [transform navigation][transform-assert] | Missing transforms fail with entity identity. Translation uses shared Euclidean comparisons; scale supports `hasComponentsCloseTo` with an inclusive per-axis tolerance. Rotations expose ordinary exact/component assertions, without claiming orientation equivalence. |
 | Nested `EntitySnapshot.Rotation`: `x`, `y`, `z`, `w` | Deferred semantic rotation assertion; Standard component/exact comparisons | Quaternion orientation comparison needs a documented angular tolerance, normalization policy, and treatment of equivalent `q` / `-q`. Do not label component equality as orientation equality. |
 | Entity health, equipment, block-display block data, text-display text, PDC values | Deferred | These are absent from `EntitySnapshot`. A type key or transformation cannot prove any of these properties. |
 
@@ -272,7 +272,7 @@ event snapshots, so they require an explicit decision rather than a blanket prot
 | `PEnum.enumClass`, `name` | Existing: `hasEnum(enumClass, name)` | Compares both declaring type and constant without loading server-only classes. |
 | `PRef.className`, `id`; `PDropped.accessorName`, `runtimeType` | Existing: `hasReference(className, id)` and `isDropped` | Reference checks compare both encoded fields. Dropped values remain explicit and typed-unwrapping failures include their unavailable-data reason. |
 | `PList.values`, `PRecord.fields` | Existing: nested `field`/`element` and Standard `fields`/`elements` navigation | Diagnostics retain accessor/index paths, including missing versus explicit-null entries. Ordinary map/list assertions operate on frozen values. |
-| `PVec.x`, `y`, `z`; every variant's `toDisplayString()` | Add P2 shared tolerance-aware vector comparison; Exclude display-format matchers | Reuse the geometry contract. Rendering is for diagnostics and implementation tests, never the canonical equality rule. |
+| `PVec.x`, `y`, `z`; every variant's `toDisplayString()` | Existing: `asVector()` reuses vector assertions; Exclude display-format matchers | Typed event vectors retain their accessor path and share geometry contracts. Rendering never supplies canonical equality. |
 
 ## Returned action results
 
@@ -350,6 +350,10 @@ data, and failure messages. For live subjects, verify changed observations are r
 for snapshots, verify they remain frozen. Verify assertion evaluation never invokes actions. Exercise runtime-backed
 semantics on both Paper and Spigot in the integration suite; unit mocks alone cannot prove encoding or Bukkit rules.
 The original documentation inventory needed no new tests; assertion implementations require the checks above.
+
+Direct block, query and geometry assertions are covered by [block tests][block-ref-tests],
+[query tests][query-assert-tests], [geometry tests][geometry-tests], and the existing
+[block-state][block-state-it] and [entity-query][entity-it] integration classes on both platforms.
 
 The first group is covered by [server navigation tests][server-assert-tests], [plugin tests][plugin-assert-tests],
 [player permission/menu tests][player-assert-tests], [menu lifecycle tests][menu-assert-tests], and
@@ -469,3 +473,13 @@ is evidence for a candidate assertion, not proof that every extracted scalar nee
 [interaction-assert]: ../lightkeeper-framework-junit/src/main/java/nl/pim16aap2/lightkeeper/framework/assertions/InteractionResultAssert.java
 [command-assert]: ../lightkeeper-framework-junit/src/main/java/nl/pim16aap2/lightkeeper/framework/assertions/CommandResultAssert.java
 [result-it]: ../lightkeeper-integration-tests/src/test/java/nl/pim16aap2/lightkeeper/maven/test/LightkeeperResultAssertionsIT.java
+[block-ref-assert]: ../lightkeeper-framework-junit/src/main/java/nl/pim16aap2/lightkeeper/framework/assertions/BlockRefAssert.java
+[block-state-assert]: ../lightkeeper-framework-junit/src/main/java/nl/pim16aap2/lightkeeper/framework/assertions/BlockStateSnapshotAssert.java
+[query-assert]: ../lightkeeper-framework-junit/src/main/java/nl/pim16aap2/lightkeeper/framework/assertions/EntityQueryAssert.java
+[entity-assert]: ../lightkeeper-framework-junit/src/main/java/nl/pim16aap2/lightkeeper/framework/assertions/EntitySnapshotAssert.java
+[vector-assert]: ../lightkeeper-framework-junit/src/main/java/nl/pim16aap2/lightkeeper/framework/assertions/Vec3Assert.java
+[transform-assert]: ../lightkeeper-framework-junit/src/main/java/nl/pim16aap2/lightkeeper/framework/assertions/EntityTransformAssert.java
+[block-ref-tests]: ../lightkeeper-framework-junit/src/test/java/nl/pim16aap2/lightkeeper/framework/assertions/BlockRefAssertTest.java
+[query-assert-tests]: ../lightkeeper-framework-junit/src/test/java/nl/pim16aap2/lightkeeper/framework/assertions/EntityQueryAssertTest.java
+[geometry-tests]: ../lightkeeper-framework-junit/src/test/java/nl/pim16aap2/lightkeeper/framework/assertions/GeometryAssertionsTest.java
+[block-state-it]: ../lightkeeper-integration-tests/src/test/java/nl/pim16aap2/lightkeeper/maven/test/LightkeeperBlockStateIT.java

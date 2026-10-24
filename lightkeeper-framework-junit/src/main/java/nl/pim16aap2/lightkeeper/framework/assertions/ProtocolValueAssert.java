@@ -1,6 +1,7 @@
 package nl.pim16aap2.lightkeeper.framework.assertions;
 
 import nl.pim16aap2.lightkeeper.protocol.IProtocolValue;
+import nl.pim16aap2.lightkeeper.framework.Vec3;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.AbstractBooleanAssert;
 import org.assertj.core.api.AbstractComparableAssert;
@@ -162,6 +163,14 @@ public final class ProtocolValueAssert extends AbstractAssert<ProtocolValueAsser
     {
         requireType(IProtocolValue.PDropped.class);
         return this;
+    }
+
+    /** @return Frozen vector assertions over a PVec using the shared tolerance contracts. */
+    public Vec3Assert asVector()
+    {
+        final var value = requireType(IProtocolValue.PVec.class);
+        return extracting(ignored -> new Vec3(value.x(), value.y(), value.z()), Vec3Assert::new)
+            .as(valueDescription());
     }
 
     private <T extends IProtocolValue> T requireType(Class<T> expected)
