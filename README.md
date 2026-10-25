@@ -1,5 +1,7 @@
 # LightKeeper
 
+[Documentation](https://lightkeeper.pim16aap2.nl/) · [API Reference and versions](https://lightkeeper.pim16aap2.nl/javadoc/)
+
 [![](https://jitpack.io/v/PimvanderLoos/LightKeeper.svg)](https://jitpack.io/#PimvanderLoos/LightKeeper)
 
 LightKeeper is an end-to-end testing stack for Minecraft plugins.
@@ -221,14 +223,16 @@ class MyPluginIT
             .andWaitTicks(1);
 
         // verify
-        assertPlayer(player).receivedMessage("clicked");
-        assertWorld(world).hasBlockAt(1, 100, 0).ofType("minecraft:stone");
+        assertThat(player).receivedMessage("clicked");
+        assertThat(world).hasBlockAt(1, 100, 0).ofType("minecraft:stone");
     }
 }
 ```
 
 > The framework surface is organised into facets — `framework.server()`, `.worlds()`, `.bots()`, and
 > `.events()`. Use these facet accessors to reach the server, worlds, bots, and event-capture APIs.
+
+Import assertions with `import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;`.
 
 ## Core Features
 
@@ -407,7 +411,7 @@ class VaultIT
         player.executeCommand("vault-info");
 
         // verify
-        assertPlayer(player).receivedMessage("Vault v1.7.3 Information");
+        assertThat(player).receivedMessage("Vault v1.7.3 Information");
     }
 }
 ```

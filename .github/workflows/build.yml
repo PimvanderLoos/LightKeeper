@@ -5,11 +5,16 @@ on:
     branches:
       - master
       - 'release/**'
+    tags:
+      - 'v*'
   pull_request:
     branches:
       - master
       - 'release/**'
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 env:
   MAVEN_OPTS: "-Dorg.slf4j.simpleLogger.showDateTime=true -Dorg.slf4j.simpleLogger.dateTimeFormat=HH:mm:ss,SSS"
@@ -18,8 +23,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    outputs:
+      publish-docs: ${{ steps.docs.outputs.publish }}
+      artifact-name: documentation-${{ github.run_attempt }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up JDK 21
         uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
@@ -28,15 +39,57 @@ jobs:
           java-version: 21
           cache: maven
 
+      - name: Read the hosted website for validation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: gh_pages
+          path: website-source
+          persist-credentials: false
+
+      - name: Test Javadoc publishing and hosted website links
+        run: |
+          python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
+          python3 .github/scripts/site_checks.py --site website-source --source-only
+
+      - name: Prepare documentation provenance
+        id: docs
+        run: python3 .github/scripts/javadoc.py prepare --output "$RUNNER_TEMP/javadoc-build.json"
+
       - name: Build, test, and analyse
         run: |
           mvn --batch-mode --show-version --no-transfer-progress \
             -Perrorprone \
-            clean verify \
+            -Dmaven.javadoc.skip=true \
+            clean verify install \
             checkstyle:checkstyle \
             pmd:check \
             jacoco:report \
             -Dgoal=helpmojo
+
+      - name: Generate public API documentation
+        env:
+          JAVADOC_TOP: ${{ steps.docs.outputs.top }}
+        run: |
+          mvn --batch-mode --no-transfer-progress -Pdefault,docs \
+            "-Dtop=$JAVADOC_TOP" site:site
+
+      - name: Package documentation
+        run: |
+          python3 .github/scripts/javadoc.py seal --docs target/site/apidocs \
+            --info "$RUNNER_TEMP/javadoc-build.json" --artifact target/documentation
+
+      - name: Assemble documentation preview
+        run: |
+          python3 .github/scripts/javadoc.py assemble --preview --published website-source \
+            --artifact target/documentation --output target/site-preview
+
+      - name: Upload documentation
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: documentation-${{ github.run_attempt }}
+          path: target/documentation
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Upload LightKeeper diagnostics
         if: ${{ always() }}
@@ -55,3 +108,13 @@ jobs:
         with:
           directory: lightkeeper-report-aggregate/target/site/jacoco-aggregate
           token: ${{ secrets.CODECOV_TOKEN }}
+
+  publish-docs:
+    needs: build
+    if: needs.build.outputs.publish-docs == 'true'
+    permissions:
+      contents: write
+      pages: write
+    uses: ./.github/workflows/publish-site.yml
+    with:
+      artifact-name: ${{ needs.build.outputs.artifact-name }}
