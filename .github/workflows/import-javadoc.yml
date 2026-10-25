@@ -80,7 +80,6 @@ jobs:
     permissions:
       contents: write
       pages: write
-      id-token: write
     uses: ./.github/workflows/publish-site.yml
     with:
       artifact-name: ${{ needs.build.outputs.artifact-name }}

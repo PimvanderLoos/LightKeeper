@@ -1,4 +1,4 @@
-name: Publish documentation
+name: Publish Javadocs to the hosted website
 
 on:
   workflow_call:
@@ -19,12 +19,8 @@ jobs:
     permissions:
       contents: write
       pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     concurrency:
-      group: lightkeeper-pages-publish
+      group: lightkeeper-javadoc-publish
       cancel-in-progress: false
       # Queue every release; the default single pending slot can discard publications.
       queue: max
@@ -47,31 +43,33 @@ jobs:
           ref: gh_pages
           path: published-site
 
+      - name: Verify existing branch-based Pages hosting
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$(gh api "repos/$GITHUB_REPOSITORY/pages" --jq '.build_type == "legacy" and .source.branch == "gh_pages" and .source.path == "/"')" != true ]; then
+            echo 'Expected GitHub Pages to serve gh_pages at /. Hosting settings will not be changed.' >&2
+            exit 1
+          fi
+
       - name: Assemble and validate complete site
         run: |
           python3 .github/scripts/javadoc.py assemble --published published-site \
             --artifact incoming-documentation --output assembled-site
 
-      - name: Configure Pages
-        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
-
-      - name: Upload complete Pages artifact
-        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
-        with:
-          path: assembled-site
-
-      - name: Save durable site and Javadoc archive
+      - name: Update only the Javadoc subtree
         working-directory: published-site
         run: |
-          rsync --archive --delete --exclude=.git ../assembled-site/ ./
-          git add --all
+          rsync --archive --delete ../assembled-site/javadoc/ ./javadoc/
+          git add -- javadoc
           if ! git diff --cached --quiet; then
             git -c user.name='github-actions[bot]' \
               -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
-              commit -m 'docs: publish verified guides and versioned API documentation'
+              commit -m 'docs: publish verified versioned API documentation'
             git push origin HEAD:gh_pages
           fi
 
-      - name: Deploy complete site
-        id: deployment
-        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
+      - name: Request a build of the existing hosted branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method POST -H 'X-GitHub-Api-Version:2026-03-10' "repos/$GITHUB_REPOSITORY/pages/builds"

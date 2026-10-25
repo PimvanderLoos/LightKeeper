@@ -39,10 +39,17 @@ jobs:
           java-version: 21
           cache: maven
 
-      - name: Test documentation publishing and website sources
+      - name: Read the hosted website for validation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: gh_pages
+          path: website-source
+          persist-credentials: false
+
+      - name: Test Javadoc publishing and hosted website links
         run: |
           python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
-          python3 .github/scripts/site_checks.py --source-only
+          python3 .github/scripts/site_checks.py --site website-source --source-only
 
       - name: Prepare documentation provenance
         id: docs
@@ -66,24 +73,14 @@ jobs:
           mvn --batch-mode --no-transfer-progress -Pdefault,docs \
             "-Dtop=$JAVADOC_TOP" site:site
 
-      - name: Compile website examples and validate Maven configuration
-        run: |
-          mvn --batch-mode --no-transfer-progress -pl lightkeeper-framework-junit \
-            org.apache.maven.plugins:maven-dependency-plugin:3.11.0:build-classpath \
-            -Dmdep.outputFile=target/site-classpath.txt -DincludeScope=test
-          python3 .github/scripts/site_checks.py --source-only \
-            --classpath-file lightkeeper-framework-junit/target/site-classpath.txt \
-            --plugin-descriptor lightkeeper-maven-plugin/target/classes/META-INF/maven/plugin.xml
-
       - name: Package documentation
         run: |
           python3 .github/scripts/javadoc.py seal --docs target/site/apidocs \
-            --info "$RUNNER_TEMP/javadoc-build.json" --artifact target/documentation --guides docs/site
+            --info "$RUNNER_TEMP/javadoc-build.json" --artifact target/documentation
 
       - name: Assemble documentation preview
-        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         run: |
-          python3 .github/scripts/javadoc.py assemble --preview --published "$RUNNER_TEMP/empty-site" \
+          python3 .github/scripts/javadoc.py assemble --preview --published website-source \
             --artifact target/documentation --output target/site-preview
 
       - name: Upload documentation
@@ -118,7 +115,6 @@ jobs:
     permissions:
       contents: write
       pages: write
-      id-token: write
     uses: ./.github/workflows/publish-site.yml
     with:
       artifact-name: ${{ needs.build.outputs.artifact-name }}

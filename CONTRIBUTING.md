@@ -3,16 +3,17 @@
 ## Keep documentation with the behavior it describes
 
 Changes to public API, setup commands, defaults, supported platforms, user-visible errors, or interaction behavior
-must update affected website pages and examples in the same PR, together with relevant Javadocs. In the PR, name
-the changed pages or explain why documentation is unaffected. Generated API pages do not replace usage or
+must update relevant Javadocs in the code PR and affected website pages/examples in a linked companion PR targeting
+`gh_pages`. Link both PRs, name the changed pages, and coordinate their merges. Explain explicitly when documentation
+is unaffected. Generated API pages do not replace usage or
 migration instructions.
 
-Website sources live in `docs/site/` on `master`. Edit those sources alongside the Java change. The `gh_pages`
-branch is published output after the versioned-publishing cutover; do not edit its generated files manually.
-While the legacy branch remains the active source, coordinate website corrections through a linked PR targeting
-`gh_pages`. The migration PR replaces that temporary arrangement.
+The website lives exclusively on `gh_pages`, which remains the branch served by GitHub Pages. Edit HTML pages,
+CSS, JavaScript, and `CNAME` there. Do not add webpages or website assets to `master`; it owns application code,
+ordinary project Markdown documentation, and Javadoc build/publishing tools. CI updates only `javadoc/` on the
+website branch. Do not edit that generated subtree manually.
 
-Keep Java examples inside the website's marked `data-java-class` code blocks: CI compiles those exact snippets.
+Keep Java examples inside the website's marked `data-java-class` code blocks: its branch workflow compiles those exact snippets.
 The marked Maven plugin example is checked against the generated Mojo descriptor. Run the focused checks in
 [the publishing guide](.github/scripts/README.md) before requesting review. Reviewers must check documentation
 impact; automation can validate links and examples but cannot determine whether a behavioral change needs prose.

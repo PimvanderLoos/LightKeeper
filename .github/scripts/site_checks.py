@@ -122,7 +122,7 @@ def compile_examples(site, classpath, output, plugin_descriptor):
 def main():
     """Check source links or compiled documentation examples from CI."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--site", type=Path, default=Path("docs/site"))
+    parser.add_argument("--site", type=Path, required=True)
     parser.add_argument("--source-only", action="store_true")
     parser.add_argument("--classpath-file", type=Path)
     parser.add_argument("--plugin-descriptor", type=Path)

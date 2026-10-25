@@ -20,12 +20,6 @@ REPOSITORY = "https://github.com/PimvanderLoos/LightKeeper"
 METADATA = "javadoc-build.json"
 VERSION = re.compile(r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)")
 SHA = re.compile(r"[0-9a-f]{40}")
-GUIDE_ASSETS = ("assets", "CNAME", "LICENSE", ".nojekyll")
-
-
-def guide_names(site):
-    """Include every top-level guide page and the site's shared static assets."""
-    return (*GUIDE_ASSETS, *(page.name for page in sorted(site.glob("*.html"))))
 
 
 def validate_output(output, *inputs):
@@ -151,9 +145,9 @@ def read_docs(docs):
     return info
 
 
-def seal(docs, info, artifact, guides=None):
-    """Package generated APIs and, for master/preview, their matching website sources."""
-    validate_output(artifact, docs, guides)
+def seal(docs, info, artifact):
+    """Package generated APIs only; website pages remain owned by gh_pages."""
+    validate_output(artifact, docs)
     validate_info(info)
     for filename in ("index.html", "element-list"):
         if not (docs / filename).is_file():
@@ -162,15 +156,9 @@ def seal(docs, info, artifact, guides=None):
     java = str(Path(os.environ["JAVA_HOME"]) / "bin/java") if os.environ.get("JAVA_HOME") else "java"
     info["java"] = subprocess.run([java, "-version"], capture_output=True, text=True, check=True).stderr.strip()
     info["maven"] = subprocess.check_output(["mvn", "--version"], text=True).strip()
-    if info["channel"] != "release":
-        if guides is None:
-            raise ValueError("Master and preview artifacts require matching website sources")
-        info["guides_checksum"] = tree_digest(guides)
     artifact.mkdir(parents=True)
     shutil.copytree(docs, artifact / "javadoc")
     write_json(artifact / "javadoc" / METADATA, info)
-    if info["channel"] != "release":
-        shutil.copytree(guides, artifact / "guides")
 
 
 def should_update(incoming, current, repo):
@@ -229,7 +217,7 @@ def render_selector(site):
 
 
 def assemble(published, artifact, output, repo=Path("."), preview=False):
-    """Assemble a complete tree separately from the archive; never package repository code."""
+    """Stage API updates over the hosted website without changing website-owned files."""
     validate_output(output, published, artifact)
     info = read_docs(artifact / "javadoc")
     if info["channel"] == "preview" and not preview:
@@ -238,55 +226,23 @@ def assemble(published, artifact, output, repo=Path("."), preview=False):
     target = Path("javadoc") / name
     current = read_docs(published / target) if (published / target).exists() else None
     update = should_update(info, current, repo)
-    if update and info["channel"] != "release":
-        guides = artifact / "guides"
-        if tree_digest(guides) != info.get("guides_checksum"):
-            raise ValueError("Website source checksum mismatch")
-        if (guides / "CNAME").read_text().strip() != "lightkeeper.pim16aap2.nl":
-            raise ValueError("Unexpected custom domain")
-        if (published / "CNAME").exists() and (published / "CNAME").read_bytes() != (guides / "CNAME").read_bytes():
-            raise ValueError("Custom domain must be preserved")
-    elif update:
-        if not (published / "index.html").is_file() or not (published / "javadoc/master" / METADATA).is_file():
-            raise ValueError("Publish master guides before importing a release")
-        if read_docs(published / "javadoc/master")["channel"] != "master":
-            raise ValueError("Publish master guides before importing a release")
-    # Check the entire public archive for unsafe links before copying any of it.
-    if (published / "javadoc").exists():
-        tree_digest(published / "javadoc")
-    for name in guide_names(published):
-        source = published / name
+    if not published.is_dir() or not (published / "index.html").is_file():
+        raise ValueError("Hosted website must exist on gh_pages before publishing Javadocs")
+    # Preserve every website-owned file; the publisher owns only javadoc/.
+    for source in published.iterdir():
+        if source.name == ".git":
+            continue
         if source.is_symlink():
             raise ValueError(f"Symbolic links are forbidden: {source}")
         if source.is_dir():
             tree_digest(source)
-    output.mkdir(parents=True)
-    for name in (*guide_names(published), "javadoc"):
-        source = published / name
-        if source.is_dir():
-            shutil.copytree(source, output / name)
-        elif source.is_file():
-            shutil.copy2(source, output / name)
+    shutil.copytree(published, output, ignore=shutil.ignore_patterns(".git"))
     if update:
-        if info["channel"] != "release":
-            for name in set(guide_names(published)) | set(guide_names(artifact / "guides")):
-                source, destination = artifact / "guides" / name, output / name
-                if name == "LICENSE" and not source.exists():
-                    continue
-                if destination.is_dir():
-                    shutil.rmtree(destination)
-                elif destination.exists():
-                    destination.unlink()
-                if source.is_dir():
-                    shutil.copytree(source, destination)
-                elif source.is_file():
-                    shutil.copy2(source, destination)
         destination = output / target
         if destination.exists():
             shutil.rmtree(destination)
         shutil.copytree(artifact / "javadoc", destination)
     render_selector(output)
-    (output / ".nojekyll").touch()
     from site_checks import check_links
     check_links(output)
     if sum(path.stat().st_size for path in output.rglob("*") if path.is_file()) >= 1_000_000_000:
@@ -306,7 +262,6 @@ def main():
     seal_parser.add_argument("--docs", type=Path, required=True)
     seal_parser.add_argument("--info", type=Path, required=True)
     seal_parser.add_argument("--artifact", type=Path, required=True)
-    seal_parser.add_argument("--guides", type=Path)
     assemble_parser = commands.add_parser("assemble")
     assemble_parser.add_argument("--published", type=Path, required=True)
     assemble_parser.add_argument("--artifact", type=Path, required=True)
@@ -322,7 +277,7 @@ def main():
                 stream.write(f"publish={str(info['channel'] != 'preview').lower()}\ntop={banner(info)}\n")
         print(banner(info))
     elif args.command == "seal":
-        seal(args.docs, json.loads(args.info.read_text()), args.artifact, args.guides)
+        seal(args.docs, json.loads(args.info.read_text()), args.artifact)
     else:
         print(f"Documentation updated: {assemble(args.published, args.artifact, args.output, preview=args.preview)}")
 

@@ -51,6 +51,9 @@ ignoredFiles
 *.sh
 
 **/delombok/*
+docs/*
+!docs/README.md
+!docs/ide-testing.md
 .codex/*
 .claude/*
 .scratch/*

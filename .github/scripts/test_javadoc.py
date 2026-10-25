@@ -58,14 +58,6 @@ class PublishingTest(unittest.TestCase):
         info = dict(channel=channel, version=version, commit=commit or self.first,
                     run_number=run, run_attempt=1, tag=(tag or f"v{version}") if channel == "release" else None)
         info["checksum"] = docs.tree_digest(api)
-        if channel != "release":
-            guides = artifact / "guides"
-            guides.mkdir()
-            (guides / "index.html").write_text("<h1>Current guide</h1>")
-            (guides / "CNAME").write_text("lightkeeper.pim16aap2.nl")
-            (guides / "assets").mkdir()
-            (guides / "assets/styles.css").write_text("body {}")
-            info["guides_checksum"] = docs.tree_digest(guides)
         docs.write_json(api / docs.METADATA, info)
         return artifact
 
@@ -176,58 +168,75 @@ class PublishingTest(unittest.TestCase):
         # verify
         self.assertFalse(changed)
 
-    def test_publish_shouldReplaceGuidesWithMasterAndPreserveReleases(self):
+    def test_publish_shouldPreserveGuidesAndReleasesWhenUpdatingMaster(self):
         # setup
         self.publish(self.artifact())
         # execute
         self.publish(self.artifact(channel="master"))
         # verify
-        self.assertEqual("<h1>Current guide</h1>", (self.published / "index.html").read_text())
+        self.assertEqual("<h1>Existing guide</h1>", (self.published / "index.html").read_text())
         self.assertEqual("lightkeeper.pim16aap2.nl", (self.published / "CNAME").read_text())
         self.assertTrue((self.published / "javadoc/release/1.3/index.html").is_file())
 
-    def test_publish_shouldExcludeInheritedCodeAndGitMetadata(self):
+    def test_publish_shouldNeverReplaceHostedWebsiteWithArtifactPages(self):
         # setup
-        (self.published / "pom.xml").write_text("inherited project")
+        (self.published / "README.md").write_text("Website contributor instructions")
+        workflow = self.published / ".github/workflows/check-website.yml"
+        workflow.parent.mkdir(parents=True)
+        workflow.write_text("Website validation workflow")
+        before = {path.relative_to(self.published): path.read_bytes()
+                  for path in self.published.rglob("*")
+                  if path.is_file() and path.relative_to(self.published).parts[0] != "javadoc"}
+        artifact = self.artifact(channel="master")
+        (artifact / "guides").mkdir()
+        (artifact / "guides/index.html").write_text("Incorrect website from code branch")
+        # execute
+        self.publish(artifact)
+        # verify
+        after = {path.relative_to(self.published): path.read_bytes()
+                 for path in self.published.rglob("*")
+                 if path.is_file() and path.relative_to(self.published).parts[0] != "javadoc"}
+        self.assertEqual(before, after)
+
+    def test_publish_shouldRequireAnExistingHostedWebsite(self):
+        # setup
+        (self.published / "index.html").unlink()
+        artifact = self.artifact(channel="master")
+        output = self.root / "missing-website-output"
+        # execute
+        with self.assertRaisesRegex(ValueError, "Hosted website must exist"):
+            docs.assemble(self.published, artifact, output, self.repo)
+        # verify
+        self.assertFalse(output.exists())
+
+    def test_publish_shouldPreserveWebsiteConfigurationAndExcludeCheckoutGit(self):
+        # setup
+        (self.published / ".gitignore").write_text("Website ignore rules")
         (self.published / ".git").mkdir()
         (self.published / ".git/config").write_text("private git config")
         # execute
         self.publish(self.artifact(channel="master"))
         # verify
-        self.assertFalse((self.published / "pom.xml").exists())
+        self.assertEqual("Website ignore rules", (self.published / ".gitignore").read_text())
         self.assertFalse((self.published / ".git").exists())
 
-    def test_publish_shouldPreserveLicenseAndPublishAdditionalGuidePages(self):
+    def test_publish_shouldPreserveLicenseAndAdditionalHostedGuidePages(self):
         # setup
         (self.published / "LICENSE").write_text("Original license")
         artifact = self.artifact(channel="master")
-        (artifact / "guides/new-guide.html").write_text("New guide")
-        info = json.loads((artifact / "javadoc" / docs.METADATA).read_text())
-        info["guides_checksum"] = docs.tree_digest(artifact / "guides")
-        docs.write_json(artifact / "javadoc" / docs.METADATA, info)
+        (self.published / "new-guide.html").write_text("New guide")
         # execute
         self.publish(artifact)
         # verify
         self.assertEqual("Original license", (self.published / "LICENSE").read_text())
         self.assertEqual("New guide", (self.published / "new-guide.html").read_text())
 
-    def test_publish_shouldRejectTamperedGuides(self):
-        # setup
-        artifact = self.artifact(channel="master")
-        (artifact / "guides/index.html").write_text("tampered")
-        # execute
-        with self.assertRaisesRegex(ValueError, "Website source checksum"):
-            self.publish(artifact)
-        # verify
-        self.assertEqual("<h1>Existing guide</h1>", (self.published / "index.html").read_text())
-
-    def test_publish_shouldRejectChangedCustomDomain(self):
+    def test_publish_shouldPreserveConfiguredCustomDomain(self):
         # setup
         artifact = self.artifact(channel="master")
         (self.published / "CNAME").write_text("another.example")
         # execute
-        with self.assertRaisesRegex(ValueError, "domain must be preserved"):
-            self.publish(artifact)
+        self.publish(artifact)
         # verify
         self.assertEqual("another.example", (self.published / "CNAME").read_text())
 
@@ -289,15 +298,15 @@ class PublishingTest(unittest.TestCase):
         # verify
         self.assertEqual("Seeded master", (self.published / "javadoc/master/index.html").read_text())
 
-    def test_publish_shouldRequireMasterBeforeFirstRelease(self):
+    def test_publish_shouldAllowFirstReleaseWithoutTakingOwnershipOfGuides(self):
         # setup
         shutil.rmtree(self.published / "javadoc/master")
         artifact = self.artifact()
         # execute
-        with self.assertRaisesRegex(ValueError, "Publish master guides"):
-            self.publish(artifact)
+        self.publish(artifact)
         # verify
-        self.assertFalse((self.published / "javadoc/release").exists())
+        self.assertTrue((self.published / "javadoc/release/1.3/index.html").is_file())
+        self.assertEqual("<h1>Existing guide</h1>", (self.published / "index.html").read_text())
 
     def test_validate_shouldRejectUnsafeVersionPaths(self):
         # setup
@@ -364,9 +373,9 @@ class PublishingTest(unittest.TestCase):
         # verify
         self.assertEqual(self.second, self.git("rev-parse", "HEAD"))
 
-    def test_seal_shouldRecordSelectedJdkWhenPathContainsAnotherVersion(self):
+    def test_seal_shouldPackageOnlyApisAndRecordSelectedJdk(self):
         # setup
-        artifact = self.artifact()
+        artifact = self.artifact(channel="master")
         api = artifact / "javadoc"
         info = docs.read_docs(api)
         output = self.root / "sealed"
@@ -379,6 +388,7 @@ class PublishingTest(unittest.TestCase):
             docs.seal(api, info, output)
         # verify
         self.assertEqual("Selected JDK 21", docs.read_docs(output / "javadoc")["java"])
+        self.assertEqual({"javadoc"}, {path.name for path in output.iterdir()})
 
 
 if __name__ == "__main__":
