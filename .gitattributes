@@ -2,15 +2,7 @@
 * text=auto
 
 # File types to convert to proper line endings:
-*.java text
-*.properties text
-*.txt text
-*.yml text
-*.config text
-*.xml text
-*.sh text
-*.config text
+*.css text
 *.html text
+*.js text
 *.md text
-*.sql text
-*.json text
