@@ -17,13 +17,16 @@
     <button class="menu-toggle" type="button" aria-expanded="false" aria-label="Toggle navigation">Menu</button>
     <nav class="site-nav">
         <a href="getting-started.html">Getting Started</a>
+        <a href="ide-testing.html">IDE Setup</a>
         <a href="features.html">Features</a>
         <a href="architecture.html">Architecture</a>
         <a href="faq.html">FAQ</a>
+        <a href="javadoc/">API Reference</a>
     </nav>
 </header>
 
 <main>
+    <p class="version-note">These guides describe the current master build. Select a release in the <a href="javadoc/">API Reference</a> for released APIs.</p>
     <section class="hero reveal">
         <p class="eyebrow">Minecraft Plugin Quality Platform</p>
         <h1>Real server integration tests for Paper and Spigot.</h1>
@@ -33,6 +36,7 @@
         </p>
         <div class="button-row">
             <a class="button button-primary" href="getting-started.html">Start in 10 Minutes</a>
+            <a class="button button-ghost" href="javadoc/">API Reference</a>
             <a class="button button-ghost" href="https://github.com/PimvanderLoos/LightKeeper">Repository</a>
         </div>
     </section>
@@ -84,31 +88,40 @@
 
     <section class="panel reveal">
         <h2>Core test example</h2>
-        <pre><code>@ExtendWith(LightkeeperExtension.class)
-class MyPluginIT {
+        <pre><code data-java-class="QuickStartExample">import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
+import nl.pim16aap2.lightkeeper.framework.LightkeeperExtension;
+import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
+import nl.pim16aap2.lightkeeper.framework.WorldHandle;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
+
+@ExtendWith(LightkeeperExtension.class)
+class QuickStartExample
+{
     @Test
-    void botCanOpenMenuAndPlaceBlock(ILightkeeperFramework framework) {
-        final WorldHandle world = framework.mainWorld();
-        final PlayerHandle player = framework.buildPlayer()
-            .withName("lk_tester")
+    void placeBlock_shouldUpdateWorld(ILightkeeperFramework framework)
+    {
+        // setup
+        final WorldHandle world = framework.worlds().main();
+        final PlayerHandle player = framework.bots().builder()
+            .withName(&quot;lk_tester&quot;)
             .atSpawn(world)
             .build();
 
-        player.executeCommand("myplugin open")
-            .andWaitForMenuOpen(10)
-            .verifyMenuName("Main Menu")
-            .clickAtIndex(0)
-            .andWaitTicks(1);
+        // execute
+        player.placeBlock(&quot;minecraft:stone&quot;, 1, 100, 0).andWaitTicks(1);
 
-        player.placeBlock("minecraft:stone", 1, 100, 0).andWaitTicks(1);
-        assertThat(world).hasBlockAt(1, 100, 0).ofType("minecraft:stone");
+        // verify
+        assertThat(world).hasBlockAt(1, 100, 0).ofType(&quot;minecraft:stone&quot;);
     }
 }</code></pre>
     </section>
 </main>
 
 <footer class="site-footer">
-    <p>LightKeeper documentation site. Built for GitHub Pages on the <code>gh_pages</code> branch.</p>
+    <p>LightKeeper guides and versioned API reference.</p>
 </footer>
 </body>
 </html>

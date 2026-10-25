@@ -17,13 +17,16 @@
     <button class="menu-toggle" type="button" aria-expanded="false" aria-label="Toggle navigation">Menu</button>
     <nav class="site-nav">
         <a href="getting-started.html">Getting Started</a>
+        <a href="ide-testing.html">IDE Setup</a>
         <a href="features.html">Features</a>
         <a href="architecture.html">Architecture</a>
         <a href="faq.html">FAQ</a>
+        <a href="javadoc/">API Reference</a>
     </nav>
 </header>
 
 <main>
+    <p class="version-note">These guides describe the current master build. Select a release in the <a href="javadoc/">API Reference</a> for released APIs.</p>
     <section class="hero reveal">
         <p class="eyebrow">Feature Overview</p>
         <h1>Everything needed for production-grade plugin E2E tests.</h1>
@@ -77,6 +80,20 @@
     </section>
 
     <section class="panel reveal">
+        <h2>Current API and daily workflow</h2>
+        <p>Reach functionality through <code>framework.server()</code>, <code>framework.worlds()</code>,
+            <code>framework.bots()</code>, and <code>framework.events()</code>.</p>
+        <ul class="checklist">
+            <li>Prepare a persistent runtime once, then <a href="ide-testing.html">run tests from the IDE gutter</a>.</li>
+            <li>Stop, start, restart, or crash a server; inspect its directory and captured server errors.</li>
+            <li>Use safe synthetic bots by default, or select full-login bots to test the real loopback login path.</li>
+            <li>Change permissions at runtime, query command completions, and inspect or click chat components.</li>
+            <li>Query blocks and entities, capture events, inspect interaction outcomes, and retry live assertions with <code>eventually()</code>.</li>
+        </ul>
+        <p>Menu actions wait for an open menu. Use the <a href="javadoc/">API Reference</a> for available handles and assertions.</p>
+    </section>
+
+    <section class="panel reveal">
         <h2>Provisioning Features</h2>
         <ul class="checklist">
             <li>World sources from folders or archives</li>
@@ -89,7 +106,7 @@
 </main>
 
 <footer class="site-footer">
-    <p>Feature requests and roadmap ideas: <code>docs/future-suggestions.md</code> in the repository.</p>
+    <p><a href="https://github.com/PimvanderLoos/LightKeeper/issues">Feature requests and roadmap discussions</a>.</p>
 </footer>
 </body>
 </html>

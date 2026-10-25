@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>LightKeeper - IDE Test Setup</title>
+    <meta name="description" content="Prepare a durable runtime and run LightKeeper integration tests from your IDE.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/styles.css">
+    <script defer src="assets/main.js"></script>
+</head>
+<body>
+<header class="site-header">
+    <a class="brand" href="index.html">LightKeeper</a>
+    <button class="menu-toggle" type="button" aria-expanded="false" aria-label="Toggle navigation">Menu</button>
+    <nav class="site-nav">
+        <a href="getting-started.html">Getting Started</a>
+        <a href="ide-testing.html">IDE Setup</a>
+        <a href="features.html">Features</a>
+        <a href="architecture.html">Architecture</a>
+        <a href="faq.html">FAQ</a>
+        <a href="javadoc/">API Reference</a>
+    </nav>
+</header>
+<main>
+    <p class="version-note">These guides describe the current master build. Select a release in the <a href="javadoc/">API Reference</a> for released APIs.</p>
+    <section class="hero reveal">
+        <p class="eyebrow">IDE Test Setup</p>
+        <h1>Prepare once. Run tests from the gutter.</h1>
+        <p class="lead">Run ordinary JUnit classes or methods without VM options, a Maven before-launch task,
+            or <code>junit-platform.properties</code>.</p>
+    </section>
+    <section class="panel reveal">
+        <h2>Consumer setup</h2>
+        <p>Use Java 21+, Maven 3.9+, and Linux or macOS for Unix-domain sockets. Your LightKeeper version must
+            contain IDE test setup. Keep the <a href="getting-started.html">prepare-server execution and framework dependency</a>.</p>
+        <ol>
+            <li>Package or install all locally developed plugins referenced by your LightKeeper configuration.</li>
+            <li>Run the configured preparation execution from the module or reactor owning the tests.</li>
+            <li>Check that output says <code>Created IDE test setup</code> or <code>Reused IDE test setup</code>, with the expected module and platform.</li>
+            <li>Click the JUnit gutter button beside your test class or method.</li>
+        </ol>
+        <pre><code>mvn lightkeeper:prepare-server@prepare-server -Dlightkeeper.ide=true</code></pre>
+        <p>The execution ID after <code>@</code> must match your POM. In a multi-module project each child owns its
+            <code>.lightkeeper/ide/</code> discovery record. Preparation never selects a parent or sibling runtime.</p>
+    </section>
+    <section class="panel reveal">
+        <h2>LightKeeper contributor setup</h2>
+        <p>Install the current plugin, framework, agent, and fixture before invoking the goal directly:</p>
+        <pre><code>mvn -pl lightkeeper-integration-tests -am install \
+  -DskipTests -DskipITs -Dlightkeeper.skip=true -Dmaven.javadoc.skip=true
+mvn -pl lightkeeper-integration-tests \
+  lightkeeper:prepare-server@prepare-server-paper -Dlightkeeper.ide=true</code></pre>
+        <p>Replace <code>prepare-server-paper</code> with <code>prepare-server-spigot</code> to select Spigot.
+            The execution supplies platform identity; <code>lightkeeper.expectedServerType</code> is only a Failsafe assertion input.</p>
+    </section>
+    <section class="panel reveal">
+        <h2>Daily use, persistence, and refresh</h2>
+        <p>Test-only edits need ordinary IDE compilation. <code>mvn clean</code> removes <code>target</code> while
+            preserving the runtime under the owning module's <code>.lightkeeper/ide/</code>. Compile tests again
+            to restore its discovery anchor. Ordinary unit tests do no LightKeeper work.</p>
+        <p>After plugin changes, package or install the plugin and repeat preparation. Rebuild the LightKeeper
+            agent after changes requiring new agent/protocol behavior. Matching packaged inputs reuse the runtime;
+            changed hashes or launch settings create a new preparation.</p>
+        <p>Worlds, plugin data, and other server state persist across runs. To start fresh:</p>
+        <pre><code>mvn lightkeeper:prepare-server@prepare-server -Dlightkeeper.ide=true -Dlightkeeper.ide.refresh=true</code></pre>
+        <p>Refresh creates a new preparation and switches later launches atomically. It never changes a runtime
+            held by an active test. Old preparations are not pruned automatically. For a complete reset, close
+            running tests, move the module's <code>.lightkeeper/</code> directory to trash, and repeat setup.</p>
+    </section>
+    <section class="panel reveal">
+        <h2>Overrides and validation</h2>
+        <p><code>-Dlightkeeper.runtimeManifestPath=/absolute/path/runtime-manifest.json</code> overrides discovery.
+            An invalid explicit path fails immediately; it does not fall back. <code>Lightkeeper.start(Path)</code>
+            follows the same contract. For custom IDE class-output layouts, use the explicit property.</p>
+        <p>Preparation fingerprints resolved server metadata, JVM settings, the embedded agent, deployed plugins,
+            world templates, and overlays. Launch checks ownership and durable files. It cannot detect unbuilt
+            edits or new remote snapshots until Maven resolves those inputs during another preparation.</p>
+    </section>
+    <section class="panel reveal">
+        <h2>Troubleshooting</h2>
+        <p>Missing or corrupt discovery: repeat preparation in the owning module. Moved checkout: repeat setup at
+            the new path. Stale runtime: rebuild packaged inputs, then prepare again. Busy runtime: close the
+            other test/server. Dirty state: use <code>-Dlightkeeper.ide.refresh=true</code>. Missing server cache:
+            repeat preparation to recreate required artifacts.</p>
+        <p>Debug framework/JUnit code with your IDE's test debugger. Bukkit/Paper code runs in a separate JVM;
+            use the Maven plugin's server JVM debug arguments for it.</p>
+        <p>The underlying command-line class/method workflow was verified with Temurin 25.0.4 (release 21),
+            Maven 3.9.9, and Linux. The IntelliJ gutter UI was not automated.</p>
+    </section>
+</main>
+<footer class="site-footer"><p>See <a href="faq.html">FAQ</a> for general runtime troubleshooting.</p></footer>
+</body>
+</html>

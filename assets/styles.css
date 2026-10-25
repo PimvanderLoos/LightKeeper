@@ -85,6 +85,14 @@ main {
     padding: 2rem 0 3rem;
 }
 
+.version-note {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--line);
+    border-radius: 0.75rem;
+    color: var(--ink-muted);
+    font-size: 0.9rem;
+}
+
 .hero {
     margin-top: 1rem;
     margin-bottom: 1.5rem;

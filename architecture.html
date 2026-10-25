@@ -17,13 +17,16 @@
     <button class="menu-toggle" type="button" aria-expanded="false" aria-label="Toggle navigation">Menu</button>
     <nav class="site-nav">
         <a href="getting-started.html">Getting Started</a>
+        <a href="ide-testing.html">IDE Setup</a>
         <a href="features.html">Features</a>
         <a href="architecture.html">Architecture</a>
         <a href="faq.html">FAQ</a>
+        <a href="javadoc/">API Reference</a>
     </nav>
 </header>
 
 <main>
+    <p class="version-note">These guides describe the current master build. Select a release in the <a href="javadoc/">API Reference</a> for released APIs.</p>
     <section class="hero reveal">
         <p class="eyebrow">Architecture</p>
         <h1>Provisioning pipeline + test-runtime API layers.</h1>
@@ -64,11 +67,12 @@
         <h2>Module responsibilities</h2>
         <ul class="checklist">
             <li><code>lightkeeper-maven-plugin</code>: provisioning, caching, runtime manifest creation, cleanup</li>
-            <li><code>lightkeeper-runtime-core</code>: manifest and protocol contracts</li>
-            <li><code>lightkeeper-agent-paper</code>: in-server command execution and data collection</li>
+            <li><code>lightkeeper-runtime-core</code>: runtime manifests and cross-process constants</li>
+            <li><code>lightkeeper-agent-spigot</code>: in-server command execution and data collection</li>
             <li><code>lightkeeper-framework-junit</code>: user-facing handles, extension lifecycle, assertions</li>
+            <li><code>lightkeeper-protocol</code>: typed commands, responses, and shared values</li>
             <li><code>lightkeeper-nms-parent</code>: version-specific internals for low-level behavior</li>
-            <li><code>lightkeeper-maven-plugin-test</code>: full integration test matrix for supported platforms</li>
+            <li><code>lightkeeper-integration-tests</code>: full integration test matrix for supported platforms</li>
         </ul>
     </section>
 </main>
