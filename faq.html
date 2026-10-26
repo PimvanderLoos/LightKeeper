@@ -17,13 +17,16 @@
     <button class="menu-toggle" type="button" aria-expanded="false" aria-label="Toggle navigation">Menu</button>
     <nav class="site-nav">
         <a href="getting-started.html">Getting Started</a>
+        <a href="ide-testing.html">IDE Setup</a>
         <a href="features.html">Features</a>
         <a href="architecture.html">Architecture</a>
         <a href="faq.html">FAQ</a>
+        <a href="javadoc/">API Reference</a>
     </nav>
 </header>
 
 <main>
+    <p class="version-note">These guides describe the current master build. Select a release in the <a href="javadoc/">API Reference</a> for released APIs.</p>
     <section class="hero reveal">
         <p class="eyebrow">FAQ</p>
         <h1>Common setup and troubleshooting questions.</h1>
@@ -31,9 +34,15 @@
     </section>
 
     <section class="panel reveal">
+        <h2>How do I run tests directly from my IDE?</h2>
+        <p>Prepare the owning module once with <code>mvn lightkeeper:prepare-server@prepare-server -Dlightkeeper.ide=true</code>,
+            then use its JUnit gutter button. See <a href="ide-testing.html">IDE setup</a> for refresh, persistence, and troubleshooting.</p>
+    </section>
+
+    <section class="panel reveal">
         <h2>Where are integration-test logs?</h2>
         <p>See Failsafe output and summaries under:</p>
-        <pre><code>lightkeeper-maven-plugin-test/target/failsafe-reports/</code></pre>
+        <pre><code>lightkeeper-integration-tests/target/failsafe-reports/</code></pre>
     </section>
 
     <section class="panel reveal">
@@ -69,7 +78,7 @@
         <h2>How can I run the same tests on Paper and Spigot?</h2>
         <p>
             Configure two plugin executions and two Failsafe executions with different runtime manifest/system property values.
-            The module <code>lightkeeper-maven-plugin-test</code> demonstrates this.
+            The module <code>lightkeeper-integration-tests</code> demonstrates this.
         </p>
     </section>
 </main>
