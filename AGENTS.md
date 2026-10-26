@@ -1,5 +1,11 @@
 ## Build & Validation
 
+- User-facing changes (public API, setup, defaults, supported platforms, errors, or interactions) must update
+  relevant Javadocs in the code PR and website pages/examples in a linked companion PR targeting `gh_pages`.
+  Link both PRs, name affected pages, and coordinate their merges; explain explicitly if docs are unaffected.
+  Website HTML, CSS, JavaScript, and CNAME belong exclusively on `gh_pages`, which remains the hosted source.
+  Do not add webpages or website assets to `master`. Its publisher may update only `javadoc/` on `gh_pages`.
+
 - Between commits, run only the tests and quality checks affected by the changes. Do not run the entire test suite
   just to establish a baseline or after every implementation step.
 - Select unit tests with `-Dtest=...` and integration tests with `-Dit.test=...`. The integration module runs selected
@@ -75,8 +81,8 @@ control/assert server state through a typed framework API.
 
 ### Typical test API examples
 
-- `framework.mainWorld()`, `framework.newWorld(...)`
-- `framework.buildPlayer().withPermissions(...).build()`
+- `framework.worlds().main()`, `framework.worlds().create(...)`
+- `framework.bots().builder().withPermissions(...).build()`
 - `player.executeCommand("lktestgui").andWaitForMenuOpen(...).clickAtIndex(...)`
 - `assertThat(world).hasBlockAt(x, y, z).ofType("minecraft:stone")`
 - `assertThat(player).receivedMessage("...")`
