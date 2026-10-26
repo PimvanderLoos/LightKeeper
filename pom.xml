@@ -362,6 +362,37 @@
 
     <profiles>
         <profile>
+            <id>docs</id>
+            <reporting>
+                <excludeDefaults>true</excludeDefaults>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>${version.maven-javadoc-plugin}</version>
+                        <inherited>false</inherited>
+                        <configuration>
+                            <failOnError>true</failOnError>
+                            <doclint>all,-missing</doclint>
+                            <notimestamp>true</notimestamp>
+                            <show>public</show>
+                            <excludePackageNames>*.internal:*.internal.*</excludePackageNames>
+                            <skippedModules>lightkeeper-agent-.*,lightkeeper-nms-.*,lightkeeper-spigot-test-plugin,lightkeeper-integration-tests,lightkeeper-maven-plugin,lightkeeper-report-aggregate</skippedModules>
+                        </configuration>
+                        <reportSets>
+                            <reportSet>
+                                <id>public-api</id>
+                                <inherited>false</inherited>
+                                <reports>
+                                    <report>aggregate-no-fork</report>
+                                </reports>
+                            </reportSet>
+                        </reportSets>
+                    </plugin>
+                </plugins>
+            </reporting>
+        </profile>
+        <profile>
             <id>default</id>
             <activation>
                 <activeByDefault>true</activeByDefault>

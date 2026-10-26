@@ -1,5 +1,7 @@
 # LightKeeper
 
+[Documentation](https://lightkeeper.pim16aap2.nl/) · [API Reference and versions](https://lightkeeper.pim16aap2.nl/javadoc/)
+
 [![](https://jitpack.io/v/PimvanderLoos/LightKeeper.svg)](https://jitpack.io/#PimvanderLoos/LightKeeper)
 
 LightKeeper is an end-to-end testing stack for Minecraft plugins.
@@ -223,9 +225,7 @@ class MyPluginIT
 
         // verify
         assertThat(player).receivedMessage("clicked");
-        assertThat(world)
-            .hasBlockAt(1, 100, 0)
-            .ofType("minecraft:stone");
+        assertThat(world).hasBlockAt(1, 100, 0).ofType("minecraft:stone");
     }
 }
 ```
