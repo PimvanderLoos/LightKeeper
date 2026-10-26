@@ -46,6 +46,7 @@
 import nl.pim16aap2.lightkeeper.framework.LightkeeperExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
 
 @ExtendWith(LightkeeperExtension.class)
@@ -57,7 +58,9 @@ class BlockPlacementIT
         // setup
         var world = framework.worlds().main();
         var player = framework.bots().builder()
-            .withName(&quot;lk_tester&quot;).atSpawn(world).build();
+            .withName(&quot;lk_tester&quot;)
+            .atSpawn(world)
+            .build();
 
         // execute
         player.placeBlock(&quot;minecraft:stone&quot;, 1, 100, 0)
@@ -209,6 +212,7 @@ class BlockPlacementIT
 import nl.pim16aap2.lightkeeper.framework.LightkeeperExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
 
 @ExtendWith(LightkeeperExtension.class)
@@ -220,7 +224,9 @@ class FirstPassingTestIT
         // setup
         var world = framework.worlds().main();
         var player = framework.bots().builder()
-            .withName(&quot;lk_tester&quot;).atSpawn(world).build();
+            .withName(&quot;lk_tester&quot;)
+            .atSpawn(world)
+            .build();
 
         // execute
         player.placeBlock(&quot;minecraft:stone&quot;, 1, 100, 0)
