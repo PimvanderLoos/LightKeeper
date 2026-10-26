@@ -3,37 +3,39 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#080f14">
     <title>LightKeeper - Architecture</title>
     <meta name="description" content="Architecture and data flow of LightKeeper runtime provisioning and test framework.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/styles.css">
     <script defer src="assets/main.js"></script>
 </head>
 <body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="site-kicker"><span class="status-dot" aria-hidden="true"></span> LightKeeper / Open-source Minecraft plugin testing</div>
 <header class="site-header">
-    <a class="brand" href="index.html">LightKeeper</a>
-    <button class="menu-toggle" type="button" aria-expanded="false" aria-label="Toggle navigation">Menu</button>
-    <nav class="site-nav">
+    <a class="brand" href="index.html"><svg class="brand-mark" viewBox="0 0 32 36" aria-hidden="true"><path d="M19 1h9v9h-9zM10 12h9v9h-9zM21 13h7v7h-7zM2 24h8v9H2zM12 23h7v7h-7z"/></svg>LightKeeper</a>
+    <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" hidden>Menu <span aria-hidden="true">☰</span></button>
+    <nav class="site-nav" id="site-nav" aria-label="Main navigation">
         <a href="getting-started.html">Getting Started</a>
-        <a href="ide-testing.html">IDE Setup</a>
         <a href="features.html">Features</a>
-        <a href="architecture.html">Architecture</a>
-        <a href="faq.html">FAQ</a>
+        <a href="ide-testing.html">IDE Setup</a>
         <a href="javadoc/">API Reference</a>
+        <a class="nav-github" href="https://github.com/PimvanderLoos/LightKeeper">GitHub <span aria-hidden="true">↗</span></a>
     </nav>
 </header>
 
-<main>
+<main id="main" class="docs-main">
     <p class="version-note">These guides describe the current master build. Select a release in the <a href="javadoc/">API Reference</a> for released APIs.</p>
-    <section class="hero reveal">
+    <section class="guide-hero">
         <p class="eyebrow">Architecture</p>
         <h1>Provisioning pipeline + test-runtime API layers.</h1>
         <p class="lead">A quick map of how Maven, server runtime, agent, and JUnit framework components interact.</p>
     </section>
 
-    <section class="panel reveal">
+    <section class="panel">
         <h2>Execution flow</h2>
         <div class="flow">
             <article class="flow-step">
@@ -63,7 +65,7 @@
         </div>
     </section>
 
-    <section class="panel reveal">
+    <section class="panel">
         <h2>Module responsibilities</h2>
         <ul class="checklist">
             <li><code>lightkeeper-maven-plugin</code>: provisioning, caching, runtime manifest creation, cleanup</li>
@@ -75,10 +77,20 @@
             <li><code>lightkeeper-integration-tests</code>: full integration test matrix for supported platforms</li>
         </ul>
     </section>
+    <p class="guide-footnote">For implementation details, read module package docs and integration tests in this repository.</p>
 </main>
 
 <footer class="site-footer">
-    <p>For implementation details, read module package docs and integration tests in this repository.</p>
+    <p>LightKeeper <span aria-hidden="true">/</span> Open-source Minecraft plugin testing</p>
+    <nav aria-label="Footer navigation">
+        <a href="getting-started.html">Guides</a>
+        <a href="ide-testing.html">IDE Setup</a>
+        <a href="architecture.html">Architecture</a>
+        <a href="faq.html">FAQ</a>
+        <a href="javadoc/">API versions <span aria-hidden="true">↗</span></a>
+        <a href="https://github.com/PimvanderLoos/LightKeeper">GitHub <span aria-hidden="true">↗</span></a>
+        <a href="LICENSE">License</a>
+    </nav>
 </footer>
 </body>
 </html>

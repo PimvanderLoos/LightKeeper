@@ -3,125 +3,310 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#080f14">
     <title>LightKeeper - Minecraft Plugin E2E Testing</title>
     <meta name="description" content="LightKeeper runs real Minecraft server end-to-end tests for Paper and Spigot with synthetic players, world provisioning, and fluent assertions.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/styles.css">
     <script defer src="assets/main.js"></script>
 </head>
 <body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="site-kicker"><span class="status-dot" aria-hidden="true"></span> LightKeeper / Open-source Minecraft plugin testing</div>
 <header class="site-header">
-    <a class="brand" href="index.html">LightKeeper</a>
-    <button class="menu-toggle" type="button" aria-expanded="false" aria-label="Toggle navigation">Menu</button>
-    <nav class="site-nav">
+    <a class="brand" href="index.html"><svg class="brand-mark" viewBox="0 0 32 36" aria-hidden="true"><path d="M19 1h9v9h-9zM10 12h9v9h-9zM21 13h7v7h-7zM2 24h8v9H2zM12 23h7v7h-7z"/></svg>LightKeeper</a>
+    <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" hidden>Menu <span aria-hidden="true">☰</span></button>
+    <nav class="site-nav" id="site-nav" aria-label="Main navigation">
         <a href="getting-started.html">Getting Started</a>
-        <a href="ide-testing.html">IDE Setup</a>
         <a href="features.html">Features</a>
-        <a href="architecture.html">Architecture</a>
-        <a href="faq.html">FAQ</a>
+        <a href="ide-testing.html">IDE Setup</a>
         <a href="javadoc/">API Reference</a>
+        <a class="nav-github" href="https://github.com/PimvanderLoos/LightKeeper">GitHub <span aria-hidden="true">↗</span></a>
     </nav>
 </header>
 
-<main>
-    <p class="version-note">These guides describe the current master build. Select a release in the <a href="javadoc/">API Reference</a> for released APIs.</p>
-    <section class="hero reveal">
-        <p class="eyebrow">Minecraft Plugin Quality Platform</p>
-        <h1>Real server integration tests for Paper and Spigot.</h1>
-        <p class="lead">
-            LightKeeper provisions, caches, and launches full server runtimes, then gives your JUnit tests fluent
-            handles for worlds, bots, menus, commands, and assertions.
-        </p>
-        <div class="button-row">
-            <a class="button button-primary" href="getting-started.html">Start in 10 Minutes</a>
-            <a class="button button-ghost" href="javadoc/">API Reference</a>
-            <a class="button button-ghost" href="https://github.com/PimvanderLoos/LightKeeper">Repository</a>
+<main id="main">
+    <section class="home-hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+            <p class="eyebrow hero-badge"><span class="status-dot" aria-hidden="true"></span>End-to-end testing for Minecraft plugins</p>
+            <h1 id="hero-title">Real servers. <span>Not a mock.</span></h1>
+            <p class="lead">Test your plugin against real Paper and Spigot servers. Spawn players, drive menus,
+                inspect worlds, and catch regressions before your players do.</p>
+            <div class="button-row">
+                <a class="button button-primary" href="#quickstart">Get started <span aria-hidden="true">↗</span></a>
+                <a class="button button-ghost" href="https://github.com/PimvanderLoos/LightKeeper">View on GitHub <span aria-hidden="true">↗</span></a>
+            </div>
+            <p class="requirements">JAVA 21 <span>/</span> MAVEN 3.9+ <span>/</span> PAPER + SPIGOT<br>Linux &amp; macOS recommended · <a href="getting-started.html">Requirements</a></p>
         </div>
-    </section>
-
-    <section class="panel reveal">
-        <h2>Why LightKeeper</h2>
-        <div class="grid two">
-            <article class="card">
-                <h3>Not mocks. Not simulators.</h3>
-                <p>
-                    Execute tests against an actual Minecraft server process, with your plugin and dependencies loaded
-                    exactly as they would be in production.
-                </p>
-            </article>
-            <article class="card">
-                <h3>Fast repeated runs</h3>
-                <p>
-                    Server binaries and base server directories are cached, so retry and CI loops avoid unnecessary
-                    re-downloads and rebuilds.
-                </p>
-            </article>
-            <article class="card">
-                <h3>Bot-level API</h3>
-                <p>
-                    Create synthetic players, execute commands, place blocks, interact with inventories, and verify
-                    world/menu/player state with fluent assertions.
-                </p>
-            </article>
-            <article class="card">
-                <h3>First-class provisioning</h3>
-                <p>
-                    Bring your own world folders or archives, plugin jars or Maven artifacts, and overlay config trees
-                    into the prepared server.
-                </p>
-            </article>
-        </div>
-    </section>
-
-    <section class="panel reveal">
-        <h2>How it works</h2>
-        <ol class="timeline">
-            <li><code>lightkeeper:prepare-server</code> resolves/builds and caches the server runtime.</li>
-            <li>LightKeeper writes a runtime manifest with socket/auth/config metadata.</li>
-            <li>JUnit tests connect through <code>LightkeeperExtension</code> and framework handles.</li>
-            <li>Tests drive synthetic players and validate world/menu/chat behavior.</li>
-            <li><code>lightkeeper:cleanup-server</code> optionally removes target server directories on success.</li>
-        </ol>
-    </section>
-
-    <section class="panel reveal">
-        <h2>Core test example</h2>
-        <pre><code data-java-class="QuickStartExample">import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
+        <div class="editor hero-editor">
+            <div class="editor-bar"><span class="editor-lights" aria-hidden="true"><i></i><i></i><i></i></span><span>BlockPlacementIT.java</span><span class="editor-language">Java / JUnit</span></div>
+            <pre id="hero-code" tabindex="0" aria-label="BlockPlacementIT.java"><code data-language="java" data-java-class="BlockPlacementIT">import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.LightkeeperExtension;
-import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
-import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
 
 @ExtendWith(LightkeeperExtension.class)
-class QuickStartExample
+class BlockPlacementIT
 {
     @Test
     void placeBlock_shouldUpdateWorld(ILightkeeperFramework framework)
     {
         // setup
-        final WorldHandle world = framework.worlds().main();
-        final PlayerHandle player = framework.bots().builder()
+        var world = framework.worlds().main();
+        var player = framework.bots().builder()
             .withName(&quot;lk_tester&quot;)
             .atSpawn(world)
             .build();
 
         // execute
-        player.placeBlock(&quot;minecraft:stone&quot;, 1, 100, 0).andWaitTicks(1);
+        player.placeBlock(&quot;minecraft:stone&quot;, 1, 100, 0)
+            .andWaitTicks(1);
 
         // verify
-        assertThat(world).hasBlockAt(1, 100, 0).ofType(&quot;minecraft:stone&quot;);
+        assertThat(world).hasBlockAt(1, 100, 0)
+            .ofType(&quot;minecraft:stone&quot;);
     }
 }</code></pre>
+            <div class="editor-footer"><span><span class="status-dot" aria-hidden="true"></span>Real server. Real assertions.</span><button class="copy-button" type="button" data-copy="hero-code" hidden>Copy code ↗</button></div>
+        </div>
+    </section>
+
+    <section class="proof-strip" aria-label="Built for real integration tests">
+        <div class="proof-item"><span class="proof-icon" aria-hidden="true">▣</span><div><h2>Real Minecraft runtime</h2><p>No mocked Bukkit APIs</p></div></div>
+        <div class="proof-item"><span class="proof-icon" aria-hidden="true">↻</span><div><h2>Cached server builds</h2><p>Made for repeated test runs</p></div></div>
+        <div class="proof-item"><span class="proof-icon" aria-hidden="true">⌘</span><div><h2>Fluent JUnit API</h2><p>Test behavior, not internals</p></div></div>
+    </section>
+
+    <section class="home-section" id="quickstart" aria-labelledby="quickstart-title">
+        <div class="section-heading">
+            <div><p class="eyebrow">/ Get started in minutes</p><h2 id="quickstart-title">Your first passing test.</h2></div>
+            <p>Set up the Maven plugin and JUnit framework, write a test, and run it against a real Paper or Spigot server.</p>
+        </div>
+        <div class="quickstart">
+            <div class="quickstart-tabs" role="tablist" aria-label="Your first passing test" aria-orientation="vertical" hidden>
+                <p class="quickstart-label" role="presentation">Quickstart</p>
+                <button type="button" role="tab" id="tab-dependencies" aria-controls="step-dependencies" aria-selected="true"><span aria-hidden="true">01</span>Add dependencies</button>
+                <button type="button" role="tab" id="tab-test" aria-controls="step-test" aria-selected="false" tabindex="-1"><span aria-hidden="true">02</span>Write a test</button>
+                <button type="button" role="tab" id="tab-run" aria-controls="step-run" aria-selected="false" tabindex="-1"><span aria-hidden="true">03</span>Run &amp; inspect</button>
+            </div>
+            <div class="quickstart-panel" id="step-dependencies" role="tabpanel" aria-labelledby="tab-dependencies" tabindex="0">
+                <h3>Add the Maven dependencies</h3>
+                <p>Start with this test project, or merge its configuration into your plugin’s POM. JitPack resolves
+                    both the test dependency and the build plugin. The Spigot API supplies Bukkit types used by assertions.
+                    Replace the example <code>userAgent</code> with your project and contact URL.</p>
+                <div class="editor">
+            <div class="editor-bar"><span>pom.xml · complete test project</span><button class="copy-button" type="button" data-copy="setup-code" hidden>Copy code ↗</button></div>
+            <pre id="setup-code" tabindex="0" aria-label="pom.xml · complete test project"><code data-language="xml">&lt;project xmlns=&quot;http://maven.apache.org/POM/4.0.0&quot;
+         xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
+         xsi:schemaLocation=&quot;http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd&quot;&gt;
+  &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+  &lt;groupId&gt;com.example&lt;/groupId&gt;
+  &lt;artifactId&gt;my-plugin-tests&lt;/artifactId&gt;
+  &lt;version&gt;1.0-SNAPSHOT&lt;/version&gt;
+
+  &lt;properties&gt;
+    &lt;maven.compiler.release&gt;21&lt;/maven.compiler.release&gt;
+    &lt;project.build.sourceEncoding&gt;UTF-8&lt;/project.build.sourceEncoding&gt;
+    &lt;lightkeeper.version&gt;master-SNAPSHOT&lt;/lightkeeper.version&gt;
+  &lt;/properties&gt;
+
+  &lt;repositories&gt;
+    &lt;repository&gt;
+      &lt;id&gt;jitpack.io&lt;/id&gt;
+      &lt;url&gt;https://jitpack.io&lt;/url&gt;
+    &lt;/repository&gt;
+    &lt;repository&gt;
+      &lt;id&gt;spigotmc-snapshots&lt;/id&gt;
+      &lt;url&gt;https://hub.spigotmc.org/nexus/content/groups/public/&lt;/url&gt;
+    &lt;/repository&gt;
+  &lt;/repositories&gt;
+  &lt;pluginRepositories&gt;
+    &lt;pluginRepository&gt;
+      &lt;id&gt;jitpack.io&lt;/id&gt;
+      &lt;url&gt;https://jitpack.io&lt;/url&gt;
+    &lt;/pluginRepository&gt;
+  &lt;/pluginRepositories&gt;
+
+  &lt;dependencies&gt;
+    &lt;dependency&gt;
+      &lt;groupId&gt;com.github.PimvanderLoos.LightKeeper&lt;/groupId&gt;
+      &lt;artifactId&gt;lightkeeper-framework-junit&lt;/artifactId&gt;
+      &lt;version&gt;${lightkeeper.version}&lt;/version&gt;
+      &lt;scope&gt;test&lt;/scope&gt;
+    &lt;/dependency&gt;
+    &lt;dependency&gt;
+      &lt;groupId&gt;org.junit.jupiter&lt;/groupId&gt;
+      &lt;artifactId&gt;junit-jupiter&lt;/artifactId&gt;
+      &lt;version&gt;6.1.3&lt;/version&gt;
+      &lt;scope&gt;test&lt;/scope&gt;
+    &lt;/dependency&gt;
+    &lt;dependency&gt;
+      &lt;groupId&gt;org.spigotmc&lt;/groupId&gt;
+      &lt;artifactId&gt;spigot-api&lt;/artifactId&gt;
+      &lt;version&gt;1.21.11-R0.2-SNAPSHOT&lt;/version&gt;
+      &lt;scope&gt;test&lt;/scope&gt;
+    &lt;/dependency&gt;
+  &lt;/dependencies&gt;
+
+  &lt;build&gt;
+    &lt;plugins&gt;
+</code><code data-language="xml" data-maven-plugin="lightkeeper">      &lt;plugin&gt;
+        &lt;groupId&gt;com.github.PimvanderLoos.LightKeeper&lt;/groupId&gt;
+        &lt;artifactId&gt;lightkeeper-maven-plugin&lt;/artifactId&gt;
+        &lt;version&gt;${lightkeeper.version}&lt;/version&gt;
+        &lt;executions&gt;
+          &lt;execution&gt;
+            &lt;id&gt;prepare-server&lt;/id&gt;
+            &lt;phase&gt;pre-integration-test&lt;/phase&gt;
+            &lt;goals&gt;&lt;goal&gt;prepare-server&lt;/goal&gt;&lt;/goals&gt;
+            &lt;configuration&gt;
+              &lt;serverType&gt;paper&lt;/serverType&gt;
+              &lt;userAgent&gt;MyPlugin/1.0 (https://example.com/my-plugin)&lt;/userAgent&gt;
+              &lt;runtimeManifestPath&gt;${project.build.directory}/lightkeeper/runtime-manifest.json&lt;/runtimeManifestPath&gt;
+            &lt;/configuration&gt;
+          &lt;/execution&gt;
+        &lt;/executions&gt;
+      &lt;/plugin&gt;</code><code data-language="xml">
+      &lt;plugin&gt;
+        &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+        &lt;artifactId&gt;maven-compiler-plugin&lt;/artifactId&gt;
+        &lt;version&gt;3.15.0&lt;/version&gt;
+      &lt;/plugin&gt;
+      &lt;plugin&gt;
+        &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+        &lt;artifactId&gt;maven-failsafe-plugin&lt;/artifactId&gt;
+        &lt;version&gt;3.5.6&lt;/version&gt;
+        &lt;configuration&gt;
+          &lt;systemPropertyVariables&gt;
+            &lt;lightkeeper.runtimeManifestPath&gt;${project.build.directory}/lightkeeper/runtime-manifest.json&lt;/lightkeeper.runtimeManifestPath&gt;
+          &lt;/systemPropertyVariables&gt;
+        &lt;/configuration&gt;
+        &lt;executions&gt;
+          &lt;execution&gt;
+            &lt;goals&gt;
+              &lt;goal&gt;integration-test&lt;/goal&gt;
+              &lt;goal&gt;verify&lt;/goal&gt;
+            &lt;/goals&gt;
+          &lt;/execution&gt;
+        &lt;/executions&gt;
+      &lt;/plugin&gt;
+    &lt;/plugins&gt;
+  &lt;/build&gt;
+&lt;/project&gt;</code></pre>
+
+        </div>
+                <p class="step-note">These guides use <code>master-SNAPSHOT</code>. The Maven plugin belongs in <code>build/plugins</code>.
+                    <a href="getting-started.html">See complete setup →</a></p>
+            </div>
+            <div class="quickstart-panel" id="step-test" role="tabpanel" aria-labelledby="tab-test" tabindex="0">
+                <h3>Write a test. Use a real world.</h3>
+                <p>Save this as <code>src/test/java/FirstPassingTestIT.java</code>. The extension starts the prepared server
+                    and injects the framework. This block assertion needs no fixture plugin.</p>
+                <div class="editor">
+            <div class="editor-bar"><span>FirstPassingTestIT.java</span><button class="copy-button" type="button" data-copy="test-code" hidden>Copy code ↗</button></div>
+            <pre id="test-code" tabindex="0" aria-label="FirstPassingTestIT.java"><code data-language="java" data-java-class="FirstPassingTestIT">import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
+import nl.pim16aap2.lightkeeper.framework.LightkeeperExtension;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
+
+@ExtendWith(LightkeeperExtension.class)
+class FirstPassingTestIT
+{
+    @Test
+    void placeBlock_shouldUpdateWorld(ILightkeeperFramework framework)
+    {
+        // setup
+        var world = framework.worlds().main();
+        var player = framework.bots().builder()
+            .withName(&quot;lk_tester&quot;)
+            .atSpawn(world)
+            .build();
+
+        // execute
+        player.placeBlock(&quot;minecraft:stone&quot;, 1, 100, 0)
+            .andWaitTicks(1);
+
+        // verify
+        assertThat(world).hasBlockAt(1, 100, 0)
+            .ofType(&quot;minecraft:stone&quot;);
+    }
+}</code></pre>
+
+        </div>
+                <p class="step-note">To test your own plugin, configure its packaged JAR for provisioning.
+                    <a href="features.html">Explore what you can test →</a></p>
+            </div>
+            <div class="quickstart-panel" id="step-run" role="tabpanel" aria-labelledby="tab-run" tabindex="0">
+                <h3>Run it. Inspect the result.</h3>
+                <p>With the POM from step 01 and an <code>*IT.java</code> test in place, run the full integration lifecycle.</p>
+                <div class="editor">
+            <div class="editor-bar"><span>Terminal</span><button class="copy-button" type="button" data-copy="run-code" hidden>Copy code ↗</button></div>
+            <pre id="run-code" tabindex="0" aria-label="Terminal"><code data-language="shell">mvn verify</code></pre>
+
+        </div>
+                <ol class="timeline">
+                    <li><code>pre-integration-test</code> prepares a Paper server and writes the runtime manifest.</li>
+                    <li>Failsafe runs your test against that server, then verifies the result.</li>
+                    <li>Read test results in <code>target/failsafe-reports/</code> and server logs under <code>target/lightkeeper-server/</code>.</li>
+                </ol>
+                <p class="step-note">Spigot is also supported; its first preparation builds the server with BuildTools. Cached builds are reused.
+                    <a href="ide-testing.html">Prefer the IDE gutter? Set it up →</a></p>
+            </div>
+        </div>
+    </section>
+
+    <section class="home-section" aria-labelledby="capabilities-title">
+        <div class="section-heading">
+            <div><p class="eyebrow">/ What you can test</p><h2 id="capabilities-title">Everything that happens<br>inside the server.</h2></div>
+            <p>From player interactions to a server restart, test how your plugin behaves in the environment that matters: a real Minecraft server.</p>
+        </div>
+        <div class="capabilities">
+            <article class="capability">
+                <div class="card-index"><span class="card-icon" aria-hidden="true">⌘</span><span>01 / 03</span></div>
+                <h3>Player interactions</h3>
+                <p>Drive synthetic players through commands, chat, inventories, and menu clicks. Opt into the full-login pipeline when your test needs the real login path.</p>
+                <a href="features.html">Explore player APIs <span aria-hidden="true">↗</span></a>
+            </article>
+            <article class="capability">
+                <div class="card-index"><span class="card-icon" aria-hidden="true">▦</span><span>02 / 03</span></div>
+                <h3>Worlds &amp; events</h3>
+                <p>Assert block states, inspect entities, capture Bukkit events, and wait for server-side outcomes with fluent assertions.</p>
+                <a href="features.html">Explore worlds &amp; events <span aria-hidden="true">↗</span></a>
+            </article>
+            <article class="capability">
+                <div class="card-index"><span class="card-icon" aria-hidden="true">↻</span><span>03 / 03</span></div>
+                <h3>Lifecycle &amp; recovery</h3>
+                <p>Restart or crash servers mid-test, provision plugins and worlds, and collect diagnostics when tests fail.</p>
+                <a href="architecture.html">See how it works <span aria-hidden="true">↗</span></a>
+            </article>
+        </div>
+    </section>
+
+    <section class="api-cta" aria-labelledby="api-title">
+        <div><p class="eyebrow">/ Go deeper</p><h2 id="api-title">The right docs for your build.</h2>
+            <p>Human guides describe current master. The API Reference lets you choose from published API versions,
+                including the <a href="javadoc/master/">master development build</a>.</p></div>
+        <a class="button button-ghost" href="javadoc/">Browse API versions <span aria-hidden="true">↗</span></a>
     </section>
 </main>
 
 <footer class="site-footer">
-    <p>LightKeeper guides and versioned API reference.</p>
+    <p>LightKeeper <span aria-hidden="true">/</span> Open-source Minecraft plugin testing</p>
+    <nav aria-label="Footer navigation">
+        <a href="getting-started.html">Guides</a>
+        <a href="ide-testing.html">IDE Setup</a>
+        <a href="architecture.html">Architecture</a>
+        <a href="faq.html">FAQ</a>
+        <a href="javadoc/">API versions <span aria-hidden="true">↗</span></a>
+        <a href="https://github.com/PimvanderLoos/LightKeeper">GitHub <span aria-hidden="true">↗</span></a>
+        <a href="LICENSE">License</a>
+    </nav>
 </footer>
 </body>
 </html>

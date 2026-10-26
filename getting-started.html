@@ -3,37 +3,39 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#080f14">
     <title>LightKeeper - Getting Started</title>
     <meta name="description" content="Set up LightKeeper for Maven integration tests in a few steps.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/styles.css">
     <script defer src="assets/main.js"></script>
 </head>
 <body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="site-kicker"><span class="status-dot" aria-hidden="true"></span> LightKeeper / Open-source Minecraft plugin testing</div>
 <header class="site-header">
-    <a class="brand" href="index.html">LightKeeper</a>
-    <button class="menu-toggle" type="button" aria-expanded="false" aria-label="Toggle navigation">Menu</button>
-    <nav class="site-nav">
+    <a class="brand" href="index.html"><svg class="brand-mark" viewBox="0 0 32 36" aria-hidden="true"><path d="M19 1h9v9h-9zM10 12h9v9h-9zM21 13h7v7h-7zM2 24h8v9H2zM12 23h7v7h-7z"/></svg>LightKeeper</a>
+    <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" hidden>Menu <span aria-hidden="true">☰</span></button>
+    <nav class="site-nav" id="site-nav" aria-label="Main navigation">
         <a href="getting-started.html">Getting Started</a>
-        <a href="ide-testing.html">IDE Setup</a>
         <a href="features.html">Features</a>
-        <a href="architecture.html">Architecture</a>
-        <a href="faq.html">FAQ</a>
+        <a href="ide-testing.html">IDE Setup</a>
         <a href="javadoc/">API Reference</a>
+        <a class="nav-github" href="https://github.com/PimvanderLoos/LightKeeper">GitHub <span aria-hidden="true">↗</span></a>
     </nav>
 </header>
 
-<main>
+<main id="main" class="docs-main">
     <p class="version-note">These guides describe the current master build. Select a release in the <a href="javadoc/">API Reference</a> for released APIs.</p>
-    <section class="hero reveal">
+    <section class="guide-hero">
         <p class="eyebrow">Getting Started</p>
         <h1>From zero to full server integration test.</h1>
         <p class="lead">Use this as your baseline setup for a Maven project that tests a plugin on real Paper/Spigot runtimes.</p>
     </section>
 
-    <section class="panel reveal">
+    <section class="panel">
         <h2>Prerequisites</h2>
         <ul class="checklist">
             <li>Java 21</li>
@@ -42,7 +44,7 @@
         </ul>
     </section>
 
-    <section class="panel reveal">
+    <section class="panel">
         <h2>1. Add framework dependency</h2>
         <p>These examples use JitPack coordinates. Add JitPack to both <code>repositories</code> and
             <code>pluginRepositories</code>, as shown in the <a href="https://github.com/PimvanderLoos/LightKeeper#developers">repository setup</a>.
@@ -57,7 +59,7 @@
 &lt;/dependency&gt;</code></pre>
     </section>
 
-    <section class="panel reveal">
+    <section class="panel">
         <h2>2. Configure prepare + cleanup goals</h2>
         <p>The Maven plugin provisions its embedded runtime agent automatically.</p>
         <pre><code data-maven-plugin="lightkeeper">&lt;plugin&gt;
@@ -88,7 +90,7 @@
 &lt;/plugin&gt;</code></pre>
     </section>
 
-    <section class="panel reveal">
+    <section class="panel">
         <h2>3. Pass runtime manifest to tests</h2>
         <p>Put this configuration in Maven Failsafe. Run integration tests with <code>mvn verify</code>. For IDE gutter launches, use the <a href="ide-testing.html">IDE setup guide</a>.</p>
         <pre><code>&lt;systemPropertyVariables&gt;
@@ -98,7 +100,7 @@
 &lt;/systemPropertyVariables&gt;</code></pre>
     </section>
 
-    <section class="panel reveal">
+    <section class="panel">
         <h2>4. Write your first test</h2>
         <pre><code data-java-class="GettingStartedExample">import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.LightkeeperExtension;
@@ -130,10 +132,20 @@ class GettingStartedExample
     }
 }</code></pre>
     </section>
+    <p class="guide-footnote">Need full examples? See integration tests in <code>lightkeeper-integration-tests</code>.</p>
 </main>
 
 <footer class="site-footer">
-    <p>Need full examples? See integration tests in <code>lightkeeper-integration-tests</code>.</p>
+    <p>LightKeeper <span aria-hidden="true">/</span> Open-source Minecraft plugin testing</p>
+    <nav aria-label="Footer navigation">
+        <a href="getting-started.html">Guides</a>
+        <a href="ide-testing.html">IDE Setup</a>
+        <a href="architecture.html">Architecture</a>
+        <a href="faq.html">FAQ</a>
+        <a href="javadoc/">API versions <span aria-hidden="true">↗</span></a>
+        <a href="https://github.com/PimvanderLoos/LightKeeper">GitHub <span aria-hidden="true">↗</span></a>
+        <a href="LICENSE">License</a>
+    </nav>
 </footer>
 </body>
 </html>
