@@ -54,6 +54,7 @@ ignoredFiles
 docs/*
 !docs/README.md
 !docs/ide-testing.md
+!docs/assertion-coverage.md
 .codex/*
 .claude/*
 .scratch/*

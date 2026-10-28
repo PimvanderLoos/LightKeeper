@@ -22,7 +22,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     outputs:
       publish-docs: ${{ steps.docs.outputs.publish }}
       artifact-name: documentation-${{ github.run_attempt }}

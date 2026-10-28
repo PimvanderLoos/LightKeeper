@@ -17,6 +17,12 @@ public final class EventCaptureHandle implements AutoCloseable
         this.eventClassName = Objects.requireNonNull(eventClassName, "eventClassName");
     }
 
+    /** @return The captured event class name, without querying the server. */
+    public String eventClassName()
+    {
+        return eventClassName;
+    }
+
     /**
      * Gets all captured events since the last clear or registration.
      *

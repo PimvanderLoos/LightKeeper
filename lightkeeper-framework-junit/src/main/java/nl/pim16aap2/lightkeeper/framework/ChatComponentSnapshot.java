@@ -1,110 +1,340 @@
 package nl.pim16aap2.lightkeeper.framework;
 
+import org.jspecify.annotations.Nullable;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Snapshot of a chat component.
+ * Frozen native chat-component JSON with shared literal-text and effective-click interpretation.
  *
- * <p>The {@link #json()} is the server's native component-codec output, verbatim from the outbound packet. On
- * Minecraft 1.21.5+ that codec spells the click field {@code click_event} (snake_case), so the click helpers on
- * this record key on {@code click_event}, not the pre-1.21.5 {@code clickEvent}.
+ * <p>Literal strings, component arrays and extra children are supported, including inherited click events.
+ * Translation keys, selectors, scores, keybinds and hover contents are not rendered as literal main-message text.
  *
  * @param json
- *     The raw JSON representation of the component.
+ *     Native component-codec JSON, retained verbatim.
  */
-public record ChatComponentSnapshot(
-    String json
-)
+public record ChatComponentSnapshot(String json)
 {
-    /**
-     * Shared JSON mapper for click-event inspection, matching the shared-mapper convention used elsewhere in the
-     * framework instead of allocating a fresh mapper per call.
-     */
+    /** Shared mapper for immutable component inspection. */
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    /**
-     * Modern and legacy click-event key spellings, in preference order.
-     */
-    private static final java.util.List<String> CLICK_EVENT_KEYS = java.util.List.of("click_event", "clickEvent");
+    /** Modern and legacy click-event field names, in preference order. */
+    private static final List<String> CLICK_EVENT_KEYS = List.of("click_event", "clickEvent");
 
+    /** Validates the immutable JSON input reference without decoding it eagerly. */
+    public ChatComponentSnapshot
+    {
+        Objects.requireNonNull(json, "json may not be null.");
+    }
 
-    /**
-     * The {@code click_event} action name of a component that runs a command when clicked.
-     */
-    private static final String RUN_COMMAND_ACTION = "run_command";
-    /**
-     * The {@code click_event} action name of a component that fills the chat box with a command when clicked.
-     */
-    private static final String SUGGEST_COMMAND_ACTION = "suggest_command";
-
-    /**
-     * Extracts the command of the first {@code run_command} click event in this component's tree.
-     *
-     * @return The command to run (typically leading-slash prefixed), or empty when this component carries no
-     *     {@code run_command} click event or its JSON cannot be parsed.
-     */
+    /** @return First run-command payload, or empty for absent actions or malformed input. */
     public Optional<String> clickRunCommand()
     {
-        return findClickCommand(RUN_COMMAND_ACTION);
+        return findClickCommand("run_command");
     }
 
-    /**
-     * Extracts the command of the first {@code suggest_command} click event in this component's tree.
-     *
-     * <p>The payload is returned verbatim, including any trailing space (suggest-command payloads often end with
-     * a space to prime the next argument), so it is never trimmed.
-     *
-     * @return The command to suggest, or empty when this component carries no {@code suggest_command} click event
-     *     or its JSON cannot be parsed.
-     */
+    /** @return First suggest-command payload verbatim, including trailing spaces; empty for malformed input. */
     public Optional<String> clickSuggestedCommand()
     {
-        return findClickCommand(SUGGEST_COMMAND_ACTION);
+        return findClickCommand("suggest_command");
     }
 
     /**
-     * Finds the command payload of the first click event matching the requested action anywhere in the tree.
+     * Decodes contiguous literal runs and their effective click actions.
      *
-     * @param action
-     *     The {@code click_event} action name to match.
-     * @return The matching click event's command payload, or empty when none matches.
+     * <p>Adjacent literal runs with the same action and payload are combined. Non-clickable text and opaque
+     * non-literal content prevent accidental association across unrelated portions of a message.
+     *
+     * @return Immutable literal click actions; textless style nodes may carry an empty text run.
+     *
+     * @throws IllegalArgumentException
+     *     When JSON or supported component structure cannot be decoded.
      */
+    public List<ClickAction> clickActions()
+    {
+        final List<LiteralRun> runs = new ArrayList<>();
+        try
+        {
+            final JsonNode root = OBJECT_MAPPER.readTree(json);
+            if (root == null)
+            {
+                throw new IllegalArgumentException("Component JSON is empty.");
+            }
+            readRuns(root, null, runs);
+        }
+        catch (JacksonException exception)
+        {
+            throw new IllegalArgumentException("Malformed chat component JSON.", exception);
+        }
+
+        final List<ClickAction> actions = new ArrayList<>();
+        ClickEvent active = null;
+        final StringBuilder text = new StringBuilder();
+        for (final var run : runs)
+        {
+            if (!Objects.equals(active, run.event()))
+            {
+                appendAction(actions, active, text);
+                text.setLength(0);
+                active = run.event();
+            }
+            if (active != null)
+            {
+                text.append(run.text());
+            }
+        }
+        appendAction(actions, active, text);
+        return List.copyOf(actions);
+    }
+
+    /**
+     * Matches decoded literal text associated with an effective click event.
+     *
+     * @param fragment
+     *     Nonempty literal text fragment.
+     * @return Whether a matching clickable literal run exists.
+     */
+    public boolean hasClickableText(String fragment)
+    {
+        validateFragment(fragment);
+        return clickActions().stream()
+            .anyMatch(action -> action.text().contains(fragment));
+    }
+
+    /**
+     * Matches literal text and its exact run-command payload.
+     *
+     * @param fragment
+     *     Nonempty literal text fragment.
+     * @param command
+     *     Exact command payload.
+     * @return Whether the same effective click action matches both requirements.
+     */
+    public boolean hasRunCommand(String fragment, String command)
+    {
+        return hasCommand(fragment, "run_command", command);
+    }
+
+    /**
+     * Matches literal text and its exact suggest-command payload, preserving spaces.
+     *
+     * @param fragment
+     *     Nonempty literal text fragment.
+     * @param command
+     *     Exact suggested payload.
+     * @return Whether the same effective click action matches both requirements.
+     */
+    public boolean hasSuggestedCommand(String fragment, String command)
+    {
+        return hasCommand(fragment, "suggest_command", command);
+    }
+
+    /**
+     * Frozen literal text and its associated effective action.
+     *
+     * @param text
+     *     Contiguous literal text; empty for a textless style node.
+     * @param action
+     *     Encoded click action name.
+     * @param value
+     *     Text payload when represented by command, value or URL; otherwise null.
+     */
+    public record ClickAction(String text, String action, @Nullable String value)
+    {
+        /** Validates the immutable action identity and literal text. */
+        public ClickAction
+        {
+            Objects.requireNonNull(text, "text may not be null.");
+            Objects.requireNonNull(action, "action may not be null.");
+            if (action.isBlank())
+            {
+                throw new IllegalArgumentException("action may not be blank.");
+            }
+        }
+    }
+
+    /**
+     * @param action
+     *     Encoded action.
+     * @param value
+     *     Optional text payload.
+     */
+    private record ClickEvent(String action, @Nullable String value)
+    {
+    }
+
+    /**
+     * @param text
+     *     Literal text, or empty for an opaque boundary.
+     * @param event
+     *     Effective event, null at a boundary.
+     */
+    private record LiteralRun(String text, @Nullable ClickEvent event)
+    {
+    }
+
+    private boolean hasCommand(String fragment, String action, String command)
+    {
+        validateFragment(fragment);
+        Objects.requireNonNull(command, "command may not be null.");
+        return clickActions().stream()
+            .anyMatch(
+                click -> click.text().contains(fragment) &&
+                    action.equals(click.action()) &&
+                    command.equals(click.value())
+            );
+    }
+
     private Optional<String> findClickCommand(String action)
     {
         try
         {
-            final JsonNode root = OBJECT_MAPPER.readTree(json);
-            // findValues walks the whole tree, so a click_event nested in an 'extra' child is found, not only a
-            // root-level one. Matching per action (rather than "the first click_event found") means
-            // clickRunCommand() never returns a suggest_command payload when a single message carries both
-            // (for example a paginated [<] [1/3] [>] control).
-            // Modern (1.21.5+) payloads use click_event with a 'command' field; legacy payloads used
-            // clickEvent with a 'value' field. Extraction accepts both so it matches exactly what
-            // PlayerHandleAssert#hasClickableChatText accepts — an asymmetry there would make
-            // clickChatComponent throw on the very payloads the assertion matches.
-            for (final String key : CLICK_EVENT_KEYS)
+            for (final var click : clickActions())
             {
-                for (final JsonNode clickEvent : root.findValues(key))
+                final String value = click.value();
+                if (action.equals(click.action()) && value != null)
                 {
-                    if (!action.equals(clickEvent.path("action").asString("")))
-                        continue;
-                    if (clickEvent.hasNonNull("command"))
-                        return Optional.of(clickEvent.get("command").asString());
-                    if (clickEvent.hasNonNull("value"))
-                        return Optional.of(clickEvent.get("value").asString());
+                    return Optional.of(value);
                 }
             }
             return Optional.empty();
         }
-        catch (JacksonException malformed)
+        catch (IllegalArgumentException malformed)
         {
-            // Malformed component JSON degrades to "no click command", matching the framework's existing
-            // error-tolerance for this data (see PlayerHandleAssert's parse-failure handling).
             return Optional.empty();
+        }
+    }
+
+    private static void validateFragment(String fragment)
+    {
+        Objects.requireNonNull(fragment, "fragment may not be null.");
+        if (fragment.isEmpty())
+        {
+            throw new IllegalArgumentException("fragment may not be empty.");
+        }
+    }
+
+    private static void readRuns(JsonNode node, @Nullable ClickEvent inherited, List<LiteralRun> runs)
+    {
+        if (node.isString())
+        {
+            appendLiteral(runs, node.asString(), inherited);
+            return;
+        }
+        if (node.isArray())
+        {
+            if (node.isEmpty())
+            {
+                throw new IllegalArgumentException("Component array must not be empty.");
+            }
+            final JsonNode first = node.path(0);
+            readRuns(first, inherited, runs);
+            final ClickEvent parent = firstStyle(first, inherited);
+            for (int index = 1; index < node.size(); index++)
+            {
+                readRuns(node.path(index), parent, runs);
+            }
+            return;
+        }
+        if (!node.isObject())
+        {
+            throw new IllegalArgumentException("Expected a literal string, component object or component array.");
+        }
+
+        final ClickEvent effective = clickFor(node, inherited);
+        if (node.has("text"))
+        {
+            final JsonNode text = node.path("text");
+            if (!text.isString())
+            {
+                throw new IllegalArgumentException("Literal component text must be a string.");
+            }
+            appendLiteral(runs, text.asString(), effective);
+        }
+        else
+        {
+            appendLiteral(runs, "", effective);
+            runs.add(new LiteralRun("", null));
+        }
+
+        final JsonNode extra = node.path("extra");
+        if (extra.isMissingNode())
+        {
+            return;
+        }
+        if (!extra.isArray())
+        {
+            throw new IllegalArgumentException("Component extra children must be an array.");
+        }
+        for (final JsonNode child : extra)
+        {
+            readRuns(child, effective, runs);
+        }
+    }
+
+    private static @Nullable ClickEvent firstStyle(JsonNode node, @Nullable ClickEvent inherited)
+    {
+        if (node.isArray())
+        {
+            return firstStyle(node.path(0), inherited);
+        }
+        return node.isObject() ? clickFor(node, inherited) : inherited;
+    }
+
+    private static @Nullable ClickEvent clickFor(JsonNode node, @Nullable ClickEvent inherited)
+    {
+        for (final String key : CLICK_EVENT_KEYS)
+        {
+            final JsonNode click = node.path(key);
+            if (click.isMissingNode() || click.isNull())
+            {
+                continue;
+            }
+            if (!click.isObject() ||
+                !click.path("action").isString() ||
+                click.path("action").asString().isBlank())
+            {
+                throw new IllegalArgumentException("Click event must contain a nonblank action name.");
+            }
+            String value = null;
+            for (final String field : List.of("command", "value", "url"))
+            {
+                final JsonNode payload = click.path(field);
+                if (payload.isMissingNode() || payload.isNull())
+                {
+                    continue;
+                }
+                if (!payload.isString())
+                {
+                    throw new IllegalArgumentException("Click text payload must be a string.");
+                }
+                value = payload.asString();
+                break;
+            }
+            return new ClickEvent(click.path("action").asString(), value);
+        }
+        return inherited;
+    }
+
+    private static void appendLiteral(List<LiteralRun> runs, String text, @Nullable ClickEvent event)
+    {
+        if (!text.isEmpty() || event != null)
+        {
+            runs.add(new LiteralRun(text, event));
+        }
+    }
+
+    private static void appendAction(List<ClickAction> actions, @Nullable ClickEvent event, StringBuilder text)
+    {
+        if (event != null)
+        {
+            actions.add(new ClickAction(text.toString(), event.action(), event.value()));
         }
     }
 }

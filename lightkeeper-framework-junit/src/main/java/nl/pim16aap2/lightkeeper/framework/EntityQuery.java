@@ -101,6 +101,17 @@ public final class EntityQuery
         return frameworkGateway.countEntities(worldName, entityTypeKey, boundsMin, boundsMax);
     }
 
+    /** @return A read-only description of the world and filters, without executing the query. */
+    public String description()
+    {
+        return "world='%s', type=%s, bounds=%s..%s".formatted(
+            worldName,
+            entityTypeKey == null ? "all" : entityTypeKey,
+            boundsMin,
+            boundsMax
+        );
+    }
+
     /**
      * Snapshots all matching entities in one main-thread burst.
      *

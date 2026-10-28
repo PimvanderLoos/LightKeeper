@@ -54,9 +54,9 @@ public record InventorySnapshot(
      */
     public @Nullable MenuItemSnapshot findItem(String materialKey)
     {
-        Objects.requireNonNull(materialKey, "materialKey may not be null.");
+        final String normalized = MaterialKeys.normalize(materialKey);
         return items.stream()
-            .filter(item -> item.materialKey().equalsIgnoreCase(materialKey))
+            .filter(item -> item.matchesMaterial(normalized))
             .findFirst()
             .orElse(null);
     }

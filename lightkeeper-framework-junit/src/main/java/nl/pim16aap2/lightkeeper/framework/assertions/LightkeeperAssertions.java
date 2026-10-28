@@ -2,8 +2,24 @@ package nl.pim16aap2.lightkeeper.framework.assertions;
 
 import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.MenuHandle;
+import nl.pim16aap2.lightkeeper.framework.MenuSnapshot;
+import nl.pim16aap2.lightkeeper.framework.MenuItemSnapshot;
+import nl.pim16aap2.lightkeeper.framework.InventorySnapshot;
 import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
+import nl.pim16aap2.lightkeeper.framework.EventCaptureHandle;
+import nl.pim16aap2.lightkeeper.framework.CapturedEventSnapshot;
+import nl.pim16aap2.lightkeeper.protocol.IProtocolValue;
+import nl.pim16aap2.lightkeeper.framework.CommandResult;
+import nl.pim16aap2.lightkeeper.framework.InteractionResult;
+import nl.pim16aap2.lightkeeper.framework.ServerErrorsHandle;
+import nl.pim16aap2.lightkeeper.framework.BlockRef;
+import nl.pim16aap2.lightkeeper.framework.BlockStateSnapshot;
+import nl.pim16aap2.lightkeeper.framework.EntityQuery;
+import nl.pim16aap2.lightkeeper.framework.EntitySnapshot;
+import nl.pim16aap2.lightkeeper.framework.EntitySnapshot.Transform;
+import nl.pim16aap2.lightkeeper.framework.Vec3;
+import nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot;
 import org.assertj.core.api.Assertions;
 import org.jspecify.annotations.Nullable;
 
@@ -24,6 +40,184 @@ public final class LightkeeperAssertions extends Assertions
 
     private LightkeeperAssertions()
     {
+    }
+
+    /**
+     * @param actual
+     *     Frozen native chat component.
+     * @return Literal-text and effective-click assertions.
+     */
+    public static ChatComponentAssert assertThat(@Nullable ChatComponentSnapshot actual)
+    {
+        return new ChatComponentAssert(actual);
+    }
+
+    /**
+     * @param actual
+     *     Live block address.
+     * @return Eager block assertions.
+     */
+    public static BlockRefAssert assertThat(@Nullable BlockRef actual)
+    {
+        return new BlockRefAssert(actual);
+    }
+
+    /**
+     * @param actual
+     *     Frozen block state.
+     * @return Partial-state assertions.
+     */
+    public static BlockStateSnapshotAssert assertThat(@Nullable BlockStateSnapshot actual)
+    {
+        return new BlockStateSnapshotAssert(actual);
+    }
+
+    /**
+     * @param actual
+     *     Live entity query.
+     * @return Eager query assertions.
+     */
+    public static EntityQueryAssert assertThat(@Nullable EntityQuery actual)
+    {
+        return new EntityQueryAssert(actual);
+    }
+
+    /**
+     * @param actual
+     *     Frozen entity observation.
+     * @return Position and transform assertions.
+     */
+    public static EntitySnapshotAssert assertThat(@Nullable EntitySnapshot actual)
+    {
+        return new EntitySnapshotAssert(actual);
+    }
+
+    /**
+     * @param actual
+     *     Frozen display transformation.
+     * @return Transform navigation.
+     */
+    public static EntityTransformAssert assertThat(@Nullable Transform actual)
+    {
+        return new EntityTransformAssert(actual);
+    }
+
+    /**
+     * @param actual
+     *     Frozen vector.
+     * @return Explicit tolerance comparisons.
+     */
+    public static Vec3Assert assertThat(@Nullable Vec3 actual)
+    {
+        return new Vec3Assert(actual);
+    }
+
+    /**
+     * Creates command dispatch result assertions.
+     *
+     * @param actual
+     *     Returned result.
+     * @return Frozen command assertions.
+     */
+    public static CommandResultAssert assertThat(@Nullable CommandResult actual)
+    {
+        return new CommandResultAssert(actual);
+    }
+
+    /**
+     * Creates interaction outcome assertions.
+     *
+     * @param actual
+     *     Returned result.
+     * @return Frozen interaction assertions.
+     */
+    public static InteractionResultAssert assertThat(@Nullable InteractionResult actual)
+    {
+        return new InteractionResultAssert(actual);
+    }
+
+    /**
+     * Creates live structured-error assertions.
+     *
+     * @param actual
+     *     Error capture handle.
+     * @return Error/warning assertions.
+     */
+    public static ServerErrorsAssert assertThat(@Nullable ServerErrorsHandle actual)
+    {
+        return new ServerErrorsAssert(actual);
+    }
+
+    /**
+     * Creates live event-capture assertions.
+     *
+     * @param actual
+     *     Capture handle.
+     * @return Capture assertions.
+     */
+    public static EventCaptureAssert assertThat(@Nullable EventCaptureHandle actual)
+    {
+        return new EventCaptureAssert(actual);
+    }
+
+    /**
+     * Creates frozen typed-event assertions.
+     *
+     * @param actual
+     *     Captured event.
+     * @return Event assertions.
+     */
+    public static CapturedEventAssert assertThat(@Nullable CapturedEventSnapshot actual)
+    {
+        return new CapturedEventAssert(actual);
+    }
+
+    /**
+     * Creates frozen typed-value assertions.
+     *
+     * @param actual
+     *     Captured typed value.
+     * @return Value assertions.
+     */
+    public static ProtocolValueAssert assertThat(@Nullable IProtocolValue actual)
+    {
+        return new ProtocolValueAssert(actual);
+    }
+
+    /**
+     * Creates assertions over a frozen inventory.
+     *
+     * @param actual
+     *     Captured inventory.
+     * @return Inventory assertions.
+     */
+    public static InventoryAssert assertThat(@Nullable InventorySnapshot actual)
+    {
+        return new InventoryAssert(actual);
+    }
+
+    /**
+     * Creates assertions over a frozen menu.
+     *
+     * @param actual
+     *     Captured menu.
+     * @return Menu snapshot assertions.
+     */
+    public static MenuSnapshotAssert assertThat(@Nullable MenuSnapshot actual)
+    {
+        return new MenuSnapshotAssert(actual);
+    }
+
+    /**
+     * Creates assertions over a frozen item.
+     *
+     * @param actual
+     *     Captured item.
+     * @return Item snapshot assertions.
+     */
+    public static MenuItemSnapshotAssert assertThat(@Nullable MenuItemSnapshot actual)
+    {
+        return new MenuItemSnapshotAssert(actual);
     }
 
     /**

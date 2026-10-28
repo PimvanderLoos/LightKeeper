@@ -1,6 +1,7 @@
 package nl.pim16aap2.lightkeeper.framework;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Open-menu snapshot for a player.
@@ -18,4 +19,10 @@ public record MenuSnapshot(
     List<MenuItemSnapshot> items
 )
 {
+    /** Validates the title and defensively copies the observed items. */
+    public MenuSnapshot
+    {
+        Objects.requireNonNull(title, "title may not be null.");
+        items = List.copyOf(Objects.requireNonNull(items, "items may not be null."));
+    }
 }
