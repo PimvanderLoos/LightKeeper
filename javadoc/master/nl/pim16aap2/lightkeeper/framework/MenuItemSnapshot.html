@@ -20,7 +20,7 @@ loadScripts(document, 'script');</script>
 <div>JavaScript is disabled on your browser.</div>
 </noscript>
 <div class="flex-box">
-<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/de5cce2ac63030ed3c9b20388455f455ebd74a00">de5cce2ac630</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
+<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/32d99ae4f50790a8aaae73e947ef5828e653f67d">32d99ae4f507</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
 <nav role="navigation">
 <!-- ========= START OF TOP NAVBAR ======= -->
 <div class="top-nav" id="navbar-top"><button id="navbar-toggle-button" aria-controls="navbar-top" aria-expanded="false" aria-label="Toggle navigation links"><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span></button>
@@ -118,7 +118,7 @@ loadScripts(document, 'script');</script>
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;displayName,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;lore)</code></div>
 <div class="col-last even-row-color">
-<div class="block">Creates an instance of a <code>MenuItemSnapshot</code> record class.</div>
+<div class="block">Copies lore and normalizes material keys and absent display names.</div>
 </div>
 </div>
 </section>
@@ -153,6 +153,16 @@ loadScripts(document, 'script');</script>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#lore()" class="member-name-link">lore</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the value of the <a href="#param-lore"><code>lore</code></a> record component.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#matches(org.bukkit.inventory.ItemStack)" class="member-name-link">matches</a><wbr>(org.bukkit.inventory.ItemStack&nbsp;expected)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Compares only material, display name and ordered lore, excluding unobserved metadata and amount.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#matchesMaterial(java.lang.String)" class="member-name-link">matchesMaterial</a><wbr>(@Nullable <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;expected)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Compares normalized material keys.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#materialKey()" class="member-name-link">materialKey</a>()</code></div>
@@ -193,14 +203,7 @@ loadScripts(document, 'script');</script>
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;materialKey,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;displayName,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;lore)</span></div>
-<div class="block">Creates an instance of a <code>MenuItemSnapshot</code> record class.</div>
-<dl class="notes">
-<dt>Parameters:</dt>
-<dd><code>slot</code> - the value for the <a href="#param-slot"><code>slot</code></a> record component</dd>
-<dd><code>materialKey</code> - the value for the <a href="#param-materialKey"><code>materialKey</code></a> record component</dd>
-<dd><code>displayName</code> - the value for the <a href="#param-displayName"><code>displayName</code></a> record component</dd>
-<dd><code>lore</code> - the value for the <a href="#param-lore"><code>lore</code></a> record component</dd>
-</dl>
+<div class="block">Copies lore and normalizes material keys and absent display names.</div>
 </section>
 </li>
 </ul>
@@ -211,6 +214,32 @@ loadScripts(document, 'script');</script>
 <section class="method-details" id="method-detail">
 <h2>Method Details</h2>
 <ul class="member-list">
+<li>
+<section class="detail" id="matchesMaterial(java.lang.String)">
+<h3>matchesMaterial</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">matchesMaterial</span><wbr><span class="parameters">(@Nullable <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;expected)</span></div>
+<div class="block">Compares normalized material keys.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>expected</code> - Material name or namespaced key.</dd>
+<dt>Returns:</dt>
+<dd>Whether the materials match.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="matches(org.bukkit.inventory.ItemStack)">
+<h3>matches</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">matches</span><wbr><span class="parameters">(org.bukkit.inventory.ItemStack&nbsp;expected)</span></div>
+<div class="block">Compares only material, display name and ordered lore, excluding unobserved metadata and amount.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>expected</code> - Expected Bukkit item.</dd>
+<dt>Returns:</dt>
+<dd>Whether all represented fields match.</dd>
+</dl>
+</section>
+</li>
 <li>
 <section class="detail" id="toString()">
 <h3>toString</h3>

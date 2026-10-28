@@ -20,7 +20,7 @@ loadScripts(document, 'script');</script>
 <div>JavaScript is disabled on your browser.</div>
 </noscript>
 <div class="flex-box">
-<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/de5cce2ac63030ed3c9b20388455f455ebd74a00">de5cce2ac630</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
+<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/32d99ae4f50790a8aaae73e947ef5828e653f67d">32d99ae4f507</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
 <nav role="navigation">
 <!-- ========= START OF TOP NAVBAR ======= -->
 <div class="top-nav" id="navbar-top"><button id="navbar-toggle-button" aria-controls="navbar-top" aria-expanded="false" aria-label="Toggle navigation links"><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span></button>
@@ -139,25 +139,91 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="BlockRefAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">BlockRefAssert</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#assertThat(nl.pim16aap2.lightkeeper.framework.BlockRef)" class="member-name-link">assertThat</a><wbr>(@Nullable <a href="../BlockRef.html" title="class in nl.pim16aap2.lightkeeper.framework">BlockRef</a>&nbsp;actual)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="BlockStateSnapshotAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">BlockStateSnapshotAssert</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#assertThat(nl.pim16aap2.lightkeeper.framework.BlockStateSnapshot)" class="member-name-link">assertThat</a><wbr>(@Nullable <a href="../BlockStateSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">BlockStateSnapshot</a>&nbsp;actual)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="CapturedEventAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">CapturedEventAssert</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#assertThat(nl.pim16aap2.lightkeeper.framework.CapturedEventSnapshot)" class="member-name-link">assertThat</a><wbr>(@Nullable <a href="../CapturedEventSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">CapturedEventSnapshot</a>&nbsp;actual)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Creates frozen typed-event assertions.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="ChatComponentAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ChatComponentAssert</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#assertThat(nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot)" class="member-name-link">assertThat</a><wbr>(@Nullable <a href="../ChatComponentSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">ChatComponentSnapshot</a>&nbsp;actual)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="CommandResultAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">CommandResultAssert</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#assertThat(nl.pim16aap2.lightkeeper.framework.CommandResult)" class="member-name-link">assertThat</a><wbr>(@Nullable <a href="../CommandResult.html" title="class in nl.pim16aap2.lightkeeper.framework">CommandResult</a>&nbsp;actual)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Creates command dispatch result assertions.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="EntityQueryAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">EntityQueryAssert</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#assertThat(nl.pim16aap2.lightkeeper.framework.EntityQuery)" class="member-name-link">assertThat</a><wbr>(@Nullable <a href="../EntityQuery.html" title="class in nl.pim16aap2.lightkeeper.framework">EntityQuery</a>&nbsp;actual)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="EntitySnapshotAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">EntitySnapshotAssert</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#assertThat(nl.pim16aap2.lightkeeper.framework.EntitySnapshot)" class="member-name-link">assertThat</a><wbr>(@Nullable <a href="../EntitySnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">EntitySnapshot</a>&nbsp;actual)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="EventCaptureAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">EventCaptureAssert</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#assertThat(nl.pim16aap2.lightkeeper.framework.EventCaptureHandle)" class="member-name-link">assertThat</a><wbr>(@Nullable <a href="../EventCaptureHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">EventCaptureHandle</a>&nbsp;actual)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Creates live event-capture assertions.</div>
+</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="LightkeeperFrameworkAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">LightkeeperFrameworkAssert</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#assertThat(nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework)" class="member-name-link">assertThat</a><wbr>(@Nullable <a href="../ILightkeeperFramework.html" title="interface in nl.pim16aap2.lightkeeper.framework">ILightkeeperFramework</a>&nbsp;actual)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Creates an assertion chain for framework-level runtime state.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="InteractionResultAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">InteractionResultAssert</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#assertThat(nl.pim16aap2.lightkeeper.framework.InteractionResult)" class="member-name-link">assertThat</a><wbr>(@Nullable <a href="../InteractionResult.html" title="class in nl.pim16aap2.lightkeeper.framework">InteractionResult</a>&nbsp;actual)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Creates interaction outcome assertions.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="InventoryAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">InventoryAssert</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#assertThat(nl.pim16aap2.lightkeeper.framework.InventorySnapshot)" class="member-name-link">assertThat</a><wbr>(@Nullable <a href="../InventorySnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">InventorySnapshot</a>&nbsp;actual)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Creates assertions over a frozen inventory.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="MenuHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#assertThat(nl.pim16aap2.lightkeeper.framework.MenuHandle)" class="member-name-link">assertThat</a><wbr>(@Nullable <a href="../MenuHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuHandle</a>&nbsp;actual)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Creates an assertion chain for menu-related state.</div>
 </div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="MenuItemSnapshotAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuItemSnapshotAssert</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#assertThat(nl.pim16aap2.lightkeeper.framework.MenuItemSnapshot)" class="member-name-link">assertThat</a><wbr>(@Nullable <a href="../MenuItemSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuItemSnapshot</a>&nbsp;actual)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Creates assertions over a frozen item.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="MenuSnapshotAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuSnapshotAssert</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#assertThat(nl.pim16aap2.lightkeeper.framework.MenuSnapshot)" class="member-name-link">assertThat</a><wbr>(@Nullable <a href="../MenuSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuSnapshot</a>&nbsp;actual)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Creates assertions over a frozen menu.</div>
+</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="PlayerHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">PlayerHandleAssert</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#assertThat(nl.pim16aap2.lightkeeper.framework.PlayerHandle)" class="member-name-link">assertThat</a><wbr>(@Nullable <a href="../PlayerHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">PlayerHandle</a>&nbsp;actual)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Creates an assertion chain for player-related state.</div>
 </div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="ServerErrorsAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ServerErrorsAssert</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#assertThat(nl.pim16aap2.lightkeeper.framework.ServerErrorsHandle)" class="member-name-link">assertThat</a><wbr>(@Nullable <a href="../ServerErrorsHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">ServerErrorsHandle</a>&nbsp;actual)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Creates live structured-error assertions.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="Vec3Assert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">Vec3Assert</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#assertThat(nl.pim16aap2.lightkeeper.framework.Vec3)" class="member-name-link">assertThat</a><wbr>(@Nullable <a href="../Vec3.html" title="class in nl.pim16aap2.lightkeeper.framework">Vec3</a>&nbsp;actual)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="WorldHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">WorldHandleAssert</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#assertThat(nl.pim16aap2.lightkeeper.framework.WorldHandle)" class="member-name-link">assertThat</a><wbr>(@Nullable <a href="../WorldHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">WorldHandle</a>&nbsp;actual)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Creates an assertion chain for world-related state.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="EntityTransformAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">EntityTransformAssert</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#assertThat(nl.pim16aap2.lightkeeper.framework.EntitySnapshot.Transform)" class="member-name-link">assertThat</a><wbr>(@Nullable <a href="../EntitySnapshot.Transform.html" title="class in nl.pim16aap2.lightkeeper.framework">EntitySnapshot.Transform</a>&nbsp;actual)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="ProtocolValueAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ProtocolValueAssert</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#assertThat(nl.pim16aap2.lightkeeper.protocol.IProtocolValue)" class="member-name-link">assertThat</a><wbr>(@Nullable <a href="../../protocol/IProtocolValue.html" title="interface in nl.pim16aap2.lightkeeper.protocol">IProtocolValue</a>&nbsp;actual)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Creates frozen typed-value assertions.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static void</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#eventually(java.time.Duration,nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.RetryingAssertion)" class="member-name-link">eventually</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;timeout,
@@ -185,6 +251,207 @@ loadScripts(document, 'script');</script>
 <section class="method-details" id="method-detail">
 <h2>Method Details</h2>
 <ul class="member-list">
+<li>
+<section class="detail" id="assertThat(nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot)">
+<h3>assertThat</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="ChatComponentAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ChatComponentAssert</a></span>&nbsp;<span class="element-name">assertThat</span><wbr><span class="parameters">(@Nullable <a href="../ChatComponentSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">ChatComponentSnapshot</a>&nbsp;actual)</span></div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>actual</code> - Frozen native chat component.</dd>
+<dt>Returns:</dt>
+<dd>Literal-text and effective-click assertions.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="assertThat(nl.pim16aap2.lightkeeper.framework.BlockRef)">
+<h3>assertThat</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="BlockRefAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">BlockRefAssert</a></span>&nbsp;<span class="element-name">assertThat</span><wbr><span class="parameters">(@Nullable <a href="../BlockRef.html" title="class in nl.pim16aap2.lightkeeper.framework">BlockRef</a>&nbsp;actual)</span></div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>actual</code> - Live block address.</dd>
+<dt>Returns:</dt>
+<dd>Eager block assertions.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="assertThat(nl.pim16aap2.lightkeeper.framework.BlockStateSnapshot)">
+<h3>assertThat</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="BlockStateSnapshotAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">BlockStateSnapshotAssert</a></span>&nbsp;<span class="element-name">assertThat</span><wbr><span class="parameters">(@Nullable <a href="../BlockStateSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">BlockStateSnapshot</a>&nbsp;actual)</span></div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>actual</code> - Frozen block state.</dd>
+<dt>Returns:</dt>
+<dd>Partial-state assertions.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="assertThat(nl.pim16aap2.lightkeeper.framework.EntityQuery)">
+<h3>assertThat</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="EntityQueryAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">EntityQueryAssert</a></span>&nbsp;<span class="element-name">assertThat</span><wbr><span class="parameters">(@Nullable <a href="../EntityQuery.html" title="class in nl.pim16aap2.lightkeeper.framework">EntityQuery</a>&nbsp;actual)</span></div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>actual</code> - Live entity query.</dd>
+<dt>Returns:</dt>
+<dd>Eager query assertions.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="assertThat(nl.pim16aap2.lightkeeper.framework.EntitySnapshot)">
+<h3>assertThat</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="EntitySnapshotAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">EntitySnapshotAssert</a></span>&nbsp;<span class="element-name">assertThat</span><wbr><span class="parameters">(@Nullable <a href="../EntitySnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">EntitySnapshot</a>&nbsp;actual)</span></div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>actual</code> - Frozen entity observation.</dd>
+<dt>Returns:</dt>
+<dd>Position and transform assertions.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="assertThat(nl.pim16aap2.lightkeeper.framework.EntitySnapshot.Transform)">
+<h3>assertThat</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="EntityTransformAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">EntityTransformAssert</a></span>&nbsp;<span class="element-name">assertThat</span><wbr><span class="parameters">(@Nullable <a href="../EntitySnapshot.Transform.html" title="class in nl.pim16aap2.lightkeeper.framework">EntitySnapshot.Transform</a>&nbsp;actual)</span></div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>actual</code> - Frozen display transformation.</dd>
+<dt>Returns:</dt>
+<dd>Transform navigation.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="assertThat(nl.pim16aap2.lightkeeper.framework.Vec3)">
+<h3>assertThat</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="Vec3Assert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">Vec3Assert</a></span>&nbsp;<span class="element-name">assertThat</span><wbr><span class="parameters">(@Nullable <a href="../Vec3.html" title="class in nl.pim16aap2.lightkeeper.framework">Vec3</a>&nbsp;actual)</span></div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>actual</code> - Frozen vector.</dd>
+<dt>Returns:</dt>
+<dd>Explicit tolerance comparisons.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="assertThat(nl.pim16aap2.lightkeeper.framework.CommandResult)">
+<h3>assertThat</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="CommandResultAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">CommandResultAssert</a></span>&nbsp;<span class="element-name">assertThat</span><wbr><span class="parameters">(@Nullable <a href="../CommandResult.html" title="class in nl.pim16aap2.lightkeeper.framework">CommandResult</a>&nbsp;actual)</span></div>
+<div class="block">Creates command dispatch result assertions.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>actual</code> - Returned result.</dd>
+<dt>Returns:</dt>
+<dd>Frozen command assertions.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="assertThat(nl.pim16aap2.lightkeeper.framework.InteractionResult)">
+<h3>assertThat</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="InteractionResultAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">InteractionResultAssert</a></span>&nbsp;<span class="element-name">assertThat</span><wbr><span class="parameters">(@Nullable <a href="../InteractionResult.html" title="class in nl.pim16aap2.lightkeeper.framework">InteractionResult</a>&nbsp;actual)</span></div>
+<div class="block">Creates interaction outcome assertions.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>actual</code> - Returned result.</dd>
+<dt>Returns:</dt>
+<dd>Frozen interaction assertions.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="assertThat(nl.pim16aap2.lightkeeper.framework.ServerErrorsHandle)">
+<h3>assertThat</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="ServerErrorsAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ServerErrorsAssert</a></span>&nbsp;<span class="element-name">assertThat</span><wbr><span class="parameters">(@Nullable <a href="../ServerErrorsHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">ServerErrorsHandle</a>&nbsp;actual)</span></div>
+<div class="block">Creates live structured-error assertions.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>actual</code> - Error capture handle.</dd>
+<dt>Returns:</dt>
+<dd>Error/warning assertions.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="assertThat(nl.pim16aap2.lightkeeper.framework.EventCaptureHandle)">
+<h3>assertThat</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="EventCaptureAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">EventCaptureAssert</a></span>&nbsp;<span class="element-name">assertThat</span><wbr><span class="parameters">(@Nullable <a href="../EventCaptureHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">EventCaptureHandle</a>&nbsp;actual)</span></div>
+<div class="block">Creates live event-capture assertions.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>actual</code> - Capture handle.</dd>
+<dt>Returns:</dt>
+<dd>Capture assertions.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="assertThat(nl.pim16aap2.lightkeeper.framework.CapturedEventSnapshot)">
+<h3>assertThat</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="CapturedEventAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">CapturedEventAssert</a></span>&nbsp;<span class="element-name">assertThat</span><wbr><span class="parameters">(@Nullable <a href="../CapturedEventSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">CapturedEventSnapshot</a>&nbsp;actual)</span></div>
+<div class="block">Creates frozen typed-event assertions.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>actual</code> - Captured event.</dd>
+<dt>Returns:</dt>
+<dd>Event assertions.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="assertThat(nl.pim16aap2.lightkeeper.protocol.IProtocolValue)">
+<h3>assertThat</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="ProtocolValueAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ProtocolValueAssert</a></span>&nbsp;<span class="element-name">assertThat</span><wbr><span class="parameters">(@Nullable <a href="../../protocol/IProtocolValue.html" title="interface in nl.pim16aap2.lightkeeper.protocol">IProtocolValue</a>&nbsp;actual)</span></div>
+<div class="block">Creates frozen typed-value assertions.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>actual</code> - Captured typed value.</dd>
+<dt>Returns:</dt>
+<dd>Value assertions.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="assertThat(nl.pim16aap2.lightkeeper.framework.InventorySnapshot)">
+<h3>assertThat</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="InventoryAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">InventoryAssert</a></span>&nbsp;<span class="element-name">assertThat</span><wbr><span class="parameters">(@Nullable <a href="../InventorySnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">InventorySnapshot</a>&nbsp;actual)</span></div>
+<div class="block">Creates assertions over a frozen inventory.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>actual</code> - Captured inventory.</dd>
+<dt>Returns:</dt>
+<dd>Inventory assertions.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="assertThat(nl.pim16aap2.lightkeeper.framework.MenuSnapshot)">
+<h3>assertThat</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="MenuSnapshotAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuSnapshotAssert</a></span>&nbsp;<span class="element-name">assertThat</span><wbr><span class="parameters">(@Nullable <a href="../MenuSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuSnapshot</a>&nbsp;actual)</span></div>
+<div class="block">Creates assertions over a frozen menu.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>actual</code> - Captured menu.</dd>
+<dt>Returns:</dt>
+<dd>Menu snapshot assertions.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="assertThat(nl.pim16aap2.lightkeeper.framework.MenuItemSnapshot)">
+<h3>assertThat</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="MenuItemSnapshotAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuItemSnapshotAssert</a></span>&nbsp;<span class="element-name">assertThat</span><wbr><span class="parameters">(@Nullable <a href="../MenuItemSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuItemSnapshot</a>&nbsp;actual)</span></div>
+<div class="block">Creates assertions over a frozen item.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>actual</code> - Captured item.</dd>
+<dt>Returns:</dt>
+<dd>Item snapshot assertions.</dd>
+</dl>
+</section>
+</li>
 <li>
 <section class="detail" id="assertThat(nl.pim16aap2.lightkeeper.framework.WorldHandle)">
 <h3>assertThat</h3>

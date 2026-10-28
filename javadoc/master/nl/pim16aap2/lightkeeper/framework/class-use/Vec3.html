@@ -20,7 +20,7 @@ loadScripts(document, 'script');</script>
 <div>JavaScript is disabled on your browser.</div>
 </noscript>
 <div class="flex-box">
-<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/de5cce2ac63030ed3c9b20388455f455ebd74a00">de5cce2ac630</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
+<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/32d99ae4f50790a8aaae73e947ef5828e653f67d">32d99ae4f507</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
 <nav role="navigation">
 <!-- ========= START OF TOP NAVBAR ======= -->
 <div class="top-nav" id="navbar-top"><button id="navbar-toggle-button" aria-controls="navbar-top" aria-expanded="false" aria-label="Toggle navigation links"><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span></button>
@@ -57,6 +57,11 @@ loadScripts(document, 'script');</script>
 <div class="col-first even-row-color"><a href="#nl.pim16aap2.lightkeeper.framework">nl.pim16aap2.lightkeeper.framework</a></div>
 <div class="col-last even-row-color">
 <div class="block">Public JUnit framework API for creating worlds and synthetic players and asserting game state.</div>
+</div>
+<div class="col-first odd-row-color"><a href="#nl.pim16aap2.lightkeeper.framework.assertions">nl.pim16aap2.lightkeeper.framework.assertions</a></div>
+<div class="col-last odd-row-color">
+<div class="block">AssertJ assertions for live server/plugin, world/block, entity-query, player, menu, event-capture and error state,
+ plus frozen inventory/item, event/value, result, entity/geometry and semantic chat snapshots.</div>
 </div>
 </div>
 <section class="class-uses">
@@ -121,6 +126,38 @@ loadScripts(document, 'script');</script>
  <a href="../EntitySnapshot.Rotation.html" title="class in nl.pim16aap2.lightkeeper.framework">EntitySnapshot.Rotation</a>&nbsp;rightRotation)</code></div>
 <div class="col-last odd-row-color">
 <div class="block">Validates the components.</div>
+</div>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="nl.pim16aap2.lightkeeper.framework.assertions">
+<h2>Uses of <a href="../Vec3.html" title="class in nl.pim16aap2.lightkeeper.framework">Vec3</a> in <a href="../assertions/package-summary.html">nl.pim16aap2.lightkeeper.framework.assertions</a></h2>
+<div class="caption"><span>Methods in <a href="../assertions/package-summary.html">nl.pim16aap2.lightkeeper.framework.assertions</a> with parameters of type <a href="../Vec3.html" title="class in nl.pim16aap2.lightkeeper.framework">Vec3</a></span></div>
+<div class="summary-table three-column-summary">
+<div class="table-header col-first">Modifier and Type</div>
+<div class="table-header col-second">Method</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code>static <a href="../assertions/Vec3Assert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">Vec3Assert</a></code></div>
+<div class="col-second even-row-color"><span class="type-name-label">LightkeeperAssertions.</span><code><a href="../assertions/LightkeeperAssertions.html#assertThat(nl.pim16aap2.lightkeeper.framework.Vec3)" class="member-name-link">assertThat</a><wbr>(@Nullable <a href="../Vec3.html" title="class in nl.pim16aap2.lightkeeper.framework">Vec3</a>&nbsp;actual)</code></div>
+<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-first odd-row-color"><code><a href="../assertions/Vec3Assert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">Vec3Assert</a></code></div>
+<div class="col-second odd-row-color"><span class="type-name-label">Vec3Assert.</span><code><a href="../assertions/Vec3Assert.html#hasComponentsCloseTo(nl.pim16aap2.lightkeeper.framework.Vec3,double)" class="member-name-link">hasComponentsCloseTo</a><wbr>(<a href="../Vec3.html" title="class in nl.pim16aap2.lightkeeper.framework">Vec3</a>&nbsp;expected,
+ double&nbsp;tolerance)</code></div>
+<div class="col-last odd-row-color">
+<div class="block">Checks an inclusive absolute-error bound on each component, suitable for scale vectors.</div>
+</div>
+<div class="col-first even-row-color"><code><a href="../assertions/EntitySnapshotAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">EntitySnapshotAssert</a></code></div>
+<div class="col-second even-row-color"><span class="type-name-label">EntitySnapshotAssert.</span><code><a href="../assertions/EntitySnapshotAssert.html#isAt(nl.pim16aap2.lightkeeper.framework.Vec3,double)" class="member-name-link">isAt</a><wbr>(<a href="../Vec3.html" title="class in nl.pim16aap2.lightkeeper.framework">Vec3</a>&nbsp;expected,
+ double&nbsp;tolerance)</code></div>
+<div class="col-last even-row-color">
+<div class="block">Checks the entity's captured position using an inclusive Euclidean tolerance.</div>
+</div>
+<div class="col-first odd-row-color"><code><a href="../assertions/Vec3Assert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">Vec3Assert</a></code></div>
+<div class="col-second odd-row-color"><span class="type-name-label">Vec3Assert.</span><code><a href="../assertions/Vec3Assert.html#isCloseTo(nl.pim16aap2.lightkeeper.framework.Vec3,double)" class="member-name-link">isCloseTo</a><wbr>(<a href="../Vec3.html" title="class in nl.pim16aap2.lightkeeper.framework">Vec3</a>&nbsp;expected,
+ double&nbsp;tolerance)</code></div>
+<div class="col-last odd-row-color">
+<div class="block">Checks an inclusive Euclidean distance bound.</div>
 </div>
 </div>
 </section>

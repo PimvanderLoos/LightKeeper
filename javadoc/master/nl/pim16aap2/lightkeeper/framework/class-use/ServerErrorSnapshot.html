@@ -20,7 +20,7 @@ loadScripts(document, 'script');</script>
 <div>JavaScript is disabled on your browser.</div>
 </noscript>
 <div class="flex-box">
-<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/de5cce2ac63030ed3c9b20388455f455ebd74a00">de5cce2ac630</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
+<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/32d99ae4f50790a8aaae73e947ef5828e653f67d">32d99ae4f507</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
 <nav role="navigation">
 <!-- ========= START OF TOP NAVBAR ======= -->
 <div class="top-nav" id="navbar-top"><button id="navbar-toggle-button" aria-controls="navbar-top" aria-expanded="false" aria-label="Toggle navigation links"><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span></button>
@@ -60,7 +60,8 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-first odd-row-color"><a href="#nl.pim16aap2.lightkeeper.framework.assertions">nl.pim16aap2.lightkeeper.framework.assertions</a></div>
 <div class="col-last odd-row-color">
-<div class="block">AssertJ-based assertion types for fluent validation of LightKeeper world, player, and menu state.</div>
+<div class="block">AssertJ assertions for live server/plugin, world/block, entity-query, player, menu, event-capture and error state,
+ plus frozen inventory/item, event/value, result, entity/geometry and semantic chat snapshots.</div>
 </div>
 </div>
 <section class="class-uses">
@@ -89,11 +90,30 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="nl.pim16aap2.lightkeeper.framework.assertions">
 <h2>Uses of <a href="../ServerErrorSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">ServerErrorSnapshot</a> in <a href="../assertions/package-summary.html">nl.pim16aap2.lightkeeper.framework.assertions</a></h2>
+<div class="caption"><span>Methods in <a href="../assertions/package-summary.html">nl.pim16aap2.lightkeeper.framework.assertions</a> that return types with arguments of type <a href="../ServerErrorSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">ServerErrorSnapshot</a></span></div>
+<div class="summary-table three-column-summary">
+<div class="table-header col-first">Modifier and Type</div>
+<div class="table-header col-second">Method</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code>org.assertj.core.api.ListAssert<wbr>&lt;<a href="../ServerErrorSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">ServerErrorSnapshot</a>&gt;</code></div>
+<div class="col-second even-row-color"><span class="type-name-label">ServerErrorsAssert.</span><code><a href="../assertions/ServerErrorsAssert.html#captured()" class="member-name-link">captured</a>()</code></div>
+<div class="col-last even-row-color">&nbsp;</div>
+</div>
 <div class="caption"><span>Method parameters in <a href="../assertions/package-summary.html">nl.pim16aap2.lightkeeper.framework.assertions</a> with type arguments of type <a href="../ServerErrorSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">ServerErrorSnapshot</a></span></div>
 <div class="summary-table three-column-summary">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code><a href="../assertions/ServerControlAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ServerControlAssert</a></code></div>
+<div class="col-second even-row-color"><span class="type-name-label">ServerControlAssert.</span><code><a href="../assertions/ServerControlAssert.html#hasNoErrors(java.util.function.Predicate)" class="member-name-link">hasNoErrors</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link">Predicate</a>&lt;<a href="../ServerErrorSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">ServerErrorSnapshot</a>&gt;&nbsp;allowedErrors)</code></div>
+<div class="col-last even-row-color">
+<div class="block">Asserts that no error-severity entries remain after applying an allowlist.</div>
+</div>
+<div class="col-first odd-row-color"><code><a href="../assertions/ServerErrorsAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ServerErrorsAssert</a></code></div>
+<div class="col-second odd-row-color"><span class="type-name-label">ServerErrorsAssert.</span><code><a href="../assertions/ServerErrorsAssert.html#hasNoErrors(java.util.function.Predicate)" class="member-name-link">hasNoErrors</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link">Predicate</a>&lt;<a href="../ServerErrorSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">ServerErrorSnapshot</a>&gt;&nbsp;allowedErrors)</code></div>
+<div class="col-last odd-row-color">
+<div class="block">Checks for error-severity entries outside an explicit allowlist.</div>
+</div>
 <div class="col-first even-row-color"><code><a href="../assertions/LightkeeperFrameworkAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">LightkeeperFrameworkAssert</a></code></div>
 <div class="col-second even-row-color"><span class="type-name-label">LightkeeperFrameworkAssert.</span><code><a href="../assertions/LightkeeperFrameworkAssert.html#hasNoServerErrors(java.util.function.Predicate)" class="member-name-link">hasNoServerErrors</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link">Predicate</a>&lt;<a href="../ServerErrorSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">ServerErrorSnapshot</a>&gt;&nbsp;allowedErrors)</code></div>
 <div class="col-last even-row-color">

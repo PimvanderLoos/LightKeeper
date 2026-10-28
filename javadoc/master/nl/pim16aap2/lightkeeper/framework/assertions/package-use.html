@@ -20,7 +20,7 @@ loadScripts(document, 'script');</script>
 <div>JavaScript is disabled on your browser.</div>
 </noscript>
 <div class="flex-box">
-<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/de5cce2ac63030ed3c9b20388455f455ebd74a00">de5cce2ac630</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
+<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/32d99ae4f50790a8aaae73e947ef5828e653f67d">32d99ae4f507</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
 <nav role="navigation">
 <!-- ========= START OF TOP NAVBAR ======= -->
 <div class="top-nav" id="navbar-top"><button id="navbar-toggle-button" aria-controls="navbar-top" aria-expanded="false" aria-label="Toggle navigation links"><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span></button>
@@ -56,7 +56,8 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color"><a href="#nl.pim16aap2.lightkeeper.framework.assertions">nl.pim16aap2.lightkeeper.framework.assertions</a></div>
 <div class="col-last even-row-color">
-<div class="block">AssertJ-based assertion types for fluent validation of LightKeeper world, player, and menu state.</div>
+<div class="block">AssertJ assertions for live server/plugin, world/block, entity-query, player, menu, event-capture and error state,
+ plus frozen inventory/item, event/value, result, entity/geometry and semantic chat snapshots.</div>
 </div>
 </div>
 <section class="package-uses">
@@ -67,25 +68,97 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Class</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color"><a href="class-use/LightkeeperAssertions.RetryingAssertion.html#nl.pim16aap2.lightkeeper.framework.assertions">LightkeeperAssertions.RetryingAssertion</a></div>
+<div class="col-first even-row-color"><a href="class-use/BlockRefAssert.html#nl.pim16aap2.lightkeeper.framework.assertions">BlockRefAssert</a></div>
 <div class="col-last even-row-color">
+<div class="block">Eager assertions over a live block address, using the canonical material and partial-state rules.</div>
+</div>
+<div class="col-first odd-row-color"><a href="class-use/BlockStateSnapshotAssert.html#nl.pim16aap2.lightkeeper.framework.assertions">BlockStateSnapshotAssert</a></div>
+<div class="col-last odd-row-color">
+<div class="block">Partial spec assertions over a frozen block state, using the snapshot's canonical matcher.</div>
+</div>
+<div class="col-first even-row-color"><a href="class-use/CapturedEventAssert.html#nl.pim16aap2.lightkeeper.framework.assertions">CapturedEventAssert</a></div>
+<div class="col-last even-row-color">
+<div class="block">Frozen event assertions that preserve typed fields and distinguish absent from explicit-null values.</div>
+</div>
+<div class="col-first odd-row-color"><a href="class-use/ChatComponentAssert.html#nl.pim16aap2.lightkeeper.framework.assertions">ChatComponentAssert</a></div>
+<div class="col-last odd-row-color">
+<div class="block">Frozen semantic assertions associating literal text with effective click actions and payloads.</div>
+</div>
+<div class="col-first even-row-color"><a href="class-use/CommandResultAssert.html#nl.pim16aap2.lightkeeper.framework.assertions">CommandResultAssert</a></div>
+<div class="col-last even-row-color">
+<div class="block">Assertions over a returned command dispatch result, without executing or retrying the command.</div>
+</div>
+<div class="col-first odd-row-color"><a href="class-use/EntityQueryAssert.html#nl.pim16aap2.lightkeeper.framework.assertions">EntityQueryAssert</a></div>
+<div class="col-last odd-row-color">
+<div class="block">Live entity-query assertions; count checks use the cheap count-only RPC and never load chunks.</div>
+</div>
+<div class="col-first even-row-color"><a href="class-use/EntitySnapshotAssert.html#nl.pim16aap2.lightkeeper.framework.assertions">EntitySnapshotAssert</a></div>
+<div class="col-last even-row-color">
+<div class="block">Position and display-transform assertions over one frozen entity observation.</div>
+</div>
+<div class="col-first odd-row-color"><a href="class-use/EntityTransformAssert.html#nl.pim16aap2.lightkeeper.framework.assertions">EntityTransformAssert</a></div>
+<div class="col-last odd-row-color">
+<div class="block">Frozen display-transform navigation with explicit vector tolerances and ordinary quaternion value checks.</div>
+</div>
+<div class="col-first even-row-color"><a href="class-use/EventCaptureAssert.html#nl.pim16aap2.lightkeeper.framework.assertions">EventCaptureAssert</a></div>
+<div class="col-last even-row-color">
+<div class="block">Eager, non-consuming assertions over a live event capture buffer.</div>
+</div>
+<div class="col-first odd-row-color"><a href="class-use/InteractionResultAssert.html#nl.pim16aap2.lightkeeper.framework.assertions">InteractionResultAssert</a></div>
+<div class="col-last odd-row-color">
+<div class="block">Assertions over a completed interaction; cancellation checks require an actual fired event.</div>
+</div>
+<div class="col-first even-row-color"><a href="class-use/InventoryAssert.html#nl.pim16aap2.lightkeeper.framework.assertions">InventoryAssert</a></div>
+<div class="col-last even-row-color">
+<div class="block">Assertions over a frozen inventory snapshot, including occupied-slot and item navigation.</div>
+</div>
+<div class="col-first odd-row-color"><a href="class-use/LightkeeperAssertions.RetryingAssertion.html#nl.pim16aap2.lightkeeper.framework.assertions">LightkeeperAssertions.RetryingAssertion</a></div>
+<div class="col-last odd-row-color">
 <div class="block">An assertion that <a href="LightkeeperAssertions.html#eventually(java.time.Duration,nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.RetryingAssertion)"><code>LightkeeperAssertions.eventually(Duration, RetryingAssertion)</code></a> re-runs until it passes.</div>
 </div>
-<div class="col-first odd-row-color"><a href="class-use/LightkeeperFrameworkAssert.html#nl.pim16aap2.lightkeeper.framework.assertions">LightkeeperFrameworkAssert</a></div>
-<div class="col-last odd-row-color">
+<div class="col-first even-row-color"><a href="class-use/LightkeeperFrameworkAssert.html#nl.pim16aap2.lightkeeper.framework.assertions">LightkeeperFrameworkAssert</a></div>
+<div class="col-last even-row-color">
 <div class="block">Assertions for framework-level runtime state.</div>
 </div>
-<div class="col-first even-row-color"><a href="class-use/MenuHandleAssert.html#nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a></div>
-<div class="col-last even-row-color">
-<div class="block">Assertions for open menu state.</div>
-</div>
-<div class="col-first odd-row-color"><a href="class-use/PlayerHandleAssert.html#nl.pim16aap2.lightkeeper.framework.assertions">PlayerHandleAssert</a></div>
+<div class="col-first odd-row-color"><a href="class-use/MenuHandleAssert.html#nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a></div>
 <div class="col-last odd-row-color">
+<div class="block">Eager assertions over the current menu for a retained player-bound handle.</div>
+</div>
+<div class="col-first even-row-color"><a href="class-use/MenuItemSnapshotAssert.html#nl.pim16aap2.lightkeeper.framework.assertions">MenuItemSnapshotAssert</a></div>
+<div class="col-last even-row-color">
+<div class="block">Assertions over the material, display name and ordered lore of one frozen item observation.</div>
+</div>
+<div class="col-first odd-row-color"><a href="class-use/MenuSnapshotAssert.html#nl.pim16aap2.lightkeeper.framework.assertions">MenuSnapshotAssert</a></div>
+<div class="col-last odd-row-color">
+<div class="block">Assertions over one frozen menu observation; these never query the server.</div>
+</div>
+<div class="col-first even-row-color"><a href="class-use/PlayerHandleAssert.html#nl.pim16aap2.lightkeeper.framework.assertions">PlayerHandleAssert</a></div>
+<div class="col-last even-row-color">
 <div class="block">Assertions for synthetic player state.</div>
+</div>
+<div class="col-first odd-row-color"><a href="class-use/ProtocolValueAssert.html#nl.pim16aap2.lightkeeper.framework.assertions">ProtocolValueAssert</a></div>
+<div class="col-last odd-row-color">
+<div class="block">Typed, frozen value navigation that preserves accessor/index paths without string coercion.</div>
+</div>
+<div class="col-first even-row-color"><a href="class-use/ServerControlAssert.html#nl.pim16aap2.lightkeeper.framework.assertions">ServerControlAssert</a></div>
+<div class="col-last even-row-color">
+<div class="block">Eager assertions over live server observations.</div>
+</div>
+<div class="col-first odd-row-color"><a href="class-use/ServerErrorsAssert.html#nl.pim16aap2.lightkeeper.framework.assertions">ServerErrorsAssert</a></div>
+<div class="col-last odd-row-color">
+<div class="block">Non-consuming assertions over live structured error and warning observations.</div>
+</div>
+<div class="col-first even-row-color"><a href="class-use/ServerPluginAssert.html#nl.pim16aap2.lightkeeper.framework.assertions">ServerPluginAssert</a></div>
+<div class="col-last even-row-color">
+<div class="block">Eager assertions for a named plugin, re-querying the server on every evaluation.</div>
+</div>
+<div class="col-first odd-row-color"><a href="class-use/Vec3Assert.html#nl.pim16aap2.lightkeeper.framework.assertions">Vec3Assert</a></div>
+<div class="col-last odd-row-color">
+<div class="block">Frozen vector assertions with explicit Euclidean and per-component tolerance contracts.</div>
 </div>
 <div class="col-first even-row-color"><a href="class-use/WorldBlockAssert.html#nl.pim16aap2.lightkeeper.framework.assertions">WorldBlockAssert</a></div>
 <div class="col-last even-row-color">
-<div class="block">Assertions for a specific block position in a world.</div>
+<div class="block">World-selected block assertions delegating to the canonical live block subject.</div>
 </div>
 <div class="col-first odd-row-color"><a href="class-use/WorldHandleAssert.html#nl.pim16aap2.lightkeeper.framework.assertions">WorldHandleAssert</a></div>
 <div class="col-last odd-row-color">

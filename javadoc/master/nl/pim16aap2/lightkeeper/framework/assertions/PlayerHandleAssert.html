@@ -20,7 +20,7 @@ loadScripts(document, 'script');</script>
 <div>JavaScript is disabled on your browser.</div>
 </noscript>
 <div class="flex-box">
-<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/de5cce2ac63030ed3c9b20388455f455ebd74a00">de5cce2ac630</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
+<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/32d99ae4f50790a8aaae73e947ef5828e653f67d">32d99ae4f507</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
 <nav role="navigation">
 <!-- ========= START OF TOP NAVBAR ======= -->
 <div class="top-nav" id="navbar-top"><button id="navbar-toggle-button" aria-controls="navbar-top" aria-expanded="false" aria-label="Toggle navigation links"><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span></button>
@@ -122,34 +122,63 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="PlayerHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">PlayerHandleAssert</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#doesNotHaveItemInInventory(java.lang.String)" class="member-name-link">doesNotHaveItemInInventory</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;materialKey)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>org.assertj.core.api.ListAssert<wbr>&lt;<a href="../ChatComponentSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">ChatComponentSnapshot</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#chatComponents()" class="member-name-link">chatComponents</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="PlayerHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">PlayerHandleAssert</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#doesNotHaveItemInInventory(java.lang.String)" class="member-name-link">doesNotHaveItemInInventory</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;materialKey)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Asserts that the player does not have an item with the specified material in their inventory.</div>
 </div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="PlayerHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">PlayerHandleAssert</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#doesNotHaveOpenMenu()" class="member-name-link">doesNotHaveOpenMenu</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Asserts that the player currently has no actionable menu open, without waiting.</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="PlayerHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">PlayerHandleAssert</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hasClickableChatText(java.lang.String)" class="member-name-link">hasClickableChatText</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;expectedText)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#doesNotHavePermission(java.lang.String)" class="member-name-link">doesNotHavePermission</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;permission)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Asserts that at least one captured chat component contains clickable text matching the fragment.</div>
+<div class="block">Asserts that the player's current effective Bukkit permissions do not grant the node.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="PlayerHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">PlayerHandleAssert</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hasItemInInventory(java.lang.String)" class="member-name-link">hasItemInInventory</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;materialKey)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hasClickableChatText(java.lang.String)" class="member-name-link">hasClickableChatText</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;expectedText)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Asserts that the player has an item with the specified material in their inventory.</div>
+<div class="block">Asserts that at least one captured chat component contains clickable text matching the fragment.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="PlayerHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">PlayerHandleAssert</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hasName(java.lang.String)" class="member-name-link">hasName</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;expectedName)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hasItemInInventory(java.lang.String)" class="member-name-link">hasItemInInventory</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;materialKey)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Asserts that the player has an item with the specified material in their inventory.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="PlayerHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">PlayerHandleAssert</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hasName(java.lang.String)" class="member-name-link">hasName</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;expectedName)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Asserts that the player has the expected name.</div>
 </div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="PlayerHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">PlayerHandleAssert</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hasOpenMenu()" class="member-name-link">hasOpenMenu</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Asserts that the player currently has an actionable menu open.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="PlayerHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">PlayerHandleAssert</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hasPermission(java.lang.String)" class="member-name-link">hasPermission</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;permission)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Asserts that the player's current effective Bukkit permissions grant the node.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="InventoryAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">InventoryAssert</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#inventory()" class="member-name-link">inventory</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="PlayerHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">PlayerHandleAssert</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#receivedMessage(java.lang.String)" class="member-name-link">receivedMessage</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;expectedFragment)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Asserts that at least one received message contains the requested text fragment.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>org.assertj.core.api.AbstractStringAssert<wbr>&lt;?&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#receivedMessagesText()" class="member-name-link">receivedMessagesText</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>org.assertj.core.api.ListAssert<wbr>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#receivedMessages()" class="member-name-link">receivedMessages</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>org.assertj.core.api.AbstractStringAssert<wbr>&lt;?&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#receivedMessagesText()" class="member-name-link">receivedMessagesText</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns an AssertJ string assertion over all received messages concatenated into one text block.</div>
 </div>
 </div>
@@ -176,6 +205,36 @@ loadScripts(document, 'script');</script>
 <h2>Method Details</h2>
 <ul class="member-list">
 <li>
+<section class="detail" id="inventory()">
+<h3>inventory</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="InventoryAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">InventoryAssert</a></span>&nbsp;<span class="element-name">inventory</span>()</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>Frozen assertions over the current inventory; recreate navigation when retrying.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="receivedMessages()">
+<h3>receivedMessages</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">org.assertj.core.api.ListAssert&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;</span>&nbsp;<span class="element-name">receivedMessages</span>()</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>Frozen individual-message assertions for exact contents, order, counts and predicates.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="chatComponents()">
+<h3>chatComponents</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">org.assertj.core.api.ListAssert&lt;<a href="../ChatComponentSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">ChatComponentSnapshot</a>&gt;</span>&nbsp;<span class="element-name">chatComponents</span>()</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>Frozen component-list assertions; recreate navigation inside retries.</dd>
+</dl>
+</section>
+</li>
+<li>
 <section class="detail" id="hasName(java.lang.String)">
 <h3>hasName</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="PlayerHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">PlayerHandleAssert</a></span>&nbsp;<span class="element-name">hasName</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;expectedName)</span></div>
@@ -183,6 +242,54 @@ loadScripts(document, 'script');</script>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>expectedName</code> - Expected player name.</dd>
+<dt>Returns:</dt>
+<dd>This assertion for fluent chaining.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="hasPermission(java.lang.String)">
+<h3>hasPermission</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="PlayerHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">PlayerHandleAssert</a></span>&nbsp;<span class="element-name">hasPermission</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;permission)</span></div>
+<div class="block">Asserts that the player's current effective Bukkit permissions grant the node.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>permission</code> - Permission node; must not be blank.</dd>
+<dt>Returns:</dt>
+<dd>This assertion for fluent chaining.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="doesNotHavePermission(java.lang.String)">
+<h3>doesNotHavePermission</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="PlayerHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">PlayerHandleAssert</a></span>&nbsp;<span class="element-name">doesNotHavePermission</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;permission)</span></div>
+<div class="block">Asserts that the player's current effective Bukkit permissions do not grant the node.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>permission</code> - Permission node; must not be blank.</dd>
+<dt>Returns:</dt>
+<dd>This assertion for fluent chaining.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="hasOpenMenu()">
+<h3>hasOpenMenu</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="PlayerHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">PlayerHandleAssert</a></span>&nbsp;<span class="element-name">hasOpenMenu</span>()</div>
+<div class="block">Asserts that the player currently has an actionable menu open.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>This assertion for fluent chaining.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="doesNotHaveOpenMenu()">
+<h3>doesNotHaveOpenMenu</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="PlayerHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">PlayerHandleAssert</a></span>&nbsp;<span class="element-name">doesNotHaveOpenMenu</span>()</div>
+<div class="block">Asserts that the player currently has no actionable menu open, without waiting.</div>
+<dl class="notes">
 <dt>Returns:</dt>
 <dd>This assertion for fluent chaining.</dd>
 </dl>

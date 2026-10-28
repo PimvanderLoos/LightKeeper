@@ -20,7 +20,7 @@ loadScripts(document, 'script');</script>
 <div>JavaScript is disabled on your browser.</div>
 </noscript>
 <div class="flex-box">
-<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/de5cce2ac63030ed3c9b20388455f455ebd74a00">de5cce2ac630</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
+<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/32d99ae4f50790a8aaae73e947ef5828e653f67d">32d99ae4f507</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
 <nav role="navigation">
 <!-- ========= START OF TOP NAVBAR ======= -->
 <div class="top-nav" id="navbar-top"><button id="navbar-toggle-button" aria-controls="navbar-top" aria-expanded="false" aria-label="Toggle navigation links"><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span></button>
@@ -38,7 +38,7 @@ loadScripts(document, 'script');</script>
 <li>
 <p>Summary:</p>
 <ul>
-<li>Nested</li>
+<li><a href="#nested-class-summary">Nested</a></li>
 <li>Field</li>
 <li><a href="#constructor-summary">Constr</a></li>
 <li><a href="#method-summary">Method</a></li>
@@ -58,7 +58,7 @@ loadScripts(document, 'script');</script>
 <div id="navbar-sub-list">
 <ul class="sub-nav-list">
 <li>Summary:&nbsp;</li>
-<li>Nested&nbsp;|&nbsp;</li>
+<li><a href="#nested-class-summary">Nested</a>&nbsp;|&nbsp;</li>
 <li>Field&nbsp;|&nbsp;</li>
 <li><a href="#constructor-summary">Constr</a>&nbsp;|&nbsp;</li>
 <li><a href="#method-summary">Method</a></li>
@@ -93,19 +93,35 @@ loadScripts(document, 'script');</script>
 <section class="class-description" id="class-description">
 <dl class="notes">
 <dt>Record Components:</dt>
-<dd><code><span id="param-json">json</span></code> - The raw JSON representation of the component.</dd>
+<dd><code><span id="param-json">json</span></code> - Native component-codec JSON, retained verbatim.</dd>
 </dl>
 <hr>
 <div class="type-signature"><span class="modifiers">public record </span><span class="element-name type-name-label">ChatComponentSnapshot</span>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;json)
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Record.html" title="class or interface in java.lang" class="external-link">Record</a></span></div>
-<div class="block">Snapshot of a chat component.
+<div class="block">Frozen native chat-component JSON with shared literal-text and effective-click interpretation.
 
- <p>The <a href="#json()"><code>json()</code></a> is the server's native component-codec output, verbatim from the outbound packet. On
- Minecraft 1.21.5+ that codec spells the click field <code>click_event</code> (snake_case), so the click helpers on
- this record key on <code>click_event</code>, not the pre-1.21.5 <code>clickEvent</code>.</div>
+ <p>Literal strings, component arrays and extra children are supported, including inherited click events.
+ Translation keys, selectors, scores, keybinds and hover contents are not rendered as literal main-message text.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
+<!-- ======== NESTED CLASS SUMMARY ======== -->
+<li>
+<section class="nested-class-summary" id="nested-class-summary">
+<h2>Nested Class Summary</h2>
+<div class="caption"><span>Nested Classes</span></div>
+<div class="summary-table three-column-summary">
+<div class="table-header col-first">Modifier and Type</div>
+<div class="table-header col-second">Class</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code>static final record&nbsp;</code></div>
+<div class="col-second even-row-color"><code><a href="ChatComponentSnapshot.ClickAction.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.framework">ChatComponentSnapshot.ClickAction</a></code></div>
+<div class="col-last even-row-color">
+<div class="block">Frozen literal text and its associated effective action.</div>
+</div>
+</div>
+</section>
+</li>
 <!-- ======== CONSTRUCTOR SUMMARY ======== -->
 <li>
 <section class="constructor-summary" id="constructor-summary">
@@ -116,7 +132,7 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-last">Description</div>
 <div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String)" class="member-name-link">ChatComponentSnapshot</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;json)</code></div>
 <div class="col-last even-row-color">
-<div class="block">Creates an instance of a <code>ChatComponentSnapshot</code> record class.</div>
+<div class="block">Validates the immutable JSON input reference without decoding it eagerly.</div>
 </div>
 </div>
 </section>
@@ -132,25 +148,43 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Optional.html" title="class or interface in java.util" class="external-link">Optional</a><wbr>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#clickRunCommand()" class="member-name-link">clickRunCommand</a>()</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a><wbr>&lt;<a href="ChatComponentSnapshot.ClickAction.html" title="class in nl.pim16aap2.lightkeeper.framework">ChatComponentSnapshot.ClickAction</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#clickActions()" class="member-name-link">clickActions</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Extracts the command of the first <code>run_command</code> click event in this component's tree.</div>
+<div class="block">Decodes contiguous literal runs and their effective click actions.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Optional.html" title="class or interface in java.util" class="external-link">Optional</a><wbr>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#clickSuggestedCommand()" class="member-name-link">clickSuggestedCommand</a>()</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#clickRunCommand()" class="member-name-link">clickRunCommand</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Optional.html" title="class or interface in java.util" class="external-link">Optional</a><wbr>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#clickSuggestedCommand()" class="member-name-link">clickSuggestedCommand</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final boolean</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#equals(java.lang.Object)" class="member-name-link">equals</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;o)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Extracts the command of the first <code>suggest_command</code> click event in this component's tree.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final boolean</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#equals(java.lang.Object)" class="member-name-link">equals</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;o)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hasClickableText(java.lang.String)" class="member-name-link">hasClickableText</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;fragment)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Matches decoded literal text associated with an effective click event.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final int</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hashCode()" class="member-name-link">hashCode</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns a hash code value for this object.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hasRunCommand(java.lang.String,java.lang.String)" class="member-name-link">hasRunCommand</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;fragment,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;command)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Matches literal text and its exact run-command payload.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hasSuggestedCommand(java.lang.String,java.lang.String)" class="member-name-link">hasSuggestedCommand</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;fragment,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;command)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Matches literal text and its exact suggest-command payload, preserving spaces.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#json()" class="member-name-link">json</a>()</code></div>
@@ -183,11 +217,7 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="&lt;init&gt;(java.lang.String)">
 <h3>ChatComponentSnapshot</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">ChatComponentSnapshot</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;json)</span></div>
-<div class="block">Creates an instance of a <code>ChatComponentSnapshot</code> record class.</div>
-<dl class="notes">
-<dt>Parameters:</dt>
-<dd><code>json</code> - the value for the <a href="#param-json"><code>json</code></a> record component</dd>
-</dl>
+<div class="block">Validates the immutable JSON input reference without decoding it eagerly.</div>
 </section>
 </li>
 </ul>
@@ -202,11 +232,9 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="clickRunCommand()">
 <h3>clickRunCommand</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Optional.html" title="class or interface in java.util" class="external-link">Optional</a>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;</span>&nbsp;<span class="element-name">clickRunCommand</span>()</div>
-<div class="block">Extracts the command of the first <code>run_command</code> click event in this component's tree.</div>
 <dl class="notes">
 <dt>Returns:</dt>
-<dd>The command to run (typically leading-slash prefixed), or empty when this component carries no
-     <code>run_command</code> click event or its JSON cannot be parsed.</dd>
+<dd>First run-command payload, or empty for absent actions or malformed input.</dd>
 </dl>
 </section>
 </li>
@@ -214,14 +242,68 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="clickSuggestedCommand()">
 <h3>clickSuggestedCommand</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Optional.html" title="class or interface in java.util" class="external-link">Optional</a>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;</span>&nbsp;<span class="element-name">clickSuggestedCommand</span>()</div>
-<div class="block">Extracts the command of the first <code>suggest_command</code> click event in this component's tree.
-
- <p>The payload is returned verbatim, including any trailing space (suggest-command payloads often end with
- a space to prime the next argument), so it is never trimmed.</div>
 <dl class="notes">
 <dt>Returns:</dt>
-<dd>The command to suggest, or empty when this component carries no <code>suggest_command</code> click event
-     or its JSON cannot be parsed.</dd>
+<dd>First suggest-command payload verbatim, including trailing spaces; empty for malformed input.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="clickActions()">
+<h3>clickActions</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="ChatComponentSnapshot.ClickAction.html" title="class in nl.pim16aap2.lightkeeper.framework">ChatComponentSnapshot.ClickAction</a>&gt;</span>&nbsp;<span class="element-name">clickActions</span>()</div>
+<div class="block">Decodes contiguous literal runs and their effective click actions.
+
+ <p>Adjacent literal runs with the same action and payload are combined. Non-clickable text and opaque
+ non-literal content prevent accidental association across unrelated portions of a message.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>Immutable literal click actions; textless style nodes may carry an empty text run.</dd>
+<dt>Throws:</dt>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/IllegalArgumentException.html" title="class or interface in java.lang" class="external-link">IllegalArgumentException</a></code> - When JSON or supported component structure cannot be decoded.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="hasClickableText(java.lang.String)">
+<h3>hasClickableText</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">hasClickableText</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;fragment)</span></div>
+<div class="block">Matches decoded literal text associated with an effective click event.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>fragment</code> - Nonempty literal text fragment.</dd>
+<dt>Returns:</dt>
+<dd>Whether a matching clickable literal run exists.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="hasRunCommand(java.lang.String,java.lang.String)">
+<h3>hasRunCommand</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">hasRunCommand</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;fragment,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;command)</span></div>
+<div class="block">Matches literal text and its exact run-command payload.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>fragment</code> - Nonempty literal text fragment.</dd>
+<dd><code>command</code> - Exact command payload.</dd>
+<dt>Returns:</dt>
+<dd>Whether the same effective click action matches both requirements.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="hasSuggestedCommand(java.lang.String,java.lang.String)">
+<h3>hasSuggestedCommand</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">hasSuggestedCommand</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;fragment,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;command)</span></div>
+<div class="block">Matches literal text and its exact suggest-command payload, preserving spaces.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>fragment</code> - Nonempty literal text fragment.</dd>
+<dd><code>command</code> - Exact suggested payload.</dd>
+<dt>Returns:</dt>
+<dd>Whether the same effective click action matches both requirements.</dd>
 </dl>
 </section>
 </li>

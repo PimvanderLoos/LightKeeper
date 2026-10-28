@@ -20,7 +20,7 @@ loadScripts(document, 'script');</script>
 <div>JavaScript is disabled on your browser.</div>
 </noscript>
 <div class="flex-box">
-<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/de5cce2ac63030ed3c9b20388455f455ebd74a00">de5cce2ac630</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
+<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/32d99ae4f50790a8aaae73e947ef5828e653f67d">32d99ae4f507</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
 <nav role="navigation">
 <!-- ========= START OF TOP NAVBAR ======= -->
 <div class="top-nav" id="navbar-top"><button id="navbar-toggle-button" aria-controls="navbar-top" aria-expanded="false" aria-label="Toggle navigation links"><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span></button>
@@ -83,7 +83,8 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color"><a href="assertions/package-summary.html">nl.pim16aap2.lightkeeper.framework.assertions</a></div>
 <div class="col-last even-row-color">
-<div class="block">AssertJ-based assertion types for fluent validation of LightKeeper world, player, and menu state.</div>
+<div class="block">AssertJ assertions for live server/plugin, world/block, entity-query, player, menu, event-capture and error state,
+ plus frozen inventory/item, event/value, result, entity/geometry and semantic chat snapshots.</div>
 </div>
 </div>
 </div>
@@ -127,165 +128,169 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-first odd-row-color class-summary class-summary-tab4"><a href="ChatComponentSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">ChatComponentSnapshot</a></div>
 <div class="col-last odd-row-color class-summary class-summary-tab4">
-<div class="block">Snapshot of a chat component.</div>
+<div class="block">Frozen native chat-component JSON with shared literal-text and effective-click interpretation.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab4"><a href="CommandResult.html" title="class in nl.pim16aap2.lightkeeper.framework">CommandResult</a></div>
+<div class="col-first even-row-color class-summary class-summary-tab4"><a href="ChatComponentSnapshot.ClickAction.html" title="class in nl.pim16aap2.lightkeeper.framework">ChatComponentSnapshot.ClickAction</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab4">
+<div class="block">Frozen literal text and its associated effective action.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab4"><a href="CommandResult.html" title="class in nl.pim16aap2.lightkeeper.framework">CommandResult</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab4">
 <div class="block">Result of executing a command through the framework.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="Condition.html" title="interface in nl.pim16aap2.lightkeeper.framework">Condition</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="Condition.html" title="interface in nl.pim16aap2.lightkeeper.framework">Condition</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">Condition callback used by <a href="ILightkeeperFramework.html#waitUntil(nl.pim16aap2.lightkeeper.framework.Condition,java.time.Duration)"><code>ILightkeeperFramework.waitUntil(Condition, java.time.Duration)</code></a>.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="EntityQuery.html" title="class in nl.pim16aap2.lightkeeper.framework">EntityQuery</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="EntityQuery.html" title="class in nl.pim16aap2.lightkeeper.framework">EntityQuery</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">LIVE, composable entity query for one world: filters build new immutable queries, terminals re-query the
  server per call.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab4"><a href="EntitySnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">EntitySnapshot</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab4">
+<div class="col-first even-row-color class-summary class-summary-tab4"><a href="EntitySnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">EntitySnapshot</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab4">
 <div class="block">Frozen snapshot of one entity's state, read in the same main-thread burst as its query siblings — every
  snapshot from one <a href="EntityQuery.html#snapshot()"><code>EntityQuery.snapshot()</code></a> call shares one tick and is internally consistent.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab4"><a href="EntitySnapshot.Rotation.html" title="class in nl.pim16aap2.lightkeeper.framework">EntitySnapshot.Rotation</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab4">
+<div class="col-first odd-row-color class-summary class-summary-tab4"><a href="EntitySnapshot.Rotation.html" title="class in nl.pim16aap2.lightkeeper.framework">EntitySnapshot.Rotation</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab4">
 <div class="block">A rotation quaternion.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab4"><a href="EntitySnapshot.Transform.html" title="class in nl.pim16aap2.lightkeeper.framework">EntitySnapshot.Transform</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab4">
+<div class="col-first even-row-color class-summary class-summary-tab4"><a href="EntitySnapshot.Transform.html" title="class in nl.pim16aap2.lightkeeper.framework">EntitySnapshot.Transform</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab4">
 <div class="block">A display entity's transformation: display entities move via transform, not position.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="EventCaptureHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">EventCaptureHandle</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="EventCaptureHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">EventCaptureHandle</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Handle for a dynamic event capture session.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="FrameworkHandleFactory.html" title="class in nl.pim16aap2.lightkeeper.framework">FrameworkHandleFactory</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="FrameworkHandleFactory.html" title="class in nl.pim16aap2.lightkeeper.framework">FrameworkHandleFactory</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Internal handle factory used by the framework runtime and builders.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab6"><a href="FreshServer.html" title="annotation interface in nl.pim16aap2.lightkeeper.framework">FreshServer</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab6">
+<div class="col-first odd-row-color class-summary class-summary-tab6"><a href="FreshServer.html" title="annotation interface in nl.pim16aap2.lightkeeper.framework">FreshServer</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab6">
 <div class="block">Marker annotation that forces a fresh server lifecycle.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="IBots.html" title="interface in nl.pim16aap2.lightkeeper.framework">IBots</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="IBots.html" title="interface in nl.pim16aap2.lightkeeper.framework">IBots</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">Bots facet of the framework: join synthetic players into a world, or configure one through a builder.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="IEvents.html" title="interface in nl.pim16aap2.lightkeeper.framework">IEvents</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="IEvents.html" title="interface in nl.pim16aap2.lightkeeper.framework">IEvents</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">Events facet of the framework: capture Bukkit events for later inspection.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="IFrameworkGatewayView.html" title="interface in nl.pim16aap2.lightkeeper.framework">IFrameworkGatewayView</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="IFrameworkGatewayView.html" title="interface in nl.pim16aap2.lightkeeper.framework">IFrameworkGatewayView</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">Internal gateway contract used by framework handle implementations.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="ILightkeeperFramework.html" title="interface in nl.pim16aap2.lightkeeper.framework">ILightkeeperFramework</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ILightkeeperFramework.html" title="interface in nl.pim16aap2.lightkeeper.framework">ILightkeeperFramework</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">LightKeeper end-to-end test framework entrypoint.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab4"><a href="InteractionResult.html" title="class in nl.pim16aap2.lightkeeper.framework">InteractionResult</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab4">
+<div class="col-first even-row-color class-summary class-summary-tab4"><a href="InteractionResult.html" title="class in nl.pim16aap2.lightkeeper.framework">InteractionResult</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab4">
 <div class="block">Outcome of a synthetic player interaction that fires a real, cancellable Bukkit event.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab4"><a href="InventorySnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">InventorySnapshot</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab4">
+<div class="col-first odd-row-color class-summary class-summary-tab4"><a href="InventorySnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">InventorySnapshot</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab4">
 <div class="block">Snapshot of a player's inventory.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="IPlayerBuilder.html" title="interface in nl.pim16aap2.lightkeeper.framework">IPlayerBuilder</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="IPlayerBuilder.html" title="interface in nl.pim16aap2.lightkeeper.framework">IPlayerBuilder</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">Fluent builder for synthetic players.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="IServerControl.html" title="interface in nl.pim16aap2.lightkeeper.framework">IServerControl</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="IServerControl.html" title="interface in nl.pim16aap2.lightkeeper.framework">IServerControl</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">Server-control facet of the framework: command execution, console output, platform, filesystem access, process
  lifecycle, tick counter, and captured server errors.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="IWorldBuilder.html" title="interface in nl.pim16aap2.lightkeeper.framework">IWorldBuilder</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="IWorldBuilder.html" title="interface in nl.pim16aap2.lightkeeper.framework">IWorldBuilder</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">Fluent builder for worlds.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="IWorlds.html" title="interface in nl.pim16aap2.lightkeeper.framework">IWorlds</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="IWorlds.html" title="interface in nl.pim16aap2.lightkeeper.framework">IWorlds</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">Worlds facet of the framework: create worlds from defaults, specs, or provisioned templates, or configure one
  through a builder.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="Lightkeeper.html" title="class in nl.pim16aap2.lightkeeper.framework">Lightkeeper</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="Lightkeeper.html" title="class in nl.pim16aap2.lightkeeper.framework">Lightkeeper</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Factory for creating framework instances from runtime manifests.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="LightkeeperExtension.html" title="class in nl.pim16aap2.lightkeeper.framework">LightkeeperExtension</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="LightkeeperExtension.html" title="class in nl.pim16aap2.lightkeeper.framework">LightkeeperExtension</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">JUnit extension for framework lifecycle management.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="LightkeeperRuntimeResolver.html" title="class in nl.pim16aap2.lightkeeper.framework">LightkeeperRuntimeResolver</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="LightkeeperRuntimeResolver.html" title="class in nl.pim16aap2.lightkeeper.framework">LightkeeperRuntimeResolver</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Resolves a LightKeeper runtime manifest for a JUnit test class.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="MaterialKeys.html" title="class in nl.pim16aap2.lightkeeper.framework">MaterialKeys</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="MaterialKeys.html" title="class in nl.pim16aap2.lightkeeper.framework">MaterialKeys</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Normalization for material keys across the framework API.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="MenuHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuHandle</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="MenuHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuHandle</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Handle for an open player menu.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab4"><a href="MenuItemSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuItemSnapshot</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab4">
+<div class="col-first odd-row-color class-summary class-summary-tab4"><a href="MenuItemSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuItemSnapshot</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab4">
 <div class="block">Menu item snapshot.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab4"><a href="MenuSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuSnapshot</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab4">
+<div class="col-first even-row-color class-summary class-summary-tab4"><a href="MenuSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuSnapshot</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab4">
 <div class="block">Open-menu snapshot for a player.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="PermissionControl.html" title="class in nl.pim16aap2.lightkeeper.framework">PermissionControl</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="PermissionControl.html" title="class in nl.pim16aap2.lightkeeper.framework">PermissionControl</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Handle for mutating and querying a synthetic player's permissions.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab3"><a href="Platform.html" title="enum class in nl.pim16aap2.lightkeeper.framework">Platform</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab3">
+<div class="col-first even-row-color class-summary class-summary-tab3"><a href="Platform.html" title="enum class in nl.pim16aap2.lightkeeper.framework">Platform</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab3">
 <div class="block">Supported Minecraft server platforms.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="PlayerHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">PlayerHandle</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="PlayerHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">PlayerHandle</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Handle for a synthetic player.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab5"><a href="PlayerUnavailableException.html" title="class in nl.pim16aap2.lightkeeper.framework">PlayerUnavailableException</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab5">
+<div class="col-first even-row-color class-summary class-summary-tab5"><a href="PlayerUnavailableException.html" title="class in nl.pim16aap2.lightkeeper.framework">PlayerUnavailableException</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab5">
 <div class="block">Thrown when a synthetic player cannot perform an action because its server-side lifecycle state is no longer
  active.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab3"><a href="PlayerUnavailableException.Reason.html" title="enum class in nl.pim16aap2.lightkeeper.framework">PlayerUnavailableException.Reason</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab3">
+<div class="col-first odd-row-color class-summary class-summary-tab3"><a href="PlayerUnavailableException.Reason.html" title="enum class in nl.pim16aap2.lightkeeper.framework">PlayerUnavailableException.Reason</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab3">
 <div class="block">Machine-readable synthetic-player availability failures.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="ServerErrorsHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">ServerErrorsHandle</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="ServerErrorsHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">ServerErrorsHandle</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Handle for the always-on server-error capture.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab4"><a href="ServerErrorSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">ServerErrorSnapshot</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab4">
+<div class="col-first odd-row-color class-summary class-summary-tab4"><a href="ServerErrorSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">ServerErrorSnapshot</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab4">
 <div class="block">Snapshot of a single captured server error or warning.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab3"><a href="ServerErrorSnapshot.Severity.html" title="enum class in nl.pim16aap2.lightkeeper.framework">ServerErrorSnapshot.Severity</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab3">
+<div class="col-first even-row-color class-summary class-summary-tab3"><a href="ServerErrorSnapshot.Severity.html" title="enum class in nl.pim16aap2.lightkeeper.framework">ServerErrorSnapshot.Severity</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab3">
 <div class="block">Severity bucket of a captured entry.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab4"><a href="Vec3.html" title="class in nl.pim16aap2.lightkeeper.framework">Vec3</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab4">
+<div class="col-first odd-row-color class-summary class-summary-tab4"><a href="Vec3.html" title="class in nl.pim16aap2.lightkeeper.framework">Vec3</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab4">
 <div class="block">Double-precision 3D position in a world.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="WorldHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">WorldHandle</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="WorldHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">WorldHandle</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Handle to a world in the running test server.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab4"><a href="WorldSpec.html" title="class in nl.pim16aap2.lightkeeper.framework">WorldSpec</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab4">
+<div class="col-first odd-row-color class-summary class-summary-tab4"><a href="WorldSpec.html" title="class in nl.pim16aap2.lightkeeper.framework">WorldSpec</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab4">
 <div class="block">World creation specification.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab3"><a href="WorldSpec.WorldEnvironment.html" title="enum class in nl.pim16aap2.lightkeeper.framework">WorldSpec.WorldEnvironment</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab3">&nbsp;</div>
-<div class="col-first even-row-color class-summary class-summary-tab3"><a href="WorldSpec.WorldType.html" title="enum class in nl.pim16aap2.lightkeeper.framework">WorldSpec.WorldType</a></div>
+<div class="col-first even-row-color class-summary class-summary-tab3"><a href="WorldSpec.WorldEnvironment.html" title="enum class in nl.pim16aap2.lightkeeper.framework">WorldSpec.WorldEnvironment</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab3">&nbsp;</div>
+<div class="col-first odd-row-color class-summary class-summary-tab3"><a href="WorldSpec.WorldType.html" title="enum class in nl.pim16aap2.lightkeeper.framework">WorldSpec.WorldType</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab3">&nbsp;</div>
 </div>
 </div>
 </div>

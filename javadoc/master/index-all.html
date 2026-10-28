@@ -20,7 +20,7 @@ loadScripts(document, 'script');</script>
 <div>JavaScript is disabled on your browser.</div>
 </noscript>
 <div class="flex-box">
-<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/de5cce2ac63030ed3c9b20388455f455ebd74a00">de5cce2ac630</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
+<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/32d99ae4f50790a8aaae73e947ef5828e653f67d">32d99ae4f507</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
 <nav role="navigation">
 <!-- ========= START OF TOP NAVBAR ======= -->
 <div class="top-nav" id="navbar-top"><button id="navbar-toggle-button" aria-controls="navbar-top" aria-expanded="false" aria-label="Toggle navigation links"><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span></button>
@@ -60,6 +60,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeLock.html#acquire(java.nio.file.Path)" class="member-name-link">acquire(Path)</a> - Static method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeLock.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeLock</a></dt>
 <dd>
 <div class="block">Attempts to acquire the module-wide IDE runtime lock without waiting.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.ClickAction.html#action()" class="member-name-link">action()</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.ClickAction.html" title="class in nl.pim16aap2.lightkeeper.framework">ChatComponentSnapshot.ClickAction</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.ClickAction.html#param-action"><code>action</code></a> record component.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/LightkeeperExtension.html#afterAll(org.junit.jupiter.api.extension.ExtensionContext)" class="member-name-link">afterAll(ExtensionContext)</a> - Method in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/LightkeeperExtension.html" title="class in nl.pim16aap2.lightkeeper.framework">LightkeeperExtension</a></dt>
 <dd>
@@ -135,26 +139,88 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Creates an instance of a <code>Artifact</code> record class.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html#asBoolean()" class="member-name-link">asBoolean()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ProtocolValueAssert</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html#asDouble()" class="member-name-link">asDouble()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ProtocolValueAssert</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html#asLong()" class="member-name-link">asLong()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ProtocolValueAssert</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html#assertThat(nl.pim16aap2.lightkeeper.framework.BlockRef)" class="member-name-link">assertThat(BlockRef)</a> - Static method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">LightkeeperAssertions</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html#assertThat(nl.pim16aap2.lightkeeper.framework.BlockStateSnapshot)" class="member-name-link">assertThat(BlockStateSnapshot)</a> - Static method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">LightkeeperAssertions</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html#assertThat(nl.pim16aap2.lightkeeper.framework.CapturedEventSnapshot)" class="member-name-link">assertThat(CapturedEventSnapshot)</a> - Static method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">LightkeeperAssertions</a></dt>
+<dd>
+<div class="block">Creates frozen typed-event assertions.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html#assertThat(nl.pim16aap2.lightkeeper.framework.ChatComponentSnapshot)" class="member-name-link">assertThat(ChatComponentSnapshot)</a> - Static method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">LightkeeperAssertions</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html#assertThat(nl.pim16aap2.lightkeeper.framework.CommandResult)" class="member-name-link">assertThat(CommandResult)</a> - Static method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">LightkeeperAssertions</a></dt>
+<dd>
+<div class="block">Creates command dispatch result assertions.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html#assertThat(nl.pim16aap2.lightkeeper.framework.EntityQuery)" class="member-name-link">assertThat(EntityQuery)</a> - Static method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">LightkeeperAssertions</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html#assertThat(nl.pim16aap2.lightkeeper.framework.EntitySnapshot)" class="member-name-link">assertThat(EntitySnapshot)</a> - Static method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">LightkeeperAssertions</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html#assertThat(nl.pim16aap2.lightkeeper.framework.EventCaptureHandle)" class="member-name-link">assertThat(EventCaptureHandle)</a> - Static method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">LightkeeperAssertions</a></dt>
+<dd>
+<div class="block">Creates live event-capture assertions.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html#assertThat(nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework)" class="member-name-link">assertThat(ILightkeeperFramework)</a> - Static method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">LightkeeperAssertions</a></dt>
 <dd>
 <div class="block">Creates an assertion chain for framework-level runtime state.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html#assertThat(nl.pim16aap2.lightkeeper.framework.InteractionResult)" class="member-name-link">assertThat(InteractionResult)</a> - Static method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">LightkeeperAssertions</a></dt>
+<dd>
+<div class="block">Creates interaction outcome assertions.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html#assertThat(nl.pim16aap2.lightkeeper.framework.InventorySnapshot)" class="member-name-link">assertThat(InventorySnapshot)</a> - Static method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">LightkeeperAssertions</a></dt>
+<dd>
+<div class="block">Creates assertions over a frozen inventory.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html#assertThat(nl.pim16aap2.lightkeeper.framework.MenuHandle)" class="member-name-link">assertThat(MenuHandle)</a> - Static method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">LightkeeperAssertions</a></dt>
 <dd>
 <div class="block">Creates an assertion chain for menu-related state.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html#assertThat(nl.pim16aap2.lightkeeper.framework.MenuItemSnapshot)" class="member-name-link">assertThat(MenuItemSnapshot)</a> - Static method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">LightkeeperAssertions</a></dt>
+<dd>
+<div class="block">Creates assertions over a frozen item.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html#assertThat(nl.pim16aap2.lightkeeper.framework.MenuSnapshot)" class="member-name-link">assertThat(MenuSnapshot)</a> - Static method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">LightkeeperAssertions</a></dt>
+<dd>
+<div class="block">Creates assertions over a frozen menu.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html#assertThat(nl.pim16aap2.lightkeeper.framework.PlayerHandle)" class="member-name-link">assertThat(PlayerHandle)</a> - Static method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">LightkeeperAssertions</a></dt>
 <dd>
 <div class="block">Creates an assertion chain for player-related state.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html#assertThat(nl.pim16aap2.lightkeeper.framework.ServerErrorsHandle)" class="member-name-link">assertThat(ServerErrorsHandle)</a> - Static method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">LightkeeperAssertions</a></dt>
+<dd>
+<div class="block">Creates live structured-error assertions.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html#assertThat(nl.pim16aap2.lightkeeper.framework.Vec3)" class="member-name-link">assertThat(Vec3)</a> - Static method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">LightkeeperAssertions</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html#assertThat(nl.pim16aap2.lightkeeper.framework.WorldHandle)" class="member-name-link">assertThat(WorldHandle)</a> - Static method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">LightkeeperAssertions</a></dt>
 <dd>
 <div class="block">Creates an assertion chain for world-related state.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html#assertThat(nl.pim16aap2.lightkeeper.framework.EntitySnapshot.Transform)" class="member-name-link">assertThat(EntitySnapshot.Transform)</a> - Static method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">LightkeeperAssertions</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html#assertThat(nl.pim16aap2.lightkeeper.protocol.IProtocolValue)" class="member-name-link">assertThat(IProtocolValue)</a> - Static method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">LightkeeperAssertions</a></dt>
+<dd>
+<div class="block">Creates frozen typed-value assertions.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html#asString()" class="member-name-link">asString()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ProtocolValueAssert</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/BlockSpec.html#asString()" class="member-name-link">asString()</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/BlockSpec.html" title="class in nl.pim16aap2.lightkeeper.framework">BlockSpec</a></dt>
 <dd>
 <div class="block">Renders this spec in block-data string form.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html#asUuid()" class="member-name-link">asUuid()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ProtocolValueAssert</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html#asVector()" class="member-name-link">asVector()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ProtocolValueAssert</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/IPlayerBuilder.html#atLocation(nl.pim16aap2.lightkeeper.framework.WorldHandle,double,double,double)" class="member-name-link">atLocation(WorldHandle, double, double, double)</a> - Method in interface nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/IPlayerBuilder.html" title="interface in nl.pim16aap2.lightkeeper.framework">IPlayerBuilder</a></dt>
 <dd>
 <div class="block">Places the player in the target world at explicit coordinates.</div>
@@ -216,6 +282,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">LIVE address of a block in a world: it stores <em>where</em>, never <em>what</em>.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/BlockRefAssert.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.framework.assertions">BlockRefAssert</a> - Class in <a href="nl/pim16aap2/lightkeeper/framework/assertions/package-summary.html">nl.pim16aap2.lightkeeper.framework.assertions</a></dt>
+<dd>
+<div class="block">Eager assertions over a live block address, using the canonical material and partial-state rules.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/BlockSpec.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.framework">BlockSpec</a> - Record Class in <a href="nl/pim16aap2/lightkeeper/framework/package-summary.html">nl.pim16aap2.lightkeeper.framework</a></dt>
 <dd>
 <div class="block">A block specification: a material plus the state properties a test cares about.</div>
@@ -231,6 +301,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/BlockStateSnapshot.html#%3Cinit%3E(java.lang.String,java.lang.String,java.util.Map)" class="member-name-link">BlockStateSnapshot(String, String, Map&lt;String, String&gt;)</a> - Constructor for record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/BlockStateSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">BlockStateSnapshot</a></dt>
 <dd>
 <div class="block">Validates the fields.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/BlockStateSnapshotAssert.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.framework.assertions">BlockStateSnapshotAssert</a> - Class in <a href="nl/pim16aap2/lightkeeper/framework/assertions/package-summary.html">nl.pim16aap2.lightkeeper.framework.assertions</a></dt>
+<dd>
+<div class="block">Partial spec assertions over a frozen block state, using the snapshot's canonical matcher.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/BlockType.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.protocol">BlockType</a> - Class in <a href="nl/pim16aap2/lightkeeper/protocol/package-summary.html">nl.pim16aap2.lightkeeper.protocol</a></dt>
 <dd>
@@ -346,9 +420,15 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/protocol/GetServerErrors.Response.html#param-captureActive"><code>captureActive</code></a> record component.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerErrorsAssert.html#captured()" class="member-name-link">captured()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerErrorsAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ServerErrorsAssert</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/GetCapturedEvents.CapturedEvent.html#%3Cinit%3E(long,java.util.Map)" class="member-name-link">CapturedEvent(long, Map&lt;String, IProtocolValue&gt;)</a> - Constructor for record class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/GetCapturedEvents.CapturedEvent.html" title="class in nl.pim16aap2.lightkeeper.protocol">GetCapturedEvents.CapturedEvent</a></dt>
 <dd>
 <div class="block">Validates and defensively copies the values, preserving their order.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/CapturedEventAssert.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.framework.assertions">CapturedEventAssert</a> - Class in <a href="nl/pim16aap2/lightkeeper/framework/assertions/package-summary.html">nl.pim16aap2.lightkeeper.framework.assertions</a></dt>
+<dd>
+<div class="block">Frozen event assertions that preserve typed fields and distinguish absent from explicit-null values.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/CapturedEventSnapshot.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.framework">CapturedEventSnapshot</a> - Record Class in <a href="nl/pim16aap2/lightkeeper/framework/package-summary.html">nl.pim16aap2.lightkeeper.framework</a></dt>
 <dd>
@@ -367,17 +447,27 @@ loadScripts(document, 'script');</script>
 <div class="block">Makes this player say a chat message, firing the real chat event (synchronously, as with any
  plugin-triggered chat).</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ChatComponentAssert.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ChatComponentAssert</a> - Class in <a href="nl/pim16aap2/lightkeeper/framework/assertions/package-summary.html">nl.pim16aap2.lightkeeper.framework.assertions</a></dt>
+<dd>
+<div class="block">Frozen semantic assertions associating literal text with effective click actions and payloads.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/PlayerHandleAssert.html#chatComponents()" class="member-name-link">chatComponents()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/PlayerHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">PlayerHandleAssert</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/PlayerHandle.html#chatComponents()" class="member-name-link">chatComponents()</a> - Method in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/PlayerHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">PlayerHandle</a></dt>
 <dd>
 <div class="block">Gets a list of captured chat components for this player.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.framework">ChatComponentSnapshot</a> - Record Class in <a href="nl/pim16aap2/lightkeeper/framework/package-summary.html">nl.pim16aap2.lightkeeper.framework</a></dt>
 <dd>
-<div class="block">Snapshot of a chat component.</div>
+<div class="block">Frozen native chat-component JSON with shared literal-text and effective-click interpretation.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.html#%3Cinit%3E(java.lang.String)" class="member-name-link">ChatComponentSnapshot(String)</a> - Constructor for record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">ChatComponentSnapshot</a></dt>
 <dd>
-<div class="block">Creates an instance of a <code>ChatComponentSnapshot</code> record class.</div>
+<div class="block">Validates the immutable JSON input reference without decoding it eagerly.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.ClickAction.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.framework">ChatComponentSnapshot.ClickAction</a> - Record Class in <a href="nl/pim16aap2/lightkeeper/framework/package-summary.html">nl.pim16aap2.lightkeeper.framework</a></dt>
+<dd>
+<div class="block">Frozen literal text and its associated effective action.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/IProtocolValue.PRef.html#className()" class="member-name-link">className()</a> - Method in record class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/IProtocolValue.PRef.html" title="class in nl.pim16aap2.lightkeeper.protocol">IProtocolValue.PRef</a></dt>
 <dd>
@@ -423,6 +513,14 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Response record for <code>CLEAR_SERVER_ERRORS</code>.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.ClickAction.html#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String)" class="member-name-link">ClickAction(String, String, String)</a> - Constructor for record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.ClickAction.html" title="class in nl.pim16aap2.lightkeeper.framework">ChatComponentSnapshot.ClickAction</a></dt>
+<dd>
+<div class="block">Validates the immutable action identity and literal text.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.html#clickActions()" class="member-name-link">clickActions()</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">ChatComponentSnapshot</a></dt>
+<dd>
+<div class="block">Decodes contiguous literal runs and their effective click actions.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/MenuHandle.html#clickAtIndex(int)" class="member-name-link">clickAtIndex(int)</a> - Method in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/MenuHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuHandle</a></dt>
 <dd>
 <div class="block">Clicks a slot in the open menu, auto-waiting for an open menu first (bounded, default 10 seconds).</div>
@@ -454,13 +552,9 @@ loadScripts(document, 'script');</script>
 <div class="block">Response record for <code>CLICK_MENU_SLOT</code>.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.html#clickRunCommand()" class="member-name-link">clickRunCommand()</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">ChatComponentSnapshot</a></dt>
-<dd>
-<div class="block">Extracts the command of the first <code>run_command</code> click event in this component's tree.</div>
-</dd>
+<dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.html#clickSuggestedCommand()" class="member-name-link">clickSuggestedCommand()</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">ChatComponentSnapshot</a></dt>
-<dd>
-<div class="block">Extracts the command of the first <code>suggest_command</code> click event in this component's tree.</div>
-</dd>
+<dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/runtime/RuntimeProtocol.html#CLIENT_RESPONSE_TIMEOUT_MARGIN_MILLIS" class="member-name-link">CLIENT_RESPONSE_TIMEOUT_MARGIN_MILLIS</a> - Static variable in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/RuntimeProtocol.html" title="class in nl.pim16aap2.lightkeeper.runtime">RuntimeProtocol</a></dt>
 <dd>
 <div class="block">Safety margin, in milliseconds, added to the agent-side operation timeout to derive the client's response
@@ -650,6 +744,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Creates an instance of a <code>CommandResult</code> record class.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/CommandResultAssert.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.framework.assertions">CommandResultAssert</a> - Class in <a href="nl/pim16aap2/lightkeeper/framework/assertions/package-summary.html">nl.pim16aap2.lightkeeper.framework.assertions</a></dt>
+<dd>
+<div class="block">Assertions over a returned command dispatch result, without executing or retrying the command.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/ExecuteCommand.Command.html#commandSource()" class="member-name-link">commandSource()</a> - Method in record class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/ExecuteCommand.Command.html" title="class in nl.pim16aap2.lightkeeper.protocol">ExecuteCommand.Command</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/protocol/ExecuteCommand.Command.html#param-commandSource"><code>commandSource</code></a> record component.</div>
@@ -750,6 +848,8 @@ loadScripts(document, 'script');</script>
 <div class="block">Default maximum time, in seconds, the agent waits for a scheduled synchronous server operation before reporting
  <code>TIMEOUT</code>.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/EntityQuery.html#description()" class="member-name-link">description()</a> - Method in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/EntityQuery.html" title="class in nl.pim16aap2.lightkeeper.framework">EntityQuery</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/ServerPluginSnapshot.html#description()" class="member-name-link">description()</a> - Method in record class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/ServerPluginSnapshot.html" title="class in nl.pim16aap2.lightkeeper.protocol">ServerPluginSnapshot</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/protocol/ServerPluginSnapshot.html#param-description"><code>description</code></a> record component.</div>
@@ -782,6 +882,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/protocol/ExecutePlayerCommand.Response.html#param-dispatched"><code>dispatched</code></a> record component.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuItemSnapshotAssert.html#displayName()" class="member-name-link">displayName()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuItemSnapshotAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuItemSnapshotAssert</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/MenuItemSnapshot.html#displayName()" class="member-name-link">displayName()</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/MenuItemSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuItemSnapshot</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/framework/MenuItemSnapshot.html#param-displayName"><code>displayName</code></a> record component.</div>
@@ -790,6 +892,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/protocol/ItemSnapshot.html#param-displayName"><code>displayName</code></a> record component.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/CapturedEventAssert.html#doesNotHaveField(java.lang.String)" class="member-name-link">doesNotHaveField(String)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/CapturedEventAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">CapturedEventAssert</a></dt>
+<dd>
+<div class="block">Checks that an accessor is absent from the capture.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/PlayerHandleAssert.html#doesNotHaveItemInInventory(java.lang.String)" class="member-name-link">doesNotHaveItemInInventory(String)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/PlayerHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">PlayerHandleAssert</a></dt>
 <dd>
 <div class="block">Asserts that the player does not have an item with the specified material in their inventory.</div>
@@ -797,6 +903,14 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/WorldHandleAssert.html#doesNotHaveLoadedChunkAt(int,int)" class="member-name-link">doesNotHaveLoadedChunkAt(int, int)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/WorldHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">WorldHandleAssert</a></dt>
 <dd>
 <div class="block">Asserts that a chunk is not loaded at the target coordinates.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/PlayerHandleAssert.html#doesNotHaveOpenMenu()" class="member-name-link">doesNotHaveOpenMenu()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/PlayerHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">PlayerHandleAssert</a></dt>
+<dd>
+<div class="block">Asserts that the player currently has no actionable menu open, without waiting.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/PlayerHandleAssert.html#doesNotHavePermission(java.lang.String)" class="member-name-link">doesNotHavePermission(String)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/PlayerHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">PlayerHandleAssert</a></dt>
+<dd>
+<div class="block">Asserts that the player's current effective Bukkit permissions do not grant the node.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/IFrameworkGatewayView.html#dragMenuSlots(java.util.UUID,java.lang.String,int...)" class="member-name-link">dragMenuSlots(UUID, String, int...)</a> - Method in interface nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/IFrameworkGatewayView.html" title="interface in nl.pim16aap2.lightkeeper.framework">IFrameworkGatewayView</a></dt>
 <dd>
@@ -855,6 +969,12 @@ loadScripts(document, 'script');</script>
 </dl>
 <h2 class="title" id="I:E">E</h2>
 <dl class="index">
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html#element(int)" class="member-name-link">element(int)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ProtocolValueAssert</a></dt>
+<dd>
+<div class="block">Selects a nested list element and retains its index in diagnostics.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html#elements()" class="member-name-link">elements()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ProtocolValueAssert</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/DropResult.html#EMPTY_HAND" class="member-name-link">EMPTY_HAND</a> - Enum constant in enum class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/DropResult.html" title="enum class in nl.pim16aap2.lightkeeper.protocol">DropResult</a></dt>
 <dd>
 <div class="block">The player had nothing in their main hand; no event was fired at all.</div>
@@ -880,6 +1000,10 @@ loadScripts(document, 'script');</script>
 <div class="block">LIVE, composable entity query for one world: filters build new immutable queries, terminals re-query the
  server per call.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/EntityQueryAssert.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.framework.assertions">EntityQueryAssert</a> - Class in <a href="nl/pim16aap2/lightkeeper/framework/assertions/package-summary.html">nl.pim16aap2.lightkeeper.framework.assertions</a></dt>
+<dd>
+<div class="block">Live entity-query assertions; count checks use the cheap count-only RPC and never load chunks.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/EntitySnapshot.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.framework">EntitySnapshot</a> - Record Class in <a href="nl/pim16aap2/lightkeeper/framework/package-summary.html">nl.pim16aap2.lightkeeper.framework</a></dt>
 <dd>
 <div class="block">Frozen snapshot of one entity's state, read in the same main-thread burst as its query siblings — every
@@ -897,6 +1021,14 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/EntitySnapshot.Transform.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.framework">EntitySnapshot.Transform</a> - Record Class in <a href="nl/pim16aap2/lightkeeper/framework/package-summary.html">nl.pim16aap2.lightkeeper.framework</a></dt>
 <dd>
 <div class="block">A display entity's transformation: display entities move via transform, not position.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/EntitySnapshotAssert.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.framework.assertions">EntitySnapshotAssert</a> - Class in <a href="nl/pim16aap2/lightkeeper/framework/assertions/package-summary.html">nl.pim16aap2.lightkeeper.framework.assertions</a></dt>
+<dd>
+<div class="block">Position and display-transform assertions over one frozen entity observation.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/EntityTransformAssert.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.framework.assertions">EntityTransformAssert</a> - Class in <a href="nl/pim16aap2/lightkeeper/framework/assertions/package-summary.html">nl.pim16aap2.lightkeeper.framework.assertions</a></dt>
+<dd>
+<div class="block">Frozen display-transform navigation with explicit vector tolerances and ordinary quaternion value checks.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/QueryEntities.Command.html#entityTypeKey()" class="member-name-link">entityTypeKey()</a> - Method in record class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/QueryEntities.Command.html" title="class in nl.pim16aap2.lightkeeper.protocol">QueryEntities.Command</a></dt>
 <dd>
@@ -931,6 +1063,10 @@ loadScripts(document, 'script');</script>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/CapturedEventSnapshot.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/CapturedEventSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">CapturedEventSnapshot</a></dt>
+<dd>
+<div class="block">Indicates whether some other object is "equal to" this one.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.ClickAction.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.ClickAction.html" title="class in nl.pim16aap2.lightkeeper.framework">ChatComponentSnapshot.ClickAction</a></dt>
 <dd>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
 </dd>
@@ -1390,6 +1526,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the error code that the dispatcher should include in the wire response.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerControlAssert.html#errors()" class="member-name-link">errors()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerControlAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ServerControlAssert</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/IServerControl.html#errors()" class="member-name-link">errors()</a> - Method in interface nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/IServerControl.html" title="interface in nl.pim16aap2.lightkeeper.framework">IServerControl</a></dt>
 <dd>
 <div class="block">Gets a handle over the always-on server-error capture.</div>
@@ -1401,6 +1539,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/Condition.html#evaluate()" class="member-name-link">evaluate()</a> - Method in interface nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/Condition.html" title="interface in nl.pim16aap2.lightkeeper.framework">Condition</a></dt>
 <dd>
 <div class="block">Evaluates whether the condition has been met.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/EventCaptureAssert.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.framework.assertions">EventCaptureAssert</a> - Class in <a href="nl/pim16aap2/lightkeeper/framework/assertions/package-summary.html">nl.pim16aap2.lightkeeper.framework.assertions</a></dt>
+<dd>
+<div class="block">Eager, non-consuming assertions over a live event capture buffer.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/FrameworkHandleFactory.html#eventCaptureHandle(nl.pim16aap2.lightkeeper.framework.IFrameworkGatewayView,java.lang.String)" class="member-name-link">eventCaptureHandle(IFrameworkGatewayView, String)</a> - Static method in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/FrameworkHandleFactory.html" title="class in nl.pim16aap2.lightkeeper.framework">FrameworkHandleFactory</a></dt>
 <dd>
@@ -1414,6 +1556,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/framework/CapturedEventSnapshot.html#param-eventClassName"><code>eventClassName</code></a> record component.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/EventCaptureHandle.html#eventClassName()" class="member-name-link">eventClassName()</a> - Method in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/EventCaptureHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">EventCaptureHandle</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/CancelNextEvents.Command.html#eventClassName()" class="member-name-link">eventClassName()</a> - Method in record class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/CancelNextEvents.Command.html" title="class in nl.pim16aap2.lightkeeper.protocol">CancelNextEvents.Command</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/protocol/CancelNextEvents.Command.html#param-eventClassName"><code>eventClassName</code></a> record component.</div>
@@ -1438,6 +1582,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/framework/InteractionResult.html#param-eventFired"><code>eventFired</code></a> record component.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/EventCaptureAssert.html#events()" class="member-name-link">events()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/EventCaptureAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">EventCaptureAssert</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/ILightkeeperFramework.html#events()" class="member-name-link">events()</a> - Method in interface nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/ILightkeeperFramework.html" title="interface in nl.pim16aap2.lightkeeper.framework">ILightkeeperFramework</a></dt>
 <dd>
 <div class="block">Gets the events facet: capture Bukkit events for later inspection.</div>
@@ -1501,6 +1647,12 @@ loadScripts(document, 'script');</script>
 </dl>
 <h2 class="title" id="I:F">F</h2>
 <dl class="index">
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html#field(java.lang.String)" class="member-name-link">field(String)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ProtocolValueAssert</a></dt>
+<dd>
+<div class="block">Selects a record field, distinguishing a missing key from explicit null.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html#fields()" class="member-name-link">fields()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ProtocolValueAssert</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/IProtocolValue.PRecord.html#fields()" class="member-name-link">fields()</a> - Method in record class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/IProtocolValue.PRecord.html" title="class in nl.pim16aap2.lightkeeper.protocol">IProtocolValue.PRecord</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/protocol/IProtocolValue.PRecord.html#param-fields"><code>fields</code></a> record component.</div>
@@ -1724,6 +1876,52 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Asserts that at least one captured chat component contains clickable text matching the fragment.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ChatComponentAssert.html#hasClickableText(java.lang.String)" class="member-name-link">hasClickableText(String)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ChatComponentAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ChatComponentAssert</a></dt>
+<dd>
+<div class="block">Checks literal text associated with a click action.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.html#hasClickableText(java.lang.String)" class="member-name-link">hasClickableText(String)</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">ChatComponentSnapshot</a></dt>
+<dd>
+<div class="block">Matches decoded literal text associated with an effective click event.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/Vec3Assert.html#hasComponentsCloseTo(nl.pim16aap2.lightkeeper.framework.Vec3,double)" class="member-name-link">hasComponentsCloseTo(Vec3, double)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/Vec3Assert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">Vec3Assert</a></dt>
+<dd>
+<div class="block">Checks an inclusive absolute-error bound on each component, suitable for scale vectors.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/EntityQueryAssert.html#hasCount(int)" class="member-name-link">hasCount(int)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/EntityQueryAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">EntityQueryAssert</a></dt>
+<dd>
+<div class="block">Checks the current number of matching entities.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuItemSnapshotAssert.html#hasDisplayName(java.lang.String)" class="member-name-link">hasDisplayName(String)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuItemSnapshotAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuItemSnapshotAssert</a></dt>
+<dd>
+<div class="block">Checks the exact display name; a blank expected name means no custom name.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/InventoryAssert.html#hasEmptySlot(int)" class="member-name-link">hasEmptySlot(int)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/InventoryAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">InventoryAssert</a></dt>
+<dd>
+<div class="block">Checks that no non-air item was observed at a slot.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuHandleAssert.html#hasEmptySlot(int)" class="member-name-link">hasEmptySlot(int)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a></dt>
+<dd>
+<div class="block">Checks that no non-air item was observed at a slot.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuSnapshotAssert.html#hasEmptySlot(int)" class="member-name-link">hasEmptySlot(int)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuSnapshotAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuSnapshotAssert</a></dt>
+<dd>
+<div class="block">Checks that no non-air item was observed at a slot.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html#hasEnum(java.lang.String,java.lang.String)" class="member-name-link">hasEnum(String, String)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ProtocolValueAssert</a></dt>
+<dd>
+<div class="block">Compares both enum type and constant without loading a server-only class.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/EventCaptureAssert.html#hasEventCount(int)" class="member-name-link">hasEventCount(int)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/EventCaptureAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">EventCaptureAssert</a></dt>
+<dd>
+<div class="block">Checks the number of events since registration or the last explicit clear.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/CapturedEventAssert.html#hasField(java.lang.String)" class="member-name-link">hasField(String)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/CapturedEventAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">CapturedEventAssert</a></dt>
+<dd>
+<div class="block">Checks whether an accessor was captured, including explicit-null and dropped values.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/InteractionResultAssert.html#hasFiredEvent()" class="member-name-link">hasFiredEvent()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/InteractionResultAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">InteractionResultAssert</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/BlockPos.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/BlockPos.html" title="class in nl.pim16aap2.lightkeeper.framework">BlockPos</a></dt>
 <dd>
 <div class="block">Returns a hash code value for this object.</div>
@@ -1737,6 +1935,10 @@ loadScripts(document, 'script');</script>
 <div class="block">Returns a hash code value for this object.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/CapturedEventSnapshot.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/CapturedEventSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">CapturedEventSnapshot</a></dt>
+<dd>
+<div class="block">Returns a hash code value for this object.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.ClickAction.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.ClickAction.html" title="class in nl.pim16aap2.lightkeeper.framework">ChatComponentSnapshot.ClickAction</a></dt>
 <dd>
 <div class="block">Returns a hash code value for this object.</div>
 </dd>
@@ -2188,17 +2390,33 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns a hash code value for this object.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/InventoryAssert.html#hasItemAt(int,java.lang.String)" class="member-name-link">hasItemAt(int, String)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/InventoryAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">InventoryAssert</a></dt>
+<dd>
+<div class="block">Checks a slot's material.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuHandleAssert.html#hasItemAt(int,java.lang.String)" class="member-name-link">hasItemAt(int, String)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a></dt>
 <dd>
-<div class="block">Asserts that a menu slot contains the requested material.</div>
+<div class="block">Checks a slot's material.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuSnapshotAssert.html#hasItemAt(int,java.lang.String)" class="member-name-link">hasItemAt(int, String)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuSnapshotAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuSnapshotAssert</a></dt>
+<dd>
+<div class="block">Checks a slot's material.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/MenuHandle.html#hasItemAt(int,java.lang.String)" class="member-name-link">hasItemAt(int, String)</a> - Method in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/MenuHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuHandle</a></dt>
 <dd>
 <div class="block">Checks whether a slot contains a matching material key.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/InventoryAssert.html#hasItemAt(int,org.bukkit.inventory.ItemStack)" class="member-name-link">hasItemAt(int, ItemStack)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/InventoryAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">InventoryAssert</a></dt>
+<dd>
+<div class="block">Compares represented item fields, excluding amount and unobserved metadata.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuHandleAssert.html#hasItemAt(int,org.bukkit.inventory.ItemStack)" class="member-name-link">hasItemAt(int, ItemStack)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a></dt>
 <dd>
-<div class="block">Asserts that a menu slot matches the requested Bukkit item stack snapshot.</div>
+<div class="block">Compares represented item fields, excluding amount and unobserved metadata.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuSnapshotAssert.html#hasItemAt(int,org.bukkit.inventory.ItemStack)" class="member-name-link">hasItemAt(int, ItemStack)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuSnapshotAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuSnapshotAssert</a></dt>
+<dd>
+<div class="block">Compares represented item fields, excluding amount and unobserved metadata.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/MenuHandle.html#hasItemAt(int,org.bukkit.inventory.ItemStack)" class="member-name-link">hasItemAt(int, ItemStack)</a> - Method in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/MenuHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuHandle</a></dt>
 <dd>
@@ -2220,6 +2438,22 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Asserts that the world has the expected name.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerControlAssert.html#hasNoErrors()" class="member-name-link">hasNoErrors()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerControlAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ServerControlAssert</a></dt>
+<dd>
+<div class="block">Asserts that no error-severity server entries have been captured.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerErrorsAssert.html#hasNoErrors()" class="member-name-link">hasNoErrors()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerErrorsAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ServerErrorsAssert</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerControlAssert.html#hasNoErrors(java.util.function.Predicate)" class="member-name-link">hasNoErrors(Predicate&lt;ServerErrorSnapshot&gt;)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerControlAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ServerControlAssert</a></dt>
+<dd>
+<div class="block">Asserts that no error-severity entries remain after applying an allowlist.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerErrorsAssert.html#hasNoErrors(java.util.function.Predicate)" class="member-name-link">hasNoErrors(Predicate&lt;ServerErrorSnapshot&gt;)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerErrorsAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ServerErrorsAssert</a></dt>
+<dd>
+<div class="block">Checks for error-severity entries outside an explicit allowlist.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/EventCaptureAssert.html#hasNoEvents()" class="member-name-link">hasNoEvents()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/EventCaptureAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">EventCaptureAssert</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/WorldHandleAssert.html#hasNonBlankName()" class="member-name-link">hasNonBlankName()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/WorldHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">WorldHandleAssert</a></dt>
 <dd>
 <div class="block">Asserts that the world has a non-blank name.</div>
@@ -2231,6 +2465,28 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperFrameworkAssert.html#hasNoServerErrors(java.util.function.Predicate)" class="member-name-link">hasNoServerErrors(Predicate&lt;ServerErrorSnapshot&gt;)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperFrameworkAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">LightkeeperFrameworkAssert</a></dt>
 <dd>
 <div class="block">Asserts that no error-severity server errors were captured, ignoring entries matched by the allowlist.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerErrorsAssert.html#hasNoWarnings()" class="member-name-link">hasNoWarnings()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerErrorsAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ServerErrorsAssert</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/InventoryAssert.html#hasOccupiedSlotCount(int)" class="member-name-link">hasOccupiedSlotCount(int)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/InventoryAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">InventoryAssert</a></dt>
+<dd>
+<div class="block">Checks occupied slots rather than total item units.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuHandleAssert.html#hasOccupiedSlotCount(int)" class="member-name-link">hasOccupiedSlotCount(int)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a></dt>
+<dd>
+<div class="block">Checks occupied slots rather than total item units.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuSnapshotAssert.html#hasOccupiedSlotCount(int)" class="member-name-link">hasOccupiedSlotCount(int)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuSnapshotAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuSnapshotAssert</a></dt>
+<dd>
+<div class="block">Checks occupied slots rather than total item units.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/PlayerHandleAssert.html#hasOpenMenu()" class="member-name-link">hasOpenMenu()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/PlayerHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">PlayerHandleAssert</a></dt>
+<dd>
+<div class="block">Asserts that the player currently has an actionable menu open.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/PlayerHandleAssert.html#hasPermission(java.lang.String)" class="member-name-link">hasPermission(String)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/PlayerHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">PlayerHandleAssert</a></dt>
+<dd>
+<div class="block">Asserts that the player's current effective Bukkit permissions grant the node.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/IFrameworkGatewayView.html#hasPermission(java.util.UUID,java.lang.String)" class="member-name-link">hasPermission(UUID, String)</a> - Method in interface nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/IFrameworkGatewayView.html" title="interface in nl.pim16aap2.lightkeeper.framework">IFrameworkGatewayView</a></dt>
 <dd>
@@ -2248,13 +2504,33 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Response record for <code>HAS_PLAYER_PERMISSION</code>.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html#hasReference(java.lang.String,java.lang.String)" class="member-name-link">hasReference(String, String)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ProtocolValueAssert</a></dt>
+<dd>
+<div class="block">Compares the encoded reference type and identity.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.html#hasRunCommand(java.lang.String,java.lang.String)" class="member-name-link">hasRunCommand(String, String)</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">ChatComponentSnapshot</a></dt>
+<dd>
+<div class="block">Matches literal text and its exact run-command payload.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.html#hasSuggestedCommand(java.lang.String,java.lang.String)" class="member-name-link">hasSuggestedCommand(String, String)</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">ChatComponentSnapshot</a></dt>
+<dd>
+<div class="block">Matches literal text and its exact suggest-command payload, preserving spaces.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuHandleAssert.html#hasTitle(java.lang.String)" class="member-name-link">hasTitle(String)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a></dt>
 <dd>
-<div class="block">Asserts that an open menu exists and has the requested title.</div>
+<div class="block">Checks an open menu's exact title in one observation.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuSnapshotAssert.html#hasTitle(java.lang.String)" class="member-name-link">hasTitle(String)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuSnapshotAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuSnapshotAssert</a></dt>
+<dd>
+<div class="block">Checks an open menu's exact title in one observation.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/MenuHandle.html#hasTitle(java.lang.String)" class="member-name-link">hasTitle(String)</a> - Method in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/MenuHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuHandle</a></dt>
 <dd>
 <div class="block">Checks whether the current open menu has the expected title.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerPluginAssert.html#hasVersion(java.lang.String)" class="member-name-link">hasVersion(String)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerPluginAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ServerPluginAssert</a></dt>
+<dd>
+<div class="block">Asserts that the plugin is present with exactly the requested version string.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/CreatePlayer.Command.html#health()" class="member-name-link">health()</a> - Method in record class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/CreatePlayer.Command.html" title="class in nl.pim16aap2.lightkeeper.protocol">CreatePlayer.Command</a></dt>
 <dd>
@@ -2379,15 +2655,25 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Creates an instance of a <code>InteractionResult</code> record class.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/InteractionResultAssert.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.framework.assertions">InteractionResultAssert</a> - Class in <a href="nl/pim16aap2/lightkeeper/framework/assertions/package-summary.html">nl.pim16aap2.lightkeeper.framework.assertions</a></dt>
+<dd>
+<div class="block">Assertions over a completed interaction; cancellation checks require an actual fired event.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/AgentErrorCode.html#INTERRUPTED" class="member-name-link">INTERRUPTED</a> - Enum constant in enum class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/AgentErrorCode.html" title="enum class in nl.pim16aap2.lightkeeper.protocol">AgentErrorCode</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/AgentErrorCode.html#INVALID_ARGUMENT" class="member-name-link">INVALID_ARGUMENT</a> - Enum constant in enum class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/AgentErrorCode.html" title="enum class in nl.pim16aap2.lightkeeper.protocol">AgentErrorCode</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/AgentErrorCode.html#INVALID_REQUEST" class="member-name-link">INVALID_REQUEST</a> - Enum constant in enum class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/AgentErrorCode.html" title="enum class in nl.pim16aap2.lightkeeper.protocol">AgentErrorCode</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/PlayerHandleAssert.html#inventory()" class="member-name-link">inventory()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/PlayerHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">PlayerHandleAssert</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/PlayerHandle.html#inventory()" class="member-name-link">inventory()</a> - Method in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/PlayerHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">PlayerHandle</a></dt>
 <dd>
 <div class="block">Gets a snapshot of this player's inventory.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/InventoryAssert.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.framework.assertions">InventoryAssert</a> - Class in <a href="nl/pim16aap2/lightkeeper/framework/assertions/package-summary.html">nl.pim16aap2.lightkeeper.framework.assertions</a></dt>
+<dd>
+<div class="block">Assertions over a frozen inventory snapshot, including occupied-slot and item navigation.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/InventorySnapshot.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.framework">InventorySnapshot</a> - Record Class in <a href="nl/pim16aap2/lightkeeper/framework/package-summary.html">nl.pim16aap2.lightkeeper.framework</a></dt>
 <dd>
@@ -2460,6 +2746,18 @@ loadScripts(document, 'script');</script>
 <div class="block">Checks whether the block currently matches a spec (partial matching: only the spec's named properties
  are compared).</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerPluginAssert.html#isAbsent()" class="member-name-link">isAbsent()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerPluginAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ServerPluginAssert</a></dt>
+<dd>
+<div class="block">Asserts that the plugin is not registered at this observation.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/EntitySnapshotAssert.html#isAt(nl.pim16aap2.lightkeeper.framework.Vec3,double)" class="member-name-link">isAt(Vec3, double)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/EntitySnapshotAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">EntitySnapshotAssert</a></dt>
+<dd>
+<div class="block">Checks the entity's captured position using an inclusive Euclidean tolerance.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/CapturedEventAssert.html#isCancelled()" class="member-name-link">isCancelled()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/CapturedEventAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">CapturedEventAssert</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/InteractionResultAssert.html#isCancelled()" class="member-name-link">isCancelled()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/InteractionResultAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">InteractionResultAssert</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/WorldHandle.html#isChunkLoaded(int,int)" class="member-name-link">isChunkLoaded(int, int)</a> - Method in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/WorldHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">WorldHandle</a></dt>
 <dd>
 <div class="block">Checks if a chunk is loaded.</div>
@@ -2480,6 +2778,32 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Response record for <code>IS_CHUNK_LOADED</code>.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuHandleAssert.html#isClosed()" class="member-name-link">isClosed()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuSnapshotAssert.html#isClosed()" class="member-name-link">isClosed()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuSnapshotAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuSnapshotAssert</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/Vec3Assert.html#isCloseTo(nl.pim16aap2.lightkeeper.framework.Vec3,double)" class="member-name-link">isCloseTo(Vec3, double)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/Vec3Assert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">Vec3Assert</a></dt>
+<dd>
+<div class="block">Checks an inclusive Euclidean distance bound.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerPluginAssert.html#isDisabled()" class="member-name-link">isDisabled()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerPluginAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ServerPluginAssert</a></dt>
+<dd>
+<div class="block">Asserts that the plugin is present and disabled.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html#isDropped()" class="member-name-link">isDropped()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ProtocolValueAssert</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/InventoryAssert.html#isEmpty()" class="member-name-link">isEmpty()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/InventoryAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">InventoryAssert</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuHandleAssert.html#isEmpty()" class="member-name-link">isEmpty()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuSnapshotAssert.html#isEmpty()" class="member-name-link">isEmpty()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuSnapshotAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuSnapshotAssert</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/EntityQueryAssert.html#isEmpty()" class="member-name-link">isEmpty()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/EntityQueryAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">EntityQueryAssert</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerPluginAssert.html#isEnabled()" class="member-name-link">isEnabled()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerPluginAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ServerPluginAssert</a></dt>
+<dd>
+<div class="block">Asserts that the plugin is present and enabled.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/ServerPluginSnapshot.html#isEnabled()" class="member-name-link">isEnabled()</a> - Method in record class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/ServerPluginSnapshot.html" title="class in nl.pim16aap2.lightkeeper.protocol">ServerPluginSnapshot</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/protocol/ServerPluginSnapshot.html#param-isEnabled"><code>isEnabled</code></a> record component.</div>
@@ -2489,6 +2813,22 @@ loadScripts(document, 'script');</script>
 <div class="block">Server-control facet of the framework: command execution, console output, platform, filesystem access, process
  lifecycle, tick counter, and captured server errors.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/CommandResultAssert.html#isFailure()" class="member-name-link">isFailure()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/CommandResultAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">CommandResultAssert</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuItemSnapshotAssert.html#isMaterial(java.lang.String)" class="member-name-link">isMaterial(String)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuItemSnapshotAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuItemSnapshotAssert</a></dt>
+<dd>
+<div class="block">Checks the item's normalized material.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/CapturedEventAssert.html#isNotCancelled()" class="member-name-link">isNotCancelled()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/CapturedEventAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">CapturedEventAssert</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/InteractionResultAssert.html#isNotCancelled()" class="member-name-link">isNotCancelled()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/InteractionResultAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">InteractionResultAssert</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/EntityQueryAssert.html#isNotEmpty()" class="member-name-link">isNotEmpty()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/EntityQueryAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">EntityQueryAssert</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuHandleAssert.html#isOpen()" class="member-name-link">isOpen()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuSnapshotAssert.html#isOpen()" class="member-name-link">isOpen()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuSnapshotAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuSnapshotAssert</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/MenuHandle.html#isOpen()" class="member-name-link">isOpen()</a> - Method in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/MenuHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuHandle</a></dt>
 <dd>
 <div class="block">Checks whether an actionable menu is currently open.</div>
@@ -2497,10 +2837,42 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Asserts that the server is running on Paper.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerControlAssert.html#isPaper()" class="member-name-link">isPaper()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerControlAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ServerControlAssert</a></dt>
+<dd>
+<div class="block">Asserts that the server runs on Paper.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerPluginAssert.html#isPresent()" class="member-name-link">isPresent()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerPluginAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ServerPluginAssert</a></dt>
+<dd>
+<div class="block">Asserts that the plugin is registered, whether enabled or disabled.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperFrameworkAssert.html#isSpigot()" class="member-name-link">isSpigot()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperFrameworkAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">LightkeeperFrameworkAssert</a></dt>
 <dd>
 <div class="block">Asserts that the server is running on Spigot.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerControlAssert.html#isSpigot()" class="member-name-link">isSpigot()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerControlAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ServerControlAssert</a></dt>
+<dd>
+<div class="block">Asserts that the server runs on Spigot.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/CommandResultAssert.html#isSuccessful()" class="member-name-link">isSuccessful()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/CommandResultAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">CommandResultAssert</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/InventoryAssert.html#itemAt(int)" class="member-name-link">itemAt(int)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/InventoryAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">InventoryAssert</a></dt>
+<dd>
+<div class="block">Selects an occupied slot from one snapshot.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuHandleAssert.html#itemAt(int)" class="member-name-link">itemAt(int)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a></dt>
+<dd>
+<div class="block">Selects an occupied slot from one snapshot.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuSnapshotAssert.html#itemAt(int)" class="member-name-link">itemAt(int)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuSnapshotAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuSnapshotAssert</a></dt>
+<dd>
+<div class="block">Selects an occupied slot from one snapshot.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/InventoryAssert.html#items()" class="member-name-link">items()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/InventoryAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">InventoryAssert</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuHandleAssert.html#items()" class="member-name-link">items()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuSnapshotAssert.html#items()" class="member-name-link">items()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuSnapshotAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuSnapshotAssert</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/InventorySnapshot.html#items()" class="member-name-link">items()</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/InventorySnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">InventorySnapshot</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/framework/InventorySnapshot.html#param-items"><code>items</code></a> record component.</div>
@@ -2589,6 +2961,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Response record for <code>LEFT_CLICK_BLOCK</code>.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/EntityTransformAssert.html#leftRotation()" class="member-name-link">leftRotation()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/EntityTransformAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">EntityTransformAssert</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/EntitySnapshot.Transform.html#leftRotation()" class="member-name-link">leftRotation()</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/EntitySnapshot.Transform.html" title="class in nl.pim16aap2.lightkeeper.framework">EntitySnapshot.Transform</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/framework/EntitySnapshot.Transform.html#param-leftRotation"><code>leftRotation</code></a> record component.</div>
@@ -2691,6 +3065,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/protocol/ServerErrorEntry.html#param-loggerName"><code>loggerName</code></a> record component.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuItemSnapshotAssert.html#lore()" class="member-name-link">lore()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuItemSnapshotAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuItemSnapshotAssert</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/MenuItemSnapshot.html#lore()" class="member-name-link">lore()</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/MenuItemSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuItemSnapshot</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/framework/MenuItemSnapshot.html#param-lore"><code>lore</code></a> record component.</div>
@@ -2722,6 +3098,14 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Checks whether this state matches a spec: the material must be equal and every property the spec names
  must have the spec's value.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/MenuItemSnapshot.html#matches(org.bukkit.inventory.ItemStack)" class="member-name-link">matches(ItemStack)</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/MenuItemSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuItemSnapshot</a></dt>
+<dd>
+<div class="block">Compares only material, display name and ordered lore, excluding unobserved metadata and amount.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/MenuItemSnapshot.html#matchesMaterial(java.lang.String)" class="member-name-link">matchesMaterial(String)</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/MenuItemSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuItemSnapshot</a></dt>
+<dd>
+<div class="block">Compares normalized material keys.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/BlockRef.html#material()" class="member-name-link">material()</a> - Method in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/BlockRef.html" title="class in nl.pim16aap2.lightkeeper.framework">BlockRef</a></dt>
 <dd>
@@ -2801,7 +3185,7 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuHandleAssert.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a> - Class in <a href="nl/pim16aap2/lightkeeper/framework/assertions/package-summary.html">nl.pim16aap2.lightkeeper.framework.assertions</a></dt>
 <dd>
-<div class="block">Assertions for open menu state.</div>
+<div class="block">Eager assertions over the current menu for a retained player-bound handle.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/MenuItemSnapshot.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.framework">MenuItemSnapshot</a> - Record Class in <a href="nl/pim16aap2/lightkeeper/framework/package-summary.html">nl.pim16aap2.lightkeeper.framework</a></dt>
 <dd>
@@ -2809,7 +3193,11 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/MenuItemSnapshot.html#%3Cinit%3E(int,java.lang.String,java.lang.String,java.util.List)" class="member-name-link">MenuItemSnapshot(int, String, String, List&lt;String&gt;)</a> - Constructor for record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/MenuItemSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuItemSnapshot</a></dt>
 <dd>
-<div class="block">Creates an instance of a <code>MenuItemSnapshot</code> record class.</div>
+<div class="block">Copies lore and normalizes material keys and absent display names.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuItemSnapshotAssert.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuItemSnapshotAssert</a> - Class in <a href="nl/pim16aap2/lightkeeper/framework/assertions/package-summary.html">nl.pim16aap2.lightkeeper.framework.assertions</a></dt>
+<dd>
+<div class="block">Assertions over the material, display name and ordered lore of one frozen item observation.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/IFrameworkGatewayView.html#menuSnapshot(java.util.UUID)" class="member-name-link">menuSnapshot(UUID)</a> - Method in interface nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/IFrameworkGatewayView.html" title="interface in nl.pim16aap2.lightkeeper.framework">IFrameworkGatewayView</a></dt>
 <dd>
@@ -2821,7 +3209,11 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/MenuSnapshot.html#%3Cinit%3E(boolean,java.lang.String,java.util.List)" class="member-name-link">MenuSnapshot(boolean, String, List&lt;MenuItemSnapshot&gt;)</a> - Constructor for record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/MenuSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuSnapshot</a></dt>
 <dd>
-<div class="block">Creates an instance of a <code>MenuSnapshot</code> record class.</div>
+<div class="block">Validates the title and defensively copies the observed items.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuSnapshotAssert.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuSnapshotAssert</a> - Class in <a href="nl/pim16aap2/lightkeeper/framework/assertions/package-summary.html">nl.pim16aap2.lightkeeper.framework.assertions</a></dt>
+<dd>
+<div class="block">Assertions over one frozen menu observation; these never query the server.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/CommandResult.html#message()" class="member-name-link">message()</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/CommandResult.html" title="class in nl.pim16aap2.lightkeeper.framework">CommandResult</a></dt>
 <dd>
@@ -2946,7 +3338,8 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/package-summary.html">nl.pim16aap2.lightkeeper.framework.assertions</a> - package nl.pim16aap2.lightkeeper.framework.assertions</dt>
 <dd>
-<div class="block">AssertJ-based assertion types for fluent validation of LightKeeper world, player, and menu state.</div>
+<div class="block">AssertJ assertions for live server/plugin, world/block, entity-query, player, menu, event-capture and error state,
+ plus frozen inventory/item, event/value, result, entity/geometry and semantic chat snapshots.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/package-summary.html">nl.pim16aap2.lightkeeper.protocol</a> - package nl.pim16aap2.lightkeeper.protocol</dt>
 <dd>
@@ -2979,17 +3372,25 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Creates a spec for a material with no state properties.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/BlockRefAssert.html#ofType(java.lang.String)" class="member-name-link">ofType(String)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/BlockRefAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">BlockRefAssert</a></dt>
+<dd>
+<div class="block">Checks a normalized block material with one live read.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/WorldBlockAssert.html#ofType(java.lang.String)" class="member-name-link">ofType(String)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/WorldBlockAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">WorldBlockAssert</a></dt>
 <dd>
-<div class="block">Asserts that the block has the expected namespaced material key.</div>
+<div class="block">Checks a normalized material key using one live block read.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/EntityQuery.html#ofType(java.lang.String)" class="member-name-link">ofType(String)</a> - Method in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/EntityQuery.html" title="class in nl.pim16aap2.lightkeeper.framework">EntityQuery</a></dt>
 <dd>
 <div class="block">Returns a copy of this query filtered to one entity type.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/BlockRefAssert.html#ofType(org.bukkit.Material)" class="member-name-link">ofType(Material)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/BlockRefAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">BlockRefAssert</a></dt>
+<dd>
+<div class="block">Checks a block material with one live read.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/WorldBlockAssert.html#ofType(org.bukkit.Material)" class="member-name-link">ofType(Material)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/WorldBlockAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">WorldBlockAssert</a></dt>
 <dd>
-<div class="block">Asserts that the block has the expected Bukkit material.</div>
+<div class="block">Checks a Bukkit material using one live block read.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/MenuSnapshot.html#open()" class="member-name-link">open()</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/MenuSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuSnapshot</a></dt>
 <dd>
@@ -2998,6 +3399,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/GetOpenMenu.Response.html#open()" class="member-name-link">open()</a> - Method in record class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/GetOpenMenu.Response.html" title="class in nl.pim16aap2.lightkeeper.protocol">GetOpenMenu.Response</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/protocol/GetOpenMenu.Response.html#param-open"><code>open</code></a> record component.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerControlAssert.html#output()" class="member-name-link">output()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerControlAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ServerControlAssert</a></dt>
+<dd>
+<div class="block">Returns ordinary list assertions over the output captured at this navigation call.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/IServerControl.html#output()" class="member-name-link">output()</a> - Method in interface nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/IServerControl.html" title="interface in nl.pim16aap2.lightkeeper.framework">IServerControl</a></dt>
 <dd>
@@ -3163,6 +3568,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Validates and defensively copies the elements.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerControlAssert.html#plugin(java.lang.String)" class="member-name-link">plugin(String)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerControlAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ServerControlAssert</a></dt>
+<dd>
+<div class="block">Selects a plugin for live presence, enabled-state, and version assertions without querying the server yet.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/IServerControl.html#plugin(java.lang.String)" class="member-name-link">plugin(String)</a> - Method in interface nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/IServerControl.html" title="interface in nl.pim16aap2.lightkeeper.framework">IServerControl</a></dt>
 <dd>
 <div class="block">Gets the data of the plugin with the given name.</div>
@@ -3183,6 +3592,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Gets this reference's position.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/EntitySnapshotAssert.html#position()" class="member-name-link">position()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/EntitySnapshotAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">EntitySnapshotAssert</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/EntitySnapshot.html#position()" class="member-name-link">position()</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/EntitySnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">EntitySnapshot</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/framework/EntitySnapshot.html#param-position"><code>position</code></a> record component.</div>
@@ -3248,6 +3659,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/ProtocolPreconditions.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.protocol">ProtocolPreconditions</a> - Class in <a href="nl/pim16aap2/lightkeeper/protocol/package-summary.html">nl.pim16aap2.lightkeeper.protocol</a></dt>
 <dd>
 <div class="block">Validation helpers for protocol command compact constructors.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ProtocolValueAssert</a> - Class in <a href="nl/pim16aap2/lightkeeper/framework/assertions/package-summary.html">nl.pim16aap2.lightkeeper.framework.assertions</a></dt>
+<dd>
+<div class="block">Typed, frozen value navigation that preserves accessor/index paths without string coercion.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/Handshake.Command.html#protocolVersion()" class="member-name-link">protocolVersion()</a> - Method in record class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/Handshake.Command.html" title="class in nl.pim16aap2.lightkeeper.protocol">Handshake.Command</a></dt>
 <dd>
@@ -3327,6 +3742,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Asserts that at least one received message contains the requested text fragment.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/PlayerHandleAssert.html#receivedMessages()" class="member-name-link">receivedMessages()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/PlayerHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">PlayerHandleAssert</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/PlayerHandle.html#receivedMessages()" class="member-name-link">receivedMessages()</a> - Method in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/PlayerHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">PlayerHandle</a></dt>
 <dd>
 <div class="block">Gets all recorded messages received by this player.</div>
@@ -3851,6 +4268,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Response record for <code>RIGHT_CLICK_BLOCK</code>.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/EntityTransformAssert.html#rightRotation()" class="member-name-link">rightRotation()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/EntityTransformAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">EntityTransformAssert</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/EntitySnapshot.Transform.html#rightRotation()" class="member-name-link">rightRotation()</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/EntitySnapshot.Transform.html" title="class in nl.pim16aap2.lightkeeper.framework">EntitySnapshot.Transform</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/framework/EntitySnapshot.Transform.html#param-rightRotation"><code>rightRotation</code></a> record component.</div>
@@ -3866,6 +4285,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.RetryingAssertion.html#run()" class="member-name-link">run()</a> - Method in interface nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.RetryingAssertion.html" title="interface in nl.pim16aap2.lightkeeper.framework.assertions">LightkeeperAssertions.RetryingAssertion</a></dt>
 <dd>
 <div class="block">Runs the assertion once.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ChatComponentAssert.html#runsCommand(java.lang.String,java.lang.String)" class="member-name-link">runsCommand(String, String)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ChatComponentAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ChatComponentAssert</a></dt>
+<dd>
+<div class="block">Checks the exact command associated with a literal text fragment.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/LightkeeperRuntimeResolver.html#RUNTIME_MANIFEST_PROPERTY" class="member-name-link">RUNTIME_MANIFEST_PROPERTY</a> - Static variable in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/LightkeeperRuntimeResolver.html" title="class in nl.pim16aap2.lightkeeper.framework">LightkeeperRuntimeResolver</a></dt>
 <dd>
@@ -3926,6 +4349,8 @@ loadScripts(document, 'script');</script>
 </dl>
 <h2 class="title" id="I:S">S</h2>
 <dl class="index">
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/EntityTransformAssert.html#scale()" class="member-name-link">scale()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/EntityTransformAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">EntityTransformAssert</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/EntitySnapshot.Transform.html#scale()" class="member-name-link">scale()</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/EntitySnapshot.Transform.html" title="class in nl.pim16aap2.lightkeeper.framework">EntitySnapshot.Transform</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/framework/EntitySnapshot.Transform.html#param-scale"><code>scale</code></a> record component.</div>
@@ -3970,10 +4395,18 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/RuntimeManifest.ProvisionedWorld.html#param-seed"><code>seed</code></a> record component.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperFrameworkAssert.html#server()" class="member-name-link">server()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperFrameworkAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">LightkeeperFrameworkAssert</a></dt>
+<dd>
+<div class="block">Navigates to eager assertions over the framework's live server.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/ILightkeeperFramework.html#server()" class="member-name-link">server()</a> - Method in interface nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/ILightkeeperFramework.html" title="interface in nl.pim16aap2.lightkeeper.framework">ILightkeeperFramework</a></dt>
 <dd>
 <div class="block">Gets the server-control facet: command execution, console output, platform, filesystem access, process
  lifecycle, tick counter, and captured server errors.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerControlAssert.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ServerControlAssert</a> - Class in <a href="nl/pim16aap2/lightkeeper/framework/assertions/package-summary.html">nl.pim16aap2.lightkeeper.framework.assertions</a></dt>
+<dd>
+<div class="block">Eager assertions over live server observations.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/runtime/RuntimeManifest.html#serverDirectory()" class="member-name-link">serverDirectory()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/RuntimeManifest.html" title="class in nl.pim16aap2.lightkeeper.runtime">RuntimeManifest</a></dt>
 <dd>
@@ -3986,6 +4419,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/ServerErrorEntry.html#%3Cinit%3E(long,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.util.List)" class="member-name-link">ServerErrorEntry(long, String, String, String, String, String, String, String, List&lt;String&gt;)</a> - Constructor for record class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/ServerErrorEntry.html" title="class in nl.pim16aap2.lightkeeper.protocol">ServerErrorEntry</a></dt>
 <dd>
 <div class="block">Validates required fields and defensively copies the stack trace.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerErrorsAssert.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ServerErrorsAssert</a> - Class in <a href="nl/pim16aap2/lightkeeper/framework/assertions/package-summary.html">nl.pim16aap2.lightkeeper.framework.assertions</a></dt>
+<dd>
+<div class="block">Non-consuming assertions over live structured error and warning observations.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/FrameworkHandleFactory.html#serverErrorsHandle(nl.pim16aap2.lightkeeper.framework.IFrameworkGatewayView)" class="member-name-link">serverErrorsHandle(IFrameworkGatewayView)</a> - Static method in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/FrameworkHandleFactory.html" title="class in nl.pim16aap2.lightkeeper.framework">FrameworkHandleFactory</a></dt>
 <dd>
@@ -4014,6 +4451,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperFrameworkAssert.html#serverOutput()" class="member-name-link">serverOutput()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperFrameworkAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">LightkeeperFrameworkAssert</a></dt>
 <dd>
 <div class="block">Returns an AssertJ list assertion over captured server output.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ServerPluginAssert.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ServerPluginAssert</a> - Class in <a href="nl/pim16aap2/lightkeeper/framework/assertions/package-summary.html">nl.pim16aap2.lightkeeper.framework.assertions</a></dt>
+<dd>
+<div class="block">Eager assertions for a named plugin, re-querying the server on every evaluation.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/ServerPluginSnapshot.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.protocol">ServerPluginSnapshot</a> - Record Class in <a href="nl/pim16aap2/lightkeeper/protocol/package-summary.html">nl.pim16aap2.lightkeeper.protocol</a></dt>
 <dd>
@@ -4099,6 +4540,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/protocol/DragMenuSlots.Command.html#param-slots"><code>slots</code></a> record component.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/EntityQueryAssert.html#snapshot()" class="member-name-link">snapshot()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/EntityQueryAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">EntityQueryAssert</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuHandleAssert.html#snapshot()" class="member-name-link">snapshot()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/MenuHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/EntityQuery.html#snapshot()" class="member-name-link">snapshot()</a> - Method in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/EntityQuery.html" title="class in nl.pim16aap2.lightkeeper.framework">EntityQuery</a></dt>
 <dd>
 <div class="block">Snapshots all matching entities in one main-thread burst.</div>
@@ -4162,6 +4607,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/framework/CommandResult.html#param-success"><code>success</code></a> record component.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ChatComponentAssert.html#suggestsCommand(java.lang.String,java.lang.String)" class="member-name-link">suggestsCommand(String, String)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ChatComponentAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ChatComponentAssert</a></dt>
+<dd>
+<div class="block">Checks the exact suggested command associated with literal text.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/runtime/RuntimeProtocol.html#SUPPORTED_MINECRAFT_VERSION" class="member-name-link">SUPPORTED_MINECRAFT_VERSION</a> - Static variable in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/RuntimeProtocol.html" title="class in nl.pim16aap2.lightkeeper.runtime">RuntimeProtocol</a></dt>
 <dd>
 <div class="block">Minecraft server version supported by this LightKeeper build.</div>
@@ -4220,6 +4669,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/TeleportPlayer.Response.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.protocol">TeleportPlayer.Response</a> - Record Class in <a href="nl/pim16aap2/lightkeeper/protocol/package-summary.html">nl.pim16aap2.lightkeeper.protocol</a></dt>
 <dd>
 <div class="block">Response record for <code>TELEPORT_PLAYER</code>.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.ClickAction.html#text()" class="member-name-link">text()</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.ClickAction.html" title="class in nl.pim16aap2.lightkeeper.framework">ChatComponentSnapshot.ClickAction</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.ClickAction.html#param-text"><code>text</code></a> record component.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/WorldSpec.WorldEnvironment.html#THE_END" class="member-name-link">THE_END</a> - Enum constant in enum class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/WorldSpec.WorldEnvironment.html" title="enum class in nl.pim16aap2.lightkeeper.framework">WorldSpec.WorldEnvironment</a></dt>
 <dd>&nbsp;</dd>
@@ -4335,6 +4788,10 @@ loadScripts(document, 'script');</script>
 <div class="block">Returns a string representation of this record class.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/CapturedEventSnapshot.html#toString()" class="member-name-link">toString()</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/CapturedEventSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">CapturedEventSnapshot</a></dt>
+<dd>
+<div class="block">Returns a string representation of this record class.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.ClickAction.html#toString()" class="member-name-link">toString()</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.ClickAction.html" title="class in nl.pim16aap2.lightkeeper.framework">ChatComponentSnapshot.ClickAction</a></dt>
 <dd>
 <div class="block">Returns a string representation of this record class.</div>
 </dd>
@@ -4786,6 +5243,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns a string representation of this record class.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/EntitySnapshotAssert.html#transform()" class="member-name-link">transform()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/EntitySnapshotAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">EntitySnapshotAssert</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/EntitySnapshot.html#transform()" class="member-name-link">transform()</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/EntitySnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">EntitySnapshot</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/framework/EntitySnapshot.html#param-transform"><code>transform</code></a> record component.</div>
@@ -4802,6 +5261,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Validates and defensively copies the rotations.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/EntityTransformAssert.html#translation()" class="member-name-link">translation()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/EntityTransformAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">EntityTransformAssert</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/EntitySnapshot.Transform.html#translation()" class="member-name-link">translation()</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/EntitySnapshot.Transform.html" title="class in nl.pim16aap2.lightkeeper.framework">EntitySnapshot.Transform</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/framework/EntitySnapshot.Transform.html#param-translation"><code>translation</code></a> record component.</div>
@@ -4992,6 +5453,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Validates protocol compatibility and required runtime files before server startup.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.ClickAction.html#value()" class="member-name-link">value()</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.ClickAction.html" title="class in nl.pim16aap2.lightkeeper.framework">ChatComponentSnapshot.ClickAction</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.ClickAction.html#param-value"><code>value</code></a> record component.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/HasPlayerPermission.Response.html#value()" class="member-name-link">value()</a> - Method in record class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/HasPlayerPermission.Response.html" title="class in nl.pim16aap2.lightkeeper.protocol">HasPlayerPermission.Response</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/protocol/HasPlayerPermission.Response.html#param-value"><code>value</code></a> record component.</div>
@@ -5011,6 +5476,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/IProtocolValue.PUuid.html#value()" class="member-name-link">value()</a> - Method in record class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/IProtocolValue.PUuid.html" title="class in nl.pim16aap2.lightkeeper.protocol">IProtocolValue.PUuid</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/protocol/IProtocolValue.PUuid.html#param-value"><code>value</code></a> record component.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/CapturedEventAssert.html#value(java.lang.String)" class="member-name-link">value(String)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/CapturedEventAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">CapturedEventAssert</a></dt>
+<dd>
+<div class="block">Selects a captured typed value, retaining the event class and accessor in diagnostics.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/CapturedEventSnapshot.html#value(java.lang.String)" class="member-name-link">value(String)</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/CapturedEventSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">CapturedEventSnapshot</a></dt>
 <dd>
@@ -5126,6 +5595,10 @@ the order they are declared.</div>
 <dd>
 <div class="block">Creates an instance of a <code>Vec3</code> record class.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/Vec3Assert.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.framework.assertions">Vec3Assert</a> - Class in <a href="nl/pim16aap2/lightkeeper/framework/assertions/package-summary.html">nl.pim16aap2.lightkeeper.framework.assertions</a></dt>
+<dd>
+<div class="block">Frozen vector assertions with explicit Euclidean and per-component tolerance contracts.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/MenuHandle.html#verifyMenuClosed()" class="member-name-link">verifyMenuClosed()</a> - Method in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/MenuHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuHandle</a></dt>
 <dd>
 <div class="block">Asserts that no menu is currently open.</div>
@@ -5229,10 +5702,17 @@ the order they are declared.</div>
 <dd>
 <div class="block">Sets the world seed.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/BlockRefAssert.html#withState(nl.pim16aap2.lightkeeper.framework.BlockSpec)" class="member-name-link">withState(BlockSpec)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/BlockRefAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">BlockRefAssert</a></dt>
+<dd>
+<div class="block">Checks material and only the state properties named by the spec, reading one snapshot.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/BlockStateSnapshotAssert.html#withState(nl.pim16aap2.lightkeeper.framework.BlockSpec)" class="member-name-link">withState(BlockSpec)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/BlockStateSnapshotAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">BlockStateSnapshotAssert</a></dt>
+<dd>
+<div class="block">Checks material and every explicitly named property.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/WorldBlockAssert.html#withState(nl.pim16aap2.lightkeeper.framework.BlockSpec)" class="member-name-link">withState(BlockSpec)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/WorldBlockAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">WorldBlockAssert</a></dt>
 <dd>
-<div class="block">Asserts that the block currently matches a spec: material equal, and every property the spec names has
- the spec's value (partial matching — unnamed properties are ignored).</div>
+<div class="block">Checks a partial state spec using one frozen observation.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/IWorldBuilder.html#withWorldType(nl.pim16aap2.lightkeeper.framework.WorldSpec.WorldType)" class="member-name-link">withWorldType(WorldSpec.WorldType)</a> - Method in interface nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/IWorldBuilder.html" title="interface in nl.pim16aap2.lightkeeper.framework">IWorldBuilder</a></dt>
 <dd>
@@ -5240,7 +5720,7 @@ the order they are declared.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/WorldBlockAssert.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.framework.assertions">WorldBlockAssert</a> - Class in <a href="nl/pim16aap2/lightkeeper/framework/assertions/package-summary.html">nl.pim16aap2.lightkeeper.framework.assertions</a></dt>
 <dd>
-<div class="block">Assertions for a specific block position in a world.</div>
+<div class="block">World-selected block assertions delegating to the canonical live block subject.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/FrameworkHandleFactory.html#worldHandle(nl.pim16aap2.lightkeeper.framework.IFrameworkGatewayView,java.lang.String)" class="member-name-link">worldHandle(IFrameworkGatewayView, String)</a> - Static method in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/FrameworkHandleFactory.html" title="class in nl.pim16aap2.lightkeeper.framework">FrameworkHandleFactory</a></dt>
 <dd>
@@ -5254,6 +5734,8 @@ the order they are declared.</div>
 <dd>
 <div class="block">Assertions for world handles.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/framework/BlockRef.html#worldName()" class="member-name-link">worldName()</a> - Method in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/BlockRef.html" title="class in nl.pim16aap2.lightkeeper.framework">BlockRef</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/BlockType.Command.html#worldName()" class="member-name-link">worldName()</a> - Method in record class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/BlockType.Command.html" title="class in nl.pim16aap2.lightkeeper.protocol">BlockType.Command</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/protocol/BlockType.Command.html#param-worldName"><code>worldName</code></a> record component.</div>

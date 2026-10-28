@@ -20,7 +20,7 @@ loadScripts(document, 'script');</script>
 <div>JavaScript is disabled on your browser.</div>
 </noscript>
 <div class="flex-box">
-<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/de5cce2ac63030ed3c9b20388455f455ebd74a00">de5cce2ac630</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
+<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/32d99ae4f50790a8aaae73e947ef5828e653f67d">32d99ae4f507</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
 <nav role="navigation">
 <!-- ========= START OF TOP NAVBAR ======= -->
 <div class="top-nav" id="navbar-top"><button id="navbar-toggle-button" aria-controls="navbar-top" aria-expanded="false" aria-label="Toggle navigation links"><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span></button>
@@ -86,7 +86,7 @@ loadScripts(document, 'script');</script>
 <h1 title="Class MenuHandleAssert" class="title">Class MenuHandleAssert</h1>
 </div>
 <div class="inheritance" title="Inheritance Tree"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">java.lang.Object</a>
-<div class="inheritance">org.assertj.core.api.AbstractAssert&lt;<a href="MenuHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a>,<wbr>@Nullable <a href="../MenuHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuHandle</a>&gt;
+<div class="inheritance">org.assertj.core.api.AbstractAssert&lt;<a href="MenuHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a>,<wbr><a href="../MenuHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuHandle</a>&gt;
 <div class="inheritance">nl.pim16aap2.lightkeeper.framework.assertions.MenuHandleAssert</div>
 </div>
 </div>
@@ -97,8 +97,8 @@ loadScripts(document, 'script');</script>
 </dl>
 <hr>
 <div class="type-signature"><span class="modifiers">public final class </span><span class="element-name type-name-label">MenuHandleAssert</span>
-<span class="extends-implements">extends org.assertj.core.api.AbstractAssert&lt;<a href="MenuHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a>,<wbr>@Nullable <a href="../MenuHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuHandle</a>&gt;</span></div>
-<div class="block">Assertions for open menu state.</div>
+<span class="extends-implements">extends org.assertj.core.api.AbstractAssert&lt;<a href="MenuHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a>,<wbr><a href="../MenuHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuHandle</a>&gt;</span></div>
+<div class="block">Eager assertions over the current menu for a retained player-bound handle.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -123,22 +123,52 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="MenuHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hasItemAt(int,java.lang.String)" class="member-name-link">hasItemAt</a><wbr>(int&nbsp;slot,
- <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;materialKey)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hasEmptySlot(int)" class="member-name-link">hasEmptySlot</a><wbr>(int&nbsp;slot)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Asserts that a menu slot contains the requested material.</div>
+<div class="block">Checks that no non-air item was observed at a slot.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="MenuHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hasItemAt(int,org.bukkit.inventory.ItemStack)" class="member-name-link">hasItemAt</a><wbr>(int&nbsp;slot,
- org.bukkit.inventory.ItemStack&nbsp;itemStack)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hasItemAt(int,java.lang.String)" class="member-name-link">hasItemAt</a><wbr>(int&nbsp;slot,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;materialKey)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Asserts that a menu slot matches the requested Bukkit item stack snapshot.</div>
+<div class="block">Checks a slot's material.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="MenuHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hasItemAt(int,org.bukkit.inventory.ItemStack)" class="member-name-link">hasItemAt</a><wbr>(int&nbsp;slot,
+ org.bukkit.inventory.ItemStack&nbsp;expected)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Compares represented item fields, excluding amount and unobserved metadata.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="MenuHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hasOccupiedSlotCount(int)" class="member-name-link">hasOccupiedSlotCount</a><wbr>(int&nbsp;expected)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Checks occupied slots rather than total item units.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="MenuHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hasTitle(java.lang.String)" class="member-name-link">hasTitle</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;expectedTitle)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Asserts that an open menu exists and has the requested title.</div>
+<div class="block">Checks an open menu's exact title in one observation.</div>
 </div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="MenuHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isClosed()" class="member-name-link">isClosed</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="MenuHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isEmpty()" class="member-name-link">isEmpty</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="MenuHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isOpen()" class="member-name-link">isOpen</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="MenuItemSnapshotAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuItemSnapshotAssert</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#itemAt(int)" class="member-name-link">itemAt</a><wbr>(int&nbsp;slot)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Selects an occupied slot from one snapshot.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>org.assertj.core.api.ListAssert<wbr>&lt;<a href="../MenuItemSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuItemSnapshot</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#items()" class="member-name-link">items</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="MenuSnapshotAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuSnapshotAssert</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#snapshot()" class="member-name-link">snapshot</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 </div>
 </div>
 </div>
@@ -163,15 +193,106 @@ loadScripts(document, 'script');</script>
 <h2>Method Details</h2>
 <ul class="member-list">
 <li>
+<section class="detail" id="snapshot()">
+<h3>snapshot</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="MenuSnapshotAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuSnapshotAssert</a></span>&nbsp;<span class="element-name">snapshot</span>()</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>Frozen assertions over one menu observation; recreate navigation when retrying.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="isOpen()">
+<h3>isOpen</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="MenuHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a></span>&nbsp;<span class="element-name">isOpen</span>()</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>This assertion after checking that the menu is open.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="isClosed()">
+<h3>isClosed</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="MenuHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a></span>&nbsp;<span class="element-name">isClosed</span>()</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>This assertion after checking that the retained menu is closed; null subjects fail.</dd>
+</dl>
+</section>
+</li>
+<li>
 <section class="detail" id="hasTitle(java.lang.String)">
 <h3>hasTitle</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="MenuHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a></span>&nbsp;<span class="element-name">hasTitle</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;expectedTitle)</span></div>
-<div class="block">Asserts that an open menu exists and has the requested title.</div>
+<div class="block">Checks an open menu's exact title in one observation.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>expectedTitle</code> - Expected menu title.</dd>
+<dd><code>expectedTitle</code> - Expected title.</dd>
 <dt>Returns:</dt>
-<dd>This assertion for fluent chaining.</dd>
+<dd>This assertion.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="items()">
+<h3>items</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">org.assertj.core.api.ListAssert&lt;<a href="../MenuItemSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuItemSnapshot</a>&gt;</span>&nbsp;<span class="element-name">items</span>()</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>Frozen item-list assertions; recreate navigation when retrying.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="isEmpty()">
+<h3>isEmpty</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="MenuHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a></span>&nbsp;<span class="element-name">isEmpty</span>()</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>This assertion after checking that no non-air items are present.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="hasOccupiedSlotCount(int)">
+<h3>hasOccupiedSlotCount</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="MenuHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a></span>&nbsp;<span class="element-name">hasOccupiedSlotCount</span><wbr><span class="parameters">(int&nbsp;expected)</span></div>
+<div class="block">Checks occupied slots rather than total item units.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>expected</code> - Expected nonnegative occupied-slot count.</dd>
+<dt>Returns:</dt>
+<dd>This assertion.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="itemAt(int)">
+<h3>itemAt</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="MenuItemSnapshotAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuItemSnapshotAssert</a></span>&nbsp;<span class="element-name">itemAt</span><wbr><span class="parameters">(int&nbsp;slot)</span></div>
+<div class="block">Selects an occupied slot from one snapshot.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>slot</code> - Nonnegative slot index.</dd>
+<dt>Returns:</dt>
+<dd>Frozen item assertions.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="hasEmptySlot(int)">
+<h3>hasEmptySlot</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="MenuHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a></span>&nbsp;<span class="element-name">hasEmptySlot</span><wbr><span class="parameters">(int&nbsp;slot)</span></div>
+<div class="block">Checks that no non-air item was observed at a slot.
+
+ <p>The snapshot does not expose capacity, so an empty slot does not establish upper-bound validity.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>slot</code> - Nonnegative slot index.</dd>
+<dt>Returns:</dt>
+<dd>This assertion.</dd>
 </dl>
 </section>
 </li>
@@ -180,13 +301,13 @@ loadScripts(document, 'script');</script>
 <h3>hasItemAt</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="MenuHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a></span>&nbsp;<span class="element-name">hasItemAt</span><wbr><span class="parameters">(int&nbsp;slot,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;materialKey)</span></div>
-<div class="block">Asserts that a menu slot contains the requested material.</div>
+<div class="block">Checks a slot's material.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>slot</code> - Slot index.</dd>
-<dd><code>materialKey</code> - Expected material key.</dd>
+<dd><code>slot</code> - Nonnegative slot index.</dd>
+<dd><code>materialKey</code> - Material name or namespaced key.</dd>
 <dt>Returns:</dt>
-<dd>This assertion for fluent chaining.</dd>
+<dd>This assertion.</dd>
 </dl>
 </section>
 </li>
@@ -194,14 +315,14 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="hasItemAt(int,org.bukkit.inventory.ItemStack)">
 <h3>hasItemAt</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="MenuHandleAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">MenuHandleAssert</a></span>&nbsp;<span class="element-name">hasItemAt</span><wbr><span class="parameters">(int&nbsp;slot,
- org.bukkit.inventory.ItemStack&nbsp;itemStack)</span></div>
-<div class="block">Asserts that a menu slot matches the requested Bukkit item stack snapshot.</div>
+ org.bukkit.inventory.ItemStack&nbsp;expected)</span></div>
+<div class="block">Compares represented item fields, excluding amount and unobserved metadata.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>slot</code> - Slot index.</dd>
-<dd><code>itemStack</code> - Expected item stack.</dd>
+<dd><code>slot</code> - Nonnegative slot index.</dd>
+<dd><code>expected</code> - Expected Bukkit item.</dd>
 <dt>Returns:</dt>
-<dd>This assertion for fluent chaining.</dd>
+<dd>This assertion.</dd>
 </dl>
 </section>
 </li>

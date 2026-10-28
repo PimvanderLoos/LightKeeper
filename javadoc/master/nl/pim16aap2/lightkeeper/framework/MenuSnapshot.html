@@ -20,7 +20,7 @@ loadScripts(document, 'script');</script>
 <div>JavaScript is disabled on your browser.</div>
 </noscript>
 <div class="flex-box">
-<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/de5cce2ac63030ed3c9b20388455f455ebd74a00">de5cce2ac630</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
+<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/32d99ae4f50790a8aaae73e947ef5828e653f67d">32d99ae4f507</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
 <nav role="navigation">
 <!-- ========= START OF TOP NAVBAR ======= -->
 <div class="top-nav" id="navbar-top"><button id="navbar-toggle-button" aria-controls="navbar-top" aria-expanded="false" aria-label="Toggle navigation links"><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span></button>
@@ -116,7 +116,7 @@ loadScripts(document, 'script');</script>
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;title,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="MenuItemSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuItemSnapshot</a>&gt;&nbsp;items)</code></div>
 <div class="col-last even-row-color">
-<div class="block">Creates an instance of a <code>MenuSnapshot</code> record class.</div>
+<div class="block">Validates the title and defensively copies the observed items.</div>
 </div>
 </div>
 </section>
@@ -185,13 +185,7 @@ loadScripts(document, 'script');</script>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">MenuSnapshot</span><wbr><span class="parameters">(boolean&nbsp;open,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;title,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="MenuItemSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuItemSnapshot</a>&gt;&nbsp;items)</span></div>
-<div class="block">Creates an instance of a <code>MenuSnapshot</code> record class.</div>
-<dl class="notes">
-<dt>Parameters:</dt>
-<dd><code>open</code> - the value for the <a href="#param-open"><code>open</code></a> record component</dd>
-<dd><code>title</code> - the value for the <a href="#param-title"><code>title</code></a> record component</dd>
-<dd><code>items</code> - the value for the <a href="#param-items"><code>items</code></a> record component</dd>
-</dl>
+<div class="block">Validates the title and defensively copies the observed items.</div>
 </section>
 </li>
 </ul>
