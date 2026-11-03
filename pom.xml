@@ -43,7 +43,7 @@
         <!-- Compatible with the log4j bundled with the supported Minecraft 1.21 server builds (Paper and
              Spigot); kept at the latest 2.25.x patch to stay clear of known log4j-core advisories. -->
         <version.log4j>2.26.1</version.log4j>
-        <version.lombok>1.18.46</version.lombok>
+        <version.lombok>1.18.48</version.lombok>
         <version.mockito>5.23.0</version.mockito>
         <version.nullaway>0.14.3</version.nullaway>
         <version.inventorygui>1.6.5-SNAPSHOT</version.inventorygui>
