@@ -376,6 +376,7 @@
                             <doclint>all,-missing</doclint>
                             <notimestamp>true</notimestamp>
                             <show>public</show>
+                            <overview>${project.root-dir}/javadoc/overview.html</overview>
                             <excludePackageNames>*.internal:*.internal.*</excludePackageNames>
                             <skippedModules>lightkeeper-agent-.*,lightkeeper-nms-.*,lightkeeper-spigot-test-plugin,lightkeeper-integration-tests,lightkeeper-maven-plugin,lightkeeper-report-aggregate</skippedModules>
                         </configuration>

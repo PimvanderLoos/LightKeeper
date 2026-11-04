@@ -1,0 +1,100 @@
+<body>
+<h1>LightKeeper API</h1>
+<p>LightKeeper runs integration tests for Minecraft plugins against real Paper and Spigot servers.
+    Tests use a typed Java API to create worlds and synthetic players, interact with plugins, capture events,
+    and assert the resulting server state.</p>
+<p>This overview introduces the API entry points and a typical test. For dependencies, server provisioning,
+    and configuration, start with the <a href="https://lightkeeper.pim16aap2.nl/">LightKeeper documentation site</a>.
+    The package and class documentation here describes the API in detail.</p>
+
+<h2>Start with LightkeeperAssertions</h2>
+<p><a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html"><code>LightkeeperAssertions</code></a>
+    is the main entry point for assertions. Statically import its <code>assertThat</code> method to check worlds,
+    players, menus, captured events, and other LightKeeper objects. Follow the returned assertion types to discover
+    the checks and navigation available for each subject.</p>
+<pre><code>import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
+</code></pre>
+<p>The same import also provides ordinary AssertJ assertions for strings, collections, and other Java values.
+    See the <a href="nl/pim16aap2/lightkeeper/framework/assertions/package-summary.html">assertions package</a>
+    for the full set of supported subjects.</p>
+
+<h2>A first test</h2>
+<p>Once Maven's <code>prepare-server</code> goal has provisioned a runtime and
+    <code>lightkeeper.runtimeManifestPath</code> points to its manifest,
+    <a href="nl/pim16aap2/lightkeeper/framework/LightkeeperExtension.html"><code>LightkeeperExtension</code></a>
+    manages the server lifecycle and injects
+    <a href="nl/pim16aap2/lightkeeper/framework/ILightkeeperFramework.html"><code>ILightkeeperFramework</code></a>
+    into test methods. The framework groups operations under <code>server()</code>, <code>worlds()</code>,
+    <code>bots()</code>, and <code>events()</code>.</p>
+<pre><code>import nl.pim16aap2.lightkeeper.framework.BlockPos;
+import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
+import nl.pim16aap2.lightkeeper.framework.LightkeeperExtension;
+import nl.pim16aap2.lightkeeper.framework.WorldHandle;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
+
+&#64;ExtendWith(LightkeeperExtension.class)
+class MyPluginIT
+{
+    &#64;Test
+    void world_shouldContainPlacedBlock(ILightkeeperFramework framework)
+    {
+        // setup
+        final WorldHandle world = framework.worlds().main();
+
+        // execute
+        world.setBlockAt(new BlockPos(1, 100, 0), "minecraft:stone");
+
+        // verify
+        assertThat(world).hasBlockAt(1, 100, 0).ofType("minecraft:stone");
+    }
+}
+</code></pre>
+
+<h2>Waiting for plugin effects</h2>
+<p>Assertions are eager and read-only: they check the state observed when called and never wait implicitly.
+    Handles query live server state; snapshots and collection navigation freeze an observation.
+    For asynchronous effects, use
+    <a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html#eventually(java.time.Duration,nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.RetryingAssertion)"><code>LightkeeperAssertions.eventually</code></a>
+    and recreate the complete assertion chain inside its callback.</p>
+<p>For example, given a <code>player</code> created through <code>framework.bots()</code>, if your plugin's
+    <code>myplugin run</code> command sends <code>done</code> after background work completes:</p>
+<pre><code>import nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions;
+import java.time.Duration;
+
+import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
+
+// inside the test: execute the command once, outside the retry callback
+player.executeCommand("myplugin run");
+
+// re-read the messages on every attempt, for up to ten seconds
+LightkeeperAssertions.eventually(
+    Duration.ofSeconds(10),
+    () -&gt; assertThat(player)
+        .receivedMessages()
+        .contains("done")
+);
+</code></pre>
+
+<h2>Explore the API</h2>
+<ul>
+    <li><a href="nl/pim16aap2/lightkeeper/framework/ILightkeeperFramework.html"><code>ILightkeeperFramework</code></a>
+        provides access to server control, worlds, bots, and event capture.
+        For manual lifecycle management, use
+        <a href="nl/pim16aap2/lightkeeper/framework/Lightkeeper.html"><code>Lightkeeper.start</code></a>
+        and close the returned framework with try-with-resources.</li>
+    <li><a href="nl/pim16aap2/lightkeeper/framework/WorldHandle.html"><code>WorldHandle</code></a>,
+        <a href="nl/pim16aap2/lightkeeper/framework/PlayerHandle.html"><code>PlayerHandle</code></a>, and
+        <a href="nl/pim16aap2/lightkeeper/framework/MenuHandle.html"><code>MenuHandle</code></a>
+        expose world, player, and menu interactions.</li>
+    <li><a href="nl/pim16aap2/lightkeeper/framework/EventCaptureHandle.html"><code>EventCaptureHandle</code></a>
+        records Bukkit events for inspection and assertions.</li>
+    <li><a href="nl/pim16aap2/lightkeeper/framework/package-summary.html">The framework package</a>
+        contains the public handles, builders, specifications, and snapshots used in tests.</li>
+    <li><a href="nl/pim16aap2/lightkeeper/protocol/package-summary.html">The protocol package</a> and
+        <a href="nl/pim16aap2/lightkeeper/runtime/package-summary.html">the runtime package</a>
+        document the wire messages and runtime manifest for readers working on lower-level integrations.</li>
+</ul>
+</body>
