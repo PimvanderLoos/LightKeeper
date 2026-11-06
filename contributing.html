@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#080f14">
+    <title>LightKeeper - Contributor Setup</title>
+    <meta name="description" content="Build LightKeeper locally and prepare its own integration tests for IDE runs.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/styles.css">
+    <script defer src="assets/main.js"></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="site-kicker"><span class="status-dot" aria-hidden="true"></span> LightKeeper / Open-source Minecraft plugin testing</div>
+<header class="site-header">
+    <a class="brand" href="index.html"><svg class="brand-mark" viewBox="0 0 32 36" aria-hidden="true"><path d="M19 1h9v9h-9zM10 12h9v9h-9zM21 13h7v7h-7zM2 24h8v9H2zM12 23h7v7h-7z"/></svg>LightKeeper</a>
+    <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" hidden>Menu <span aria-hidden="true">☰</span></button>
+    <nav class="site-nav" id="site-nav" aria-label="Main navigation">
+        <a href="getting-started.html">Getting Started</a>
+        <a href="features.html">Features</a>
+        <a href="ide-testing.html">IDE Setup</a>
+        <a href="javadoc/">API Reference</a>
+        <a class="nav-github" href="https://github.com/PimvanderLoos/LightKeeper">GitHub <span aria-hidden="true">↗</span></a>
+    </nav>
+</header>
+<main id="main" class="docs-main">
+    <p class="version-note">These guides describe the current master build. Select a release in the <a href="javadoc/">API Reference</a> for released APIs.</p>
+    <section class="guide-hero">
+        <p class="eyebrow">Contributing</p>
+        <h1>Run LightKeeper's own tests from your IDE.</h1>
+        <p class="lead">Use this setup when developing LightKeeper's framework, Maven plugin, or runtime agent.
+            If you are testing your own Minecraft plugin, follow <a href="getting-started.html">Getting Started</a>
+            and the <a href="ide-testing.html">IDE setup guide</a>.</p>
+    </section>
+    <section class="panel">
+        <h2>Build local artifacts and prepare a runtime</h2>
+        <p>Use Java 21+, Maven 3.9+, and Linux or macOS. Run these commands from the LightKeeper repository root.
+            Install the current plugin, framework, agent, and fixture before invoking the preparation goal directly:</p>
+        <pre><code>mvn -pl lightkeeper-integration-tests -am install \
+  -DskipTests -DskipITs -Dlightkeeper.skip=true -Dmaven.javadoc.skip=true
+mvn -pl lightkeeper-integration-tests \
+  lightkeeper:prepare-server@prepare-server-paper -Dlightkeeper.ide=true</code></pre>
+        <p>Replace <code>prepare-server-paper</code> with <code>prepare-server-spigot</code> to select Spigot.
+            The execution supplies platform identity; <code>lightkeeper.expectedServerType</code> is only a Failsafe assertion input.</p>
+        <p>Check for <code>Created IDE test setup</code> or <code>Reused IDE test setup</code>, then run a JUnit test
+            from <code>lightkeeper-integration-tests</code> using the IDE gutter button.</p>
+    </section>
+    <section class="panel">
+        <h2>After changing LightKeeper</h2>
+        <p>Test-only changes need ordinary IDE compilation. After changing packaged framework, plugin, or agent
+            code, rebuild and install the affected artifacts and repeat preparation. Rebuild the runtime agent after
+            changes requiring new agent or protocol behavior.</p>
+        <p>See <a href="ide-testing.html">IDE Testing</a> for runtime persistence, refresh, and troubleshooting.</p>
+    </section>
+</main>
+<footer class="site-footer">
+    <p>LightKeeper <span aria-hidden="true">/</span> Open-source Minecraft plugin testing</p>
+    <nav aria-label="Footer navigation">
+        <a href="getting-started.html">Guides</a>
+        <a href="ide-testing.html">IDE Setup</a>
+        <a href="architecture.html">Architecture</a>
+        <a href="faq.html">FAQ</a>
+        <a href="javadoc/">API versions <span aria-hidden="true">↗</span></a>
+        <a href="https://github.com/PimvanderLoos/LightKeeper">GitHub <span aria-hidden="true">↗</span></a>
+        <a href="LICENSE">License</a>
+    </nav>
+</footer>
+</body>
+</html>
