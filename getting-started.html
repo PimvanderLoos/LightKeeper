@@ -61,7 +61,8 @@
 
     <section class="panel">
         <h2>2. Configure prepare + cleanup goals</h2>
-        <p>The Maven plugin provisions its embedded runtime agent automatically.</p>
+        <p>The Maven plugin provisions its embedded runtime agent automatically. Your plugin under test must be
+            listed explicitly in <code>plugins</code>; it is not selected automatically from the current project.</p>
         <pre><code data-maven-plugin="lightkeeper">&lt;plugin&gt;
     &lt;groupId&gt;com.github.PimvanderLoos.LightKeeper&lt;/groupId&gt;
     &lt;artifactId&gt;lightkeeper-maven-plugin&lt;/artifactId&gt;
@@ -74,6 +75,12 @@
                 &lt;serverType&gt;paper&lt;/serverType&gt;
                 &lt;userAgent&gt;LightKeeper/${project.version} (https://example.com/my-plugin)&lt;/userAgent&gt;
                 &lt;runtimeManifestPath&gt;${project.build.directory}/lightkeeper/runtime-manifest.json&lt;/runtimeManifestPath&gt;
+                &lt;plugins&gt;
+                    &lt;plugin&gt;
+                        &lt;sourceType&gt;path&lt;/sourceType&gt;
+                        &lt;path&gt;${project.build.directory}/${project.build.finalName}.jar&lt;/path&gt;
+                    &lt;/plugin&gt;
+                &lt;/plugins&gt;
             &lt;/configuration&gt;
         &lt;/execution&gt;
         &lt;execution&gt;
@@ -88,11 +95,26 @@
         &lt;/execution&gt;
     &lt;/executions&gt;
 &lt;/plugin&gt;</code></pre>
+        <p><code>userAgent</code> may be set in the plugin-level <code>configuration</code>, as a shared value,
+            or in an execution's <code>configuration</code>, as shown here. Execution-level values override shared
+            values with the same name. Both locations are valid; moving it does not require a LightKeeper version change.
+            Replace the example project URL with your own contact URL or email address.</p>
+        <p>The <code>path</code> above refers to the JAR built by this Maven module, normally
+            <code>target/&lt;artifactId&gt;-&lt;version&gt;.jar</code>. During <code>mvn verify</code>, Maven runs
+            <code>package</code> before LightKeeper's <code>pre-integration-test</code> preparation, which copies the JAR
+            into the test server's <code>plugins/</code> directory. The file must exist when preparation runs.
+            If shading or another packaging step produces a separate deployable JAR, point <code>path</code> to that
+            output, including its classifier if applicable. Use the same JAR you would install on a normal server.</p>
+        <p>For a separate integration-test module, reference the plugin module's built JAR or use
+            <code>sourceType=maven</code> with its <code>groupId</code>, <code>artifactId</code>, and <code>version</code>.
+            The path above always refers to the module containing this configuration.</p>
     </section>
 
     <section class="panel">
         <h2>3. Pass runtime manifest to tests</h2>
-        <p>Put this configuration in Maven Failsafe. Run integration tests with <code>mvn verify</code>. For IDE gutter launches, use the <a href="ide-testing.html">IDE setup guide</a>.</p>
+        <p>Put this configuration in Maven Failsafe in the module containing the integration tests. Run integration
+            tests with <code>mvn verify</code>. For IDE gutter launches, use the <a href="ide-testing.html">IDE setup guide</a>,
+            including its module-selection commands when running from a multi-module project root.</p>
         <pre><code>&lt;systemPropertyVariables&gt;
     &lt;lightkeeper.runtimeManifestPath&gt;
         ${project.build.directory}/lightkeeper/runtime-manifest.json

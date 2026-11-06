@@ -39,14 +39,31 @@
         <p>Use Java 21+, Maven 3.9+, and Linux or macOS for Unix-domain sockets. Your LightKeeper version must
             contain IDE test setup. Keep the <a href="getting-started.html">prepare-server execution and framework dependency</a>.</p>
         <ol>
-            <li>Package or install all locally developed plugins referenced by your LightKeeper configuration.</li>
-            <li>Run the configured preparation execution from the module or reactor owning the tests.</li>
+            <li>For <code>sourceType=path</code>, package the plugin so the configured JAR exists
+                (<code>mvn package</code> for the single-module setup in <a href="getting-started.html">Getting Started</a>).
+                For <code>sourceType=maven</code>, install locally developed plugin artifacts with <code>mvn install</code>.
+                Calling <code>prepare-server</code> directly does not run these lifecycle phases.</li>
+            <li>Run the configured preparation execution in the test module. From a multi-module project root,
+                select that module explicitly using <code>-pl</code>, as shown below.</li>
             <li>Check that output says <code>Created IDE test setup</code> or <code>Reused IDE test setup</code>, with the expected module and platform.</li>
             <li>Click the JUnit gutter button beside your test class or method.</li>
         </ol>
+        <p>From the directory containing the test module's <code>pom.xml</code> (or your project root for a
+            single-module project), use the execution from <a href="getting-started.html">Getting Started</a>:</p>
         <pre><code>mvn lightkeeper:prepare-server@prepare-server -Dlightkeeper.ide=true</code></pre>
-        <p>The execution ID after <code>@</code> must match your POM. In a multi-module project each child owns its
-            <code>.lightkeeper/ide/</code> discovery record. Preparation never selects a parent or sibling runtime.</p>
+        <p>From a multi-module project root, select the test module by its <code>artifactId</code>. Replace
+            <code>my-plugin-e2e</code> with your module's artifact ID; the leading <code>:</code> avoids typing its
+            directory path:</p>
+        <pre><code>mvn -pl :my-plugin-e2e lightkeeper:prepare-server@prepare-server -Dlightkeeper.ide=true</code></pre>
+        <p>Alternatively, point Maven directly at the test module's POM. Replace the example path with your own:</p>
+        <pre><code>mvn -f testing/my-plugin-e2e/pom.xml lightkeeper:prepare-server@prepare-server -Dlightkeeper.ide=true</code></pre>
+        <p>The text after <code>@</code> must match the preparation execution's <code>&lt;id&gt;</code> in that module's
+            effective POM. For example, an execution named <code>prepare-server-paper</code> requires
+            <code>lightkeeper:prepare-server@prepare-server-paper</code>. The goal name and execution ID are independent.</p>
+        <p>Select only the test module for this preparation command. Use <code>-am</code> when building its dependencies
+            in the earlier packaging/install step; adding it here also selects upstream modules for the preparation goal.</p>
+        <p>Each test module owns its <code>.lightkeeper/ide/</code> discovery record. Preparation never selects a parent
+            or sibling runtime automatically.</p>
     </section>
     <section class="panel">
         <h2>LightKeeper contributor setup</h2>
@@ -67,6 +84,8 @@ mvn -pl lightkeeper-integration-tests \
             agent after changes requiring new agent/protocol behavior. Matching packaged inputs reuse the runtime;
             changed hashes or launch settings create a new preparation.</p>
         <p>Worlds, plugin data, and other server state persist across runs. To start fresh:</p>
+        <p>Run this from the test module's directory, or retain the same <code>-pl</code>/<code>-f</code> selection
+            and execution ID used during initial setup:</p>
         <pre><code>mvn lightkeeper:prepare-server@prepare-server -Dlightkeeper.ide=true -Dlightkeeper.ide.refresh=true</code></pre>
         <p>Refresh creates a new preparation and switches later launches atomically. It never changes a runtime
             held by an active test. Old preparations are not pruned automatically. For a complete reset, close
@@ -83,6 +102,15 @@ mvn -pl lightkeeper-integration-tests \
     </section>
     <section class="panel">
         <h2>Troubleshooting</h2>
+        <p><code>No plugin found for prefix 'lightkeeper'</code>: Maven could not resolve the plugin before LightKeeper
+            could run. In a multi-module project, first check that you selected the test module with <code>-pl</code>,
+            <code>-f</code>, or by running from its directory. A plugin declared only in a child POM is not visible in
+            the root POM. Verify that the selected module declares the LightKeeper Maven plugin and version, and that
+            its artifact is installed locally or available through the configured <code>pluginRepositories</code>.
+            See <a href="getting-started.html">Getting Started</a> for repository setup.</p>
+        <p>Using fully qualified plugin coordinates can bypass prefix lookup, but it does not select a child module
+            or load that child's execution configuration. Moving the plugin declaration into the root POM also does
+            not make preparation automatically choose the test module.</p>
         <p>Missing or corrupt discovery: repeat preparation in the owning module. Moved checkout: repeat setup at
             the new path. Stale runtime: rebuild packaged inputs, then prepare again. Busy runtime: close the
             other test/server. Dirty state: use <code>-Dlightkeeper.ide.refresh=true</code>. Missing server cache:
