@@ -227,6 +227,7 @@ public abstract class ServerProvider
      * Creates the default server properties content for an offline-mode integration server.
      *
      * @return The server properties content.
+     *
      * @throws MojoExecutionException
      *     If no free local TCP port can be reserved.
      */
@@ -306,10 +307,9 @@ public abstract class ServerProvider
                 lines.add(settingsLineIndex + 1, settingsLineIndentation + "  timeout-time: " +
                     SPIGOT_WATCHDOG_TIMEOUT_SECONDS);
             }
-            else
+            else if (!lines.isEmpty() && !lines.getLast().isBlank())
             {
-                if (!lines.isEmpty() && !lines.get(lines.size() - 1).isBlank())
-                    lines.add("");
+                lines.add("");
                 lines.add("settings:");
                 lines.add("  timeout-time: " + SPIGOT_WATCHDOG_TIMEOUT_SECONDS);
             }
@@ -338,6 +338,7 @@ public abstract class ServerProvider
      * Reserves an available local TCP port.
      *
      * @return A currently available local TCP port.
+     *
      * @throws MojoExecutionException
      *     If no local TCP port could be reserved.
      */
@@ -415,8 +416,10 @@ public abstract class ServerProvider
     /**
      * Creates the same provider with durable runtime output locations while retaining all resolved server inputs.
      *
-     * @param serverWorkDirectoryRoot Root directory for the prepared runtime.
-     * @param runtimeManifestPath Runtime manifest destination.
+     * @param serverWorkDirectoryRoot
+     *     Root directory for the prepared runtime.
+     * @param runtimeManifestPath
+     *     Runtime manifest destination.
      * @return A provider using the supplied runtime output locations.
      */
     public final ServerProvider withRuntimeLocations(Path serverWorkDirectoryRoot, Path runtimeManifestPath)
@@ -427,7 +430,8 @@ public abstract class ServerProvider
     /**
      * Recreates this resolved provider with a copied server specification.
      *
-     * @param specification Copied server specification.
+     * @param specification
+     *     Copied server specification.
      * @return The recreated provider.
      */
     protected abstract ServerProvider recreate(ServerSpecification specification);
@@ -599,6 +603,7 @@ public abstract class ServerProvider
      * Reserves a target-server TCP port.
      *
      * @return A currently available local TCP port.
+     *
      * @throws MojoExecutionException
      *     If no local TCP port could be reserved.
      */
