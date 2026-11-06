@@ -111,20 +111,59 @@
     </section>
 
     <section class="panel">
-        <h2>3. Pass runtime manifest to tests</h2>
-        <p>Put this configuration in Maven Failsafe in the module containing the integration tests. Run integration
-            tests with <code>mvn verify</code>. For IDE gutter launches, use the <a href="ide-testing.html">IDE setup guide</a>,
-            including its module-selection commands when running from a multi-module project root.</p>
-        <pre><code>&lt;systemPropertyVariables&gt;
-    &lt;lightkeeper.runtimeManifestPath&gt;
-        ${project.build.directory}/lightkeeper/runtime-manifest.json
-    &lt;/lightkeeper.runtimeManifestPath&gt;
-&lt;/systemPropertyVariables&gt;</code></pre>
+        <h2>3. Configure Surefire and Failsafe</h2>
+        <p>Use Surefire for unit tests and Failsafe for LightKeeper integration tests. Surefire runs in the
+            <code>test</code> phase, before LightKeeper prepares the server. Failsafe runs after preparation and checks
+            test results at <code>verify</code>, allowing <code>post-integration-test</code> cleanup to run first.</p>
+        <p>Keep both plugins on the same version. Add this property to your POM's top-level
+            <code>properties</code> section, or use an existing shared test-plugin version property:</p>
+        <pre><code>&lt;properties&gt;
+    &lt;surefire.version&gt;3.6.1&lt;/surefire.version&gt;
+&lt;/properties&gt;</code></pre>
+        <p>Add both plugins under <code>build/plugins</code> in the module containing the integration tests.
+            If Surefire is already configured or inherited from a parent, update that declaration instead of adding
+            a duplicate. The Failsafe configuration passes the runtime manifest from step 2 to the tests:</p>
+        <pre><code>&lt;plugin&gt;
+    &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+    &lt;artifactId&gt;maven-surefire-plugin&lt;/artifactId&gt;
+    &lt;version&gt;${surefire.version}&lt;/version&gt;
+&lt;/plugin&gt;
+
+&lt;plugin&gt;
+    &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+    &lt;artifactId&gt;maven-failsafe-plugin&lt;/artifactId&gt;
+    &lt;version&gt;${surefire.version}&lt;/version&gt;
+    &lt;configuration&gt;
+        &lt;systemPropertyVariables&gt;
+            &lt;lightkeeper.runtimeManifestPath&gt;${project.build.directory}/lightkeeper/runtime-manifest.json&lt;/lightkeeper.runtimeManifestPath&gt;
+        &lt;/systemPropertyVariables&gt;
+    &lt;/configuration&gt;
+    &lt;executions&gt;
+        &lt;execution&gt;
+            &lt;id&gt;integration-tests&lt;/id&gt;
+            &lt;goals&gt;
+                &lt;goal&gt;integration-test&lt;/goal&gt;
+                &lt;goal&gt;verify&lt;/goal&gt;
+            &lt;/goals&gt;
+        &lt;/execution&gt;
+    &lt;/executions&gt;
+&lt;/plugin&gt;</code></pre>
+        <p>Name unit-test classes <code>*Test</code> and integration-test classes <code>*IT</code> to use the default
+            test selection. Keep both under <code>src/test/java</code>. This prevents the LightKeeper test from running
+            before its server is prepared. If you have custom Surefire includes, ensure they exclude integration tests.</p>
+        <p>Run <code>mvn verify</code> from the test module, or <code>mvn -pl :my-plugin-e2e verify</code> from a
+            multi-module project root, replacing <code>my-plugin-e2e</code> with the test module's artifact ID.
+            Maven builds the plugin JAR, prepares the server, runs the tests, performs cleanup, and verifies results.
+            Use <code>verify</code> rather than stopping at <code>integration-test</code>, which leaves cleanup and
+            result verification unexecuted. See the <a href="https://maven.apache.org/surefire/maven-failsafe-plugin/usage.html">Failsafe usage guide</a>.</p>
+        <p>For IDE gutter launches, use the <a href="ide-testing.html">IDE setup guide</a>, including its
+            module-selection commands. After preparation, the IDE runs JUnit directly; Failsafe is used by Maven.</p>
     </section>
 
     <section class="panel">
         <h2>4. Write your first test</h2>
-        <pre><code data-java-class="GettingStartedExample">import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
+        <p>Save this as <code>src/test/java/GettingStartedIT.java</code> in the test module:</p>
+        <pre><code data-java-class="GettingStartedIT">import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.LightkeeperExtension;
 import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
@@ -134,7 +173,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
 
 @ExtendWith(LightkeeperExtension.class)
-class GettingStartedExample
+class GettingStartedIT
 {
     @Test
     void placeBlock_shouldUpdateWorld(ILightkeeperFramework framework)
