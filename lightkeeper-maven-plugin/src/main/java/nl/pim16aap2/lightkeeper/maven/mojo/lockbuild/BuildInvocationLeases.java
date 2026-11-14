@@ -1,55 +1,58 @@
 package nl.pim16aap2.lightkeeper.maven.mojo.lockbuild;
 
-import nl.pim16aap2.lightkeeper.runtime.BuildLeaseIdentity;
 import nl.pim16aap2.lightkeeper.runtime.BuildOutputLease;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.logging.Log;
+import org.apache.maven.project.MavenProject;
 import org.jspecify.annotations.Nullable;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.Objects;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Shares one early build lease across the modules of a live Maven invocation.
- * Serial snapshot export releases it before Failsafe; a later module's initialize guard acquires a new lease.
- * Parallel reactors retain ownership until invocation exit because another module may still be changing outputs.
+ * Protects selected module outputs across root/submodule entry points and parallel Maven execution.
+ * Acquire all module leases in canonical path order before producer work starts. The owning CLI process retains
+ * them until actual OS exit; shutdown hooks must not release ownership while Maven threads can still write.
  */
 public final class BuildInvocationLeases
 {
-    /**
-     * Invocation entries live while producer ownership is held. Parallel entries stay open until OS process exit;
-     * a shutdown hook must not release them while other Maven threads can still write during JVM shutdown.
-     */
-    private static final ConcurrentHashMap<MavenSession, BuildOutputLease> LEASES = new ConcurrentHashMap<>();
+    /** Invocation-owned channels remain open through every producer and snapshot in that Maven process. */
+    private static final ConcurrentHashMap<MavenSession, List<BuildOutputLease>> LEASES = new ConcurrentHashMap<>();
 
     private BuildInvocationLeases()
     {
     }
 
     /**
-     * Acquires or reuses the lease protecting the current Maven reactor's producer outputs.
+     * Acquires or reuses ownership of every selected module's outputs before compilation or packaging.
      *
      * @param session
-     *     Live Maven invocation.
+     *     Live Maven invocation with its selected projects.
      * @param timeout
-     *     Maximum wait for a competing invocation.
+     *     Maximum total positive acquisition time across all selected modules.
      * @param log
      *     Maven lifecycle log.
-     * @return Lease identity, excluding any ownership transfer to the caller.
      */
-    public static BuildLeaseIdentity acquire(MavenSession session, Duration timeout, Log log)
+    public static void acquire(MavenSession session, Duration timeout, Log log)
     {
-        return LEASES.computeIfAbsent(session, ignored -> acquireNew(session, timeout, log)).identity();
+        if (timeout.isZero() || timeout.isNegative())
+        {
+            throw new IllegalArgumentException("Build lease timeout must be positive.");
+        }
+        LEASES.computeIfAbsent(session, ignored -> acquireNew(session, timeout, log));
     }
 
     /**
-     * Reports whether this invocation currently protects its producer outputs.
+     * Reports whether this invocation owns its selected output leases.
      *
      * @param session
      *     Current Maven session, when available.
-     * @return Whether immutable snapshot capture is protected by this invocation's early guard.
+     * @return Whether immutable capture is protected by the invocation's early guard.
      */
     public static boolean isHeld(@Nullable MavenSession session)
     {
@@ -57,63 +60,90 @@ public final class BuildInvocationLeases
     }
 
     /**
-     * Releases serial invocation outputs after snapshot capture, including skipped preparation.
-     * Parallel builds retain ownership until actual JVM exit, including after a module fails.
+     * Explicitly finishes an invocation after all its projects have stopped writing outputs.
+     * Standard CLI execution relies on OS process exit instead, including failure/cancellation and shutdown hooks.
      *
      * @param session
-     *     Maven invocation, or {@code null} when no invocation was attached to the caller.
+     *     Completed invocation, or {@code null} when no invocation was attached.
      */
     public static void release(@Nullable MavenSession session)
     {
-        if (session == null)
+        if (session != null)
         {
-            return;
-        }
-        if (!LEASES.containsKey(session) || session.isParallel())
-        {
-            return;
-        }
-        finishInvocation(session);
-    }
-
-    static void finishInvocation(MavenSession session)
-    {
-        final BuildOutputLease lease = LEASES.remove(session);
-        if (lease != null)
-        {
-            lease.close();
+            final List<BuildOutputLease> leases = LEASES.remove(session);
+            if (leases != null)
+            {
+                close(leases);
+            }
         }
     }
 
-    /**
-     * Releases outputs after preparation fails while preserving the original failure.
-     *
-     * @param session
-     *     Maven invocation, when available.
-     * @param failure
-     *     Failure that remains authoritative if lease cleanup also fails.
-     */
-    public static void releaseAfterFailure(@Nullable MavenSession session, Throwable failure)
+    private static List<BuildOutputLease> acquireNew(MavenSession session, Duration timeout, Log log)
     {
+        final List<BuildOutputLease> leases = new ArrayList<>();
         try
         {
-            release(session);
+            final TreeSet<Path> modules = new TreeSet<>();
+            for (final MavenProject project : session.getProjects())
+            {
+                modules.add(project.getBasedir().toPath().toRealPath());
+            }
+            if (modules.isEmpty())
+            {
+                throw new IllegalStateException("Maven did not provide any selected projects for output ownership.");
+            }
+            final long started = System.nanoTime();
+            for (final Path module : modules)
+            {
+                final long remaining = timeout.toNanos() - (System.nanoTime() - started);
+                if (remaining <= 0)
+                {
+                    throw new IllegalStateException("Timed out acquiring selected Maven output leases.");
+                }
+                log.info("LK_BUILD_LOCK: Waiting for producer outputs in '" + module + "'.");
+                leases.add(BuildOutputLease.acquire(module, Duration.ofNanos(remaining)));
+                log.info("LK_BUILD_LOCK: Acquired producer outputs in '" + module + "'.");
+            }
+            return List.copyOf(leases);
         }
-        catch (RuntimeException cleanupFailure)
+        catch (IOException | RuntimeException exception)
         {
-            failure.addSuppressed(cleanupFailure);
+            try
+            {
+                close(leases);
+            }
+            catch (RuntimeException cleanupFailure)
+            {
+                exception.addSuppressed(cleanupFailure);
+            }
+            throw new IllegalStateException("Cannot protect the selected Maven module outputs.", exception);
         }
     }
 
-    private static BuildOutputLease acquireNew(MavenSession session, Duration timeout, Log log)
+    private static void close(List<BuildOutputLease> leases)
     {
-        final Path root = Path.of(Objects.requireNonNull(
-            session.getExecutionRootDirectory(),
-            "Maven did not provide its reactor root directory."
-        ));
-        log.info("LK_BUILD_LOCK: Waiting for producer outputs in '" + root + "'.");
-        final BuildOutputLease lease = BuildOutputLease.acquire(root, timeout);
-        log.info("LK_BUILD_LOCK: Acquired producer outputs in '" + root + "'.");
-        return lease;
+        RuntimeException failure = null;
+        for (final BuildOutputLease lease : leases.reversed())
+        {
+            try
+            {
+                lease.close();
+            }
+            catch (RuntimeException exception)
+            {
+                if (failure == null)
+                {
+                    failure = exception;
+                }
+                else
+                {
+                    failure.addSuppressed(exception);
+                }
+            }
+        }
+        if (failure != null)
+        {
+            throw failure;
+        }
     }
 }

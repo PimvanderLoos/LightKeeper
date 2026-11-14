@@ -14,7 +14,7 @@ import java.time.Duration;
 import java.util.Objects;
 
 /**
- * Protects producer outputs from initialize until immutable snapshot capture.
+ * Protects selected module outputs for the owning Maven CLI invocation.
  * Bind beside {@code prepare-server} in a plugin module. In a reactor, inherit this lightweight goal from the
  * reactor root; keep full server preparation bound only in test modules.
  */
@@ -57,14 +57,8 @@ public final class LockBuildMojo extends AbstractMojo
             );
             ModuleTestPlanExporter.write(Objects.requireNonNull(project), current);
         }
-        catch (MojoExecutionException exception)
-        {
-            BuildInvocationLeases.releaseAfterFailure(session, exception);
-            throw exception;
-        }
         catch (IOException | RuntimeException exception)
         {
-            BuildInvocationLeases.releaseAfterFailure(session, exception);
             throw new MojoExecutionException(
                 "Cannot protect LightKeeper producer outputs: " + exception.getMessage(),
                 exception

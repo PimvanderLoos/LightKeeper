@@ -59,7 +59,9 @@ public record EffectiveTestPlan(
         /** Authoritative explicitly configured local artifact path. */
         PATH,
         /** Deliberate server-only test without a target plugin. */
-        SERVER_ONLY
+        SERVER_ONLY,
+        /** Existing explicit asset-only fixture without automatic plugin-under-test selection. */
+        LEGACY_ASSETS
     }
 
     /**
@@ -108,7 +110,7 @@ public record EffectiveTestPlan(
             }
             else if (groupId != null || artifactId != null || classifier != null || path != null)
             {
-                throw new IllegalArgumentException("Server-only selection may not specify a target plugin.");
+                throw new IllegalArgumentException(kind + " selection may not specify a target plugin.");
             }
         }
     }

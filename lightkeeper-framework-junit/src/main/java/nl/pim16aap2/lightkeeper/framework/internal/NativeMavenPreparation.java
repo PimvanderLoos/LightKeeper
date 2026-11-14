@@ -209,7 +209,7 @@ public final class NativeMavenPreparation
     private static void rejectUnpreparedAncestor(ModuleTestPlan plan)
         throws IOException
     {
-        final Path owner = BuildOutputLease.lockPath(plan.reactorDirectory()).resolveSibling("owner.json");
+        final Path owner = BuildOutputLease.lockPath(Path.of(plan.moduleDirectory())).resolveSibling("owner.json");
         if (Files.isRegularFile(owner) &&
             GeneratedMetadata.read(owner, BuildLeaseIdentity.class).process().matchesCurrentAncestry())
         {

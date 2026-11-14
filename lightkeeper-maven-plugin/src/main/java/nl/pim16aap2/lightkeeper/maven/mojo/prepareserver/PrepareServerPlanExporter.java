@@ -86,28 +86,11 @@ final class PrepareServerPlanExporter
         return executionId.equals(plan.defaultExecutionId());
     }
 
-    static boolean isLastPreparation(@Nullable MavenProject project, @Nullable String executionId)
-        throws IOException
-    {
-        if (isBootstrap() || project == null)
-        {
-            return true;
-        }
-        final Path planPath = ModulePlanPaths.modulePlan(project.getBasedir().toPath());
-        if (!java.nio.file.Files.isRegularFile(planPath))
-        {
-            return true;
-        }
-        final ModuleTestPlan plan = GeneratedMetadata.read(planPath, ModuleTestPlan.class);
-        return Objects.equals(executionId, plan.executionIds().getLast());
-    }
-
     static void write(
         @Nullable MavenProject project,
         @Nullable MavenSession session,
         @Nullable String executionId,
-        @Nullable PluginUnderTestConfig selection,
-        boolean serverOnly,
+        EffectiveTestPlan.Target target,
         PrepareServerExecutionContext inputs,
         List<ResolvedPluginArtifact> plugins,
         @Nullable Path overlay,
@@ -140,7 +123,7 @@ final class PrepareServerPlanExporter
             Objects.requireNonNull(executionId, "Maven did not inject the prepare-server execution ID."),
             inputs.normalizedServerType(),
             inputs.serverVersion(),
-            target(project, selection, serverOnly),
+            target,
             Map.of("memoryMb", Integer.toString(manifest.memoryMb()),
                 "javaExecutablePath", Objects.requireNonNull(manifest.javaExecutablePath())),
             assets
@@ -173,15 +156,21 @@ final class PrepareServerPlanExporter
     }
 
     static EffectiveTestPlan.Target target(
-        MavenProject project,
+        @Nullable MavenProject project,
         @Nullable PluginUnderTestConfig selection,
-        boolean serverOnly
+        boolean serverOnly,
+        boolean legacyAssets
     )
     {
         if (serverOnly)
         {
             return new EffectiveTestPlan.Target(EffectiveTestPlan.TargetKind.SERVER_ONLY, null, null, null, null);
         }
+        if (legacyAssets)
+        {
+            return new EffectiveTestPlan.Target(EffectiveTestPlan.TargetKind.LEGACY_ASSETS, null, null, null, null);
+        }
+        final MavenProject current = Objects.requireNonNull(project, "Plugin selection requires its Maven project.");
         if (selection != null && selection.path() != null)
         {
             return new EffectiveTestPlan.Target(
@@ -192,8 +181,8 @@ final class PrepareServerPlanExporter
         final boolean dependency = selection != null && selection.artifactId() != null;
         return new EffectiveTestPlan.Target(
             dependency ? EffectiveTestPlan.TargetKind.DEPENDENCY : EffectiveTestPlan.TargetKind.CURRENT_MODULE,
-            dependency ? Objects.requireNonNull(selection).groupId() : project.getGroupId(),
-            dependency ? Objects.requireNonNull(selection).artifactId() : project.getArtifactId(),
+            dependency ? Objects.requireNonNull(selection).groupId() : current.getGroupId(),
+            dependency ? Objects.requireNonNull(selection).artifactId() : current.getArtifactId(),
             selection == null ? null : selection.classifier(),
             null
         );

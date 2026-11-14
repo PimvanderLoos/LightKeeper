@@ -7,15 +7,15 @@ import java.util.Objects;
  * Identity of the live process holding a cooperative producer-build lease.
  *
  * @param reactorDirectory
- *     Canonical checkout/reactor root whose build outputs are protected.
+ *     Canonical selected module directory whose build outputs are protected.
  * @param process
  *     Lease-owning process PID and start instant, preventing PID-reuse confusion.
  * @param nonce
- *     Random invocation identity; pass to a bootstrap child privately, never in progress logs.
+ *     Random ownership identity for private generated metadata; never include it in progress logs.
  */
 public record BuildLeaseIdentity(String reactorDirectory, ProcessIdentity process, String nonce)
 {
-    /** Validates the process identity before it can be used for borrowing. */
+    /** Validates the output scope and process identity before publication. */
     public BuildLeaseIdentity
     {
         if (!Path.of(reactorDirectory).isAbsolute())

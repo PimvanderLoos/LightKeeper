@@ -2,7 +2,6 @@ package nl.pim16aap2.lightkeeper.maven.mojo.prepareserver;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import nl.pim16aap2.lightkeeper.maven.mojo.lockbuild.BuildInvocationLeases;
 import nl.pim16aap2.lightkeeper.provisioning.LightkeeperEmbeddedAgent;
 import nl.pim16aap2.lightkeeper.provisioning.PaperBuildMetadata;
 import nl.pim16aap2.lightkeeper.provisioning.PaperDownloadsClient;
@@ -271,25 +270,15 @@ public class PrepareServerMojo extends AbstractMojo
                 return;
             }
             executePreparation();
-            if (PrepareServerPlanExporter.isLastPreparation(project, executionId))
-            {
-                BuildInvocationLeases.release(mavenSession);
-            }
+
         }
         catch (IOException exception)
         {
-            BuildInvocationLeases.releaseAfterFailure(mavenSession, exception);
             throw new MojoExecutionException("Failed to export the prepared LightKeeper test plan.", exception);
         }
         catch (ProvisioningException exception)
         {
-            BuildInvocationLeases.releaseAfterFailure(mavenSession, exception);
             throw new MojoExecutionException(exception.getMessage(), exception);
-        }
-        catch (MojoExecutionException | RuntimeException exception)
-        {
-            BuildInvocationLeases.releaseAfterFailure(mavenSession, exception);
-            throw exception;
         }
     }
 
@@ -353,8 +342,7 @@ public class PrepareServerMojo extends AbstractMojo
             project,
             mavenSession,
             executionId,
-            pluginUnderTest,
-            serverOnly,
+            PrepareServerPlanExporter.target(project, pluginUnderTest, serverOnly, usesLegacyPluginAssets()),
             executionContext,
             resolvedPlugins,
             configOverlayPath,
@@ -730,7 +718,7 @@ public class PrepareServerMojo extends AbstractMojo
             throw new MojoExecutionException("serverOnly=true cannot be combined with pluginUnderTest.");
         }
         final List<ResolvedPluginArtifact> resolved = new ArrayList<>();
-        final boolean legacyPlugins = pluginUnderTest == null && plugins != null && !plugins.isEmpty();
+        final boolean legacyPlugins = usesLegacyPluginAssets();
         if (!serverOnly && !legacyPlugins)
         {
             final MavenProject currentProject = project;
@@ -756,6 +744,11 @@ public class PrepareServerMojo extends AbstractMojo
         }
         resolved.addAll(resolvePluginArtifacts(context.pluginArtifactSpecs()));
         return PrepareServerAssetConventions.uniquePlugins(resolved, configOverlayPath);
+    }
+
+    private boolean usesLegacyPluginAssets()
+    {
+        return pluginUnderTest == null && plugins != null && !plugins.isEmpty();
     }
 
     private boolean failsafeIsSkipped()

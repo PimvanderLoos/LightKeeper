@@ -38,7 +38,7 @@ class PrepareServerPlanExporterTest
         final var selection = new PluginUnderTestConfig(null, null, "all", null);
 
         // execute
-        final var target = PrepareServerPlanExporter.target(project(), selection, false);
+        final var target = PrepareServerPlanExporter.target(project(), selection, false, false);
 
         // verify
         assertThat(target.kind()).isEqualTo(TargetKind.CURRENT_MODULE);
@@ -54,7 +54,7 @@ class PrepareServerPlanExporterTest
         final var selection = new PluginUnderTestConfig("example", "packager", null, null);
 
         // execute
-        final var target = PrepareServerPlanExporter.target(project(), selection, false);
+        final var target = PrepareServerPlanExporter.target(project(), selection, false, false);
 
         // verify
         assertThat(target.kind()).isEqualTo(TargetKind.DEPENDENCY);
@@ -71,7 +71,7 @@ class PrepareServerPlanExporterTest
         final var selection = new PluginUnderTestConfig(null, null, null, jar);
 
         // execute
-        final var target = PrepareServerPlanExporter.target(project(), selection, false);
+        final var target = PrepareServerPlanExporter.target(project(), selection, false, false);
 
         // verify
         assertThat(target.kind()).isEqualTo(TargetKind.PATH);
@@ -85,11 +85,26 @@ class PrepareServerPlanExporterTest
         final MavenProject project = project();
 
         // execute
-        final var target = PrepareServerPlanExporter.target(project, null, true);
+        final var target = PrepareServerPlanExporter.target(project, null, true, false);
 
         // verify
         assertThat(target.kind()).isEqualTo(TargetKind.SERVER_ONLY);
         assertThat(target.artifactId()).isNull();
+    }
+
+    @Test
+    void target_shouldDescribeLegacyAssetsWithoutInventingATargetProducer()
+    {
+        // setup
+        final boolean legacyAssets = true;
+
+        // execute
+        final var target = PrepareServerPlanExporter.target(null, null, false, legacyAssets);
+
+        // verify
+        assertThat(target.kind()).isEqualTo(TargetKind.LEGACY_ASSETS);
+        assertThat(target.artifactId()).isNull();
+        assertThat(target.path()).isNull();
     }
 
     @Test
@@ -99,7 +114,7 @@ class PrepareServerPlanExporterTest
         // setup
         final MavenProject project = project();
         final MavenSession session = mock();
-        when(session.getExecutionRootDirectory()).thenReturn(root.toString());
+        when(session.getProjects()).thenReturn(List.of(project));
         BuildInvocationLeases.acquire(session, Duration.ofSeconds(1), mock(Log.class));
         final Path server = Files.createDirectories(root.resolve("prepared"));
         final Path jar = Files.writeString(server.resolve("server.jar"), "server");
@@ -118,7 +133,7 @@ class PrepareServerPlanExporterTest
         try
         {
             PrepareServerPlanExporter.write(
-                project, session, "paper", null, false, inputs,
+                project, session, "paper", PrepareServerPlanExporter.target(project, null, false, false), inputs,
                 List.of(new ResolvedPluginArtifact(plugin, "plugin.jar", "fixture")), null, manifest
             );
         }

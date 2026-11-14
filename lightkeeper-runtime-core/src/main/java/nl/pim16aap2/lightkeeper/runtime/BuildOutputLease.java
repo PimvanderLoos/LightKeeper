@@ -8,9 +8,9 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Cooperative checkout-wide ownership covering producer packaging through immutable snapshot capture.
- * Release after protected mutations/capture complete. A parallel reactor may retain ownership until invocation exit
- * while other modules finish. The underlying file lease keeps a stable inode for waiting processes.
+ * Cooperative ownership of one module's outputs, covering packaging through immutable snapshot capture.
+ * Maven retains selected module leases until its CLI process exits, protecting later reactor work and snapshots.
+ * The underlying file lease keeps a stable inode for waiting processes.
  */
 public final class BuildOutputLease implements AutoCloseable
 {

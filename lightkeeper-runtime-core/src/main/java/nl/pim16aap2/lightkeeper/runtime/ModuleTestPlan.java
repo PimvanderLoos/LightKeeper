@@ -72,7 +72,7 @@ public record ModuleTestPlan(
     }
 
     /**
-     * Returns the reactor directory used for a checkout-wide build lease.
+     * Returns the directory containing the retained Maven reactor entry POM.
      *
      * @return Parent directory of the retained reactor POM.
      */
