@@ -19,6 +19,8 @@
 
     <properties>
         <project.root-dir>${project.basedir}/..</project.root-dir>
+        <!-- Dependency bundle only: public API documentation is supplied by the framework artifact. -->
+        <maven.javadoc.skip>true</maven.javadoc.skip>
     </properties>
 
     <repositories>
