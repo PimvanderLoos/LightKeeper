@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class BuildInvocationLeases
 {
     /** Invocation entries live only while their producer-output lease is held. */
-    private static final ConcurrentHashMap<MavenSession, InvocationLease> LEASES = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<MavenSession, BuildOutputLease> LEASES = new ConcurrentHashMap<>();
     /** Shutdown-only diagnostics when a failed build could not release its lease normally. */
     private static final System.Logger LOG = System.getLogger(BuildInvocationLeases.class.getName());
 
@@ -50,6 +50,18 @@ public final class BuildInvocationLeases
     }
 
     /**
+     * Reports whether this invocation currently protects its producer outputs.
+     *
+     * @param session
+     *     Current Maven session, when available.
+     * @return Whether immutable snapshot capture is protected by this invocation's early guard.
+     */
+    public static boolean isHeld(@Nullable MavenSession session)
+    {
+        return session != null && LEASES.containsKey(session);
+    }
+
+    /**
      * Releases an invocation's outputs after snapshot capture, including skipped preparation.
      *
      * @param session
@@ -61,10 +73,10 @@ public final class BuildInvocationLeases
         {
             return;
         }
-        final InvocationLease lease = LEASES.remove(session);
-        if (lease != null && lease.ownedLease() != null)
+        final BuildOutputLease lease = LEASES.remove(session);
+        if (lease != null)
         {
-            lease.ownedLease().close();
+            lease.close();
         }
     }
 
@@ -88,56 +100,30 @@ public final class BuildInvocationLeases
         }
     }
 
-    private static InvocationLease acquireNew(MavenSession session, Duration timeout, Log log)
+    private static BuildOutputLease acquireNew(MavenSession session, Duration timeout, Log log)
     {
         final Path root = Path.of(Objects.requireNonNull(
             session.getExecutionRootDirectory(),
             "Maven did not provide its reactor root directory."
         ));
-        final String borrowedNonce = System.getenv(BuildOutputLease.BORROW_NONCE_ENV);
-        if (borrowedNonce != null && !borrowedNonce.isBlank())
-        {
-            final BuildLeaseIdentity identity = BuildOutputLease.verifyBorrowed(root, borrowedNonce);
-            log.info("LK_BUILD_LOCK: Using the ancestor build lease for '" + root + "'.");
-            return new InvocationLease(null, identity);
-        }
         log.info("LK_BUILD_LOCK: Waiting for producer outputs in '" + root + "'.");
         final BuildOutputLease lease = BuildOutputLease.acquire(root, timeout);
         log.info("LK_BUILD_LOCK: Acquired producer outputs in '" + root + "'.");
-        return new InvocationLease(lease, lease.identity());
+        return lease;
     }
 
     private static void releaseRemaining()
     {
         LEASES.values().forEach(lease ->
         {
-            if (lease.ownedLease() != null)
+            try
             {
-                try
-                {
-                    lease.ownedLease().close();
-                }
-                catch (RuntimeException exception)
-                {
-                    LOG.log(
-                        System.Logger.Level.WARNING,
-                        "Failed to release a LightKeeper build lease at shutdown.",
-                        exception
-                    );
-                }
+                lease.close();
+            }
+            catch (RuntimeException exception)
+            {
+                LOG.log(System.Logger.Level.WARNING, "Failed to release a LightKeeper build lease.", exception);
             }
         });
-    }
-
-    /**
-     * Invocation-local ownership; a child borrows identity without owning its parent's kernel lease.
-     *
-     * @param ownedLease
-     *     Kernel lease owned here, or {@code null} for a verified child build.
-     * @param identity
-     *     Verified invocation identity.
-     */
-    private record InvocationLease(@Nullable BuildOutputLease ownedLease, BuildLeaseIdentity identity)
-    {
     }
 }

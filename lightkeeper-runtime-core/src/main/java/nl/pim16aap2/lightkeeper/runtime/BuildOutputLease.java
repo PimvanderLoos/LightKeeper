@@ -24,8 +24,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public final class BuildOutputLease implements AutoCloseable
 {
-    /** Private child environment entry authorizing a descendant Maven build to borrow the parent's lease. */
-    public static final String BORROW_NONCE_ENV = "LIGHTKEEPER_BUILD_LEASE_NONCE";
     /** Name of the current holder's private process identity document. */
     private static final String OWNER_FILE = "owner.json";
     /** Maximum interval before observing cancellation or an available lease again. */
@@ -38,7 +36,7 @@ public final class BuildOutputLease implements AutoCloseable
     private final FileLock lock;
     /** Metadata removed while the kernel lease is still held. */
     private final Path ownerFile;
-    /** Identity offered only to a verified descendant bootstrap build. */
+    /** Identity of the Maven process holding this kernel lease. */
     private final BuildLeaseIdentity identity;
     /** Prevents repeated cleanup by shutdown hooks and ordinary lifecycle callbacks. */
     private final AtomicBoolean closed = new AtomicBoolean();
@@ -148,55 +146,7 @@ public final class BuildOutputLease implements AutoCloseable
     }
 
     /**
-     * Validates a child build's borrowed lease without reacquiring or releasing its parent's kernel lock.
-     *
-     * @param reactorDirectory
-     *     Reactor selected by the child build.
-     * @param nonce
-     *     Parent invocation identity received through the child environment.
-     * @return Verified live ancestor identity.
-     */
-    public static BuildLeaseIdentity verifyBorrowed(Path reactorDirectory, String nonce)
-    {
-        try
-        {
-            final Path reactor = reactorDirectory.toRealPath();
-            final Path lockPath = lockPath(reactor);
-            final Path ownerFile = lockPath.resolveSibling(OWNER_FILE);
-            final BuildLeaseIdentity owner = GeneratedMetadata.read(ownerFile, BuildLeaseIdentity.class);
-            if (owner.process().processId() == ProcessHandle.current().pid() ||
-                !owner.reactorDirectory().equals(reactor.toString()) || !owner.nonce().equals(nonce) ||
-                !owner.process().matchesCurrentAncestry())
-            {
-                throw new IllegalStateException("Borrowed build lease does not belong to a live ancestor invocation.");
-            }
-            try (FileChannel channel = FileChannel.open(lockPath, StandardOpenOption.WRITE, LinkOption.NOFOLLOW_LINKS))
-            {
-                try (FileLock probe = tryLock(channel))
-                {
-                    if (probe != null)
-                    {
-                        throw new IllegalStateException("Borrowed producer build lease is no longer held.");
-                    }
-                }
-            }
-            if (!owner.equals(GeneratedMetadata.read(ownerFile, BuildLeaseIdentity.class)))
-            {
-                throw new IllegalStateException("Borrowed producer build lease changed while checking ownership.");
-            }
-            return owner;
-        }
-        catch (IOException exception)
-        {
-            throw new IllegalStateException(
-                "Cannot verify borrowed producer build lease for '" + reactorDirectory + "'.",
-                exception
-            );
-        }
-    }
-
-    /**
-     * Returns the held invocation identity for a child environment, without logging its nonce.
+     * Returns the held invocation identity without transferring lease ownership.
      *
      * @return Current lease identity.
      */

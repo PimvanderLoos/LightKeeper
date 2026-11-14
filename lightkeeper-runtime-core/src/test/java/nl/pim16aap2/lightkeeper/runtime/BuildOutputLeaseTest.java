@@ -98,29 +98,6 @@ class BuildOutputLeaseTest
     }
 
     @Test
-    void verifyBorrowed_shouldRejectAnUnheldOrSameProcessLease(@TempDir Path root)
-    {
-        // setup
-        final BuildLeaseIdentity identity;
-        try (var held = BuildOutputLease.acquire(root, Duration.ofSeconds(1)))
-        {
-            identity = held.identity();
-
-            // execute
-            final var sameProcess = catchThrowable(() -> BuildOutputLease.verifyBorrowed(root, identity.nonce()));
-
-            // verify
-            assertThat(sameProcess).isInstanceOf(IllegalStateException.class).hasMessageContaining("live ancestor");
-        }
-
-        // execute
-        final var stale = catchThrowable(() -> BuildOutputLease.verifyBorrowed(root, identity.nonce()));
-
-        // verify
-        assertThat(stale).isInstanceOf(IllegalStateException.class).hasMessageContaining("Cannot verify");
-    }
-
-    @Test
     void acquire_shouldKeepTheKernelLeaseAfterAnotherThreadTimesOut(@TempDir Path root)
         throws Exception
     {
@@ -129,42 +106,11 @@ class BuildOutputLeaseTest
         {
             // execute
             final var failure = catchThrowable(() -> BuildOutputLease.acquire(root, Duration.ofMillis(20)));
-            final String externalProbe = runProbe(root, "acquire", "");
+            final String externalProbe = runProbe(root);
 
             // verify
             assertThat(failure).isInstanceOf(IllegalStateException.class);
             assertThat(externalProbe).isEqualTo("BUSY");
-            assertThat(held.identity().process().matchesCurrentAncestry()).isTrue();
-        }
-    }
-
-    @Test
-    void verifyBorrowed_shouldAcceptTheLiveAncestorFromAChildJvm(@TempDir Path root)
-        throws Exception
-    {
-        // setup
-        try (var held = BuildOutputLease.acquire(root, Duration.ofSeconds(1)))
-        {
-            // execute
-            final String result = runProbe(root, "borrow", held.identity().nonce());
-
-            // verify
-            assertThat(result).isEqualTo("BORROWED");
-        }
-    }
-
-    @Test
-    void verifyBorrowed_shouldRejectAnotherInvocationNonceFromAChildJvm(@TempDir Path root)
-        throws Exception
-    {
-        // setup
-        try (var held = BuildOutputLease.acquire(root, Duration.ofSeconds(1)))
-        {
-            // execute
-            final String result = runProbe(root, "borrow", "0".repeat(32));
-
-            // verify
-            assertThat(result).isEqualTo("REJECTED");
             assertThat(held.identity().process().matchesCurrentAncestry()).isTrue();
         }
     }
@@ -182,7 +128,7 @@ class BuildOutputLeaseTest
         assertThat(failure).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("positive");
         assertThat(Files.exists(root.resolve(".lightkeeper"))).isFalse();
     }
-    private static String runProbe(Path root, String mode, String nonce)
+    private static String runProbe(Path root)
         throws IOException, InterruptedException
     {
         final ProcessBuilder builder = new ProcessBuilder(
@@ -190,10 +136,8 @@ class BuildOutputLeaseTest
             "-cp",
             System.getProperty("java.class.path"),
             Probe.class.getName(),
-            root.toString(),
-            mode
+            root.toString()
         );
-        builder.environment().put("LK_TEST_NONCE", nonce);
         builder.redirectErrorStream(true);
         final Process child = builder.start();
         try
@@ -223,24 +167,11 @@ class BuildOutputLeaseTest
          * Executes one child process lease check.
          *
          * @param args
-         *     Reactor directory and probe mode; the invocation nonce is passed privately through the environment.
+         *     Reactor directory to probe.
          */
         public static void main(String[] args)
         {
             final Path root = Path.of(args[0]);
-            if (args[1].equals("borrow"))
-            {
-                try
-                {
-                    BuildOutputLease.verifyBorrowed(root, System.getenv("LK_TEST_NONCE"));
-                    System.out.println("BORROWED");
-                }
-                catch (IllegalStateException exception)
-                {
-                    System.out.println("REJECTED");
-                }
-                return;
-            }
             try (var acquired = BuildOutputLease.acquire(root, Duration.ofMillis(100)))
             {
                 System.out.println("ACQUIRED");
