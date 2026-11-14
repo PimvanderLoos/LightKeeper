@@ -20,7 +20,7 @@ loadScripts(document, 'script');</script>
 <div>JavaScript is disabled on your browser.</div>
 </noscript>
 <div class="flex-box">
-<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/b24dbadfb7696a5bec74225bb9f98cae60a04c0c">b24dbadfb769</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
+<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/8425863c45d5f3da3cb1bee505bf1f1dbf811c05">8425863c45d5</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
 <nav role="navigation">
 <!-- ========= START OF TOP NAVBAR ======= -->
 <div class="top-nav" id="navbar-top"><button id="navbar-toggle-button" aria-controls="navbar-top" aria-expanded="false" aria-label="Toggle navigation links"><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span></button>
@@ -118,38 +118,43 @@ loadScripts(document, 'script');</script>
  <code>TIMEOUT</code>.</div>
 </div>
 <div class="col-first even-row-color"><code>static final <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second even-row-color"><code><a href="#PROPERTY_AUTH_TOKEN" class="member-name-link">PROPERTY_AUTH_TOKEN</a></code></div>
+<div class="col-second even-row-color"><code><a href="#LIGHTKEEPER_VERSION" class="member-name-link">LIGHTKEEPER_VERSION</a></code></div>
 <div class="col-last even-row-color">
+<div class="block">Version of the LightKeeper distribution, independent of the consumer project's version.</div>
+</div>
+<div class="col-first odd-row-color"><code>static final <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color"><code><a href="#PROPERTY_AUTH_TOKEN" class="member-name-link">PROPERTY_AUTH_TOKEN</a></code></div>
+<div class="col-last odd-row-color">
 <div class="block">System property containing the runtime authentication token expected by the agent.</div>
 </div>
-<div class="col-first odd-row-color"><code>static final <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color"><code><a href="#PROPERTY_EXPECTED_AGENT_SHA256" class="member-name-link">PROPERTY_EXPECTED_AGENT_SHA256</a></code></div>
-<div class="col-last odd-row-color">
+<div class="col-first even-row-color"><code>static final <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color"><code><a href="#PROPERTY_EXPECTED_AGENT_SHA256" class="member-name-link">PROPERTY_EXPECTED_AGENT_SHA256</a></code></div>
+<div class="col-last even-row-color">
 <div class="block">System property containing the expected SHA-256 hash of the embedded agent JAR.</div>
 </div>
-<div class="col-first even-row-color"><code>static final <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second even-row-color"><code><a href="#PROPERTY_PROTOCOL_VERSION" class="member-name-link">PROPERTY_PROTOCOL_VERSION</a></code></div>
-<div class="col-last even-row-color">
+<div class="col-first odd-row-color"><code>static final <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color"><code><a href="#PROPERTY_PROTOCOL_VERSION" class="member-name-link">PROPERTY_PROTOCOL_VERSION</a></code></div>
+<div class="col-last odd-row-color">
 <div class="block">System property containing the runtime protocol version expected by the agent.</div>
 </div>
-<div class="col-first odd-row-color"><code>static final <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color"><code><a href="#PROPERTY_SOCKET_PATH" class="member-name-link">PROPERTY_SOCKET_PATH</a></code></div>
-<div class="col-last odd-row-color">
+<div class="col-first even-row-color"><code>static final <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color"><code><a href="#PROPERTY_SOCKET_PATH" class="member-name-link">PROPERTY_SOCKET_PATH</a></code></div>
+<div class="col-last even-row-color">
 <div class="block">System property containing the Unix domain socket path used by the agent.</div>
 </div>
-<div class="col-first even-row-color"><code>static final <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second even-row-color"><code><a href="#PROPERTY_SYNC_OPERATION_TIMEOUT_SECONDS" class="member-name-link">PROPERTY_SYNC_OPERATION_TIMEOUT_SECONDS</a></code></div>
-<div class="col-last even-row-color">
+<div class="col-first odd-row-color"><code>static final <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color"><code><a href="#PROPERTY_SYNC_OPERATION_TIMEOUT_SECONDS" class="member-name-link">PROPERTY_SYNC_OPERATION_TIMEOUT_SECONDS</a></code></div>
+<div class="col-last odd-row-color">
 <div class="block">System property containing the synchronous operation timeout in seconds.</div>
 </div>
-<div class="col-first odd-row-color"><code>static final <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color"><code><a href="#SUPPORTED_MINECRAFT_VERSION" class="member-name-link">SUPPORTED_MINECRAFT_VERSION</a></code></div>
-<div class="col-last odd-row-color">
+<div class="col-first even-row-color"><code>static final <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color"><code><a href="#SUPPORTED_MINECRAFT_VERSION" class="member-name-link">SUPPORTED_MINECRAFT_VERSION</a></code></div>
+<div class="col-last even-row-color">
 <div class="block">Minecraft server version supported by this LightKeeper build.</div>
 </div>
-<div class="col-first even-row-color"><code>static final int</code></div>
-<div class="col-second even-row-color"><code><a href="#VERSION" class="member-name-link">VERSION</a></code></div>
-<div class="col-last even-row-color">
+<div class="col-first odd-row-color"><code>static final int</code></div>
+<div class="col-second odd-row-color"><code><a href="#VERSION" class="member-name-link">VERSION</a></code></div>
+<div class="col-last odd-row-color">
 <div class="block">Runtime protocol version understood by the framework and in-server agent.</div>
 </div>
 </div>
@@ -197,6 +202,13 @@ loadScripts(document, 'script');</script>
 <h3>SUPPORTED_MINECRAFT_VERSION</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">SUPPORTED_MINECRAFT_VERSION</span></div>
 <div class="block">Minecraft server version supported by this LightKeeper build.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="LIGHTKEEPER_VERSION">
+<h3>LIGHTKEEPER_VERSION</h3>
+<div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">LIGHTKEEPER_VERSION</span></div>
+<div class="block">Version of the LightKeeper distribution, independent of the consumer project's version.</div>
 </section>
 </li>
 <li>
@@ -315,7 +327,7 @@ loadScripts(document, 'script');</script>
 </main>
 <footer role="contentinfo">
 <hr>
-<p class="legal-copy"><small>Copyright &#169; 1980. All rights reserved.</small></p>
+<p class="legal-copy"><small>Copyright &#169; 2026. All rights reserved.</small></p>
 </footer>
 </div>
 </div>
