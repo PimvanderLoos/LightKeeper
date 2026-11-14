@@ -4,6 +4,7 @@ import nl.pim16aap2.lightkeeper.framework.internal.DefaultLightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.internal.FailureDiagnosticsWriter;
 import nl.pim16aap2.lightkeeper.framework.internal.NativeMavenPreparation;
 import nl.pim16aap2.lightkeeper.framework.internal.PreparedTestRuntime;
+import nl.pim16aap2.lightkeeper.framework.internal.RuntimePreparation;
 import nl.pim16aap2.lightkeeper.provisioning.session.ServerSession;
 import nl.pim16aap2.lightkeeper.runtime.ModuleTestPlan;
 import org.junit.jupiter.api.extension.AfterAllCallback;
@@ -272,12 +273,13 @@ public final class LightkeeperExtension implements
         {
             return Lightkeeper.start(Objects.requireNonNull(resolved.manifestPath()));
         }
-        final PreparedTestRuntime runtime = context.getRoot().getStore(NAMESPACE).computeIfAbsent(
+        final RuntimePreparation preparation = context.getRoot().getStore(NAMESPACE).computeIfAbsent(
             List.of("prepared-runtime", plan.moduleDirectory(),
                 System.getProperty(NativeMavenPreparation.EXECUTION_PROPERTY, "")),
-            ignored -> NativeMavenPreparation.prepare(plan),
-            PreparedTestRuntime.class
+            ignored -> new RuntimePreparation(plan),
+            RuntimePreparation.class
         );
+        final PreparedTestRuntime runtime = preparation.await();
         final ServerSession session = getClassStore(context).computeIfAbsent(
             KEY_SESSION,
             ignored -> Lightkeeper.createSession(runtime.snapshot(), runtime.moduleDirectory()),
