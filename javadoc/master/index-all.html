@@ -20,7 +20,7 @@ loadScripts(document, 'script');</script>
 <div>JavaScript is disabled on your browser.</div>
 </noscript>
 <div class="flex-box">
-<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/9ea925dc921f0c1d8535449a56e4899c787fe209">9ea925dc921f</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
+<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/3500b645423473bbbcc588919eec5e238af95883">3500b6454234</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
 <nav role="navigation">
 <!-- ========= START OF TOP NAVBAR ======= -->
 <div class="top-nav" id="navbar-top"><button id="navbar-toggle-button" aria-controls="navbar-top" aria-expanded="false" aria-label="Toggle navigation links"><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span></button>
@@ -470,6 +470,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Starts capturing Bukkit events of the specified type.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/provisioning/session/ServerSnapshots.html#capture(nl.pim16aap2.lightkeeper.runtime.RuntimeManifest,java.nio.file.Path)" class="member-name-link">capture(RuntimeManifest, Path)</a> - Static method in class nl.pim16aap2.lightkeeper.provisioning.session.<a href="nl/pim16aap2/lightkeeper/provisioning/session/ServerSnapshots.html" title="class in nl.pim16aap2.lightkeeper.provisioning.session">ServerSnapshots</a></dt>
+<dd>
+<div class="block">Copies a stopped, prepared server into a new immutable snapshot.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/GetServerErrors.Response.html#captureActive()" class="member-name-link">captureActive()</a> - Method in record class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/GetServerErrors.Response.html" title="class in nl.pim16aap2.lightkeeper.protocol">GetServerErrors.Response</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/protocol/GetServerErrors.Response.html#param-captureActive"><code>captureActive</code></a> record component.</div>
@@ -632,6 +636,10 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/ILightkeeperFramework.html#close()" class="member-name-link">close()</a> - Method in interface nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/ILightkeeperFramework.html" title="interface in nl.pim16aap2.lightkeeper.framework">ILightkeeperFramework</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/provisioning/session/ServerSession.html#close()" class="member-name-link">close()</a> - Method in class nl.pim16aap2.lightkeeper.provisioning.session.<a href="nl/pim16aap2/lightkeeper/provisioning/session/ServerSession.html" title="class in nl.pim16aap2.lightkeeper.provisioning.session">ServerSession</a></dt>
+<dd>
+<div class="block">Deletes this owned session after its process stops, unless retained for failure diagnostics.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeLock.html#close()" class="member-name-link">close()</a> - Method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeLock.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeLock</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/ExecuteCommand.Command.html#command()" class="member-name-link">command()</a> - Method in record class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/ExecuteCommand.Command.html" title="class in nl.pim16aap2.lightkeeper.protocol">ExecuteCommand.Command</a></dt>
@@ -878,6 +886,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Creates a new world from a world spec.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/provisioning/session/ServerSession.html#create(nl.pim16aap2.lightkeeper.provisioning.session.PreparedServerSnapshot,java.nio.file.Path)" class="member-name-link">create(PreparedServerSnapshot, Path)</a> - Static method in class nl.pim16aap2.lightkeeper.provisioning.session.<a href="nl/pim16aap2/lightkeeper/provisioning/session/ServerSession.html" title="class in nl.pim16aap2.lightkeeper.provisioning.session">ServerSession</a></dt>
+<dd>
+<div class="block">Materializes an independent runtime from a verified immutable snapshot.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/util/CacheKeyUtil.html#createCacheKey(java.util.List)" class="member-name-link">createCacheKey(List&lt;String&gt;)</a> - Static method in class nl.pim16aap2.lightkeeper.provisioning.util.<a href="nl/pim16aap2/lightkeeper/provisioning/util/CacheKeyUtil.html" title="class in nl.pim16aap2.lightkeeper.provisioning.util">CacheKeyUtil</a></dt>
 <dd>
 <div class="block">Hashes ordered, nonblank preparation inputs into one cache identity.</div>
@@ -951,6 +963,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/IServerControl.html#directory()" class="member-name-link">directory()</a> - Method in interface nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/IServerControl.html" title="interface in nl.pim16aap2.lightkeeper.framework">IServerControl</a></dt>
 <dd>
 <div class="block">Gets the Minecraft server's working directory.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/provisioning/session/ServerSession.html#directory()" class="member-name-link">directory()</a> - Method in class nl.pim16aap2.lightkeeper.provisioning.session.<a href="nl/pim16aap2/lightkeeper/provisioning/session/ServerSession.html" title="class in nl.pim16aap2.lightkeeper.provisioning.session">ServerSession</a></dt>
+<dd>
+<div class="block">Returns this session's private root, including its server and diagnostics.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/PlayerUnavailableException.Reason.html#DISCONNECTED" class="member-name-link">DISCONNECTED</a> - Enum constant in enum class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/PlayerUnavailableException.Reason.html" title="enum class in nl.pim16aap2.lightkeeper.framework">PlayerUnavailableException.Reason</a></dt>
 <dd>
@@ -1621,6 +1637,10 @@ loadScripts(document, 'script');</script>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/ServerSpecification.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class nl.pim16aap2.lightkeeper.provisioning.<a href="nl/pim16aap2/lightkeeper/provisioning/ServerSpecification.html" title="class in nl.pim16aap2.lightkeeper.provisioning">ServerSpecification</a></dt>
+<dd>
+<div class="block">Indicates whether some other object is "equal to" this one.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/provisioning/session/PreparedServerSnapshot.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class nl.pim16aap2.lightkeeper.provisioning.session.<a href="nl/pim16aap2/lightkeeper/provisioning/session/PreparedServerSnapshot.html" title="class in nl.pim16aap2.lightkeeper.provisioning.session">PreparedServerSnapshot</a></dt>
 <dd>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
 </dd>
@@ -2576,6 +2596,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns a hash code value for this object.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/provisioning/session/PreparedServerSnapshot.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class nl.pim16aap2.lightkeeper.provisioning.session.<a href="nl/pim16aap2/lightkeeper/provisioning/session/PreparedServerSnapshot.html" title="class in nl.pim16aap2.lightkeeper.provisioning.session">PreparedServerSnapshot</a></dt>
+<dd>
+<div class="block">Returns a hash code value for this object.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/SpigotBuildMetadata.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class nl.pim16aap2.lightkeeper.provisioning.<a href="nl/pim16aap2/lightkeeper/provisioning/SpigotBuildMetadata.html" title="class in nl.pim16aap2.lightkeeper.provisioning">SpigotBuildMetadata</a></dt>
 <dd>
 <div class="block">Returns a hash code value for this object.</div>
@@ -3160,6 +3184,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/provisioning/ServerSpecification.html#param-javaExecutablePath"><code>javaExecutablePath</code></a> record component.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/RuntimeManifest.html#javaExecutablePath()" class="member-name-link">javaExecutablePath()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/RuntimeManifest.html" title="class in nl.pim16aap2.lightkeeper.runtime">RuntimeManifest</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/RuntimeManifest.html#param-javaExecutablePath"><code>javaExecutablePath</code></a> record component.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/IBots.html#join(java.lang.String,java.util.UUID,nl.pim16aap2.lightkeeper.framework.WorldHandle)" class="member-name-link">join(String, UUID, WorldHandle)</a> - Method in interface nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/IBots.html" title="interface in nl.pim16aap2.lightkeeper.framework">IBots</a></dt>
 <dd>
 <div class="block">Joins an invulnerable synthetic player into a world at spawn.</div>
@@ -3362,6 +3390,14 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Response record for <code>MAIN_WORLD</code>.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/provisioning/session/PreparedServerSnapshot.html#manifest()" class="member-name-link">manifest()</a> - Method in record class nl.pim16aap2.lightkeeper.provisioning.session.<a href="nl/pim16aap2/lightkeeper/provisioning/session/PreparedServerSnapshot.html" title="class in nl.pim16aap2.lightkeeper.provisioning.session">PreparedServerSnapshot</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/provisioning/session/PreparedServerSnapshot.html#param-manifest"><code>manifest</code></a> record component.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/provisioning/session/ServerSession.html#manifestPath()" class="member-name-link">manifestPath()</a> - Method in class nl.pim16aap2.lightkeeper.provisioning.session.<a href="nl/pim16aap2/lightkeeper/provisioning/session/ServerSession.html" title="class in nl.pim16aap2.lightkeeper.provisioning.session">ServerSession</a></dt>
+<dd>
+<div class="block">Returns the stable manifest used throughout this session's process lifecycle.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/BlockStateSnapshot.html#matches(nl.pim16aap2.lightkeeper.framework.BlockSpec)" class="member-name-link">matches(BlockSpec)</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/BlockStateSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">BlockStateSnapshot</a></dt>
 <dd>
 <div class="block">Checks whether this state matches a spec: the material must be equal and every property the spec names
@@ -3510,6 +3546,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/GetPlayerMessages.Response.html#messages()" class="member-name-link">messages()</a> - Method in record class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/GetPlayerMessages.Response.html" title="class in nl.pim16aap2.lightkeeper.protocol">GetPlayerMessages.Response</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/protocol/GetPlayerMessages.Response.html#param-messages"><code>messages</code></a> record component.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/provisioning/session/ServerSnapshots.html#METADATA_FILE" class="member-name-link">METADATA_FILE</a> - Static variable in class nl.pim16aap2.lightkeeper.provisioning.session.<a href="nl/pim16aap2/lightkeeper/provisioning/session/ServerSnapshots.html" title="class in nl.pim16aap2.lightkeeper.provisioning.session">ServerSnapshots</a></dt>
+<dd>
+<div class="block">Metadata stored beside each immutable server tree.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/serverprocess/MinecraftServerProcess.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.provisioning.serverprocess">MinecraftServerProcess</a> - Class in <a href="nl/pim16aap2/lightkeeper/provisioning/serverprocess/package-summary.html">nl.pim16aap2.lightkeeper.provisioning.serverprocess</a></dt>
 <dd>
@@ -3699,6 +3739,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/serverprovider/package-summary.html">nl.pim16aap2.lightkeeper.provisioning.serverprovider</a> - package nl.pim16aap2.lightkeeper.provisioning.serverprovider</dt>
 <dd>
 <div class="block">Server provider implementations that resolve, cache, prepare, and clone server installations.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/provisioning/session/package-summary.html">nl.pim16aap2.lightkeeper.provisioning.session</a> - package nl.pim16aap2.lightkeeper.provisioning.session</dt>
+<dd>
+<div class="block">Immutable prepared server snapshots and independently owned mutable runtime sessions.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/util/package-summary.html">nl.pim16aap2.lightkeeper.provisioning.util</a> - package nl.pim16aap2.lightkeeper.provisioning.util</dt>
 <dd>
@@ -4053,9 +4097,21 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Creates a directory with <code>0700</code> permissions and verifies its owner and permissions on POSIX file systems.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/provisioning/session/PreparedServerSnapshot.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.provisioning.session">PreparedServerSnapshot</a> - Record Class in <a href="nl/pim16aap2/lightkeeper/provisioning/session/package-summary.html">nl.pim16aap2.lightkeeper.provisioning.session</a></dt>
+<dd>
+<div class="block">Immutable prepared inputs copied before any test process starts.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/provisioning/session/PreparedServerSnapshot.html#%3Cinit%3E(int,nl.pim16aap2.lightkeeper.runtime.RuntimeManifest,java.lang.String)" class="member-name-link">PreparedServerSnapshot(int, RuntimeManifest, String)</a> - Constructor for record class nl.pim16aap2.lightkeeper.provisioning.session.<a href="nl/pim16aap2/lightkeeper/provisioning/session/PreparedServerSnapshot.html" title="class in nl.pim16aap2.lightkeeper.provisioning.session">PreparedServerSnapshot</a></dt>
+<dd>
+<div class="block">Validates the immutable snapshot metadata.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/serverprovider/ServerProvider.html#prepareServer()" class="member-name-link">prepareServer()</a> - Method in class nl.pim16aap2.lightkeeper.provisioning.serverprovider.<a href="nl/pim16aap2/lightkeeper/provisioning/serverprovider/ServerProvider.html" title="class in nl.pim16aap2.lightkeeper.provisioning.serverprovider">ServerProvider</a></dt>
 <dd>
 <div class="block">Prepares the server for use.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/provisioning/session/ServerSession.html#preserve()" class="member-name-link">preserve()</a> - Method in class nl.pim16aap2.lightkeeper.provisioning.session.<a href="nl/pim16aap2/lightkeeper/provisioning/session/ServerSession.html" title="class in nl.pim16aap2.lightkeeper.provisioning.session">ServerSession</a></dt>
+<dd>
+<div class="block">Keeps this session's server and diagnostic files after a failed test or startup.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/BlockSpec.html#properties()" class="member-name-link">properties()</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/BlockSpec.html" title="class in nl.pim16aap2.lightkeeper.framework">BlockSpec</a></dt>
 <dd>
@@ -4177,6 +4233,10 @@ loadScripts(document, 'script');</script>
 </dl>
 <h2 class="title" id="I:R">R</h2>
 <dl class="index">
+<dt><a href="nl/pim16aap2/lightkeeper/provisioning/session/ServerSnapshots.html#read(java.nio.file.Path)" class="member-name-link">read(Path)</a> - Static method in class nl.pim16aap2.lightkeeper.provisioning.session.<a href="nl/pim16aap2/lightkeeper/provisioning/session/ServerSnapshots.html" title="class in nl.pim16aap2.lightkeeper.provisioning.session">ServerSnapshots</a></dt>
+<dd>
+<div class="block">Reads published snapshot metadata without inferring any producer build or fallback runtime.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscoveryReader.html#read(java.nio.file.Path)" class="member-name-link">read(Path)</a> - Method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscoveryReader.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeDiscoveryReader</a></dt>
 <dd>
 <div class="block">Reads and validates discovery metadata.</div>
@@ -4226,6 +4286,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/RegisterEventListener.Response.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.protocol">RegisterEventListener.Response</a> - Record Class in <a href="nl/pim16aap2/lightkeeper/protocol/package-summary.html">nl.pim16aap2.lightkeeper.protocol</a></dt>
 <dd>
 <div class="block">Response record for <code>REGISTER_EVENT_LISTENER</code>.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/RuntimeManifest.html#relocate(java.nio.file.Path,java.nio.file.Path,java.lang.String)" class="member-name-link">relocate(Path, Path, String)</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/RuntimeManifest.html" title="class in nl.pim16aap2.lightkeeper.runtime">RuntimeManifest</a></dt>
+<dd>
+<div class="block">Relocates a complete prepared server into a private snapshot or session directory.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/PlayerHandle.html#remove()" class="member-name-link">remove()</a> - Method in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/PlayerHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">PlayerHandle</a></dt>
 <dd>
@@ -4432,6 +4496,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/ProtocolPreconditions.html#requireNonNull(T,java.lang.String)" class="member-name-link">requireNonNull(T, String)</a> - Static method in class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/ProtocolPreconditions.html" title="class in nl.pim16aap2.lightkeeper.protocol">ProtocolPreconditions</a></dt>
 <dd>
 <div class="block">Requires that a reference is non-<code>null</code>.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/provisioning/serverprovider/TargetServerPropertiesConfigurer.html#reserveAvailableTcpPort()" class="member-name-link">reserveAvailableTcpPort()</a> - Static method in class nl.pim16aap2.lightkeeper.provisioning.serverprovider.<a href="nl/pim16aap2/lightkeeper/provisioning/serverprovider/TargetServerPropertiesConfigurer.html" title="class in nl.pim16aap2.lightkeeper.provisioning.serverprovider">TargetServerPropertiesConfigurer</a></dt>
+<dd>
+<div class="block">Reserves an available local TCP port.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/PaperDownloadsClient.html#resolveBuild(java.lang.String)" class="member-name-link">resolveBuild(String)</a> - Method in class nl.pim16aap2.lightkeeper.provisioning.<a href="nl/pim16aap2/lightkeeper/provisioning/PaperDownloadsClient.html" title="class in nl.pim16aap2.lightkeeper.provisioning">PaperDownloadsClient</a></dt>
 <dd>
@@ -4723,6 +4791,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Revokes a permission node from a synthetic player by setting it to <code>false</code> on the player's attachment.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/provisioning/serverprovider/TargetServerPropertiesConfigurer.html#rewriteWithRuntimePort(java.lang.System.Logger,java.nio.file.Path,int)" class="member-name-link">rewriteWithRuntimePort(System.Logger, Path, int)</a> - Static method in class nl.pim16aap2.lightkeeper.provisioning.serverprovider.<a href="nl/pim16aap2/lightkeeper/provisioning/serverprovider/TargetServerPropertiesConfigurer.html" title="class in nl.pim16aap2.lightkeeper.provisioning.serverprovider">TargetServerPropertiesConfigurer</a></dt>
+<dd>
+<div class="block">Rewrites <code>server-port</code> and <code>query.port</code> in the target server properties file.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/PlayerHandle.html#rightClickBlock(int,int,int)" class="member-name-link">rightClickBlock(int, int, int)</a> - Method in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/PlayerHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">PlayerHandle</a></dt>
 <dd>
 <div class="block">Fires a right-click block interaction at a position in this player's current world.</div>
@@ -4782,6 +4854,10 @@ loadScripts(document, 'script');</script>
 <div class="block">Runtime manifest written by <code>prepare-server</code>.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/runtime/RuntimeManifest.html#%3Cinit%3E(java.lang.String,java.lang.String,long,java.lang.String,java.lang.String,java.lang.String,int,java.lang.String,java.lang.String,java.lang.String,java.lang.String,int,java.lang.String,java.lang.String,java.util.List)" class="member-name-link">RuntimeManifest(String, String, long, String, String, String, int, String, String, String, String, int, String, String, List&lt;RuntimeManifest.ProvisionedWorld&gt;)</a> - Constructor for record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/RuntimeManifest.html" title="class in nl.pim16aap2.lightkeeper.runtime">RuntimeManifest</a></dt>
+<dd>
+<div class="block">Creates a manifest using the launching JVM's Java installation, preserving the original constructor contract.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/RuntimeManifest.html#%3Cinit%3E(java.lang.String,java.lang.String,long,java.lang.String,java.lang.String,java.lang.String,int,java.lang.String,java.lang.String,java.lang.String,java.lang.String,int,java.lang.String,java.lang.String,java.util.List,java.lang.String)" class="member-name-link">RuntimeManifest(String, String, long, String, String, String, int, String, String, String, String, int, String, String, List&lt;RuntimeManifest.ProvisionedWorld&gt;, String)</a> - Constructor for record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/RuntimeManifest.html" title="class in nl.pim16aap2.lightkeeper.runtime">RuntimeManifest</a></dt>
 <dd>
 <div class="block">Creates an instance of a <code>RuntimeManifest</code> record class.</div>
 </dd>
@@ -4858,6 +4934,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/protocol/QueryEntities.TransformData.html#param-scaleZ"><code>scaleZ</code></a> record component.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/provisioning/session/PreparedServerSnapshot.html#SCHEMA_VERSION" class="member-name-link">SCHEMA_VERSION</a> - Static variable in record class nl.pim16aap2.lightkeeper.provisioning.session.<a href="nl/pim16aap2/lightkeeper/provisioning/session/PreparedServerSnapshot.html" title="class in nl.pim16aap2.lightkeeper.provisioning.session">PreparedServerSnapshot</a></dt>
+<dd>
+<div class="block">Supported snapshot metadata format.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html#SCHEMA_VERSION" class="member-name-link">SCHEMA_VERSION</a> - Static variable in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeDiscovery</a></dt>
 <dd>
 <div class="block">Current discovery document schema version.</div>
@@ -4865,6 +4945,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html#SCHEMA_VERSION" class="member-name-link">SCHEMA_VERSION</a> - Static variable in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenance</a></dt>
 <dd>
 <div class="block">Current provenance document schema version.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/provisioning/session/PreparedServerSnapshot.html#schemaVersion()" class="member-name-link">schemaVersion()</a> - Method in record class nl.pim16aap2.lightkeeper.provisioning.session.<a href="nl/pim16aap2/lightkeeper/provisioning/session/PreparedServerSnapshot.html" title="class in nl.pim16aap2.lightkeeper.provisioning.session">PreparedServerSnapshot</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/provisioning/session/PreparedServerSnapshot.html#param-schemaVersion"><code>schemaVersion</code></a> record component.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html#schemaVersion()" class="member-name-link">schemaVersion()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeDiscovery</a></dt>
 <dd>
@@ -4971,6 +5055,14 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Represents a provider for a specific type of server.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/provisioning/session/ServerSession.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.provisioning.session">ServerSession</a> - Class in <a href="nl/pim16aap2/lightkeeper/provisioning/session/package-summary.html">nl.pim16aap2.lightkeeper.provisioning.session</a></dt>
+<dd>
+<div class="block">One privately copied mutable server owned by a JUnit class or standalone framework.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/provisioning/session/ServerSnapshots.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.provisioning.session">ServerSnapshots</a> - Class in <a href="nl/pim16aap2/lightkeeper/provisioning/session/package-summary.html">nl.pim16aap2.lightkeeper.provisioning.session</a></dt>
+<dd>
+<div class="block">Captures complete prepared server inputs and atomically publishes their metadata.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/ServerSpecification.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.provisioning">ServerSpecification</a> - Record Class in <a href="nl/pim16aap2/lightkeeper/provisioning/package-summary.html">nl.pim16aap2.lightkeeper.provisioning</a></dt>
 <dd>
 <div class="block">Represents the shared specification for preparing a Minecraft server baseline.</div>
@@ -4986,6 +5078,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/ServerSpecification.html#serverStopTimeoutSeconds()" class="member-name-link">serverStopTimeoutSeconds()</a> - Method in record class nl.pim16aap2.lightkeeper.provisioning.<a href="nl/pim16aap2/lightkeeper/provisioning/ServerSpecification.html" title="class in nl.pim16aap2.lightkeeper.provisioning">ServerSpecification</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/provisioning/ServerSpecification.html#param-serverStopTimeoutSeconds"><code>serverStopTimeoutSeconds</code></a> record component.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/provisioning/session/PreparedServerSnapshot.html#serverTreeSha256()" class="member-name-link">serverTreeSha256()</a> - Method in record class nl.pim16aap2.lightkeeper.provisioning.session.<a href="nl/pim16aap2/lightkeeper/provisioning/session/PreparedServerSnapshot.html" title="class in nl.pim16aap2.lightkeeper.provisioning.session">PreparedServerSnapshot</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/provisioning/session/PreparedServerSnapshot.html#param-serverTreeSha256"><code>serverTreeSha256</code></a> record component.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html#serverType()" class="member-name-link">serverType()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeDiscovery</a></dt>
 <dd>
@@ -5189,7 +5285,7 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/Lightkeeper.html#start(java.lang.Class)" class="member-name-link">start(Class&lt;?&gt;)</a> - Static method in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/Lightkeeper.html" title="class in nl.pim16aap2.lightkeeper.framework">Lightkeeper</a></dt>
 <dd>
-<div class="block">Resolves and starts the runtime selected for a test class, including IDE discovery and locking.</div>
+<div class="block">Resolves the runtime selected for a test class and starts a private mutable server session.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/Lightkeeper.html#start(java.nio.file.Path)" class="member-name-link">start(Path)</a> - Static method in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/Lightkeeper.html" title="class in nl.pim16aap2.lightkeeper.framework">Lightkeeper</a></dt>
 <dd>
@@ -5265,6 +5361,10 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/serverprovider/ServerProvider.html#targetServerDirectoryPath()" class="member-name-link">targetServerDirectoryPath()</a> - Method in class nl.pim16aap2.lightkeeper.provisioning.serverprovider.<a href="nl/pim16aap2/lightkeeper/provisioning/serverprovider/ServerProvider.html" title="class in nl.pim16aap2.lightkeeper.provisioning.serverprovider">ServerProvider</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/provisioning/serverprovider/TargetServerPropertiesConfigurer.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.provisioning.serverprovider">TargetServerPropertiesConfigurer</a> - Class in <a href="nl/pim16aap2/lightkeeper/provisioning/serverprovider/package-summary.html">nl.pim16aap2.lightkeeper.provisioning.serverprovider</a></dt>
+<dd>
+<div class="block">Rewrites target-server <code>server.properties</code> with runtime-specific networking values.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/PlayerHandle.html#teleport(nl.pim16aap2.lightkeeper.framework.WorldHandle,double,double,double)" class="member-name-link">teleport(WorldHandle, double, double, double)</a> - Method in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/PlayerHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">PlayerHandle</a></dt>
 <dd>
 <div class="block">Teleports this player to target coordinates in a world.</div>
@@ -5866,6 +5966,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns a string representation of this record class.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/provisioning/session/PreparedServerSnapshot.html#toString()" class="member-name-link">toString()</a> - Method in record class nl.pim16aap2.lightkeeper.provisioning.session.<a href="nl/pim16aap2/lightkeeper/provisioning/session/PreparedServerSnapshot.html" title="class in nl.pim16aap2.lightkeeper.provisioning.session">PreparedServerSnapshot</a></dt>
+<dd>
+<div class="block">Returns a string representation of this record class.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/SpigotBuildMetadata.html#toString()" class="member-name-link">toString()</a> - Method in record class nl.pim16aap2.lightkeeper.provisioning.<a href="nl/pim16aap2/lightkeeper/provisioning/SpigotBuildMetadata.html" title="class in nl.pim16aap2.lightkeeper.provisioning">SpigotBuildMetadata</a></dt>
 <dd>
 <div class="block">Returns a string representation of this record class.</div>
@@ -5956,6 +6060,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/PlayerHandle.html#uniqueId()" class="member-name-link">uniqueId()</a> - Method in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/PlayerHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">PlayerHandle</a></dt>
 <dd>
 <div class="block">Gets the synthetic player UUID.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/RuntimeProtocol.html#UNIX_SOCKET_PATH_MAX_BYTES" class="member-name-link">UNIX_SOCKET_PATH_MAX_BYTES</a> - Static variable in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/RuntimeProtocol.html" title="class in nl.pim16aap2.lightkeeper.runtime">RuntimeProtocol</a></dt>
+<dd>
+<div class="block">Portable upper bound for the UTF-8 length of Unix domain socket paths.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/Platform.html#UNKNOWN" class="member-name-link">UNKNOWN</a> - Enum constant in enum class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/Platform.html" title="enum class in nl.pim16aap2.lightkeeper.framework">Platform</a></dt>
 <dd>&nbsp;</dd>

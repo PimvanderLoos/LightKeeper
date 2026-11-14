@@ -5,5 +5,6 @@ nl.pim16aap2.lightkeeper.provisioning
 nl.pim16aap2.lightkeeper.provisioning.assets
 nl.pim16aap2.lightkeeper.provisioning.serverprocess
 nl.pim16aap2.lightkeeper.provisioning.serverprovider
+nl.pim16aap2.lightkeeper.provisioning.session
 nl.pim16aap2.lightkeeper.provisioning.util
 nl.pim16aap2.lightkeeper.runtime

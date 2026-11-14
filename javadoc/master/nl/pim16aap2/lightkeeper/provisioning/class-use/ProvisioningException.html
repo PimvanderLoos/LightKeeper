@@ -20,7 +20,7 @@ loadScripts(document, 'script');</script>
 <div>JavaScript is disabled on your browser.</div>
 </noscript>
 <div class="flex-box">
-<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/9ea925dc921f0c1d8535449a56e4899c787fe209">9ea925dc921f</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
+<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/3500b645423473bbbcc588919eec5e238af95883">3500b6454234</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
 <nav role="navigation">
 <!-- ========= START OF TOP NAVBAR ======= -->
 <div class="top-nav" id="navbar-top"><button id="navbar-toggle-button" aria-controls="navbar-top" aria-expanded="false" aria-label="Toggle navigation links"><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span></button>
@@ -185,6 +185,18 @@ loadScripts(document, 'script');</script>
 <div class="col-second even-row-color"><span class="type-name-label">ServerProvider.</span><code><a href="../serverprovider/ServerProvider.html#prepareServer()" class="member-name-link">prepareServer</a>()</code></div>
 <div class="col-last even-row-color">
 <div class="block">Prepares the server for use.</div>
+</div>
+<div class="col-first odd-row-color"><code>static int</code></div>
+<div class="col-second odd-row-color"><span class="type-name-label">TargetServerPropertiesConfigurer.</span><code><a href="../serverprovider/TargetServerPropertiesConfigurer.html#reserveAvailableTcpPort()" class="member-name-link">reserveAvailableTcpPort</a>()</code></div>
+<div class="col-last odd-row-color">
+<div class="block">Reserves an available local TCP port.</div>
+</div>
+<div class="col-first even-row-color"><code>static void</code></div>
+<div class="col-second even-row-color"><span class="type-name-label">TargetServerPropertiesConfigurer.</span><code><a href="../serverprovider/TargetServerPropertiesConfigurer.html#rewriteWithRuntimePort(java.lang.System.Logger,java.nio.file.Path,int)" class="member-name-link">rewriteWithRuntimePort</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/System.Logger.html" title="class or interface in java.lang" class="external-link">System.Logger</a>&nbsp;log,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/nio/file/Path.html" title="class or interface in java.nio.file" class="external-link">Path</a>&nbsp;targetServerPropertiesFile,
+ int&nbsp;port)</code></div>
+<div class="col-last even-row-color">
+<div class="block">Rewrites <code>server-port</code> and <code>query.port</code> in the target server properties file.</div>
 </div>
 </div>
 </section>

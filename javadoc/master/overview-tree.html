@@ -20,7 +20,7 @@ loadScripts(document, 'script');</script>
 <div>JavaScript is disabled on your browser.</div>
 </noscript>
 <div class="flex-box">
-<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/9ea925dc921f0c1d8535449a56e4899c787fe209">9ea925dc921f</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
+<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/3500b645423473bbbcc588919eec5e238af95883">3500b6454234</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
 <nav role="navigation">
 <!-- ========= START OF TOP NAVBAR ======= -->
 <div class="top-nav" id="navbar-top"><button id="navbar-toggle-button" aria-controls="navbar-top" aria-expanded="false" aria-label="Toggle navigation links"><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span></button>
@@ -59,6 +59,7 @@ loadScripts(document, 'script');</script>
 <li><a href="nl/pim16aap2/lightkeeper/provisioning/assets/package-tree.html">nl.pim16aap2.lightkeeper.provisioning.assets</a>, </li>
 <li><a href="nl/pim16aap2/lightkeeper/provisioning/serverprocess/package-tree.html">nl.pim16aap2.lightkeeper.provisioning.serverprocess</a>, </li>
 <li><a href="nl/pim16aap2/lightkeeper/provisioning/serverprovider/package-tree.html">nl.pim16aap2.lightkeeper.provisioning.serverprovider</a>, </li>
+<li><a href="nl/pim16aap2/lightkeeper/provisioning/session/package-tree.html">nl.pim16aap2.lightkeeper.provisioning.session</a>, </li>
 <li><a href="nl/pim16aap2/lightkeeper/provisioning/util/package-tree.html">nl.pim16aap2.lightkeeper.provisioning.util</a>, </li>
 <li><a href="nl/pim16aap2/lightkeeper/runtime/package-tree.html">nl.pim16aap2.lightkeeper.runtime</a></li>
 </ul>
@@ -179,9 +180,12 @@ loadScripts(document, 'script');</script>
 <li class="circle">nl.pim16aap2.lightkeeper.provisioning.serverprovider.<a href="nl/pim16aap2/lightkeeper/provisioning/serverprovider/SpigotServerProvider.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.provisioning.serverprovider">SpigotServerProvider</a></li>
 </ul>
 </li>
+<li class="circle">nl.pim16aap2.lightkeeper.provisioning.session.<a href="nl/pim16aap2/lightkeeper/provisioning/session/ServerSession.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.provisioning.session">ServerSession</a> (implements java.lang.<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/AutoCloseable.html" title="class or interface in java.lang" class="external-link">AutoCloseable</a>)</li>
+<li class="circle">nl.pim16aap2.lightkeeper.provisioning.session.<a href="nl/pim16aap2/lightkeeper/provisioning/session/ServerSnapshots.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.provisioning.session">ServerSnapshots</a></li>
 <li class="circle">nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/SetBlock.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.protocol">SetBlock</a></li>
 <li class="circle">nl.pim16aap2.lightkeeper.provisioning.<a href="nl/pim16aap2/lightkeeper/provisioning/SpigotDownloadsClient.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.provisioning">SpigotDownloadsClient</a></li>
 <li class="circle">nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/TabCompletePlayer.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.protocol">TabCompletePlayer</a></li>
+<li class="circle">nl.pim16aap2.lightkeeper.provisioning.serverprovider.<a href="nl/pim16aap2/lightkeeper/provisioning/serverprovider/TargetServerPropertiesConfigurer.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.provisioning.serverprovider">TargetServerPropertiesConfigurer</a></li>
 <li class="circle">nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/TeleportPlayer.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.protocol">TeleportPlayer</a></li>
 <li class="circle">java.lang.<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Throwable.html" class="type-name-link external-link" title="class or interface in java.lang">Throwable</a> (implements java.io.<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/io/Serializable.html" title="class or interface in java.io" class="external-link">Serializable</a>)
 <ul>
@@ -365,6 +369,7 @@ loadScripts(document, 'script');</script>
 <li class="circle">nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/PlayerChat.Command.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.protocol">PlayerChat.Command</a> (implements nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/IAgentCommand.html" title="interface in nl.pim16aap2.lightkeeper.protocol">IAgentCommand</a>&lt;R&gt;)</li>
 <li class="circle">nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/PlayerChat.Response.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.protocol">PlayerChat.Response</a> (implements nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/IAgentResponse.html" title="interface in nl.pim16aap2.lightkeeper.protocol">IAgentResponse</a>)</li>
 <li class="circle">nl.pim16aap2.lightkeeper.provisioning.assets.<a href="nl/pim16aap2/lightkeeper/provisioning/assets/PluginArtifactSpec.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.provisioning.assets">PluginArtifactSpec</a></li>
+<li class="circle">nl.pim16aap2.lightkeeper.provisioning.session.<a href="nl/pim16aap2/lightkeeper/provisioning/session/PreparedServerSnapshot.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.provisioning.session">PreparedServerSnapshot</a></li>
 <li class="circle">nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/QueryEntities.Command.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.protocol">QueryEntities.Command</a> (implements nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/IAgentCommand.html" title="interface in nl.pim16aap2.lightkeeper.protocol">IAgentCommand</a>&lt;R&gt;)</li>
 <li class="circle">nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/QueryEntities.EntityData.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.protocol">QueryEntities.EntityData</a></li>
 <li class="circle">nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/QueryEntities.Response.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.protocol">QueryEntities.Response</a> (implements nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/IAgentResponse.html" title="interface in nl.pim16aap2.lightkeeper.protocol">IAgentResponse</a>)</li>
