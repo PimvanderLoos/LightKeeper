@@ -3,9 +3,9 @@ package nl.pim16aap2.lightkeeper.maven.serverprovider;
 import lombok.ToString;
 import nl.pim16aap2.lightkeeper.maven.serverprocess.MinecraftServerProcess;
 import nl.pim16aap2.lightkeeper.maven.serverprocess.PaperServerProcess;
-import nl.pim16aap2.lightkeeper.maven.util.HashUtil;
 import nl.pim16aap2.lightkeeper.provisioning.PaperBuildMetadata;
 import nl.pim16aap2.lightkeeper.provisioning.ServerSpecification;
+import nl.pim16aap2.lightkeeper.provisioning.util.HashUtil;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 

@@ -2,7 +2,7 @@ package nl.pim16aap2.lightkeeper.maven.mojo.prepareserver;
 
 import nl.pim16aap2.lightkeeper.maven.provisioning.ResolvedPluginArtifact;
 import nl.pim16aap2.lightkeeper.maven.provisioning.WorldInputSpec;
-import nl.pim16aap2.lightkeeper.maven.util.HashUtil;
+import nl.pim16aap2.lightkeeper.provisioning.util.HashUtil;
 import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeArtifactHasher;
 import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeDiscovery;
 import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeDiscoveryReader;

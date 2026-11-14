@@ -9,6 +9,7 @@ import nl.pim16aap2.lightkeeper.maven.serverprovider.PaperServerProvider;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.ServerProvider;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.SpigotServerProvider;
 import nl.pim16aap2.lightkeeper.provisioning.PaperBuildMetadata;
+import nl.pim16aap2.lightkeeper.provisioning.ProvisioningException;
 import nl.pim16aap2.lightkeeper.provisioning.SpigotBuildMetadata;
 import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeDiscovery;
 import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeDiscoveryReader;
@@ -716,6 +717,30 @@ class PrepareServerMojoInternalTest
         result.hasMessageContaining("Invalid plugin under test").hasMessageContaining("corrupt.jar");
         verifyNoInteractions(paper, spigot);
         assertThat(tempDirectory.resolve("work")).doesNotExist();
+    }
+
+    @Test
+    void execute_shouldTranslateSharedProvisioningFailureAtMavenBoundary(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final PrepareServerMojo mojo = new PrepareServerMojo()
+        {
+            @Override
+            PrepareServerRuntimePreparation prepareRuntimePreparation(PrepareServerExecutionContext context)
+            {
+                throw new ProvisioningException("Snapshot input is unavailable.");
+            }
+        };
+        configureRequiredFields(mojo, tempDirectory, "paper");
+
+        // execute
+        final var result = assertThatThrownBy(mojo::execute);
+
+        // verify
+        result.isInstanceOf(MojoExecutionException.class)
+            .hasMessage("Snapshot input is unavailable.")
+            .hasCauseInstanceOf(ProvisioningException.class);
     }
 
     @Test

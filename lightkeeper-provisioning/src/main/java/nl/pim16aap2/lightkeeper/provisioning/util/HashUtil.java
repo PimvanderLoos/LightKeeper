@@ -1,6 +1,6 @@
-package nl.pim16aap2.lightkeeper.maven.util;
+package nl.pim16aap2.lightkeeper.provisioning.util;
 
-import org.apache.maven.plugin.MojoExecutionException;
+import nl.pim16aap2.lightkeeper.provisioning.ProvisioningException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,38 +15,75 @@ import java.security.NoSuchAlgorithmException;
  */
 public final class HashUtil
 {
+    /** Bytes read per hashing iteration. */
     private static final int BUFFER_SIZE = 8_192;
 
     private HashUtil()
     {
     }
 
+    /**
+     * Computes the SHA-256 of a file without modifying it.
+     *
+     * @param path
+     *     Input file.
+     * @return Lowercase hexadecimal digest.
+     * @throws ProvisioningException
+     *     If the file cannot be read.
+     */
     public static String sha256(Path path)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         return hash(path, "SHA-256");
     }
 
+    /**
+     * Computes SHA-256 while leaving stream ownership with the caller.
+     *
+     * @param inputStream
+     *     Input consumed until EOF.
+     * @return Lowercase hexadecimal digest.
+     * @throws ProvisioningException
+     *     If reading fails.
+     */
     public static String sha256(InputStream inputStream)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         return hash(inputStream, "SHA-256");
     }
 
+    /**
+     * Computes the SHA-512 of a file without modifying it.
+     *
+     * @param path
+     *     Input file.
+     * @return Lowercase hexadecimal digest.
+     * @throws ProvisioningException
+     *     If the file cannot be read.
+     */
     public static String sha512(Path path)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         return hash(path, "SHA-512");
     }
 
+    /**
+     * Computes SHA-512 while leaving stream ownership with the caller.
+     *
+     * @param inputStream
+     *     Input consumed until EOF.
+     * @return Lowercase hexadecimal digest.
+     * @throws ProvisioningException
+     *     If reading fails.
+     */
     public static String sha512(InputStream inputStream)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         return hash(inputStream, "SHA-512");
     }
 
     private static String hash(Path path, String algorithm)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         try (InputStream inputStream = Files.newInputStream(path))
         {
@@ -54,7 +91,7 @@ public final class HashUtil
         }
         catch (IOException exception)
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Failed to compute %s for file '%s'.".formatted(algorithm, path),
                 exception
             );
@@ -62,7 +99,7 @@ public final class HashUtil
     }
 
     private static String hash(InputStream inputStream, String algorithm)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         try
         {
@@ -71,16 +108,25 @@ public final class HashUtil
 
             int readBytes;
             while ((readBytes = inputStream.read(buffer)) != -1)
+            {
                 digest.update(buffer, 0, readBytes);
+            }
 
             return toHex(digest.digest());
         }
         catch (IOException exception)
         {
-            throw new MojoExecutionException("Failed to compute %s from input stream.".formatted(algorithm), exception);
+            throw new ProvisioningException("Failed to compute %s from input stream.".formatted(algorithm), exception);
         }
     }
 
+    /**
+     * Computes SHA-256 for an in-memory input.
+     *
+     * @param input
+     *     Bytes to hash.
+     * @return Lowercase hexadecimal digest.
+     */
     public static String sha256(byte[] input)
     {
         final MessageDigest digest = getSha256Digest();
@@ -88,6 +134,13 @@ public final class HashUtil
         return toHex(digest.digest());
     }
 
+    /**
+     * Computes SHA-256 using the string's UTF-8 encoding.
+     *
+     * @param input
+     *     Text to hash.
+     * @return Lowercase hexadecimal digest.
+     */
     public static String sha256(String input)
     {
         final MessageDigest digest = getSha256Digest();

@@ -14,11 +14,12 @@ import nl.pim16aap2.lightkeeper.maven.provisioning.WorldInputSpec;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.PaperServerProvider;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.ServerProvider;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.SpigotServerProvider;
-import nl.pim16aap2.lightkeeper.maven.util.CacheKeyUtil;
 import nl.pim16aap2.lightkeeper.maven.util.FileUtil;
 import nl.pim16aap2.lightkeeper.provisioning.PaperBuildMetadata;
+import nl.pim16aap2.lightkeeper.provisioning.ProvisioningException;
 import nl.pim16aap2.lightkeeper.provisioning.ServerSpecification;
 import nl.pim16aap2.lightkeeper.provisioning.SpigotBuildMetadata;
+import nl.pim16aap2.lightkeeper.provisioning.util.CacheKeyUtil;
 import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeDiscovery;
 import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeLock;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
@@ -257,6 +258,19 @@ public class PrepareServerMojo extends AbstractMojo
 
     @Override
     public void execute()
+        throws MojoExecutionException
+    {
+        try
+        {
+            executePreparation();
+        }
+        catch (ProvisioningException exception)
+        {
+            throw new MojoExecutionException(exception.getMessage(), exception);
+        }
+    }
+
+    private void executePreparation()
         throws MojoExecutionException
     {
         if (skip || skipITs || skipAllTests || failsafeIsSkipped())

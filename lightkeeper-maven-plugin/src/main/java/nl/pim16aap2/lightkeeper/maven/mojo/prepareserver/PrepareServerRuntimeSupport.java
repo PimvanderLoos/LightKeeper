@@ -2,7 +2,7 @@ package nl.pim16aap2.lightkeeper.maven.mojo.prepareserver;
 
 import nl.pim16aap2.lightkeeper.maven.LightkeeperEmbeddedAgent;
 import nl.pim16aap2.lightkeeper.maven.util.FileUtil;
-import nl.pim16aap2.lightkeeper.maven.util.HashUtil;
+import nl.pim16aap2.lightkeeper.provisioning.util.HashUtil;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestWriter;
 import nl.pim16aap2.lightkeeper.runtime.UserOnlyDirectory;

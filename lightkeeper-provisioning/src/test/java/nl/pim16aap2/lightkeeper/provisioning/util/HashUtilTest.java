@@ -1,8 +1,8 @@
-package nl.pim16aap2.lightkeeper.maven.util;
+package nl.pim16aap2.lightkeeper.provisioning.util;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-import org.apache.maven.plugin.MojoExecutionException;
+import nl.pim16aap2.lightkeeper.provisioning.ProvisioningException;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
@@ -33,7 +33,7 @@ class HashUtilTest
 
     @Test
     void sha256_shouldGenerateDeterministicHashForFile()
-        throws IOException, MojoExecutionException
+        throws IOException, ProvisioningException
     {
         // setup
         try (FileSystem fileSystem = Jimfs.newFileSystem(Configuration.unix()))
@@ -57,13 +57,13 @@ class HashUtilTest
 
         // execute + verify
         assertThatThrownBy(() -> HashUtil.sha256(missingFile))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("Failed to compute SHA-256");
     }
 
     @Test
     void sha512_shouldGenerateDeterministicHashForString()
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         // setup
         final String input = "LightKeeper";
@@ -79,7 +79,7 @@ class HashUtilTest
 
     @Test
     void sha512_shouldGenerateDeterministicHashForFile()
-        throws IOException, MojoExecutionException
+        throws IOException, ProvisioningException
     {
         // setup
         try (FileSystem fileSystem = Jimfs.newFileSystem(Configuration.unix()))
@@ -99,7 +99,7 @@ class HashUtilTest
 
     @Test
     void sha512_shouldGenerateDeterministicHashForInputStream()
-        throws IOException, MojoExecutionException
+        throws IOException, ProvisioningException
     {
         // setup
         try (InputStream inputStream = new ByteArrayInputStream("LightKeeper".getBytes(StandardCharsets.UTF_8)))
@@ -130,7 +130,7 @@ class HashUtilTest
 
         // execute + verify
         assertThatThrownBy(() -> HashUtil.sha256(inputStream))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("Failed to compute SHA-256 from input stream");
     }
 }

@@ -1,4 +1,4 @@
-package nl.pim16aap2.lightkeeper.maven.util;
+package nl.pim16aap2.lightkeeper.provisioning.util;
 
 import org.junit.jupiter.api.Test;
 
