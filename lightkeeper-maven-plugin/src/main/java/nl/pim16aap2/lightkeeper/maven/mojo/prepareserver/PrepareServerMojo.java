@@ -486,7 +486,7 @@ public class PrepareServerMojo extends AbstractMojo
                 .formatted(moduleDirectory, ideContext.normalizedServerType(), preparationDirectory)
         );
         getLog().info(
-            "Refresh inputs by rerunning this execution; reset persistent state with -Dlightkeeper.ide.refresh=true."
+            "Refresh inputs by rerunning this execution; recreate prepared inputs with -Dlightkeeper.ide.refresh=true."
         );
     }
 
@@ -751,7 +751,8 @@ public class PrepareServerMojo extends AbstractMojo
             runtimeProtocolVersion,
             agentMetadata.cacheIdentity(),
             PrepareServerInputResolver.normalizeOptionalString(extraJvmArgs),
-            provisionedWorlds
+            provisionedWorlds,
+            javaExecutablePath
         );
     }
 

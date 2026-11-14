@@ -196,7 +196,9 @@ other dependency plugins explicitly only when your test scenario needs them.
 
 The existing durable IDE preparation remains available using `-Dlightkeeper.ide=true`. Repackage changed production
 sources before refreshing that preparation; an existing JAR hash alone cannot prove that sources were built.
-See the [IDE test setup guide](docs/ide-testing.md) for module selection and refresh commands.
+Discovered runs use a private server session per test class. Methods share that session; `@FreshServer` and explicit
+restarts preserve its world data. Independent classes and launches start from clean prepared inputs. Explicit manifest
+paths retain control over their existing server directory. See the [IDE test setup guide](docs/ide-testing.md).
 
 ### 3) Write tests with the framework
 

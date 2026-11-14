@@ -99,8 +99,7 @@ final class MinecraftServerProcess
             throw new IllegalStateException("Previous Minecraft server output reader is still stopping.");
         waitForWorldSessionLockRelease(SESSION_LOCK_RELEASE_TIMEOUT);
 
-        final Path javaExecutable = Path.of(System.getProperty("java.home"), "bin", "java");
-        final ProcessBuilder processBuilder = getProcessBuilder(javaExecutable);
+        final ProcessBuilder processBuilder = getProcessBuilder();
         final CountDownLatch startLatch = new CountDownLatch(1);
 
         try
@@ -155,8 +154,12 @@ final class MinecraftServerProcess
         );
     }
 
-    private ProcessBuilder getProcessBuilder(Path javaExecutable)
+    private ProcessBuilder getProcessBuilder()
     {
+        final String configuredJava = runtimeManifest.javaExecutablePath();
+        final Path javaExecutable = configuredJava == null
+            ? Path.of(System.getProperty("java.home"), "bin", "java")
+            : Path.of(configuredJava);
         final Path serverDirectory = Path.of(runtimeManifest.serverDirectory());
         final Path serverJar = Path.of(runtimeManifest.serverJar());
         final int memoryMb = runtimeManifest.memoryMb();

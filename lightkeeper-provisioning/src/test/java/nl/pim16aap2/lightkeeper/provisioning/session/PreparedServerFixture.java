@@ -33,7 +33,7 @@ final class PreparedServerFixture
         return new RuntimeManifest(
             "paper", "1.21.11", 132, "cache", server.toString(), server.resolve("paper.jar").toString(), 1024,
             root.resolve("s/original.sock").toString(), "original-token", agent.toString(), HashUtil.sha256(agent),
-            RuntimeProtocol.VERSION, "agent", "-Dfixture=true", List.of()
+            RuntimeProtocol.VERSION, "agent", "-Dfixture=true", List.of(), javaExecutable()
         );
     }
 
@@ -48,8 +48,7 @@ final class PreparedServerFixture
         {
             return ServerSnapshots.read(ServerSnapshots.capture(
                 create(root),
-                root.resolve("snapshots"),
-                javaExecutable()
+                root.resolve("snapshots")
             ));
         }
         catch (IOException exception)

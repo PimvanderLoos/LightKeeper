@@ -210,15 +210,57 @@ class MinecraftServerProcessTest
             tempDirectory.resolve("diagnostics")
         );
         final Method getProcessBuilder =
-            MinecraftServerProcess.class.getDeclaredMethod("getProcessBuilder", Path.class);
+            MinecraftServerProcess.class.getDeclaredMethod("getProcessBuilder");
         getProcessBuilder.setAccessible(true);
 
         // execute
         final ProcessBuilder processBuilder =
-            (ProcessBuilder) getProcessBuilder.invoke(serverProcess, Path.of("java"));
+            (ProcessBuilder) getProcessBuilder.invoke(serverProcess);
 
         // verify
         assertThat(processBuilder.redirectErrorStream()).isFalse();
+    }
+
+    @Test
+    void getProcessBuilder_shouldUseThePreparedJavaExecutable(@TempDir Path root)
+        throws Exception
+    {
+        // setup
+        final RuntimeManifest original = runtimeManifest(root);
+        final String selectedJava = root.resolve("custom jdk/bin/java").toString();
+        final RuntimeManifest manifest = new RuntimeManifest(
+            original.serverType(), original.serverVersion(), original.paperBuildId(), original.cacheKey(),
+            original.serverDirectory(), original.serverJar(), original.memoryMb(), original.udsSocketPath(),
+            original.agentAuthToken(), original.agentJar(), original.agentJarSha256(),
+            original.runtimeProtocolVersion(),
+            original.agentCacheIdentity(), original.extraJvmArgs(), original.provisionedWorlds(), selectedJava
+        );
+        final MinecraftServerProcess process = new MinecraftServerProcess(manifest, root.resolve("diagnostics"));
+        final Method method = MinecraftServerProcess.class.getDeclaredMethod("getProcessBuilder");
+        method.setAccessible(true);
+
+        // execute
+        final ProcessBuilder builder = (ProcessBuilder) method.invoke(process);
+
+        // verify
+        assertThat(builder.command().getFirst()).isEqualTo(selectedJava);
+    }
+
+    @Test
+    void getProcessBuilder_shouldUseCurrentJavaForLegacyManifest(@TempDir Path root)
+        throws Exception
+    {
+        // setup
+        final MinecraftServerProcess process = new MinecraftServerProcess(runtimeManifest(root), root.resolve("logs"));
+        final Method method = MinecraftServerProcess.class.getDeclaredMethod("getProcessBuilder");
+        method.setAccessible(true);
+
+        // execute
+        final ProcessBuilder builder = (ProcessBuilder) method.invoke(process);
+
+        // verify
+        assertThat(builder.command().getFirst())
+            .isEqualTo(Path.of(System.getProperty("java.home"), "bin/java").toString());
     }
 
     @Test

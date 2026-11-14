@@ -22,16 +22,13 @@ import nl.pim16aap2.lightkeeper.protocol.GetServerErrors;
 import nl.pim16aap2.lightkeeper.protocol.MutatePlayerPermission;
 import nl.pim16aap2.lightkeeper.protocol.QueryEntities;
 import nl.pim16aap2.lightkeeper.protocol.ServerErrorEntry;
+import nl.pim16aap2.lightkeeper.provisioning.session.ServerSession;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestReader;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestValidator;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
-import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeLock;
-import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeSelection;
-import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeValidator;
 import org.jspecify.annotations.Nullable;
 
-import javax.inject.Inject;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -41,6 +38,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import javax.inject.Inject;
 
 /**
  * Default LightKeeper framework implementation.
@@ -66,7 +64,8 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     private final UdsAgentClient agentClient;
     private final PlayerScopeRegistry playerScopeRegistry;
     private final AtomicBoolean closed = new AtomicBoolean(false);
-    private @Nullable IdeRuntimeLock ideRuntimeLock;
+    /** Private standalone session released only after its server process has stopped. */
+    private @Nullable ServerSession ownedSession;
     /**
      * Whether the server was taken down — via {@link IServerControl#crash()} or {@link IServerControl#stop()} — and
      * has not been started again yet.
@@ -117,38 +116,33 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     {
         final RuntimeManifest runtimeManifest = readRuntimeManifest(runtimeManifestPath);
         RuntimeManifestValidator.validateForRuntimeStartup(runtimeManifest, RuntimeProtocol.VERSION);
-        return startValidated(runtimeManifest, null);
+        return startValidated(runtimeManifest);
     }
 
     /**
-     * Starts a framework from a discovered IDE runtime while retaining its module lease until close.
+     * Starts a standalone framework that owns and closes its private session.
      *
-     * @param selection Discovered runtime selection.
-     * @param runtimeLock Acquired module runtime lock.
+     * @param session
+     *     Private session created from prepared inputs.
      * @return Started framework.
      */
-    public static DefaultLightkeeperFramework start(
-        IdeRuntimeSelection selection,
-        IdeRuntimeLock runtimeLock)
+    public static DefaultLightkeeperFramework start(ServerSession session)
     {
-        final RuntimeManifest runtimeManifest;
         try
         {
-            runtimeManifest = readRuntimeManifest(selection.runtimeManifestPath());
-            RuntimeManifestValidator.validateForRuntimeStartup(runtimeManifest, RuntimeProtocol.VERSION);
-            IdeRuntimeValidator.validate(selection.discovery(), selection.moduleDirectory(), runtimeManifest);
+            final DefaultLightkeeperFramework framework = start(session.manifestPath());
+            framework.ownedSession = session;
+            return framework;
         }
         catch (RuntimeException exception)
         {
-            runtimeLock.close();
+            session.preserve();
+            collectCloseFailure(session::close, exception);
             throw exception;
         }
-        return startValidated(runtimeManifest, runtimeLock);
     }
 
-    private static DefaultLightkeeperFramework startValidated(
-        RuntimeManifest runtimeManifest,
-        @Nullable IdeRuntimeLock runtimeLock)
+    private static DefaultLightkeeperFramework startValidated(RuntimeManifest runtimeManifest)
     {
 
         final Path serverDirectory = Path.of(runtimeManifest.serverDirectory());
@@ -181,7 +175,6 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
                 agentClient
             );
             final DefaultLightkeeperFramework framework = component.framework();
-            framework.ideRuntimeLock = runtimeLock;
             framework.preloadConfiguredWorlds();
             return framework;
         }
@@ -190,8 +183,6 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
             if (agentClient != null)
                 agentClient.close();
             minecraftServerProcess.stop(SHUTDOWN_TIMEOUT);
-            if (runtimeLock != null)
-                runtimeLock.close();
             throw exception;
         }
     }
@@ -699,39 +690,55 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
     }
 
     @Override
-    @SuppressWarnings("PMD.UseTryWithResources") // This close method owns ordered shutdown of long-lived resources.
     public void close()
     {
         if (!closed.compareAndSet(false, true))
+        {
             return;
+        }
+        final ServerSession session = ownedSession;
+        ownedSession = null;
+        try (session)
+        {
+            LOG.log(System.Logger.Level.INFO, "LK_FRAMEWORK: Closing framework and cleaning up players.");
+            RuntimeException failure = collectCloseFailure(
+                () -> playerScopeRegistry.cleanupAll(agentClient::removePlayer),
+                null
+            );
+            failure = collectCloseFailure(agentClient::close, failure);
+            LOG.log(System.Logger.Level.INFO, "LK_FRAMEWORK: Stopping Minecraft server.");
+            failure = collectCloseFailure(() -> minecraftServerProcess.stop(SHUTDOWN_TIMEOUT), failure);
+            if (failure != null)
+            {
+                if (session != null)
+                {
+                    session.preserve();
+                }
+                throw failure;
+            }
+        }
+    }
 
+    @SuppressWarnings("PMD.CompareObjectsWithEquals")
+        // Throwable forbids suppressing the same instance; exception equality may be overridden independently.
+    private static @Nullable RuntimeException collectCloseFailure(Runnable close, @Nullable RuntimeException failure)
+    {
         try
         {
-            LOG.log(
-                System.Logger.Level.INFO,
-                "LK_FRAMEWORK: Closing framework and cleaning up players."
-            );
-            playerScopeRegistry.cleanupAll(agentClient::removePlayer);
-            agentClient.close();
+            close.run();
         }
-        finally
+        catch (RuntimeException exception)
         {
-            try
+            if (failure == null)
             {
-                LOG.log(
-                    System.Logger.Level.INFO,
-                    "LK_FRAMEWORK: Stopping Minecraft server."
-                );
-                minecraftServerProcess.stop(SHUTDOWN_TIMEOUT);
+                return exception;
             }
-            finally
+            if (failure != exception)
             {
-                final @Nullable IdeRuntimeLock runtimeLock = ideRuntimeLock;
-                ideRuntimeLock = null;
-                if (runtimeLock != null)
-                    runtimeLock.close();
+                failure.addSuppressed(exception);
             }
         }
+        return failure;
     }
 
     public void beginMethodScope(String methodExecutionId)

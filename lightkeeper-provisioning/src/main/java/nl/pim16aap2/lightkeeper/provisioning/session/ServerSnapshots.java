@@ -41,11 +41,9 @@ public final class ServerSnapshots
      *     Prepared server to capture; its JARs must be inside its server directory.
      * @param snapshotsDirectory
      *     LK-owned directory receiving the unique snapshot.
-     * @param javaExecutablePath
-     *     Absolute Java executable used for the eventual server process.
      * @return Path to the published snapshot metadata.
      */
-    public static Path capture(RuntimeManifest manifest, Path snapshotsDirectory, String javaExecutablePath)
+    public static Path capture(RuntimeManifest manifest, Path snapshotsDirectory)
     {
         RuntimeManifestValidator.validateForRuntimeStartup(manifest, RuntimeProtocol.VERSION);
         final Path source = Path.of(manifest.serverDirectory()).toAbsolutePath().normalize();
@@ -71,7 +69,6 @@ public final class ServerSnapshots
             final PreparedServerSnapshot snapshot = new PreparedServerSnapshot(
                 PreparedServerSnapshot.SCHEMA_VERSION,
                 relocated,
-                javaExecutablePath,
                 hash
             );
             MAPPER.writeValue(pending.resolve(METADATA_FILE).toFile(), snapshot);

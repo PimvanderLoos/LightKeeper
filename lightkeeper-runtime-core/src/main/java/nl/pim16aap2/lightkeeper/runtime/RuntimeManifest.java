@@ -41,6 +41,8 @@ import java.util.Objects;
  *     All worlds provisioned into the server directory by {@code prepare-server}, including templates that
  *     are not loaded on startup. The framework preloads the {@code loadOnStartup} entries before test
  *     execution and validates template names against the full list.
+ * @param javaExecutablePath
+ *     Java executable selected during preparation, or {@code null} to use the launching JVM's Java installation.
  */
 public record RuntimeManifest(
     String serverType,
@@ -57,12 +59,72 @@ public record RuntimeManifest(
     int runtimeProtocolVersion,
     String agentCacheIdentity,
     @Nullable String extraJvmArgs,
-    List<ProvisionedWorld> provisionedWorlds
+    List<ProvisionedWorld> provisionedWorlds,
+    @Nullable String javaExecutablePath
 )
 {
     public RuntimeManifest
     {
         provisionedWorlds = provisionedWorlds == null ? List.of() : List.copyOf(provisionedWorlds);
+    }
+
+    /**
+     * Creates a manifest using the launching JVM's Java installation, preserving the original constructor contract.
+     *
+     * @param serverType
+     *     Server platform.
+     * @param serverVersion
+     *     Minecraft version.
+     * @param paperBuildId
+     *     Paper build identifier.
+     * @param cacheKey
+     *     Prepared server cache identity.
+     * @param serverDirectory
+     *     Server working directory.
+     * @param serverJar
+     *     Server artifact path.
+     * @param memoryMb
+     *     Server heap size in megabytes.
+     * @param udsSocketPath
+     *     Agent socket path.
+     * @param agentAuthToken
+     *     Agent handshake token.
+     * @param agentJar
+     *     Agent artifact path, when available.
+     * @param agentJarSha256
+     *     Expected agent checksum, when available.
+     * @param runtimeProtocolVersion
+     *     Required protocol version.
+     * @param agentCacheIdentity
+     *     Agent preparation identity.
+     * @param extraJvmArgs
+     *     Additional server JVM arguments.
+     * @param provisionedWorlds
+     *     Prepared worlds.
+     */
+    public RuntimeManifest(
+        String serverType,
+        String serverVersion,
+        long paperBuildId,
+        String cacheKey,
+        String serverDirectory,
+        String serverJar,
+        int memoryMb,
+        String udsSocketPath,
+        String agentAuthToken,
+        @Nullable String agentJar,
+        @Nullable String agentJarSha256,
+        int runtimeProtocolVersion,
+        String agentCacheIdentity,
+        @Nullable String extraJvmArgs,
+        List<ProvisionedWorld> provisionedWorlds
+    )
+    {
+        this(
+            serverType, serverVersion, paperBuildId, cacheKey, serverDirectory, serverJar, memoryMb,
+            udsSocketPath, agentAuthToken, agentJar, agentJarSha256, runtimeProtocolVersion, agentCacheIdentity,
+            extraJvmArgs, provisionedWorlds, null
+        );
     }
 
     /**
@@ -103,7 +165,8 @@ public record RuntimeManifest(
             runtimeProtocolVersion,
             agentCacheIdentity,
             extraJvmArgs,
-            provisionedWorlds
+            provisionedWorlds,
+            javaExecutablePath
         );
     }
 

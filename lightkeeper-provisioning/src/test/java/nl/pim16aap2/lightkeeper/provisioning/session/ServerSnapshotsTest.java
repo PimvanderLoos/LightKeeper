@@ -23,8 +23,7 @@ class ServerSnapshotsTest
         // execute
         final Path metadata = ServerSnapshots.capture(
             original,
-            root.resolve("snapshots"),
-            PreparedServerFixture.javaExecutable()
+            root.resolve("snapshots")
         );
         final PreparedServerSnapshot snapshot = ServerSnapshots.read(metadata);
         Files.writeString(Path.of(original.serverDirectory()).resolve("plugins/target.jar"), "plugin-v2");
@@ -34,7 +33,7 @@ class ServerSnapshotsTest
         assertThat(capturedJar).hasContent("plugin-v1");
         assertThat(Files.isSameFile(capturedJar, Path.of(original.serverDirectory()).resolve("plugins/target.jar")))
             .isFalse();
-        assertThat(snapshot.javaExecutablePath()).isEqualTo(PreparedServerFixture.javaExecutable());
+        assertThat(snapshot.manifest().javaExecutablePath()).isEqualTo(PreparedServerFixture.javaExecutable());
         assertThat(Path.of(snapshot.manifest().serverJar())).exists();
         assertThat(Path.of(Objects.requireNonNull(snapshot.manifest().agentJar()))).exists();
         try (var entries = Files.list(root.resolve("snapshots")))
@@ -55,7 +54,7 @@ class ServerSnapshotsTest
 
         // execute
         final var failure = catchThrowable(() -> ServerSnapshots.capture(
-            original, root.resolve("snapshots"), PreparedServerFixture.javaExecutable()
+            original, root.resolve("snapshots")
         ));
 
         // verify
@@ -78,7 +77,7 @@ class ServerSnapshotsTest
 
         // execute
         final var failure = catchThrowable(() -> ServerSnapshots.capture(
-            original, Path.of(original.serverDirectory()).resolve("nested"), PreparedServerFixture.javaExecutable()
+            original, Path.of(original.serverDirectory()).resolve("nested")
         ));
 
         // verify

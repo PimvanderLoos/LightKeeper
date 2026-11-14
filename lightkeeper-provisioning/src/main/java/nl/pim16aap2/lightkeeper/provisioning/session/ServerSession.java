@@ -28,8 +28,6 @@ public final class ServerSession implements AutoCloseable
     private final Path directory;
     /** Manifest used for every process start within this session. */
     private final Path manifestPath;
-    /** Maven-selected executable, independent of the JUnit JVM's Java installation. */
-    private final String javaExecutablePath;
     /** Unique socket owned by this session; its name is independent of the authentication token. */
     private final Path socketPath;
     /** Makes cleanup idempotent across normal callbacks and JUnit store shutdown. */
@@ -37,11 +35,10 @@ public final class ServerSession implements AutoCloseable
     /** Failure retention is visible to cleanup on another thread. */
     private volatile boolean preserved;
 
-    private ServerSession(Path directory, Path manifestPath, String javaExecutablePath, Path socketPath)
+    private ServerSession(Path directory, Path manifestPath, Path socketPath)
     {
         this.directory = directory;
         this.manifestPath = manifestPath;
-        this.javaExecutablePath = javaExecutablePath;
         this.socketPath = socketPath;
     }
 
@@ -90,7 +87,7 @@ public final class ServerSession implements AutoCloseable
             final RuntimeManifest manifest = snapshot.manifest().relocate(server, socket, token);
             final Path manifestPath = directory.resolve("runtime-manifest.json");
             new RuntimeManifestWriter().write(manifest, manifestPath);
-            return new ServerSession(directory, manifestPath, snapshot.javaExecutablePath(), socket);
+            return new ServerSession(directory, manifestPath, socket);
         }
         catch (IOException | RuntimeException exception)
         {
@@ -117,16 +114,6 @@ public final class ServerSession implements AutoCloseable
     public Path manifestPath()
     {
         return manifestPath;
-    }
-
-    /**
-     * Returns the Java executable chosen by the effective Maven configuration.
-     *
-     * @return Absolute Java executable path.
-     */
-    public String javaExecutablePath()
-    {
-        return javaExecutablePath;
     }
 
     /** Keeps this session's server and diagnostic files after a failed test or startup. */

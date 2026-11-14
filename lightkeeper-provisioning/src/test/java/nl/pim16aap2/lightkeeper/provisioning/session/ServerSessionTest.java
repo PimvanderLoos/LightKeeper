@@ -42,7 +42,7 @@ class ServerSessionTest
             assertThat(firstManifest.agentAuthToken()).isNotEqualTo(secondManifest.agentAuthToken());
             assertThat(firstManifest.udsSocketPath()).isNotEqualTo(secondManifest.udsSocketPath());
             assertThat(firstManifest.extraJvmArgs()).isEqualTo("-Dfixture=true");
-            assertThat(first.javaExecutablePath()).isEqualTo(PreparedServerFixture.javaExecutable());
+            assertThat(firstManifest.javaExecutablePath()).isEqualTo(PreparedServerFixture.javaExecutable());
             assertThat(Path.of(firstManifest.serverDirectory()).resolve("server.properties"))
                 .content().doesNotContain("port=4242");
         }
