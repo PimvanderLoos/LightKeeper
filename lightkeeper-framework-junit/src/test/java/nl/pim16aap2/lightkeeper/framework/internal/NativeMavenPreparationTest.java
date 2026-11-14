@@ -181,6 +181,39 @@ class NativeMavenPreparationTest
     }
 
     @Test
+    void prepare_shouldReevaluateAnExplicitVariantAddedAfterTheCachedPlan()
+        throws Exception
+    {
+        // setup
+        final Path executable = Files.writeString(root.resolve("maven"), "#!/bin/sh\nexit 17\n");
+        Files.setPosixFilePermissions(executable, PosixFilePermissions.fromString("rwx------"));
+        final ModuleTestPlan cached = plan(executable.toString(), List.of("old-default"));
+        System.setProperty(NativeMavenPreparation.EXECUTION_PROPERTY, "new-execution");
+
+        // execute
+        final Throwable failure = catchThrowable(() -> NativeMavenPreparation.prepare(cached));
+
+        // verify
+        assertThat(failure).isInstanceOf(IllegalStateException.class).hasMessageContaining("exit code 17", "maven.log");
+    }
+
+    @Test
+    void prepare_shouldReevaluateAnAmbiguousCachedPlanBeforeSelectingTheCurrentDefault()
+        throws Exception
+    {
+        // setup
+        final Path executable = Files.writeString(root.resolve("maven"), "#!/bin/sh\nexit 17\n");
+        Files.setPosixFilePermissions(executable, PosixFilePermissions.fromString("rwx------"));
+        final ModuleTestPlan cached = plan(executable.toString(), List.of("old-paper", "old-spigot"));
+
+        // execute
+        final Throwable failure = catchThrowable(() -> NativeMavenPreparation.prepare(cached));
+
+        // verify
+        assertThat(failure).isInstanceOf(IllegalStateException.class).hasMessageContaining("exit code 17", "maven.log");
+    }
+
+    @Test
     void prepare_shouldFailWithItsBuildLogInsteadOfFallingBackToOldInputs()
         throws Exception
     {

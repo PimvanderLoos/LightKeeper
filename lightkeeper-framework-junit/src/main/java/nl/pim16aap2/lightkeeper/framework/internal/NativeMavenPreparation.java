@@ -41,22 +41,25 @@ public final class NativeMavenPreparation
      */
     public static PreparedTestRuntime prepare(ModuleTestPlan plan)
     {
-        final String execution = selectedExecution(plan);
+        final String requested = System.getProperty(EXECUTION_PROPERTY, "").trim();
+        final String provisional = requested.isEmpty() ? plan.defaultExecutionId() : requested;
         final Path module = Path.of(plan.moduleDirectory());
         try
         {
-            final Path current = ModulePlanPaths.runtimeContext(module, execution);
-            if (Files.isRegularFile(current))
+            if (provisional != null &&
+                Files.isRegularFile(ModulePlanPaths.runtimeContext(module, provisional)))
             {
+                final Path current = ModulePlanPaths.runtimeContext(module, provisional);
                 final MavenRuntimeContext context = GeneratedMetadata.read(current, MavenRuntimeContext.class);
-                validateOwner(context, plan, execution);
+                validateOwner(context, plan, provisional);
                 if (context.producer().matchesCurrentAncestry())
                 {
+                    validateOwner(context, plan, selectedExecution(plan));
                     return new PreparedTestRuntime(context, null);
                 }
             }
             rejectUnpreparedAncestor(plan);
-            return build(plan, execution);
+            return build(plan, requested);
         }
         catch (IOException exception)
         {
@@ -101,8 +104,7 @@ public final class NativeMavenPreparation
         builder.environment().put("PATH", Path.of(plan.buildContext().javaHome(), "bin") + File.pathSeparator
             + Objects.requireNonNullElse(builder.environment().get("PATH"), ""));
         builder.environment().put(MavenRuntimeContext.BOOTSTRAP_MODULE_ENV, module.toString());
-        builder.environment().put(MavenRuntimeContext.BOOTSTRAP_EXECUTION_ENV,
-            System.getProperty(EXECUTION_PROPERTY, "").isBlank() ? "" : execution);
+        builder.environment().put(MavenRuntimeContext.BOOTSTRAP_EXECUTION_ENV, execution);
         builder.environment().put(MavenRuntimeContext.BOOTSTRAP_RESULT_ENV, result.toString());
         builder.environment().put(MavenRuntimeContext.BOOTSTRAP_NONCE_ENV, nonce);
         final long timeout = timeoutSeconds(plan);
@@ -127,8 +129,7 @@ public final class NativeMavenPreparation
                     + child.exitValue() + ". See '" + log + "'. No previous runtime will be used.");
             }
             final MavenRuntimeContext context = GeneratedMetadata.read(result, MavenRuntimeContext.class);
-            validateOwner(context, plan, System.getProperty(EXECUTION_PROPERTY, "").isBlank()
-                ? context.plan().executionId() : execution);
+            validateOwner(context, plan, execution.isEmpty() ? context.plan().executionId() : execution);
             if (!nonce.equals(context.exportNonce()))
             {
                 throw new IllegalStateException("Maven runtime export belongs to another JUnit launch: " + result);
@@ -213,7 +214,8 @@ public final class NativeMavenPreparation
         if (Files.isRegularFile(owner) &&
             GeneratedMetadata.read(owner, BuildLeaseIdentity.class).process().matchesCurrentAncestry())
         {
-            throw new IllegalStateException("The outer Maven build has not captured this module's packaged runtime. "
+            throw new IllegalStateException("The outer Maven build has not captured packaged runtime '"
+                + selectedExecution(plan) + "' for this module. "
                 + "Run LightKeeper ITs with Failsafe using 'mvn verify', or launch JUnit directly after that setup.");
         }
     }

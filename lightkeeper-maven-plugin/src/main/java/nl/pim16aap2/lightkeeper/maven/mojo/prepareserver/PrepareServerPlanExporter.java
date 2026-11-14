@@ -73,11 +73,16 @@ final class PrepareServerPlanExporter
             return false;
         }
         final String requested = Objects.requireNonNull(System.getenv(MavenRuntimeContext.BOOTSTRAP_EXECUTION_ENV));
+        final ModuleTestPlan plan = GeneratedMetadata.read(ModulePlanPaths.modulePlan(module), ModuleTestPlan.class);
         if (!requested.isEmpty())
         {
+            if (!plan.executionIds().contains(requested))
+            {
+                throw new IllegalArgumentException("Unknown LightKeeper execution '" + requested
+                    + "'. Available executions: " + plan.executionIds());
+            }
             return executionId.equals(requested);
         }
-        final ModuleTestPlan plan = GeneratedMetadata.read(ModulePlanPaths.modulePlan(module), ModuleTestPlan.class);
         if (plan.defaultExecutionId() == null)
         {
             throw new IllegalArgumentException("Multiple active LightKeeper preparations: " + plan.executionIds()
