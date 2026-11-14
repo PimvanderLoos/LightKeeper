@@ -1,6 +1,4 @@
-package nl.pim16aap2.lightkeeper.maven;
-
-import org.apache.maven.plugin.MojoExecutionException;
+package nl.pim16aap2.lightkeeper.provisioning;
 
 import java.io.InputStream;
 
@@ -23,21 +21,21 @@ public final class LightkeeperEmbeddedAgent
     }
 
     /**
-     * Opens the embedded agent jar stream from the plugin classpath.
+     * Opens the embedded agent jar stream from the shared provisioning classpath.
      *
      * @return Input stream for the embedded agent jar.
      *
-     * @throws MojoExecutionException
+     * @throws ProvisioningException
      *     When the embedded resource is missing.
      */
     public static InputStream openStream()
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         final InputStream inputStream = LightkeeperEmbeddedAgent.class.getResourceAsStream(RESOURCE_PATH);
         if (inputStream == null)
         {
-            throw new MojoExecutionException(
-                "Embedded LightKeeper agent resource '%s' is missing from the Maven plugin artifact."
+            throw new ProvisioningException(
+                "Embedded LightKeeper agent resource '%s' is missing from the shared provisioning artifact."
                     .formatted(RESOURCE_PATH)
             );
         }

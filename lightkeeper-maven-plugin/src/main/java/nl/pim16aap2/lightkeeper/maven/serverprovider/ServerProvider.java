@@ -4,7 +4,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.Accessors;
-import nl.pim16aap2.lightkeeper.maven.LightkeeperEmbeddedAgent;
+import nl.pim16aap2.lightkeeper.provisioning.LightkeeperEmbeddedAgent;
 import nl.pim16aap2.lightkeeper.provisioning.ProvisioningException;
 import nl.pim16aap2.lightkeeper.provisioning.ServerSpecification;
 import nl.pim16aap2.lightkeeper.provisioning.util.FileUtil;

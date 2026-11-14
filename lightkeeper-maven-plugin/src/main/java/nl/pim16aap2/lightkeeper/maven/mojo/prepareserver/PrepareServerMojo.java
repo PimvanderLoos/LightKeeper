@@ -2,7 +2,7 @@ package nl.pim16aap2.lightkeeper.maven.mojo.prepareserver;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import nl.pim16aap2.lightkeeper.maven.LightkeeperEmbeddedAgent;
+import nl.pim16aap2.lightkeeper.provisioning.LightkeeperEmbeddedAgent;
 import nl.pim16aap2.lightkeeper.maven.PaperDownloadsClient;
 import nl.pim16aap2.lightkeeper.maven.SpigotDownloadsClient;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.PaperServerProvider;

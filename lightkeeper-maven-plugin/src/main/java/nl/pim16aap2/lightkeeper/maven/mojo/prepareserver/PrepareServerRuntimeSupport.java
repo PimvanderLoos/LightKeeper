@@ -1,6 +1,7 @@
 package nl.pim16aap2.lightkeeper.maven.mojo.prepareserver;
 
-import nl.pim16aap2.lightkeeper.maven.LightkeeperEmbeddedAgent;
+import nl.pim16aap2.lightkeeper.provisioning.LightkeeperEmbeddedAgent;
+import nl.pim16aap2.lightkeeper.provisioning.ProvisioningException;
 import nl.pim16aap2.lightkeeper.provisioning.util.FileUtil;
 import nl.pim16aap2.lightkeeper.provisioning.util.HashUtil;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
@@ -56,7 +57,14 @@ final class PrepareServerRuntimeSupport
         if (runtimeManifestParentDirectory == null)
             return;
 
-        FileUtil.createDirectories(runtimeManifestParentDirectory, "runtime manifest directory");
+        try
+        {
+            FileUtil.createDirectories(runtimeManifestParentDirectory, "runtime manifest directory");
+        }
+        catch (ProvisioningException exception)
+        {
+            throw new MojoExecutionException(exception.getMessage(), exception);
+        }
     }
 
     static void validateExtraJvmArgs(@Nullable String extraJvmArgsValue)

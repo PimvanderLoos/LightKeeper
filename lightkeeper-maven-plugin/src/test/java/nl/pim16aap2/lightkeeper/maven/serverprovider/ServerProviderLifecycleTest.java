@@ -1,6 +1,6 @@
 package nl.pim16aap2.lightkeeper.maven.serverprovider;
 
-import nl.pim16aap2.lightkeeper.maven.LightkeeperEmbeddedAgent;
+import nl.pim16aap2.lightkeeper.provisioning.LightkeeperEmbeddedAgent;
 import nl.pim16aap2.lightkeeper.provisioning.ServerSpecification;
 import nl.pim16aap2.lightkeeper.provisioning.util.HashUtil;
 import org.apache.maven.plugin.MojoExecutionException;
