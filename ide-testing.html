@@ -83,8 +83,11 @@
             <tr><td>Direct <code>mvn -Dtest=... test</code> runs before packaging</td><td>Use standard Failsafe: <code>mvn &quot;-Dit.test=MyPluginIT#method&quot; verify</code>, or direct JUnit.</td></tr>
             <tr><td>Moved checkout or changed retained CLI context</td><td>Run normal <code>mvn verify</code> from the intended reactor entry point.</td></tr>
         </table>
-        <p>Remove required <code>lightkeeper.ide</code> preparation commands and basic Failsafe manifest-property wiring when migrating to the automatic route. Keep explicit manifests only where their direct-directory/state-reuse contract is intentional. Ordinary unit tests without the extension or <code>Lightkeeper.start(Class&lt;?&gt;)</code> do no LightKeeper work.</p>
-        <p>The native-launcher path has been exercised with Temurin 21.0.10, Maven 3.9.9, Linux, Paper 1.21.11 and Spigot 1.21.11, including changed production code, a Shade/Assembly reactor, stale installed artifacts and multiple JUnit classes. The IntelliJ gutter UI itself was not automated. Debug test/framework code in the IDE; Bukkit/Paper production code runs in the separate Minecraft JVM and needs server JVM debug arguments.</p>
+        <p>Remove required <code>lightkeeper.ide</code> preparation commands and basic Failsafe manifest-property wiring when migrating to the automatic route. Keep explicit manifests only where their direct-directory/state-reuse contract is intentional. Unrelated direct JUnit tests without the extension or <code>Lightkeeper.start(Class&lt;?&gt;)</code> do not prepare or start Minecraft.</p>
+        <p>The native-launcher path has been exercised with Temurin 21.0.10, Maven 3.9.9, Linux, Paper 1.21.11 and Spigot 1.21.11, including changed production code, a Shade/Assembly reactor, stale installed artifacts and multiple JUnit classes.
+            The actual AnimatedArchitecture reactor also passed a clean Maven run and automatic native source rebuild with Temurin 25.0.4, as required by its current dependencies.
+            See the <a href="https://github.com/PimvanderLoos/LightKeeper/tree/master/examples">executable consumers</a> and <a href="https://github.com/PimvanderLoos/LightKeeper/blob/master/docs/consumer-validation.md">acceptance evidence and limitations</a>.
+            The IntelliJ gutter UI itself was not automated. Debug test/framework code in the IDE; Bukkit/Paper production code runs in the separate Minecraft JVM and needs server JVM debug arguments.</p>
     </section>
 </main>
 <footer class="site-footer">
