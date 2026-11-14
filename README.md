@@ -66,6 +66,9 @@ Add the starter with **test scope**. It supplies the framework, Jupiter API/engi
 used by test handles. The existing `lightkeeper-framework-junit` remains available if you manage those dependencies.
 Keep your existing production API dependencies and packaging configuration.
 
+See the [starter README](lightkeeper-junit-starter/README.md) for what it includes and how its role differs from
+`lightkeeper-maven-plugin`.
+
 ```xml
 <properties>
     <lightkeeper.version>1.2.0-SNAPSHOT</lightkeeper.version>
