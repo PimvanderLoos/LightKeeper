@@ -14,32 +14,30 @@ planned and reviewed by a human.
 
 ## What This Project Contains
 
-- `lightkeeper-maven-plugin`
-  Maven plugin that prepares and caches server runtimes (`prepare-server`) and optionally cleans server work
-  directories (`cleanup-server`).
-- `lightkeeper-framework-junit`
-  JUnit-facing API (`ILightkeeperFramework`, `LightkeeperExtension`, handles + AssertJ assertions).
-- `lightkeeper-agent-spigot`
-  In-server production runtime agent plugin that exposes LightKeeper RPC operations over UDS.
-- `lightkeeper-protocol`
-  Shared typed command and response records for the versioned agent wire protocol.
-- `lightkeeper-spigot-test-plugin`
-  Standalone functional test plugin that provides the `lktestgui` InventoryGUI workflow.
-- `lightkeeper-runtime-core`
-  Runtime manifest model and cross-process protocol constants.
-- `lightkeeper-nms-parent`
-  NMS integration modules used by the agent.
-- `lightkeeper-integration-tests`
-  Integration tests that run against both Paper and Spigot.
+| Module | Purpose |
+| --- | --- |
+| `lightkeeper-junit-starter` | Test dependency supplying the framework, coherent JUnit stack, AssertJ and Bukkit test API. |
+| `lightkeeper-maven-plugin` | Build plugin protecting producer outputs and preparing real server inputs from Maven's packaged artifacts. |
+| `lightkeeper-framework-junit` | JUnit extension, automatic native preparation, server control, handles and assertions. |
+| `lightkeeper-provisioning` | Shared server downloads, caches, assets, immutable snapshots and private sessions, without Maven internals. |
+| `lightkeeper-agent-spigot` | In-server RPC agent, installed automatically. |
+| `lightkeeper-runtime-core` / `lightkeeper-protocol` | Runtime metadata and typed cross-process commands. |
+| `lightkeeper-nms-parent` | Server-revision adapters used by the agent. |
+| `lightkeeper-spigot-test-plugin` / `lightkeeper-integration-tests` | Functional fixture plugin and full-stack Paper/Spigot tests. |
+
+Use **both the starter and Maven plugin** in an ordinary Maven consumer. The starter puts the test API and engine on
+its test classpath; the build plugin binds preparation to Maven. Neither declaration replaces the other.
 
 ## How It Works
 
-1. During `pre-integration-test`, `lightkeeper:prepare-server` resolves/builds a server and creates a runtime manifest.
-2. Server binaries and prepared base server directories are cached in Maven local-repo cache folders.
-3. The test server is started with the embedded LightKeeper agent (`lightkeeper-agent-spigot`) auto-provisioned by
-   `lightkeeper-maven-plugin`.
-4. Your tests connect through `lightkeeper-framework-junit` (using the runtime manifest path).
-5. During `post-integration-test`, `lightkeeper:cleanup-server` can delete server work directories when tests pass.
+1. `lock-build` acquires the selected modules' output leases before compilation and packaging change outputs.
+2. Your ordinary Maven packaging runs, including filtering, generated inputs, Shade and Assembly. `prepare-server`
+   installs the actual selected artifact and captures an immutable server snapshot.
+3. Failsafe consumes its live Maven invocation's snapshot. After one `mvn verify`, a direct JUnit class/method run
+   automatically invokes Maven to package current saved production sources and resources before preparing its snapshot.
+4. Each test class receives a private server session. Methods share that session; process restarts retain its world.
+5. The extension stops Minecraft and removes successful sessions. Failed sessions retain diagnostic files;
+   `cleanup-server` remains optional.
 
 ## Key Features
 
@@ -129,7 +127,10 @@ Paper, the supported Minecraft version, cache paths, Java and a LightKeeper-spec
             <version>${lightkeeper.version}</version>
             <executions>
                 <execution>
-                    <goals><goal>prepare-server</goal></goals>
+                    <goals>
+                        <goal>lock-build</goal>
+                        <goal>prepare-server</goal>
+                    </goals>
                 </execution>
             </executions>
         </plugin>
@@ -139,9 +140,6 @@ Paper, the supported Minecraft version, cache paths, Java and a LightKeeper-spec
             <version>3.6.1</version>
             <configuration>
                 <failIfNoTests>true</failIfNoTests>
-                <systemPropertyVariables>
-                    <lightkeeper.runtimeManifestPath>${project.build.directory}/lightkeeper/runtime-manifest.json</lightkeeper.runtimeManifestPath>
-                </systemPropertyVariables>
             </configuration>
             <executions>
                 <execution>
@@ -163,8 +161,9 @@ tests; with Failsafe 3.5 it also skips ITs. Preparation respects the effective F
 
 ### 2) Select another producer or add fixtures when needed
 
-A separate E2E module needs a real test-scoped dependency on the producer for reactor order and `-am`. Select that
-existing dependency with:
+For a reactor, inherit the lightweight `lock-build` goal from the reactor parent so every producer is guarded
+before its outputs change. Bind `prepare-server` only in the E2E module. A separate E2E module needs a real test-scoped
+dependency on the producer for reactor order and `-am`. Select that existing dependency with:
 
 ```xml
 <configuration>
@@ -194,11 +193,14 @@ other dependency plugins explicitly only when your test scenario needs them.
 
 ### Run tests from your IDE
 
-The existing durable IDE preparation remains available using `-Dlightkeeper.ide=true`. Repackage changed production
-sources before refreshing that preparation; an existing JAR hash alone cannot prove that sources were built.
-Discovered runs use a private server session per test class. Methods share that session; `@FreshServer` and explicit
-restarts preserve its world data. Independent classes and launches start from clean prepared inputs. Explicit manifest
-paths retain control over their existing server directory. See the [IDE test setup guide](docs/ide-testing.md).
+Run `mvn verify` once, then edit saved production sources/resources and run an ordinary JUnit class or method.
+LightKeeper automatically runs the producer lifecycle through `pre-integration-test`, keeping real filtering,
+Shade/Assembly and reactor dependency behavior. No IDE flag, manifest VM option, before-launch task or consumer
+`mvn install` is required. A failed producer build fails the test setup and links its Maven log.
+
+Independent classes and launches get clean private sessions. `@FreshServer` restarts the process within the same class
+session; explicit restarts also preserve its world. Explicit manifest paths retain control over their existing directory.
+See the [direct JUnit guide](docs/ide-testing.md) for reactor setup, retained build context, variant selection and limits.
 
 ### 3) Write tests with the framework
 

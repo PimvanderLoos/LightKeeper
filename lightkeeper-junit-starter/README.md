@@ -50,7 +50,10 @@ Bind server preparation in that module:
     <version>${lightkeeper.version}</version>
     <executions>
         <execution>
-            <goals><goal>prepare-server</goal></goals>
+            <goals>
+                <goal>lock-build</goal>
+                <goal>prepare-server</goal>
+            </goals>
         </execution>
     </executions>
 </plugin>
@@ -58,7 +61,9 @@ Bind server preparation in that module:
 
 Write `*IT` tests using `@ExtendWith(LightkeeperExtension.class)` and configure Failsafe as shown in the guide.
 The starter alone does not activate the extension for unrelated unit tests. Run the Maven integration-test
-workflow with `mvn verify`; see the [IDE guide](../docs/ide-testing.md) for direct JUnit launches.
+workflow with `mvn verify` once. Subsequent ordinary JUnit class/method launches automatically rebuild current
+production inputs through Maven, using the same plugin configuration. See the [IDE guide](../docs/ide-testing.md)
+for reactor setup, supported retained build settings and explicit runtime overrides.
 
 ## When to use the framework dependency directly
 
