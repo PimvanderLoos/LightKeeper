@@ -32,7 +32,7 @@ class BuildInvocationLeasesTest
     {
         for (final MavenSession session : sessions)
         {
-            BuildInvocationLeases.release(session);
+            BuildInvocationLeases.finishInvocation(session);
             verifyNoMoreInteractions(session);
         }
         verifyNoMoreInteractions(log);
@@ -91,6 +91,7 @@ class BuildInvocationLeasesTest
         assertThat(second.nonce()).isNotEqualTo(first.nonce());
         verify(log, times(4)).info(anyString());
         verify(session, times(2)).getExecutionRootDirectory();
+        verify(session).isParallel();
     }
 
     @Test
@@ -109,6 +110,54 @@ class BuildInvocationLeasesTest
         assertThat(BuildOutputLease.lockPath(root).resolveSibling("owner.json")).doesNotExist();
         verify(log, times(2)).info(anyString());
         verify(session).getExecutionRootDirectory();
+        verify(session).isParallel();
+    }
+
+    @Test
+    void release_shouldRetainParallelProducerOwnershipUntilInvocationExit(@TempDir Path root)
+    {
+        // setup
+        final MavenSession session = session(root);
+        when(session.isParallel()).thenReturn(true);
+        BuildInvocationLeases.acquire(session, Duration.ofSeconds(1), log);
+
+        // execute
+        BuildInvocationLeases.release(session);
+        final Throwable competing = catchThrowable(() -> BuildOutputLease.acquire(root, Duration.ofMillis(30)));
+        BuildInvocationLeases.finishInvocation(session);
+
+        // verify
+        assertThat(competing).isInstanceOf(IllegalStateException.class).hasRootCauseMessage(
+            "Timed out waiting for the JVM's file lease: " + BuildOutputLease.lockPath(root)
+        );
+        assertThat(BuildInvocationLeases.isHeld(session)).isFalse();
+        try (var next = BuildOutputLease.acquire(root, Duration.ofMillis(100)))
+        {
+            assertThat(next.identity().process().matchesCurrentAncestry()).isTrue();
+        }
+        verify(session).getExecutionRootDirectory();
+        verify(session).isParallel();
+        verify(log, times(2)).info(anyString());
+    }
+
+    @Test
+    void releaseAfterFailure_shouldProtectOtherModulesStillRunningInParallel(@TempDir Path root)
+    {
+        // setup
+        final MavenSession session = session(root);
+        when(session.isParallel()).thenReturn(true);
+        final var failure = new IllegalStateException("first module failed");
+        BuildInvocationLeases.acquire(session, Duration.ofSeconds(1), log);
+
+        // execute
+        BuildInvocationLeases.releaseAfterFailure(session, failure);
+
+        // verify
+        assertThat(failure).hasMessage("first module failed").hasNoSuppressedExceptions();
+        assertThat(BuildInvocationLeases.isHeld(session)).isTrue();
+        verify(session).getExecutionRootDirectory();
+        verify(session).isParallel();
+        verify(log, times(2)).info(anyString());
     }
 
     private MavenSession session(Path root)

@@ -13,21 +13,16 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Shares one early build lease across the modules of a live Maven invocation.
- * Snapshot export releases it before Failsafe; a later module's initialize guard acquires a new lease.
+ * Serial snapshot export releases it before Failsafe; a later module's initialize guard acquires a new lease.
+ * Parallel reactors retain ownership until invocation exit because another module may still be changing outputs.
  */
 public final class BuildInvocationLeases
 {
-    /** Invocation entries live only while their producer-output lease is held. */
+    /**
+     * Invocation entries live while producer ownership is held. Parallel entries stay open until OS process exit;
+     * a shutdown hook must not release them while other Maven threads can still write during JVM shutdown.
+     */
     private static final ConcurrentHashMap<MavenSession, BuildOutputLease> LEASES = new ConcurrentHashMap<>();
-    /** Shutdown-only diagnostics when a failed build could not release its lease normally. */
-    private static final System.Logger LOG = System.getLogger(BuildInvocationLeases.class.getName());
-
-    static
-    {
-        Runtime.getRuntime().addShutdownHook(Thread.ofPlatform()
-            .name("lightkeeper-build-lease-release")
-            .unstarted(BuildInvocationLeases::releaseRemaining));
-    }
 
     private BuildInvocationLeases()
     {
@@ -62,7 +57,8 @@ public final class BuildInvocationLeases
     }
 
     /**
-     * Releases an invocation's outputs after snapshot capture, including skipped preparation.
+     * Releases serial invocation outputs after snapshot capture, including skipped preparation.
+     * Parallel builds retain ownership until actual JVM exit, including after a module fails.
      *
      * @param session
      *     Maven invocation, or {@code null} when no invocation was attached to the caller.
@@ -73,6 +69,15 @@ public final class BuildInvocationLeases
         {
             return;
         }
+        if (!LEASES.containsKey(session) || session.isParallel())
+        {
+            return;
+        }
+        finishInvocation(session);
+    }
+
+    static void finishInvocation(MavenSession session)
+    {
         final BuildOutputLease lease = LEASES.remove(session);
         if (lease != null)
         {
@@ -110,20 +115,5 @@ public final class BuildInvocationLeases
         final BuildOutputLease lease = BuildOutputLease.acquire(root, timeout);
         log.info("LK_BUILD_LOCK: Acquired producer outputs in '" + root + "'.");
         return lease;
-    }
-
-    private static void releaseRemaining()
-    {
-        LEASES.values().forEach(lease ->
-        {
-            try
-            {
-                lease.close();
-            }
-            catch (RuntimeException exception)
-            {
-                LOG.log(System.Logger.Level.WARNING, "Failed to release a LightKeeper build lease.", exception);
-            }
-        });
     }
 }

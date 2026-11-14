@@ -9,7 +9,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Cooperative checkout-wide ownership covering producer packaging through immutable snapshot capture.
- * Release before starting Minecraft. The underlying file lease keeps a stable inode for waiting processes.
+ * Release after protected mutations/capture complete. A parallel reactor may retain ownership until invocation exit
+ * while other modules finish. The underlying file lease keeps a stable inode for waiting processes.
  */
 public final class BuildOutputLease implements AutoCloseable
 {
