@@ -1,8 +1,8 @@
 package nl.pim16aap2.lightkeeper.maven.mojo.prepareserver;
 
 import nl.pim16aap2.lightkeeper.maven.LightkeeperEmbeddedAgent;
-import nl.pim16aap2.lightkeeper.maven.provisioning.PluginArtifactSpec;
-import nl.pim16aap2.lightkeeper.maven.provisioning.ResolvedPluginArtifact;
+import nl.pim16aap2.lightkeeper.provisioning.assets.PluginArtifactSpec;
+import nl.pim16aap2.lightkeeper.provisioning.assets.ResolvedPluginArtifact;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.jspecify.annotations.Nullable;
 

@@ -1,9 +1,9 @@
 package nl.pim16aap2.lightkeeper.maven.mojo.prepareserver;
 
 import nl.pim16aap2.lightkeeper.maven.ModrinthDownloadsClient;
-import nl.pim16aap2.lightkeeper.maven.provisioning.PluginArtifactSpec;
-import nl.pim16aap2.lightkeeper.maven.provisioning.ResolvedPluginArtifact;
 import nl.pim16aap2.lightkeeper.provisioning.ModrinthPluginMetadata;
+import nl.pim16aap2.lightkeeper.provisioning.assets.PluginArtifactSpec;
+import nl.pim16aap2.lightkeeper.provisioning.assets.ResolvedPluginArtifact;
 import nl.pim16aap2.lightkeeper.provisioning.util.CacheKeyUtil;
 import nl.pim16aap2.lightkeeper.provisioning.util.FileUtil;
 import nl.pim16aap2.lightkeeper.provisioning.util.HashUtil;

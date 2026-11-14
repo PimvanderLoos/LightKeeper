@@ -1,4 +1,4 @@
-package nl.pim16aap2.lightkeeper.maven.provisioning;
+package nl.pim16aap2.lightkeeper.provisioning.assets;
 
 import java.nio.file.Path;
 

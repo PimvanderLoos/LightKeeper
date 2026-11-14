@@ -1,4 +1,4 @@
-package nl.pim16aap2.lightkeeper.maven.provisioning;
+package nl.pim16aap2.lightkeeper.provisioning.assets;
 
 import java.nio.file.Path;
 
@@ -38,7 +38,9 @@ public record WorldInputSpec(
      */
     public enum SourceType
     {
+        /** Existing directory copied into the prepared server. */
         FOLDER,
+        /** Archive expanded with path traversal checks. */
         ARCHIVE
     }
 }

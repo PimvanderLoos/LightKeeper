@@ -1,4 +1,4 @@
-package nl.pim16aap2.lightkeeper.maven.provisioning;
+package nl.pim16aap2.lightkeeper.provisioning.assets;
 
 import org.jspecify.annotations.Nullable;
 
@@ -60,6 +60,28 @@ public record PluginArtifactSpec(
     @Nullable String modrinthGameVersion
 )
 {
+    /**
+     * Creates a local or Maven input without remote-download selection fields.
+     *
+     * @param sourceType
+     *     Input source kind.
+     * @param path
+     *     Local JAR for path inputs.
+     * @param groupId
+     *     Maven group ID.
+     * @param artifactId
+     *     Maven artifact ID.
+     * @param version
+     *     Maven version.
+     * @param classifier
+     *     Optional artifact classifier.
+     * @param type
+     *     Maven artifact type.
+     * @param includeTransitive
+     *     Whether dependent plugin artifacts are included.
+     * @param renameTo
+     *     Optional deployment filename override.
+     */
     public PluginArtifactSpec(
         SourceType sourceType,
         @Nullable Path path,
@@ -96,9 +118,13 @@ public record PluginArtifactSpec(
      */
     public enum SourceType
     {
+        /** Explicit local plugin file. */
         PATH,
+        /** Maven repository or reactor artifact. */
         MAVEN,
+        /** Explicit Modrinth version/file selection. */
         MODRINTH,
+        /** Checksum-pinned HTTP download. */
         URL
     }
 }

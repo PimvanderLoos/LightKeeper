@@ -2,15 +2,15 @@ package nl.pim16aap2.lightkeeper.maven.mojo.prepareserver;
 
 import nl.pim16aap2.lightkeeper.maven.PaperDownloadsClient;
 import nl.pim16aap2.lightkeeper.maven.SpigotDownloadsClient;
-import nl.pim16aap2.lightkeeper.maven.provisioning.PluginArtifactSpec;
-import nl.pim16aap2.lightkeeper.maven.provisioning.ResolvedPluginArtifact;
-import nl.pim16aap2.lightkeeper.maven.provisioning.WorldInputSpec;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.PaperServerProvider;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.ServerProvider;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.SpigotServerProvider;
 import nl.pim16aap2.lightkeeper.provisioning.PaperBuildMetadata;
 import nl.pim16aap2.lightkeeper.provisioning.ProvisioningException;
 import nl.pim16aap2.lightkeeper.provisioning.SpigotBuildMetadata;
+import nl.pim16aap2.lightkeeper.provisioning.assets.PluginArtifactSpec;
+import nl.pim16aap2.lightkeeper.provisioning.assets.ResolvedPluginArtifact;
+import nl.pim16aap2.lightkeeper.provisioning.assets.WorldInputSpec;
 import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeDiscovery;
 import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeDiscoveryReader;
 import nl.pim16aap2.lightkeeper.runtime.IdeRuntimePaths;

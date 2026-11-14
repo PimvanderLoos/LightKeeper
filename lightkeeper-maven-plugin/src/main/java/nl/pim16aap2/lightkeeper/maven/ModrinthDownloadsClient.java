@@ -1,7 +1,7 @@
 package nl.pim16aap2.lightkeeper.maven;
 
-import nl.pim16aap2.lightkeeper.maven.provisioning.PluginArtifactSpec;
 import nl.pim16aap2.lightkeeper.provisioning.ModrinthPluginMetadata;
+import nl.pim16aap2.lightkeeper.provisioning.assets.PluginArtifactSpec;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.jspecify.annotations.Nullable;

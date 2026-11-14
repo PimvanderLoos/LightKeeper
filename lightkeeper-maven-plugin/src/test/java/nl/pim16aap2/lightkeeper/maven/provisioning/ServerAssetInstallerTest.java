@@ -1,5 +1,7 @@
 package nl.pim16aap2.lightkeeper.maven.provisioning;
 
+import nl.pim16aap2.lightkeeper.provisioning.assets.ResolvedPluginArtifact;
+import nl.pim16aap2.lightkeeper.provisioning.assets.WorldInputSpec;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.SystemStreamLog;
 import org.jspecify.annotations.Nullable;

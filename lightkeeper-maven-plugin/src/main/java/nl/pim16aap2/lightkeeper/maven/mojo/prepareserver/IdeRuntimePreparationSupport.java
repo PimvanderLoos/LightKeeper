@@ -1,7 +1,7 @@
 package nl.pim16aap2.lightkeeper.maven.mojo.prepareserver;
 
-import nl.pim16aap2.lightkeeper.maven.provisioning.ResolvedPluginArtifact;
-import nl.pim16aap2.lightkeeper.maven.provisioning.WorldInputSpec;
+import nl.pim16aap2.lightkeeper.provisioning.assets.ResolvedPluginArtifact;
+import nl.pim16aap2.lightkeeper.provisioning.assets.WorldInputSpec;
 import nl.pim16aap2.lightkeeper.provisioning.util.HashUtil;
 import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeArtifactHasher;
 import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeDiscovery;

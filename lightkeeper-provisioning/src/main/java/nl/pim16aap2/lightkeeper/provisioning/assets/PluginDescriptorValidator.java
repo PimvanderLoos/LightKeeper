@@ -1,6 +1,6 @@
-package nl.pim16aap2.lightkeeper.maven.provisioning;
+package nl.pim16aap2.lightkeeper.provisioning.assets;
 
-import org.apache.maven.plugin.MojoExecutionException;
+import nl.pim16aap2.lightkeeper.provisioning.ProvisioningException;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
@@ -33,11 +33,11 @@ public final class PluginDescriptorValidator
      *     Selected packaged plugin artifact.
      * @param module
      *     Owning test module identity for actionable diagnostics.
-     * @throws MojoExecutionException
+     * @throws ProvisioningException
      *     If the archive or its static descriptor metadata is invalid.
      */
     public static void validate(ResolvedPluginArtifact plugin, String module)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         try (JarFile jar = new JarFile(plugin.sourceJar().toFile()))
         {
@@ -69,7 +69,7 @@ public final class PluginDescriptorValidator
         }
         catch (IOException | IllegalArgumentException | YAMLException exception)
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Invalid plugin under test for module '%s': '%s' (%s): %s. Select a packaged plugin with "
                     .formatted(module, plugin.sourceJar(), plugin.sourceDescription(), exception.getMessage())
                     + "pluginUnderTest.artifactId/classifier/path, or use serverOnly=true for server-only tests.",
