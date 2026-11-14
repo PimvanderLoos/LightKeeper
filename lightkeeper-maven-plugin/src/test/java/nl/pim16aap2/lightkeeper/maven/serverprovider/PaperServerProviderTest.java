@@ -1,10 +1,10 @@
 package nl.pim16aap2.lightkeeper.maven.serverprovider;
 
-import nl.pim16aap2.lightkeeper.maven.PaperBuildMetadata;
-import nl.pim16aap2.lightkeeper.maven.ServerSpecification;
 import nl.pim16aap2.lightkeeper.maven.LightkeeperEmbeddedAgent;
 import nl.pim16aap2.lightkeeper.maven.serverprocess.MinecraftServerProcess;
 import nl.pim16aap2.lightkeeper.maven.util.HashUtil;
+import nl.pim16aap2.lightkeeper.provisioning.PaperBuildMetadata;
+import nl.pim16aap2.lightkeeper.provisioning.ServerSpecification;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugin.logging.SystemStreamLog;

@@ -1,6 +1,7 @@
 package nl.pim16aap2.lightkeeper.maven;
 
 import com.sun.net.httpserver.HttpServer;
+import nl.pim16aap2.lightkeeper.provisioning.SpigotBuildMetadata;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.junit.jupiter.api.Test;

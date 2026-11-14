@@ -1,12 +1,12 @@
 package nl.pim16aap2.lightkeeper.maven.mojo.prepareserver;
 
 import nl.pim16aap2.lightkeeper.maven.ModrinthDownloadsClient;
-import nl.pim16aap2.lightkeeper.maven.ModrinthPluginMetadata;
 import nl.pim16aap2.lightkeeper.maven.provisioning.PluginArtifactSpec;
 import nl.pim16aap2.lightkeeper.maven.provisioning.ResolvedPluginArtifact;
 import nl.pim16aap2.lightkeeper.maven.util.CacheKeyUtil;
 import nl.pim16aap2.lightkeeper.maven.util.FileUtil;
 import nl.pim16aap2.lightkeeper.maven.util.HashUtil;
+import nl.pim16aap2.lightkeeper.provisioning.ModrinthPluginMetadata;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.eclipse.aether.RepositorySystem;
@@ -29,9 +29,9 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.file.Path;
-import java.nio.file.Files;
 import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.ArrayList;

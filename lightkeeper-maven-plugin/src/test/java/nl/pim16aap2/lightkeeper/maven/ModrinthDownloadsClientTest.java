@@ -1,14 +1,15 @@
 package nl.pim16aap2.lightkeeper.maven;
 
-import tools.jackson.databind.DeserializationFeature;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.PropertyNamingStrategies;
-import tools.jackson.databind.json.JsonMapper;
 import nl.pim16aap2.lightkeeper.maven.provisioning.PluginArtifactSpec;
+import nl.pim16aap2.lightkeeper.provisioning.ModrinthPluginMetadata;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.SystemStreamLog;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.net.URI;
 import java.net.http.HttpClient;

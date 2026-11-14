@@ -1,11 +1,11 @@
-package nl.pim16aap2.lightkeeper.maven;
+package nl.pim16aap2.lightkeeper.provisioning;
 
 import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Path;
 
 /**
- * Represents the specification for a server to be prepared by the Lightkeeper Maven plugin.
+ * Represents the shared specification for preparing a Minecraft server baseline.
  * <p>
  * The base server is a cached version of the server that can be reused across different builds or runs of the server.
  * The test server is created by copying the base server to a new directory where it can be run independently.
@@ -21,6 +21,8 @@ import java.nio.file.Path;
  *     The directory where the base server files are cached.
  * @param serverWorkDirectoryRoot
  *     The directory where the server will run and store its data.
+ * @param runtimeManifestPath
+ *     Destination of the generated runtime manifest.
  * @param versionedCacheDirectories
  *     Whether to use versioned cache directories for the server JAR and base server.
  * @param jarCacheExpiryDays
@@ -37,14 +39,26 @@ import java.nio.file.Path;
  *     The number of seconds to wait for the server to initialize before timing out.
  * @param serverStopTimeoutSeconds
  *     The number of seconds to wait for the server to stop gracefully before timing out.
+ * @param serverStartMaxAttempts
+ *     Maximum number of attempts to initialize the prepared baseline.
  * @param memoryMb
  *     The amount of memory (in MB) allocated to the server.
  * @param javaExecutablePath
- *     The optional path to the Java executable to use for running the server.
- *     <p>
- *     If null, the default Java executable will be used based on the system's PATH.
+ *     Java executable selected by the caller for running the server.
  * @param extraJvmArgs
  *     Additional JVM arguments to pass when starting the server.
+ * @param cacheKey
+ *     Identity of the resolved server inputs used to separate cached baselines.
+ * @param paperUserAgent
+ *     HTTP User-Agent used for server downloads.
+ * @param agentJarSha256
+ *     Expected embedded agent checksum, or {@code null} for an agent-free base preparation.
+ * @param agentAuthToken
+ *     Runtime handshake token installed into the prepared manifest.
+ * @param runtimeProtocolVersion
+ *     Wire protocol version expected by the runtime agent.
+ * @param agentCacheIdentity
+ *     Embedded agent identity included in preparation provenance.
  */
 public record ServerSpecification(
     String serverVersion,
@@ -75,8 +89,10 @@ public record ServerSpecification(
     /**
      * Copies this specification with different runtime output locations.
      *
-     * @param newServerWorkDirectoryRoot Root directory for the prepared server.
-     * @param newRuntimeManifestPath Runtime manifest destination.
+     * @param newServerWorkDirectoryRoot
+     *     Root directory for the prepared server.
+     * @param newRuntimeManifestPath
+     *     Runtime manifest destination.
      * @return The copied specification.
      */
     public ServerSpecification withRuntimeLocations(

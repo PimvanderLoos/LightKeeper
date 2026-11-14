@@ -1,16 +1,17 @@
 package nl.pim16aap2.lightkeeper.maven;
 
+import nl.pim16aap2.lightkeeper.maven.provisioning.PluginArtifactSpec;
+import nl.pim16aap2.lightkeeper.provisioning.ModrinthPluginMetadata;
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.logging.Log;
+import org.jspecify.annotations.Nullable;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.PropertyNamingStrategies;
-import nl.pim16aap2.lightkeeper.maven.provisioning.PluginArtifactSpec;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.logging.Log;
-import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.net.URI;

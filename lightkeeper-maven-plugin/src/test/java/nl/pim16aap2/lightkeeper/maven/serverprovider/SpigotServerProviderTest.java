@@ -1,19 +1,16 @@
 package nl.pim16aap2.lightkeeper.maven.serverprovider;
 
 import nl.pim16aap2.lightkeeper.maven.LightkeeperEmbeddedAgent;
-import nl.pim16aap2.lightkeeper.maven.ServerSpecification;
-import nl.pim16aap2.lightkeeper.maven.SpigotBuildMetadata;
 import nl.pim16aap2.lightkeeper.maven.serverprocess.MinecraftServerProcess;
 import nl.pim16aap2.lightkeeper.maven.util.HashUtil;
+import nl.pim16aap2.lightkeeper.provisioning.ServerSpecification;
+import nl.pim16aap2.lightkeeper.provisioning.SpigotBuildMetadata;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugin.logging.SystemStreamLog;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import javax.tools.JavaCompiler;
-import javax.tools.StandardJavaFileManager;
-import javax.tools.ToolProvider;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
@@ -25,6 +22,9 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
+import javax.tools.JavaCompiler;
+import javax.tools.StandardJavaFileManager;
+import javax.tools.ToolProvider;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

@@ -1,10 +1,10 @@
 package nl.pim16aap2.lightkeeper.maven.serverprovider;
 
 import lombok.ToString;
-import nl.pim16aap2.lightkeeper.maven.ServerSpecification;
-import nl.pim16aap2.lightkeeper.maven.SpigotBuildMetadata;
 import nl.pim16aap2.lightkeeper.maven.serverprocess.MinecraftServerProcess;
 import nl.pim16aap2.lightkeeper.maven.util.FileUtil;
+import nl.pim16aap2.lightkeeper.provisioning.ServerSpecification;
+import nl.pim16aap2.lightkeeper.provisioning.SpigotBuildMetadata;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.jspecify.annotations.Nullable;

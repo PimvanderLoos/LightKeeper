@@ -1,4 +1,4 @@
-package nl.pim16aap2.lightkeeper.maven;
+package nl.pim16aap2.lightkeeper.provisioning;
 
 import java.net.URI;
 
