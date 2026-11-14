@@ -6,6 +6,7 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.project.MavenProject;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Duration;
@@ -23,6 +24,10 @@ public final class LockBuildMojo extends AbstractMojo
     @Parameter(defaultValue = "${session}", readonly = true, required = true)
     private @Nullable MavenSession session;
 
+    /** Effective module whose production outputs are about to be built. */
+    @Parameter(defaultValue = "${project}", readonly = true, required = true)
+    private @Nullable MavenProject project;
+
     /** Maximum wait for another cooperating build or native JUnit preparation to release producer outputs. */
     @Parameter(property = "lightkeeper.buildTimeoutSeconds", defaultValue = "300")
     private long buildTimeoutSeconds;
@@ -32,20 +37,32 @@ public final class LockBuildMojo extends AbstractMojo
     public void execute()
         throws MojoExecutionException
     {
-        if (buildTimeoutSeconds <= 0)
-        {
-            throw new MojoExecutionException("lightkeeper.buildTimeoutSeconds must be positive.");
-        }
         try
         {
+            if (buildTimeoutSeconds <= 0)
+            {
+                throw new MojoExecutionException("lightkeeper.buildTimeoutSeconds must be positive.");
+            }
+            final MavenSession current = Objects.requireNonNull(session, "Maven did not inject the build session.");
             BuildInvocationLeases.acquire(
-                Objects.requireNonNull(session, "Maven did not inject the current build session."),
+                current,
                 Duration.ofSeconds(buildTimeoutSeconds),
                 getLog()
             );
+            ProductionOutputInvalidator.refresh(
+                Objects.requireNonNull(project, "Maven did not inject the current project."),
+                current.getUserProperties(),
+                getLog()
+            );
+        }
+        catch (MojoExecutionException exception)
+        {
+            BuildInvocationLeases.releaseAfterFailure(session, exception);
+            throw exception;
         }
         catch (RuntimeException exception)
         {
+            BuildInvocationLeases.releaseAfterFailure(session, exception);
             throw new MojoExecutionException(
                 "Cannot protect LightKeeper producer outputs: " + exception.getMessage(),
                 exception

@@ -23,6 +23,18 @@ public final class IdeRuntimeArtifactHasher
     }
 
     /**
+     * Computes SHA-256 for canonical metadata text without writing it to disk.
+     *
+     * @param input
+     *     Text whose UTF-8 bytes describe the effective inputs.
+     * @return Lowercase hexadecimal SHA-256.
+     */
+    public static String sha256(String input)
+    {
+        return HexFormat.of().formatHex(digest().digest(input.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+    }
+
+    /**
      * Computes a SHA-256 identity for a regular file or directory tree.
      *
      * @param input Input path.
