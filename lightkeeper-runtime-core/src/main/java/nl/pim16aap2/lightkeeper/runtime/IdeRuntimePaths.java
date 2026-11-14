@@ -42,7 +42,7 @@ public final class IdeRuntimePaths
         throws IOException
     {
         final Path directory = stateDirectory(moduleDirectory);
-        UserOnlyDirectory.prepare(directory);
+        UserOnlyDirectory.prepareGenerated(directory);
         try
         {
             Files.writeString(directory.resolve(".gitignore"), "*\n", StandardOpenOption.CREATE_NEW);
