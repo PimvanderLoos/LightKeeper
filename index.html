@@ -95,9 +95,10 @@ class BlockPlacementIT
             </div>
             <div class="quickstart-panel" id="step-dependencies" role="tabpanel" aria-labelledby="tab-dependencies" tabindex="0">
                 <h3>Add the Maven dependencies</h3>
-                <p>Start with this test project, or merge its configuration into your plugin’s POM. JitPack resolves
-                    both the test dependency and the build plugin. The Spigot API supplies Bukkit types used by assertions.
-                    Replace the example <code>userAgent</code> with your project and contact URL.</p>
+                <p>This standalone server-only smoke project uses <code>serverOnly=true</code> explicitly.
+                    To test your own packaged plugin, omit that option and follow the
+                    <a href="getting-started.html">plugin setup guide</a>. EldoNexus supplies LK artifacts;
+                    the starter supplies the test API and JUnit engine.</p>
                 <div class="editor">
             <div class="editor-bar"><span>pom.xml · complete test project</span><button class="copy-button" type="button" data-copy="setup-code" hidden>Copy code ↗</button></div>
             <pre id="setup-code" tabindex="0" aria-label="pom.xml · complete test project"><code data-language="xml">&lt;project xmlns=&quot;http://maven.apache.org/POM/4.0.0&quot;
@@ -111,13 +112,13 @@ class BlockPlacementIT
   &lt;properties&gt;
     &lt;maven.compiler.release&gt;21&lt;/maven.compiler.release&gt;
     &lt;project.build.sourceEncoding&gt;UTF-8&lt;/project.build.sourceEncoding&gt;
-    &lt;lightkeeper.version&gt;master-SNAPSHOT&lt;/lightkeeper.version&gt;
+    &lt;lightkeeper.version&gt;1.2.0-SNAPSHOT&lt;/lightkeeper.version&gt;
   &lt;/properties&gt;
 
   &lt;repositories&gt;
     &lt;repository&gt;
-      &lt;id&gt;jitpack.io&lt;/id&gt;
-      &lt;url&gt;https://jitpack.io&lt;/url&gt;
+      &lt;id&gt;eldonexus-snapshots&lt;/id&gt;
+      &lt;url&gt;https://eldonexus.de/repository/maven-snapshots/&lt;/url&gt;
     &lt;/repository&gt;
     &lt;repository&gt;
       &lt;id&gt;spigotmc-snapshots&lt;/id&gt;
@@ -126,28 +127,16 @@ class BlockPlacementIT
   &lt;/repositories&gt;
   &lt;pluginRepositories&gt;
     &lt;pluginRepository&gt;
-      &lt;id&gt;jitpack.io&lt;/id&gt;
-      &lt;url&gt;https://jitpack.io&lt;/url&gt;
+      &lt;id&gt;eldonexus-snapshots&lt;/id&gt;
+      &lt;url&gt;https://eldonexus.de/repository/maven-snapshots/&lt;/url&gt;
     &lt;/pluginRepository&gt;
   &lt;/pluginRepositories&gt;
 
   &lt;dependencies&gt;
     &lt;dependency&gt;
-      &lt;groupId&gt;com.github.PimvanderLoos.LightKeeper&lt;/groupId&gt;
-      &lt;artifactId&gt;lightkeeper-framework-junit&lt;/artifactId&gt;
+      &lt;groupId&gt;nl.pim16aap2.lightkeeper&lt;/groupId&gt;
+      &lt;artifactId&gt;lightkeeper-junit-starter&lt;/artifactId&gt;
       &lt;version&gt;${lightkeeper.version}&lt;/version&gt;
-      &lt;scope&gt;test&lt;/scope&gt;
-    &lt;/dependency&gt;
-    &lt;dependency&gt;
-      &lt;groupId&gt;org.junit.jupiter&lt;/groupId&gt;
-      &lt;artifactId&gt;junit-jupiter&lt;/artifactId&gt;
-      &lt;version&gt;6.1.3&lt;/version&gt;
-      &lt;scope&gt;test&lt;/scope&gt;
-    &lt;/dependency&gt;
-    &lt;dependency&gt;
-      &lt;groupId&gt;org.spigotmc&lt;/groupId&gt;
-      &lt;artifactId&gt;spigot-api&lt;/artifactId&gt;
-      &lt;version&gt;1.21.11-R0.2-SNAPSHOT&lt;/version&gt;
       &lt;scope&gt;test&lt;/scope&gt;
     &lt;/dependency&gt;
   &lt;/dependencies&gt;
@@ -155,7 +144,7 @@ class BlockPlacementIT
   &lt;build&gt;
     &lt;plugins&gt;
 </code><code data-language="xml" data-maven-plugin="lightkeeper">      &lt;plugin&gt;
-        &lt;groupId&gt;com.github.PimvanderLoos.LightKeeper&lt;/groupId&gt;
+        &lt;groupId&gt;nl.pim16aap2.lightkeeper&lt;/groupId&gt;
         &lt;artifactId&gt;lightkeeper-maven-plugin&lt;/artifactId&gt;
         &lt;version&gt;${lightkeeper.version}&lt;/version&gt;
         &lt;executions&gt;
@@ -164,9 +153,7 @@ class BlockPlacementIT
             &lt;phase&gt;pre-integration-test&lt;/phase&gt;
             &lt;goals&gt;&lt;goal&gt;prepare-server&lt;/goal&gt;&lt;/goals&gt;
             &lt;configuration&gt;
-              &lt;serverType&gt;paper&lt;/serverType&gt;
-              &lt;userAgent&gt;MyPlugin/1.0 (https://example.com/my-plugin)&lt;/userAgent&gt;
-              &lt;runtimeManifestPath&gt;${project.build.directory}/lightkeeper/runtime-manifest.json&lt;/runtimeManifestPath&gt;
+              &lt;serverOnly&gt;true&lt;/serverOnly&gt;
             &lt;/configuration&gt;
           &lt;/execution&gt;
         &lt;/executions&gt;
@@ -199,13 +186,14 @@ class BlockPlacementIT
 &lt;/project&gt;</code></pre>
 
         </div>
-                <p class="step-note">These guides use <code>master-SNAPSHOT</code>. The Maven plugin belongs in <code>build/plugins</code>.
+                <p class="step-note">These guides use <code>1.2.0-SNAPSHOT</code>. The Maven plugin belongs in <code>build/plugins</code>.
                     <a href="getting-started.html">See complete setup →</a></p>
             </div>
             <div class="quickstart-panel" id="step-test" role="tabpanel" aria-labelledby="tab-test" tabindex="0">
                 <h3>Write a test. Use a real world.</h3>
                 <p>Save this as <code>src/test/java/FirstPassingTestIT.java</code>. The extension starts the prepared server
-                    and injects the framework. This block assertion needs no fixture plugin.</p>
+                    and injects the framework. This explicit server-only example needs no target plugin;
+                    the normal plugin-module route requires your packaged plugin’s metadata.</p>
                 <div class="editor">
             <div class="editor-bar"><span>FirstPassingTestIT.java</span><button class="copy-button" type="button" data-copy="test-code" hidden>Copy code ↗</button></div>
             <pre id="test-code" tabindex="0" aria-label="FirstPassingTestIT.java"><code data-language="java" data-java-class="FirstPassingTestIT">import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;

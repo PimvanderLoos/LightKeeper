@@ -50,18 +50,20 @@
         </ol>
         <p>From the directory containing the test module's <code>pom.xml</code> (or your project root for a
             single-module project), use the execution from <a href="getting-started.html">Getting Started</a>:</p>
-        <pre><code>mvn lightkeeper:prepare-server@prepare-server -Dlightkeeper.ide=true</code></pre>
+        <pre><code>mvn pre-integration-test -Dlightkeeper.ide=true</code></pre>
         <p>From a multi-module project root, select the test module by its <code>artifactId</code>. Replace
             <code>my-plugin-e2e</code> with your module's artifact ID; the leading <code>:</code> avoids typing its
             directory path:</p>
-        <pre><code>mvn -pl :my-plugin-e2e lightkeeper:prepare-server@prepare-server -Dlightkeeper.ide=true</code></pre>
+        <pre><code>mvn -pl :my-plugin-e2e -am pre-integration-test -Dlightkeeper.ide=true</code></pre>
         <p>Alternatively, point Maven directly at the test module's POM. Replace the example path with your own:</p>
-        <pre><code>mvn -f testing/my-plugin-e2e/pom.xml lightkeeper:prepare-server@prepare-server -Dlightkeeper.ide=true</code></pre>
-        <p>The text after <code>@</code> must match the preparation execution's <code>&lt;id&gt;</code> in that module's
-            effective POM. For example, an execution named <code>prepare-server-paper</code> requires
-            <code>lightkeeper:prepare-server@prepare-server-paper</code>. The goal name and execution ID are independent.</p>
-        <p>Select only the test module for this preparation command. Use <code>-am</code> when building its dependencies
-            in the earlier packaging/install step; adding it here also selects upstream modules for the preparation goal.</p>
+        <pre><code>mvn -f testing/my-plugin-e2e/pom.xml pre-integration-test -Dlightkeeper.ide=true</code></pre>
+        <p>The lifecycle packages production artifacts before preparing the runtime, retaining Maven’s actual
+            artifact registration. A direct <code>prepare-server</code> goal alone cannot recover an artifact
+            replaced by a previous invocation. From a reactor root, <code>-am</code> builds the selected module’s
+            upstreams; lifecycle-bound LK preparation runs only in configured modules. Do not append a direct
+            preparation goal to a reactor <code>-am</code> command.</p>
+        <p>Advanced named executions still support explicit legacy fixtures and platform selection. In that route,
+            the text after <code>@</code> must match the execution ID in the selected module’s effective POM.</p>
         <p>Each test module owns its <code>.lightkeeper/ide/</code> discovery record. Preparation never selects a parent
             or sibling runtime automatically.</p>
     </section>
@@ -86,7 +88,7 @@ mvn -pl lightkeeper-integration-tests \
         <p>Worlds, plugin data, and other server state persist across runs. To start fresh:</p>
         <p>Run this from the test module's directory, or retain the same <code>-pl</code>/<code>-f</code> selection
             and execution ID used during initial setup:</p>
-        <pre><code>mvn lightkeeper:prepare-server@prepare-server -Dlightkeeper.ide=true -Dlightkeeper.ide.refresh=true</code></pre>
+        <pre><code>mvn pre-integration-test -Dlightkeeper.ide=true -Dlightkeeper.ide.refresh=true</code></pre>
         <p>Refresh creates a new preparation and switches later launches atomically. It never changes a runtime
             held by an active test. Old preparations are not pruned automatically. For a complete reset, close
             running tests, move the module's <code>.lightkeeper/</code> directory to trash, and repeat setup.</p>

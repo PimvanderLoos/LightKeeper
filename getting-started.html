@@ -45,76 +45,63 @@
     </section>
 
     <section class="panel">
-        <h2>1. Add framework dependency</h2>
-        <p>These examples use JitPack coordinates. Add JitPack to both <code>repositories</code> and
-            <code>pluginRepositories</code>, as shown in the <a href="https://github.com/PimvanderLoos/LightKeeper#developers">repository setup</a>.
-            Set your <code>lightkeeper.version</code> Maven property to <code>master-SNAPSHOT</code> for these current-master guides.
-            Use the same version for the framework and Maven plugin. Locally installed Maven artifacts use
-            <code>nl.pim16aap2.lightkeeper</code> as the group ID instead.</p>
+        <h2>1. Add one starter test dependency</h2>
+        <p>Use the EldoNexus snapshot repository in both <code>repositories</code> and
+            <code>pluginRepositories</code>: <code>https://eldonexus.de/repository/maven-snapshots/</code>.
+            Set <code>lightkeeper.version</code> to <code>1.2.0-SNAPSHOT</code> and use that version for the starter
+            and Maven plugin. Keep your production API dependency and real packaging configuration.</p>
         <pre><code>&lt;dependency&gt;
-    &lt;groupId&gt;com.github.PimvanderLoos.LightKeeper&lt;/groupId&gt;
-    &lt;artifactId&gt;lightkeeper-framework-junit&lt;/artifactId&gt;
+    &lt;groupId&gt;nl.pim16aap2.lightkeeper&lt;/groupId&gt;
+    &lt;artifactId&gt;lightkeeper-junit-starter&lt;/artifactId&gt;
     &lt;version&gt;${lightkeeper.version}&lt;/version&gt;
     &lt;scope&gt;test&lt;/scope&gt;
 &lt;/dependency&gt;</code></pre>
+        <p>The starter supplies the framework, Jupiter API/engine/launcher, AssertJ and Bukkit API test types.
+            You may still use <code>lightkeeper-framework-junit</code> directly when managing those dependencies yourself.</p>
     </section>
 
     <section class="panel">
-        <h2>2. Configure prepare + cleanup goals</h2>
-        <p>The Maven plugin provisions its embedded runtime agent automatically. Your plugin under test must be
-            listed explicitly in <code>plugins</code>; it is not selected automatically from the current project.</p>
+        <h2>2. Bind preparation in your plugin module</h2>
+        <p>LightKeeper selects the current module’s actual Maven main artifact after packaging, including an
+            artifact replaced by Shade or Assembly. A readable JAR with valid <code>plugin.yml</code> or
+            <code>paper-plugin.yml</code> is required before server provisioning starts.</p>
         <pre><code data-maven-plugin="lightkeeper">&lt;plugin&gt;
-    &lt;groupId&gt;com.github.PimvanderLoos.LightKeeper&lt;/groupId&gt;
+    &lt;groupId&gt;nl.pim16aap2.lightkeeper&lt;/groupId&gt;
     &lt;artifactId&gt;lightkeeper-maven-plugin&lt;/artifactId&gt;
     &lt;version&gt;${lightkeeper.version}&lt;/version&gt;
     &lt;executions&gt;
         &lt;execution&gt;
-            &lt;id&gt;prepare-server&lt;/id&gt;
             &lt;goals&gt;&lt;goal&gt;prepare-server&lt;/goal&gt;&lt;/goals&gt;
-            &lt;configuration&gt;
-                &lt;serverType&gt;paper&lt;/serverType&gt;
-                &lt;userAgent&gt;LightKeeper/${project.version} (https://example.com/my-plugin)&lt;/userAgent&gt;
-                &lt;runtimeManifestPath&gt;${project.build.directory}/lightkeeper/runtime-manifest.json&lt;/runtimeManifestPath&gt;
-                &lt;plugins&gt;
-                    &lt;plugin&gt;
-                        &lt;sourceType&gt;path&lt;/sourceType&gt;
-                        &lt;path&gt;${project.build.directory}/${project.build.finalName}.jar&lt;/path&gt;
-                    &lt;/plugin&gt;
-                &lt;/plugins&gt;
-            &lt;/configuration&gt;
-        &lt;/execution&gt;
-        &lt;execution&gt;
-            &lt;id&gt;cleanup-server&lt;/id&gt;
-            &lt;phase&gt;post-integration-test&lt;/phase&gt;
-            &lt;goals&gt;&lt;goal&gt;cleanup-server&lt;/goal&gt;&lt;/goals&gt;
-            &lt;configuration&gt;
-                &lt;deleteTargetServerOnSuccess&gt;true&lt;/deleteTargetServerOnSuccess&gt;
-                &lt;failsafeSummaryPath&gt;${project.build.directory}/failsafe-reports/failsafe-summary.xml&lt;/failsafeSummaryPath&gt;
-                &lt;serverWorkDirectoryRoot&gt;${project.build.directory}/lightkeeper-server&lt;/serverWorkDirectoryRoot&gt;
-            &lt;/configuration&gt;
         &lt;/execution&gt;
     &lt;/executions&gt;
 &lt;/plugin&gt;</code></pre>
-        <p><code>userAgent</code> may be set in the plugin-level <code>configuration</code>, as a shared value,
-            or in an execution's <code>configuration</code>, as shown here. Execution-level values override shared
-            values with the same name. Both locations are valid; moving it does not require a LightKeeper version change.
-            Replace the example project URL with your own contact URL or email address.</p>
-        <p>The <code>path</code> above refers to the JAR built by this Maven module, normally
-            <code>target/&lt;artifactId&gt;-&lt;version&gt;.jar</code>. During <code>mvn verify</code>, Maven runs
-            <code>package</code> before LightKeeper's <code>pre-integration-test</code> preparation, which copies the JAR
-            into the test server's <code>plugins/</code> directory. The file must exist when preparation runs.
-            If shading or another packaging step produces a separate deployable JAR, point <code>path</code> to that
-            output, including its classifier if applicable. Use the same JAR you would install on a normal server.</p>
-        <p>For a separate integration-test module, reference the plugin module's built JAR or use
-            <code>sourceType=maven</code> with its <code>groupId</code>, <code>artifactId</code>, and <code>version</code>.
-            The path above always refers to the module containing this configuration.</p>
+        <p>Paper, the Minecraft version supported by this LK build, Java, cache paths and LK’s own versioned
+            User-Agent have defaults. The extension stops the server process; a cleanup goal is optional.</p>
+        <p>A separate test module declares a real test-scoped dependency on its producer and selects it with
+            <code>pluginUnderTest.artifactId</code>. Add <code>groupId</code> for an ambiguous short name, select
+            an attached <code>classifier</code>, or override with an authoritative <code>path</code>.
+            A failed explicit selection never falls back to another plugin. Set <code>serverOnly=true</code>
+            only for intentional server-only tests.</p>
+        <p>Static validation does not load classes, require an enabled plugin, enforce runtime API compatibility,
+            or install dependencies from plugin metadata. Missing dependencies and load failures can be intentional.</p>
+        <p>Extra JARs in <code>src/test/lightkeeper/plugins/</code> and config files in
+            <code>src/test/lightkeeper/config/</code> are discovered automatically; absent directories are normal.
+            Explicit assets remain available. An explicit <code>configOverlayPath</code> replaces the conventional overlay.
+            Target/agent replacements and conflicting plugin output filenames fail clearly.</p>
+        <p>For migration, existing explicit <code>plugins</code> lists keep their original asset-only behavior
+            when no <code>pluginUnderTest</code> is supplied. Add <code>&lt;pluginUnderTest/&gt;</code> to select the
+            current module while retaining explicit extras, choose a producer/path, or use <code>serverOnly</code>.</p>
     </section>
 
     <section class="panel">
         <h2>3. Pass runtime manifest to tests</h2>
-        <p>Put this configuration in Maven Failsafe in the module containing the integration tests. Run integration
+        <p>Bind Failsafe’s <code>integration-test</code> and <code>verify</code> goals in the test module and set
+            <code>failIfNoTests=true</code>. Pass the runtime manifest using its <code>systemPropertyVariables</code>. Run integration
             tests with <code>mvn verify</code>. For IDE gutter launches, use the <a href="ide-testing.html">IDE setup guide</a>,
             including its module-selection commands when running from a multi-module project root.</p>
+        <p>With Failsafe 3.6.1, <code>-DskipITs</code> skips integration tests and
+            <code>-Dmaven.test.skip=true</code> skips all tests. <code>-DskipTests</code> alone skips unit tests;
+            Failsafe 3.5 also treated it as an IT skip. Preparation follows the effective Failsafe skips.</p>
         <pre><code>&lt;systemPropertyVariables&gt;
     &lt;lightkeeper.runtimeManifestPath&gt;
         ${project.build.directory}/lightkeeper/runtime-manifest.json
