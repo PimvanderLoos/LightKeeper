@@ -67,6 +67,9 @@ Keep your existing production API dependencies and packaging configuration.
 See the [starter README](lightkeeper-junit-starter/README.md) for what it includes and how its role differs from
 `lightkeeper-maven-plugin`.
 
+Runnable projects are in [examples](examples/README.md): a standalone plugin and a separate test module selecting
+a reactor's Shade/Assembly artifact. CI runs both as external Maven consumers and ordinary direct JUnit launches.
+
 ```xml
 <properties>
     <lightkeeper.version>1.2.0-SNAPSHOT</lightkeeper.version>

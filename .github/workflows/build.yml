@@ -73,6 +73,9 @@ jobs:
           mvn --batch-mode --no-transfer-progress -Pdefault,docs \
             "-Dtop=$JAVADOC_TOP" site:site
 
+      - name: Test independent Maven and native JUnit consumers
+        run: python3 .github/scripts/consumer_checks.py --output "$RUNNER_TEMP/lightkeeper-consumers"
+
       - name: Package documentation
         run: |
           python3 .github/scripts/javadoc.py seal --docs target/site/apidocs \
@@ -100,6 +103,8 @@ jobs:
             **/target/lightkeeper-reports/**
             **/target/lightkeeper-reports-it/**
             **/target/**/lightkeeper-diagnostics/**
+            ${{ runner.temp }}/lightkeeper-consumers/*.log
+            ${{ runner.temp }}/lightkeeper-consumers/results.json
           if-no-files-found: ignore
           retention-days: 3
 
