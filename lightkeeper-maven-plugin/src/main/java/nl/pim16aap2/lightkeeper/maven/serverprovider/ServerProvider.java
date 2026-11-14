@@ -5,8 +5,9 @@ import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 import nl.pim16aap2.lightkeeper.maven.LightkeeperEmbeddedAgent;
-import nl.pim16aap2.lightkeeper.maven.util.FileUtil;
+import nl.pim16aap2.lightkeeper.provisioning.ProvisioningException;
 import nl.pim16aap2.lightkeeper.provisioning.ServerSpecification;
+import nl.pim16aap2.lightkeeper.provisioning.util.FileUtil;
 import nl.pim16aap2.lightkeeper.provisioning.util.HashUtil;
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -459,7 +460,7 @@ public abstract class ServerProvider
         {
             pruneResult = FileUtil.pruneSiblingDirectoriesOlderThan(currentDirectory, expiryDays);
         }
-        catch (MojoExecutionException exception)
+        catch (ProvisioningException exception)
         {
             log().warn(
                 "Failed to enumerate unused %s directories for cleanup under '%s'. Cause: %s"

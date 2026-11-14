@@ -20,6 +20,13 @@
 
     <dependencies>
         <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>${version.apache-commons-io}</version>
+            <optional>false</optional>
+        </dependency>
+
+        <dependency>
             <groupId>nl.pim16aap2.lightkeeper</groupId>
             <artifactId>lightkeeper-runtime-core</artifactId>
             <version>${project.version}</version>

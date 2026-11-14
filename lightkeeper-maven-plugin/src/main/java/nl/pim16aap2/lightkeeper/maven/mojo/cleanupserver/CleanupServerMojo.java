@@ -1,6 +1,7 @@
 package nl.pim16aap2.lightkeeper.maven.mojo.cleanupserver;
 
-import nl.pim16aap2.lightkeeper.maven.util.FileUtil;
+import nl.pim16aap2.lightkeeper.provisioning.ProvisioningException;
+import nl.pim16aap2.lightkeeper.provisioning.util.FileUtil;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -11,11 +12,11 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
-import javax.xml.XMLConstants;
-import javax.xml.parsers.DocumentBuilderFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
+import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilderFactory;
 
 /**
  * Cleans target server directories after successful integration tests.
@@ -118,7 +119,14 @@ public final class CleanupServerMojo extends AbstractMojo
         }
 
         getLog().info("LK_CLEANUP: Deleting target server directory '%s'.".formatted(effectiveServerWorkDirectoryRoot));
-        FileUtil.deleteRecursively(effectiveServerWorkDirectoryRoot, "target server directory");
+        try
+        {
+            FileUtil.deleteRecursively(effectiveServerWorkDirectoryRoot, "target server directory");
+        }
+        catch (ProvisioningException exception)
+        {
+            throw new MojoExecutionException(exception.getMessage(), exception);
+        }
     }
 
     private static FailsafeSummary readFailsafeSummary(Path path)

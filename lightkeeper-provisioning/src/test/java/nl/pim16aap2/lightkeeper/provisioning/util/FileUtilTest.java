@@ -1,8 +1,8 @@
-package nl.pim16aap2.lightkeeper.maven.util;
+package nl.pim16aap2.lightkeeper.provisioning.util;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-import org.apache.maven.plugin.MojoExecutionException;
+import nl.pim16aap2.lightkeeper.provisioning.ProvisioningException;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,14 +63,14 @@ class FileUtilTest
             assertThat(path).isRegularFile();
 
             // execute & verify
-            assertThatExceptionOfType(MojoExecutionException.class)
+            assertThatExceptionOfType(ProvisioningException.class)
                 .isThrownBy(() -> FileUtil.createDirectories(path, context))
                 .withMessage("The path '%s' exists but is not a directory.", path);
         }
 
         @Test
         void createDirectories_shouldCreateDirectory()
-            throws MojoExecutionException
+            throws ProvisioningException
         {
             // setup
             final FileSystem localFileSystem = Objects.requireNonNull(fs, "fs must be initialized.");
@@ -87,7 +87,7 @@ class FileUtilTest
 
         @Test
         void copyDirectoryRecursively_shouldCopyNestedFiles()
-            throws IOException, MojoExecutionException
+            throws IOException, ProvisioningException
         {
             // setup
             final FileSystem localFileSystem = Objects.requireNonNull(fs, "fs must be initialized.");
@@ -117,7 +117,7 @@ class FileUtilTest
 
             // execute + verify
             assertThatThrownBy(() -> FileUtil.copyDirectoryRecursively(sourceFile, target))
-                .isInstanceOf(MojoExecutionException.class)
+                .isInstanceOf(ProvisioningException.class)
                 .hasMessageContaining("is not a directory");
         }
 

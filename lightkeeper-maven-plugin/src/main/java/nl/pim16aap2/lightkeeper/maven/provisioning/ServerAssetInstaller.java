@@ -1,6 +1,6 @@
 package nl.pim16aap2.lightkeeper.maven.provisioning;
 
-import nl.pim16aap2.lightkeeper.maven.util.FileUtil;
+import nl.pim16aap2.lightkeeper.provisioning.util.FileUtil;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 

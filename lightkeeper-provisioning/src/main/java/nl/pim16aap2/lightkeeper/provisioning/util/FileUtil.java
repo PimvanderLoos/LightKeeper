@@ -1,9 +1,10 @@
-package nl.pim16aap2.lightkeeper.maven.util;
+package nl.pim16aap2.lightkeeper.provisioning.util;
 
+import nl.pim16aap2.lightkeeper.provisioning.ProvisioningException;
 import org.apache.commons.io.FileUtils;
-import org.apache.maven.plugin.MojoExecutionException;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
@@ -13,10 +14,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.stream.Stream;
 
+/** Filesystem operations for prepared server directories and LK-owned caches. */
 public final class FileUtil
 {
     private FileUtil()
@@ -30,15 +31,15 @@ public final class FileUtil
      *     the directory to create.
      * @param name
      *     the name of the directory. This is used for logging purposes only.
-     * @throws MojoExecutionException
+     * @throws ProvisioningException
      *     If the directory could not be created.
      */
     public static void createDirectories(Path path, String name)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         if (Files.exists(path) && !Files.isDirectory(path))
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "The path '" + path + "' exists but is not a directory."
             );
         }
@@ -49,7 +50,7 @@ public final class FileUtil
         }
         catch (Exception exception)
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Failed to create directory '" + name + "' at path '" + path + "'.",
                 exception
             );
@@ -65,11 +66,13 @@ public final class FileUtil
      *
      * @param path
      *     the path to delete.
-     * @throws MojoExecutionException
+     * @param context
+     *     Human-readable directory purpose for actionable failures.
+     * @throws ProvisioningException
      *     If the file or directory could not be deleted.
      */
     public static void cleanDirectory(Path path, String context)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         if (Files.exists(path))
         {
@@ -79,7 +82,7 @@ public final class FileUtil
             }
             catch (IOException exception)
             {
-                throw new MojoExecutionException(
+                throw new ProvisioningException(
                     "Failed to clean %s with path '%s'.".formatted(context, path),
                     exception
                 );
@@ -98,14 +101,16 @@ public final class FileUtil
      *     The file or directory to delete.
      * @param context
      *     Human-readable context for error messages.
-     * @throws MojoExecutionException
+     * @throws ProvisioningException
      *     If deletion fails.
      */
     public static void deleteRecursively(Path path, String context)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         if (Files.notExists(path))
+        {
             return;
+        }
 
         try (Stream<Path> stream = Files.walk(path))
         {
@@ -124,7 +129,7 @@ public final class FileUtil
         }
         catch (IOException | UncheckedIOException exception)
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Failed to delete %s with path '%s'.".formatted(context, path),
                 exception
             );
@@ -144,16 +149,18 @@ public final class FileUtil
      * @param expiryDays
      *     Age threshold in days. Directories with age greater than or equal to this value are eligible.
      * @return The result containing deleted and failed directory paths.
-     * @throws MojoExecutionException
+     * @throws ProvisioningException
      *     If sibling directories cannot be enumerated.
      */
     public static PruneResult pruneSiblingDirectoriesOlderThan(Path currentDirectory, int expiryDays)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         final Path normalizedCurrent = currentDirectory.toAbsolutePath().normalize();
         final Path parent = normalizedCurrent.getParent();
         if (parent == null || Files.notExists(parent))
+        {
             return new PruneResult(List.of(), List.of());
+        }
 
         final List<Path> deleted = new ArrayList<>();
         final List<Path> failed = new ArrayList<>();
@@ -177,14 +184,16 @@ public final class FileUtil
                     }
 
                     if (age < expiryDays)
+                    {
                         return;
+                    }
 
                     try
                     {
                         deleteRecursively(path, "unused cache directory");
                         deleted.add(path);
                     }
-                    catch (MojoExecutionException exception)
+                    catch (ProvisioningException exception)
                     {
                         failed.add(path);
                     }
@@ -192,7 +201,7 @@ public final class FileUtil
         }
         catch (IOException exception)
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Failed to enumerate sibling directories under '%s'.".formatted(parent),
                 exception
             );
@@ -246,14 +255,16 @@ public final class FileUtil
      *     The source directory.
      * @param target
      *     The target directory.
-     * @throws MojoExecutionException
+     * @throws ProvisioningException
      *     If copying fails.
      */
     public static void copyDirectoryRecursively(Path source, Path target)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         if (!Files.isDirectory(source))
-            throw new MojoExecutionException("Source path '%s' is not a directory.".formatted(source));
+        {
+            throw new ProvisioningException("Source path '%s' is not a directory.".formatted(source));
+        }
 
         try
         {
@@ -286,7 +297,7 @@ public final class FileUtil
         }
         catch (IOException exception)
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Failed to copy source directory '%s' to '%s'.".formatted(source, target),
                 exception
             );
