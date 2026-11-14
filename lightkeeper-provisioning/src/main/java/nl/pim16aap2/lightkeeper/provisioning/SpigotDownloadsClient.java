@@ -1,9 +1,6 @@
-package nl.pim16aap2.lightkeeper.maven;
+package nl.pim16aap2.lightkeeper.provisioning;
 
-import nl.pim16aap2.lightkeeper.provisioning.SpigotBuildMetadata;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.logging.Log;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
@@ -11,6 +8,7 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
+import java.lang.System.Logger;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -36,7 +34,7 @@ public final class SpigotDownloadsClient
     private static final Pattern BUILDTOOLS_BUILD_URL_PATTERN =
         Pattern.compile(".*/job/BuildTools/(?<buildNumber>\\d+)/.*");
 
-    private final Log log;
+    private final Logger log;
     private final String userAgent;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
@@ -47,11 +45,11 @@ public final class SpigotDownloadsClient
      * Creates a resolver for Spigot BuildTools metadata.
      *
      * @param log
-     *     Maven log for diagnostics.
+     *     Diagnostic log sink.
      * @param userAgent
      *     HTTP user-agent used for BuildTools metadata requests.
      */
-    public SpigotDownloadsClient(Log log, String userAgent)
+    public SpigotDownloadsClient(Logger log, String userAgent)
     {
         this(
             log,
@@ -65,7 +63,7 @@ public final class SpigotDownloadsClient
      * Creates a resolver for Spigot BuildTools metadata with explicit endpoint overrides.
      *
      * @param log
-     *     Maven log for diagnostics.
+     *     Diagnostic log sink.
      * @param userAgent
      *     HTTP user-agent used for BuildTools metadata requests.
      * @param buildToolsUri
@@ -74,7 +72,7 @@ public final class SpigotDownloadsClient
      *     Metadata URI for the currently active BuildTools build.
      */
     SpigotDownloadsClient(
-        Log log,
+        Logger log,
         String userAgent,
         URI buildToolsUri,
         URI buildToolsMetadataUri)
@@ -99,11 +97,11 @@ public final class SpigotDownloadsClient
      * @param requestedVersion
      *     Requested Minecraft version, or {@code latest-supported}.
      * @return Resolved metadata for BuildTools.
-     * @throws MojoExecutionException
+     * @throws ProvisioningException
      *     When version resolution fails.
      */
     public SpigotBuildMetadata resolveBuild(String requestedVersion)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         final String resolvedVersion = resolveSupportedMinecraftVersion(requestedVersion);
 
@@ -116,11 +114,11 @@ public final class SpigotDownloadsClient
     }
 
     private String resolveBuildToolsIdentity()
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         final JsonNode buildMetadata = fetchBuildToolsMetadata();
         final long buildNumber = resolveBuildNumber(buildMetadata)
-            .orElseThrow(() -> new MojoExecutionException(
+            .orElseThrow(() -> new ProvisioningException(
                 "Failed to resolve BuildTools build number from metadata at '%s'."
                     .formatted(buildToolsMetadataUri)
             ));
@@ -128,7 +126,7 @@ public final class SpigotDownloadsClient
     }
 
     private JsonNode fetchBuildToolsMetadata()
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         final HttpRequest request = HttpRequest.newBuilder(buildToolsMetadataUri)
             .header("User-Agent", userAgent)
@@ -145,14 +143,14 @@ public final class SpigotDownloadsClient
         catch (InterruptedException exception)
         {
             Thread.currentThread().interrupt();
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Failed to query BuildTools metadata at '%s'.".formatted(buildToolsMetadataUri),
                 exception
             );
         }
         catch (IOException exception)
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Failed to query BuildTools metadata at '%s'.".formatted(buildToolsMetadataUri),
                 exception
             );
@@ -160,7 +158,7 @@ public final class SpigotDownloadsClient
 
         if (response.statusCode() < 200 || response.statusCode() >= 300)
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "BuildTools metadata request to '%s' failed with status %d."
                     .formatted(buildToolsMetadataUri, response.statusCode())
             );
@@ -172,7 +170,7 @@ public final class SpigotDownloadsClient
         }
         catch (JacksonException exception)
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Failed to parse BuildTools metadata response from '%s'."
                     .formatted(buildToolsMetadataUri),
                 exception
@@ -195,7 +193,7 @@ public final class SpigotDownloadsClient
     }
 
     private String resolveSupportedMinecraftVersion(String requestedVersion)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         final String normalizedRequestedVersion = Objects.requireNonNull(
             requestedVersion,
@@ -207,7 +205,7 @@ public final class SpigotDownloadsClient
 
         if (LATEST_SUPPORTED.equalsIgnoreCase(normalizedRequestedVersion))
         {
-            log.info(
+            log.log(System.Logger.Level.INFO,
                 "Resolved Spigot latest-supported version to Minecraft %s."
                     .formatted(RuntimeProtocol.SUPPORTED_MINECRAFT_VERSION)
             );
@@ -217,7 +215,7 @@ public final class SpigotDownloadsClient
         if (normalizedRequestedVersion.equals(RuntimeProtocol.SUPPORTED_MINECRAFT_VERSION))
             return normalizedRequestedVersion;
 
-        throw new MojoExecutionException(
+        throw new ProvisioningException(
             "Unsupported Spigot version '%s'. This LightKeeper build supports Minecraft version '%s'."
                 .formatted(normalizedRequestedVersion, RuntimeProtocol.SUPPORTED_MINECRAFT_VERSION)
         );

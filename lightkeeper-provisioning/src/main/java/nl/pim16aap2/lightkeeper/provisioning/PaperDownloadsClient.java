@@ -1,9 +1,6 @@
-package nl.pim16aap2.lightkeeper.maven;
+package nl.pim16aap2.lightkeeper.provisioning;
 
-import nl.pim16aap2.lightkeeper.provisioning.PaperBuildMetadata;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.logging.Log;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.DeserializationFeature;
@@ -12,6 +9,7 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
+import java.lang.System.Logger;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -36,7 +34,7 @@ public final class PaperDownloadsClient
     private static final Pattern URL_HASH_PATTERN =
         Pattern.compile(".*/v1/objects/(?<hash>[a-fA-F0-9]{64})/.*");
 
-    private final Log log;
+    private final Logger log;
     private final String userAgent;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
@@ -45,11 +43,11 @@ public final class PaperDownloadsClient
      * Creates a client for querying Paper metadata and downloads.
      *
      * @param log
-     *     Maven log sink.
+     *     Diagnostic log sink.
      * @param userAgent
      *     HTTP user-agent header value.
      */
-    public PaperDownloadsClient(Log log, String userAgent)
+    public PaperDownloadsClient(Logger log, String userAgent)
     {
         this(
             log,
@@ -64,7 +62,7 @@ public final class PaperDownloadsClient
         );
     }
 
-    PaperDownloadsClient(Log log, String userAgent, HttpClient httpClient, ObjectMapper objectMapper)
+    PaperDownloadsClient(Logger log, String userAgent, HttpClient httpClient, ObjectMapper objectMapper)
     {
         this.log = Objects.requireNonNull(log, "log");
         this.userAgent = validateUserAgent(userAgent);
@@ -78,22 +76,22 @@ public final class PaperDownloadsClient
      * @param requestedVersion
      *     Requested Minecraft/Paper version or {@code latest-supported}.
      * @return Resolved Paper build metadata.
-     * @throws MojoExecutionException
+     * @throws ProvisioningException
      *     When metadata resolution fails.
      */
     public PaperBuildMetadata resolveBuild(String requestedVersion)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         final String resolvedVersion = resolveSupportedMinecraftVersion(requestedVersion);
 
         return resolveStableBuildForVersion(resolvedVersion)
-            .orElseThrow(() -> new MojoExecutionException(
+            .orElseThrow(() -> new ProvisioningException(
                 "Could not find a stable Paper build for version '%s'.".formatted(resolvedVersion))
             );
     }
 
     private static String resolveSupportedMinecraftVersion(String requestedVersion)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         final String normalizedRequestedVersion = Objects.requireNonNull(requestedVersion, "requestedVersion")
             .trim();
@@ -106,19 +104,19 @@ public final class PaperDownloadsClient
         if (normalizedRequestedVersion.equals(RuntimeProtocol.SUPPORTED_MINECRAFT_VERSION))
             return normalizedRequestedVersion;
 
-        throw new MojoExecutionException(
+        throw new ProvisioningException(
             "Unsupported Paper version '%s'. This LightKeeper build supports Minecraft version '%s'."
                 .formatted(normalizedRequestedVersion, RuntimeProtocol.SUPPORTED_MINECRAFT_VERSION)
         );
     }
 
     private Optional<PaperBuildMetadata> resolveStableBuildForVersion(String minecraftVersion)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         final URI buildsUri = URI.create("%s/versions/%s/builds".formatted(PROJECT_URI, minecraftVersion));
         final JsonNode root = fetchJson(buildsUri);
         if (!root.isArray())
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Expected Fill builds endpoint to return an array for version '%s'."
                     .formatted(minecraftVersion)
             );
@@ -135,12 +133,12 @@ public final class PaperDownloadsClient
 
             final URI downloadUri = URI.create(downloadResponse.url());
             final String sha256 = resolveSha256(downloadResponse, downloadUri)
-                .orElseThrow(() -> new MojoExecutionException(
+                .orElseThrow(() -> new ProvisioningException(
                     "Unable to resolve SHA-256 checksum for Paper build '%d' (%s)."
                         .formatted(buildResponse.id(), minecraftVersion)
                 ));
 
-            log.info(
+            log.log(System.Logger.Level.INFO,
                 "Resolved stable Paper build %d for version %s."
                     .formatted(buildResponse.id(), minecraftVersion)
             );
@@ -171,7 +169,7 @@ public final class PaperDownloadsClient
     }
 
     private List<BuildResponse> parseBuildResponses(JsonNode root)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         try
         {
@@ -181,12 +179,12 @@ public final class PaperDownloadsClient
         }
         catch (JacksonException exception)
         {
-            throw new MojoExecutionException("Failed to parse Fill builds response.", exception);
+            throw new ProvisioningException("Failed to parse Fill builds response.", exception);
         }
     }
 
     private JsonNode fetchJson(URI uri)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         final HttpRequest request = HttpRequest.newBuilder(uri)
             .header("User-Agent", userAgent)
@@ -203,15 +201,15 @@ public final class PaperDownloadsClient
         catch (InterruptedException exception)
         {
             Thread.currentThread().interrupt();
-            throw new MojoExecutionException("Failed to query Fill API at '%s'.".formatted(uri), exception);
+            throw new ProvisioningException("Failed to query Fill API at '%s'.".formatted(uri), exception);
         }
         catch (IOException exception)
         {
-            throw new MojoExecutionException("Failed to query Fill API at '%s'.".formatted(uri), exception);
+            throw new ProvisioningException("Failed to query Fill API at '%s'.".formatted(uri), exception);
         }
 
         if (response.statusCode() < 200 || response.statusCode() >= 300)
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Fill API request to '%s' failed with status %d."
                     .formatted(uri, response.statusCode())
             );
@@ -220,14 +218,14 @@ public final class PaperDownloadsClient
         {
             final JsonNode root = objectMapper.readTree(response.body());
             if (root.isObject() && root.has("ok") && !root.path("ok").asBoolean(true))
-                throw new MojoExecutionException(
+                throw new ProvisioningException(
                     "Fill API request to '%s' failed: %s".formatted(uri, root.path("message").asString("unknown error"))
                 );
             return root;
         }
         catch (JacksonException exception)
         {
-            throw new MojoExecutionException("Failed to parse Fill API response from '%s'.".formatted(uri), exception);
+            throw new ProvisioningException("Failed to parse Fill API response from '%s'.".formatted(uri), exception);
         }
     }
 

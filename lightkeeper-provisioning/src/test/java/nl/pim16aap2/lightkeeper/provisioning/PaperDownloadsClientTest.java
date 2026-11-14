@@ -1,8 +1,5 @@
-package nl.pim16aap2.lightkeeper.maven;
+package nl.pim16aap2.lightkeeper.provisioning;
 
-import nl.pim16aap2.lightkeeper.provisioning.PaperBuildMetadata;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.logging.SystemStreamLog;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
@@ -15,12 +12,10 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Map;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.*;
 
 class PaperDownloadsClientTest
 {
@@ -104,7 +99,7 @@ class PaperDownloadsClientTest
 
         // execute + verify
         assertThatThrownBy(() -> client.resolveBuild("26.1.2"))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("Unsupported Paper version")
             .hasMessageContaining("1.21.11");
     }
@@ -161,7 +156,7 @@ class PaperDownloadsClientTest
 
         // execute + verify
         assertThatThrownBy(() -> client.resolveBuild("1.21.11"))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("Could not find a stable Paper build");
     }
 
@@ -191,7 +186,7 @@ class PaperDownloadsClientTest
 
         // execute + verify
         assertThatThrownBy(() -> client.resolveBuild("latest-supported"))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("Unable to resolve SHA-256 checksum");
     }
 
@@ -209,7 +204,7 @@ class PaperDownloadsClientTest
 
         // execute + verify
         assertThatThrownBy(() -> client.resolveBuild("1.21.11"))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("failed with status");
     }
 
@@ -226,7 +221,7 @@ class PaperDownloadsClientTest
 
         // execute + verify
         assertThatThrownBy(() -> client.resolveBuild("1.21.11"))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("denied");
     }
 
@@ -243,7 +238,7 @@ class PaperDownloadsClientTest
 
         // execute + verify
         assertThatThrownBy(() -> client.resolveBuild("1.21.11"))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("Failed to parse Fill API response");
     }
 
@@ -259,7 +254,7 @@ class PaperDownloadsClientTest
 
         // execute + verify
         assertThatThrownBy(() -> client.resolveBuild("1.21.11"))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("Failed to query Fill API");
         assertThat(Thread.currentThread().isInterrupted()).isTrue();
         Thread.interrupted();
@@ -269,7 +264,7 @@ class PaperDownloadsClientTest
     void constructor_shouldThrowExceptionWhenUserAgentIsBlank()
     {
         // execute + verify
-        assertThatThrownBy(() -> new PaperDownloadsClient(new SystemStreamLog(), "  "))
+        assertThatThrownBy(() -> new PaperDownloadsClient(System.getLogger("LightKeeper.Tests"), "  "))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("User-Agent");
     }
@@ -297,6 +292,6 @@ class PaperDownloadsClientTest
         final ObjectMapper objectMapper = JsonMapper.builder()
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
             .build();
-        return new PaperDownloadsClient(new SystemStreamLog(), "LightKeeper/Tests", httpClient, objectMapper);
+        return new PaperDownloadsClient(System.getLogger("LightKeeper.Tests"), "LightKeeper/Tests", httpClient, objectMapper);
     }
 }

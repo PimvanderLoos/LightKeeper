@@ -19,6 +19,12 @@
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>tools.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${version.jackson-databind}</version>
+        </dependency>
+
         <!-- Build-order/resource input only: the agent must not enter a consumer test runtime classpath. -->
         <dependency>
             <groupId>nl.pim16aap2.lightkeeper</groupId>

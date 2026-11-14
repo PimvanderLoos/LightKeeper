@@ -2,16 +2,16 @@ package nl.pim16aap2.lightkeeper.maven.mojo.prepareserver;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import nl.pim16aap2.lightkeeper.provisioning.LightkeeperEmbeddedAgent;
-import nl.pim16aap2.lightkeeper.maven.PaperDownloadsClient;
-import nl.pim16aap2.lightkeeper.maven.SpigotDownloadsClient;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.PaperServerProvider;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.ServerProvider;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.SpigotServerProvider;
+import nl.pim16aap2.lightkeeper.provisioning.LightkeeperEmbeddedAgent;
 import nl.pim16aap2.lightkeeper.provisioning.PaperBuildMetadata;
+import nl.pim16aap2.lightkeeper.provisioning.PaperDownloadsClient;
 import nl.pim16aap2.lightkeeper.provisioning.ProvisioningException;
 import nl.pim16aap2.lightkeeper.provisioning.ServerSpecification;
 import nl.pim16aap2.lightkeeper.provisioning.SpigotBuildMetadata;
+import nl.pim16aap2.lightkeeper.provisioning.SpigotDownloadsClient;
 import nl.pim16aap2.lightkeeper.provisioning.assets.LoopbackLoginGuard;
 import nl.pim16aap2.lightkeeper.provisioning.assets.PluginArtifactSpec;
 import nl.pim16aap2.lightkeeper.provisioning.assets.PluginDescriptorValidator;
@@ -757,12 +757,12 @@ public class PrepareServerMojo extends AbstractMojo
 
     protected PaperDownloadsClient createPaperDownloadsClient(String effectiveUserAgent)
     {
-        return new PaperDownloadsClient(getLog(), effectiveUserAgent);
+        return new PaperDownloadsClient(PROVISIONING_LOG, effectiveUserAgent);
     }
 
     protected SpigotDownloadsClient createSpigotDownloadsClient(String effectiveUserAgent)
     {
-        return new SpigotDownloadsClient(getLog(), effectiveUserAgent);
+        return new SpigotDownloadsClient(PROVISIONING_LOG, effectiveUserAgent);
     }
 
     static void writeRuntimeManifest(RuntimeManifest runtimeManifest, Path runtimeManifestPathValue)

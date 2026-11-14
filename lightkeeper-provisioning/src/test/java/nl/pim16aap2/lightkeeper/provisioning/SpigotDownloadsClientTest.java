@@ -1,20 +1,19 @@
-package nl.pim16aap2.lightkeeper.maven;
+package nl.pim16aap2.lightkeeper.provisioning;
 
 import com.sun.net.httpserver.HttpServer;
-import nl.pim16aap2.lightkeeper.provisioning.SpigotBuildMetadata;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.logging.Log;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.lang.System.Logger;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.*;
 
 class SpigotDownloadsClientTest
 {
@@ -26,7 +25,7 @@ class SpigotDownloadsClientTest
         final HttpFixtureServer fixtureServer = new HttpFixtureServer("""
             {"number":197,"url":"https://hub.spigotmc.org/jenkins/job/BuildTools/197/"}
             """);
-        final Log log = mock();
+        final Logger log = mock();
         final URI buildToolsUri = URI.create("https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar");
         final SpigotDownloadsClient spigotDownloadsClient = new SpigotDownloadsClient(
             log,
@@ -59,7 +58,7 @@ class SpigotDownloadsClientTest
         final HttpFixtureServer fixtureServer = new HttpFixtureServer("""
             {"number":201}
             """);
-        final Log log = mock();
+        final Logger log = mock();
         final SpigotDownloadsClient spigotDownloadsClient = new SpigotDownloadsClient(
             log,
             "LightKeeper/Test",
@@ -90,7 +89,7 @@ class SpigotDownloadsClientTest
         final HttpFixtureServer fixtureServer = new HttpFixtureServer("""
             {"status":"ok"}
             """);
-        final Log log = mock();
+        final Logger log = mock();
         final SpigotDownloadsClient spigotDownloadsClient = new SpigotDownloadsClient(
             log,
             "LightKeeper/Test",
@@ -103,7 +102,7 @@ class SpigotDownloadsClientTest
             // execute
             assertThatThrownBy(() -> spigotDownloadsClient.resolveBuild("1.21.11"))
                 // verify
-                .isInstanceOf(MojoExecutionException.class)
+                .isInstanceOf(ProvisioningException.class)
                 .hasMessageContaining("BuildTools build number");
         }
         finally
@@ -161,7 +160,7 @@ class SpigotDownloadsClientTest
         {
             // execute + verify
             assertThatThrownBy(() -> spigotDownloadsClient.resolveBuild("1.21.11"))
-                .isInstanceOf(MojoExecutionException.class)
+                .isInstanceOf(ProvisioningException.class)
                 .hasMessageContaining("failed with status 503");
         }
         finally
@@ -187,7 +186,7 @@ class SpigotDownloadsClientTest
         {
             // execute + verify
             assertThatThrownBy(() -> spigotDownloadsClient.resolveBuild("1.21.11"))
-                .isInstanceOf(MojoExecutionException.class)
+                .isInstanceOf(ProvisioningException.class)
                 .hasMessageContaining("Failed to parse BuildTools metadata response");
         }
         finally
@@ -240,7 +239,7 @@ class SpigotDownloadsClientTest
 
         // execute + verify
         assertThatThrownBy(() -> spigotDownloadsClient.resolveBuild("26.1.2"))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("Unsupported Spigot version")
             .hasMessageContaining("1.21.11");
     }
