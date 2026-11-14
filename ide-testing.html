@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#080f14">
     <title>LightKeeper - IDE Test Setup</title>
-    <meta name="description" content="Prepare a durable runtime and run LightKeeper integration tests from your IDE.">
+    <meta name="description" content="Automatically package current production artifacts for direct JUnit and IDE tests.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -29,111 +29,63 @@
 <main id="main" class="docs-main">
     <p class="version-note">These guides describe the current master build. Select a release in the <a href="javadoc/">API Reference</a> for released APIs.</p>
     <section class="guide-hero">
-        <p class="eyebrow">IDE Test Setup</p>
-        <h1>Prepare once. Run tests from the gutter.</h1>
-        <p class="lead">Run ordinary JUnit classes or methods without VM options, a Maven before-launch task,
-            or <code>junit-platform.properties</code>.</p>
+        <p class="eyebrow">Direct JUnit and IDE tests</p>
+        <h1>Save production changes. Run JUnit.</h1>
+        <p class="lead">After one normal Maven verification, ordinary class and method runs automatically package current production inputs.</p>
     </section>
     <section class="panel">
-        <h2>Consumer setup</h2>
-        <p>Use Java 21+, Maven 3.9+, and Linux or macOS for Unix-domain sockets. Your LightKeeper version must
-            contain IDE test setup. Keep the <a href="getting-started.html">prepare-server execution and framework dependency</a>.</p>
+        <p>After one normal <code>mvn verify</code>, run an ordinary JUnit class or method after saving production edits. LightKeeper packages the current production sources and resources automatically through the project&#x27;s real Maven lifecycle. No LightKeeper IDE plugin, IDE before-launch task, manifest VM option or <code>lightkeeper.ide</code> flag is required.</p>
+    </section>
+    <section class="panel">
+        <h2>Initial setup</h2>
+        <p>Use Java 21, Maven 3.9+, and Linux/macOS for the supported Unix-domain-socket transport. Add the starter test dependency and bind both <code>lock-build</code> and <code>prepare-server</code>, plus Failsafe with <code>failIfNoTests=true</code>, as in the <a href="getting-started.html">main README</a>. No execution ID or explicit phase is needed in a single-module plugin.</p>
         <ol>
-            <li>For <code>sourceType=path</code>, package the plugin so the configured JAR exists
-                (<code>mvn package</code> for the single-module setup in <a href="getting-started.html">Getting Started</a>).
-                For <code>sourceType=maven</code>, install locally developed plugin artifacts with <code>mvn install</code>.
-                Calling <code>prepare-server</code> directly does not run these lifecycle phases.</li>
-            <li>Run the configured preparation execution in the test module. From a multi-module project root,
-                select that module explicitly using <code>-pl</code>, as shown below.</li>
-            <li>Check that output says <code>Created IDE test setup</code> or <code>Reused IDE test setup</code>, with the expected module and platform.</li>
-            <li>Click the JUnit gutter button beside your test class or method.</li>
+            <li>Run <code>mvn verify</code> in the plugin project. For a reactor, use the root command below.</li>
+            <li>Save changes to production Java sources, filtered resources or other Maven packaging inputs.</li>
+            <li>Start a JUnit class/method in the IDE, or use a standard JUnit launcher with the compiled tests and dependencies.</li>
         </ol>
-        <p>From the directory containing the test module's <code>pom.xml</code> (or your project root for a
-            single-module project), use the execution from <a href="getting-started.html">Getting Started</a>:</p>
-        <pre><code>mvn pre-integration-test -Dlightkeeper.ide=true</code></pre>
-        <p>From a multi-module project root, select the test module by its <code>artifactId</code>. Replace
-            <code>my-plugin-e2e</code> with your module's artifact ID; the leading <code>:</code> avoids typing its
-            directory path:</p>
-        <pre><code>mvn -pl :my-plugin-e2e -am pre-integration-test -Dlightkeeper.ide=true</code></pre>
-        <p>Alternatively, point Maven directly at the test module's POM. Replace the example path with your own:</p>
-        <pre><code>mvn -f testing/my-plugin-e2e/pom.xml pre-integration-test -Dlightkeeper.ide=true</code></pre>
-        <p>The lifecycle packages production artifacts before preparing the runtime, retaining Maven’s actual
-            artifact registration. A direct <code>prepare-server</code> goal alone cannot recover an artifact
-            replaced by a previous invocation. From a reactor root, <code>-am</code> builds the selected module’s
-            upstreams; lifecycle-bound LK preparation runs only in configured modules. Do not append a direct
-            preparation goal to a reactor <code>-am</code> command.</p>
-        <p>Advanced named executions still support explicit legacy fixtures and platform selection. In that route,
-            the text after <code>@</code> must match the execution ID in the selected module’s effective POM.</p>
-        <p>Each test module owns its <code>.lightkeeper/ide/</code> discovery record. Preparation never selects a parent
-            or sibling runtime automatically.</p>
+        <pre><code>mvn -pl :my-plugin-e2e -am verify</code></pre>
+        <p>In a reactor, inherit <strong>only the lightweight <code>lock-build</code> goal</strong> from the parent. Bind <code>prepare-server</code> in the test module, declare a test-scoped dependency on the producer and select it with <code>pluginUnderTest.artifactId</code>. All selected producer modules must run the guard before modifying production outputs. A missing upstream guard fails with the producer identity and the required parent configuration. Advanced generators that modify outputs before initialize must order the guard before those mutations too.</p>
+        <p>Maven&#x27;s lifecycle, dependency graph and actual artifact registration remain authoritative. LightKeeper does not zip IDE class directories, infer JAR names or install your producer. Shade/Assembly replacements and attached artifacts are selected from the current Maven invocation. A stale installed copy does not replace a selected reactor artifact.</p>
     </section>
     <section class="panel">
-        <h2>LightKeeper contributor setup</h2>
-        <p>Install the current plugin, framework, agent, and fixture before invoking the goal directly:</p>
-        <pre><code>mvn -pl lightkeeper-integration-tests -am install \
-  -DskipTests -DskipITs -Dlightkeeper.skip=true -Dmaven.javadoc.skip=true
-mvn -pl lightkeeper-integration-tests \
-  lightkeeper:prepare-server@prepare-server-paper -Dlightkeeper.ide=true</code></pre>
-        <p>Replace <code>prepare-server-paper</code> with <code>prepare-server-spigot</code> to select Spigot.
-            The execution supplies platform identity; <code>lightkeeper.expectedServerType</code> is only a Failsafe assertion input.</p>
+        <h2>What runs at launch</h2>
+        <p>A Failsafe test recognizes the immutable export from its actual ancestor Maven JVM by PID and start time. It uses that invocation&#x27;s current snapshot without starting another producer build. A leftover metadata file from an earlier build does not enable this shortcut.</p>
+        <p>A direct JUnit launch invokes Maven from the retained reactor POM, selects the test module with <code>-pl</code> and its upstreams with <code>-am</code>, and runs through <code>pre-integration-test</code>. Unit/IT execution is suppressed in that preparation child. Maven re-evaluates the current POM, performs compilation/filtering/packaging and prepares the selected runtime. The child holds selected module leases through packaging, immutable capture and successful Maven exit. JUnit accepts only its own unique export after a successful build; build failures never fall back to an old runtime.</p>
+        <p>Preparation runs once per selected module/variant within a JUnit launch. Multiple test classes share immutable inputs, then copy them into separate mutable class sessions. Separate launches serialize producer preparation and may run Minecraft concurrently afterwards. Shared server caches also use kernel leases through rebuild, pruning and copying.</p>
+        <p>Deleted source/resource outputs are refreshed before Maven rebuilds changed production inputs, so a deleted resource cannot survive silently in <code>target/classes</code>. Unchanged inputs retain incremental output. This refresh leaves test classes in place; packaging still runs for every direct JUnit launch.</p>
     </section>
     <section class="panel">
-        <h2>Daily use, persistence, and refresh</h2>
-        <p>Test-only edits need ordinary IDE compilation. <code>mvn clean</code> removes <code>target</code> while
-            preserving the runtime under the owning module's <code>.lightkeeper/ide/</code>. Compile tests again
-            to restore its discovery anchor. Ordinary unit tests do no LightKeeper work.</p>
-        <p>After plugin changes, package or install the plugin and repeat preparation. Rebuild the LightKeeper
-            agent after changes requiring new agent/protocol behavior. Matching packaged inputs reuse the runtime;
-            changed hashes or launch settings create a new preparation.</p>
-        <p>Each discovered test class gets a private server session copied from immutable prepared inputs. Independent classes
-            and launches start clean. To recreate the prepared inputs:</p>
-        <p>Run this from the test module's directory, or retain the same <code>-pl</code>/<code>-f</code> selection
-            and execution ID used during initial setup:</p>
-        <pre><code>mvn pre-integration-test -Dlightkeeper.ide=true -Dlightkeeper.ide.refresh=true</code></pre>
-        <p>Refresh creates a new preparation and switches later launches atomically. Active tests keep their private server copies. Old preparations are not pruned automatically. For a complete reset, close
-            running tests, move the module's <code>.lightkeeper/</code> directory to trash, and repeat setup.</p>
+        <h2>Build context and variants</h2>
+        <p>The module plan retains explicitly requested active/inactive profiles, the Maven executable and Java home, existing settings/toolchains <strong>paths</strong>, and a documented allowlist of non-secret user properties. Credentials remain in Maven settings or the environment. Maven reads the current POM, wrapper and <code>.mvn</code> configuration on each native build.</p>
+        <p>Retained properties include <code>revision</code>, <code>changelist</code>, <code>sha1</code>, <code>maven.repo.local</code>, compiler release/source/target/encoding and the supported persistent <code>lightkeeper.*</code> preparation inputs. The exact allowlist is <a href="https://github.com/PimvanderLoos/LightKeeper/blob/master/lightkeeper-runtime-core/src/main/java/nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.java"><code>MavenBuildContext.RETAINED_PROPERTIES</code></a>. Arbitrary CLI properties/options, test selectors, transient skip controls and repository authentication are not replayed. Keep durable custom build inputs in the POM, <code>.mvn</code> configuration or an explicitly selected profile. Rerun normal <code>mvn verify</code> to change retained invocation context or regenerate metadata after moving a checkout.</p>
+        <p>A module with one active preparation needs no execution ID. If several preparations are active, select the intended variant explicitly with <code>-Dlightkeeper.executionId=&lt;execution-id&gt;</code>; ambiguity never selects a sibling arbitrarily. For independent Paper/Spigot profiles, run initial setup with the desired profile. A later POM change is evaluated by the preparation child, including a renamed single default execution.</p>
+        <p><code>lightkeeper.buildTimeoutSeconds</code> controls the producer-build timeout and checkout-lease wait; the default is 300 seconds. Cancellation terminates the owned Maven child tree. A watchdog also guards that child if the test JVM dies.</p>
     </section>
     <section class="panel">
-        <h2>Session lifecycle</h2>
-        <p>Ordinary methods share one server process within their class. <code>@FreshServer</code> creates a new process
-            against the same class session, preserving world and plugin data. An explicit
-            <code>framework.server().restart()</code> preserves that data too.</p>
-        <p>Sessions have independent copied JARs, sockets, tokens, and runtime ports. The preparation lock is released
-            before Minecraft starts. Successful sessions under <code>.lightkeeper/sessions/</code> are removed after
-            their processes stop; failed sessions retain their files for diagnosis. Maven's selected Java executable
-            and extra JVM arguments also apply to these processes.</p>
+        <h2>Session lifecycle and explicit overrides</h2>
+        <p>Ordinary methods share one server process within their class. <code>@FreshServer</code> creates a new process against the same class session, retaining worlds and plugin data. <code>framework.server().restart()</code> retains that data too. Independent classes/launches start from unchanged prepared inputs, with independent copied JARs, sockets, tokens and runtime ports. Maven acquires all selected module leases in canonical path order and retains them until its JVM exits.
+            Root and submodule entry points coordinate the same outputs, including with Maven <code>-T</code> and several
+            IT modules. Another cooperating build with overlapping modules can wait through Maven IT execution, preserving
+            current artifacts for later snapshots. A direct JUnit preparation child exits before Minecraft starts, so its
+            runtime session holds no producer locks. Cache leases are released after copying. The bridge supports the
+            standard Maven CLI/wrapper process, rather than a persistent daemon or embedded multi-invocation JVM.</p>
+        <p>Successful <code>.lightkeeper/sessions/</code> directories are removed after the process stops. Failed sessions remain for diagnosis; framework diagnostics are written under <code>target/lightkeeper-reports/</code>. Native launch snapshots and metadata are removed when the JUnit launch closes. Normal Maven snapshots survive the invocation&#x27;s Failsafe forks and are removed at Maven exit. A hard-killed build can leave diagnostic/generated files behind, but its kernel locks expire with the owning process and those files never authorize reuse by a later native launch.</p>
+        <p><code>-Dlightkeeper.runtimeManifestPath=/absolute/path/runtime-manifest.json</code> and <code>Lightkeeper.start(Path)</code> remain authoritative. They bypass discovery and producer builds, retain direct control over the existing server directory, and support deliberate state reuse. Invalid explicit paths fail immediately. Maven&#x27;s effective custom test-output path is supported through an ownership anchor; unrelated custom IDE output paths require an explicit manifest.</p>
     </section>
     <section class="panel">
-        <h2>Overrides and validation</h2>
-        <p><code>-Dlightkeeper.runtimeManifestPath=/absolute/path/runtime-manifest.json</code> overrides discovery.
-            An invalid explicit path fails immediately; it does not fall back. <code>Lightkeeper.start(Path)</code>
-            follows the same contract. Explicit manifests retain their existing server directory and support deliberate state
-            reuse. For custom IDE class-output layouts, use the explicit property.</p>
-        <p>Preparation fingerprints resolved server metadata, JVM settings, the embedded agent, deployed plugins,
-            world templates, and overlays. Launch checks ownership and durable files. It cannot detect unbuilt
-            edits or new remote snapshots until Maven resolves those inputs during another preparation.</p>
+        <h2>Troubleshooting and migration</h2>
+        <table>
+            <tr><th>Symptom</th><th>Action</th></tr>
+            <tr><td>Missing module ownership anchor</td><td>Bind <code>lock-build</code> and <code>prepare-server</code>, then run normal <code>mvn verify</code> once.</td></tr>
+            <tr><td>Preparation build failed</td><td>Open the reported <code>.lightkeeper/launches/&lt;id&gt;/maven.log</code>, fix the producer build and rerun JUnit.</td></tr>
+            <tr><td>Several active preparations</td><td>Select <code>lightkeeper.executionId</code> or activate one server profile.</td></tr>
+            <tr><td>Direct <code>mvn -Dtest=... test</code> runs before packaging</td><td>Use standard Failsafe: <code>mvn &quot;-Dit.test=MyPluginIT#method&quot; verify</code>, or direct JUnit.</td></tr>
+            <tr><td>Moved checkout or changed retained CLI context</td><td>Run normal <code>mvn verify</code> from the intended reactor entry point.</td></tr>
+        </table>
+        <p>Remove required <code>lightkeeper.ide</code> preparation commands and basic Failsafe manifest-property wiring when migrating to the automatic route. Keep explicit manifests only where their direct-directory/state-reuse contract is intentional. Ordinary unit tests without the extension or <code>Lightkeeper.start(Class&lt;?&gt;)</code> do no LightKeeper work.</p>
+        <p>The native-launcher path has been exercised with Temurin 21.0.10, Maven 3.9.9, Linux, Paper 1.21.11 and Spigot 1.21.11, including changed production code, a Shade/Assembly reactor, stale installed artifacts and multiple JUnit classes. The IntelliJ gutter UI itself was not automated. Debug test/framework code in the IDE; Bukkit/Paper production code runs in the separate Minecraft JVM and needs server JVM debug arguments.</p>
     </section>
-    <section class="panel">
-        <h2>Troubleshooting</h2>
-        <p><code>No plugin found for prefix 'lightkeeper'</code>: Maven could not resolve the plugin before LightKeeper
-            could run. In a multi-module project, first check that you selected the test module with <code>-pl</code>,
-            <code>-f</code>, or by running from its directory. A plugin declared only in a child POM is not visible in
-            the root POM. Verify that the selected module declares the LightKeeper Maven plugin and version, and that
-            its artifact is installed locally or available through the configured <code>pluginRepositories</code>.
-            See <a href="getting-started.html">Getting Started</a> for repository setup.</p>
-        <p>Using fully qualified plugin coordinates can bypass prefix lookup, but it does not select a child module
-            or load that child's execution configuration. Moving the plugin declaration into the root POM also does
-            not make preparation automatically choose the test module.</p>
-        <p>Missing or corrupt discovery: repeat preparation in the owning module. Moved checkout: repeat setup at
-            the new path. Stale runtime: rebuild packaged inputs, then prepare again. Busy preparation: let the
-            other preparation finish and retry. To recreate prepared inputs, use <code>-Dlightkeeper.ide.refresh=true</code>. Missing server cache:
-            repeat preparation to recreate required artifacts.</p>
-        <p>Debug framework/JUnit code with your IDE's test debugger. Bukkit/Paper code runs in a separate JVM;
-            use the Maven plugin's server JVM debug arguments for it.</p>
-        <p>The underlying command-line class/method workflow was verified with Temurin 25.0.4 (release 21),
-            Maven 3.9.9, and Linux. The IntelliJ gutter UI was not automated.</p>
-    </section>
-    <p class="guide-footnote">See <a href="faq.html">FAQ</a> for general runtime troubleshooting.</p>
 </main>
 <footer class="site-footer">
     <p>LightKeeper <span aria-hidden="true">/</span> Open-source Minecraft plugin testing</p>
