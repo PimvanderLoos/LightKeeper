@@ -2,17 +2,18 @@ package nl.pim16aap2.lightkeeper.maven.mojo.prepareserver;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import nl.pim16aap2.lightkeeper.maven.provisioning.LoopbackLoginGuard;
-import nl.pim16aap2.lightkeeper.maven.provisioning.PluginArtifactSpec;
-import nl.pim16aap2.lightkeeper.maven.provisioning.ResolvedPluginArtifact;
-import nl.pim16aap2.lightkeeper.maven.provisioning.ServerAssetInstaller;
-import nl.pim16aap2.lightkeeper.maven.provisioning.WorldInputSpec;
 import nl.pim16aap2.lightkeeper.maven.LightkeeperEmbeddedAgent;
-import nl.pim16aap2.lightkeeper.maven.PaperDownloadsClient;
 import nl.pim16aap2.lightkeeper.maven.PaperBuildMetadata;
+import nl.pim16aap2.lightkeeper.maven.PaperDownloadsClient;
 import nl.pim16aap2.lightkeeper.maven.ServerSpecification;
 import nl.pim16aap2.lightkeeper.maven.SpigotBuildMetadata;
 import nl.pim16aap2.lightkeeper.maven.SpigotDownloadsClient;
+import nl.pim16aap2.lightkeeper.maven.provisioning.LoopbackLoginGuard;
+import nl.pim16aap2.lightkeeper.maven.provisioning.PluginArtifactSpec;
+import nl.pim16aap2.lightkeeper.maven.provisioning.PluginDescriptorValidator;
+import nl.pim16aap2.lightkeeper.maven.provisioning.ResolvedPluginArtifact;
+import nl.pim16aap2.lightkeeper.maven.provisioning.ServerAssetInstaller;
+import nl.pim16aap2.lightkeeper.maven.provisioning.WorldInputSpec;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.PaperServerProvider;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.ServerProvider;
 import nl.pim16aap2.lightkeeper.maven.serverprovider.SpigotServerProvider;
@@ -22,13 +23,18 @@ import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeDiscovery;
 import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeLock;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.PluginParameterExpressionEvaluator;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
+import org.codehaus.plexus.component.configurator.expression.ExpressionEvaluationException;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -37,6 +43,7 @@ import org.jspecify.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -44,7 +51,11 @@ import java.util.UUID;
 /**
  * Resolves/caches a Minecraft test server installation and writes a runtime manifest for integration tests.
  */
-@Mojo(name = "prepare-server", defaultPhase = LifecyclePhase.PRE_INTEGRATION_TEST)
+@Mojo(
+    name = "prepare-server",
+    defaultPhase = LifecyclePhase.PRE_INTEGRATION_TEST,
+    requiresDependencyResolution = ResolutionScope.TEST
+)
 @AllArgsConstructor
 @NoArgsConstructor
 public class PrepareServerMojo extends AbstractMojo
@@ -63,6 +74,28 @@ public class PrepareServerMojo extends AbstractMojo
     @Parameter(property = "lightkeeper.skip", defaultValue = "false")
     private boolean skip;
 
+    /** Standard Failsafe switch; skipped tests do not require server preparation. */
+    @Parameter(property = "skipITs", defaultValue = "false")
+    private boolean skipITs;
+
+    /** Standard Maven switch that suppresses test compilation and execution. */
+    @Parameter(property = "maven.test.skip", defaultValue = "false")
+    private boolean skipAllTests;
+
+    /** Unit-test skip switch; affects Failsafe only when its effective version/configuration says so. */
+    @Parameter(property = "skipTests", defaultValue = "false")
+    private boolean skipTests;
+
+    /** Current Maven invocation used for expression evaluation, without changing global user properties. */
+    @Parameter(defaultValue = "${session}", readonly = true)
+    @Nullable
+    private MavenSession mavenSession;
+
+    /** Current execution supplies Maven's standard plugin expression evaluation context. */
+    @Parameter(defaultValue = "${mojoExecution}", readonly = true)
+    @Nullable
+    private MojoExecution mojoExecution;
+
     /** Enables durable preparation for ordinary IDE JUnit launches. */
     @Parameter(property = "lightkeeper.ide", defaultValue = "false")
     private boolean ide;
@@ -74,6 +107,20 @@ public class PrepareServerMojo extends AbstractMojo
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
     @Nullable
     private MavenProject project;
+
+    /** Current reactor projects, used before any installed copy when selecting the producer artifact. */
+    @Parameter(defaultValue = "${reactorProjects}", readonly = true)
+    @Nullable
+    private List<MavenProject> reactorProjects;
+
+    /** Authoritative plugin selection; omitted to use this project's actual packaged main artifact. */
+    @Parameter
+    @Nullable
+    private PluginUnderTestConfig pluginUnderTest;
+
+    /** Explicitly allows a server fixture without a plugin under test. Additional plugins remain supported. */
+    @Parameter(property = "lightkeeper.serverOnly", defaultValue = "false")
+    private boolean serverOnly;
 
     @Parameter(defaultValue = "${mojoExecution.executionId}", readonly = true, required = true)
     @Nullable
@@ -170,7 +217,8 @@ public class PrepareServerMojo extends AbstractMojo
     @Nullable
     private String extraJvmArgs;
 
-    @Parameter(property = "lightkeeper.userAgent", required = true)
+    /** HTTP identity of LightKeeper itself; consumers may override it for their download policy. */
+    @Parameter(property = "lightkeeper.userAgent")
     @Nullable
     private String userAgent;
 
@@ -211,22 +259,34 @@ public class PrepareServerMojo extends AbstractMojo
     public void execute()
         throws MojoExecutionException
     {
-        if (skip)
+        if (skip || skipITs || skipAllTests || failsafeIsSkipped())
         {
-            getLog().info("Skipping server preparation because 'lightkeeper.skip' is set.");
+            getLog().info("Skipping server preparation because LightKeeper or the effective IT execution is skipped.");
             deleteStaleRuntimeManifest();
             return;
         }
 
+        if (userAgent == null)
+        {
+            userAgent = "LightKeeper/" + RuntimeProtocol.LIGHTKEEPER_VERSION
+                + " (https://github.com/PimvanderLoos/LightKeeper)";
+        }
+        if (project != null)
+        {
+            configOverlayPath = PrepareServerAssetConventions.configOverlay(
+                project.getBasedir().toPath(), configOverlayPath
+            );
+        }
         validateConfiguration();
         final PrepareServerExecutionContext executionContext = buildExecutionContext();
+        final List<ResolvedPluginArtifact> resolvedPlugins = resolvePreparedPlugins(executionContext);
         logPreparationStart(executionContext);
         createRequiredDirectories(executionContext);
 
         final PrepareServerRuntimePreparation runtimePreparation = prepareRuntimePreparation(executionContext);
         if (ide)
         {
-            executeIdePreparation(executionContext, runtimePreparation);
+            executeIdePreparation(executionContext, runtimePreparation, resolvedPlugins);
             return;
         }
 
@@ -237,7 +297,7 @@ public class PrepareServerMojo extends AbstractMojo
         installServerAssets(
             targetServerDirectory,
             executionContext,
-            resolvePluginArtifacts(executionContext.pluginArtifactSpecs())
+            resolvedPlugins
         );
         // Runs after ALL provisioning mutations (base copy, plugins, overlay): a config overlay is the one
         // vector through which online-mode/proxy-forwarding could enter and silently break FULL_LOGIN joins.
@@ -262,7 +322,8 @@ public class PrepareServerMojo extends AbstractMojo
 
     private void executeIdePreparation(
         PrepareServerExecutionContext executionContext,
-        PrepareServerRuntimePreparation runtimePreparation)
+        PrepareServerRuntimePreparation runtimePreparation,
+        List<ResolvedPluginArtifact> resolvedPlugins)
         throws MojoExecutionException
     {
         final MavenProject mavenProject = Objects.requireNonNull(
@@ -283,7 +344,8 @@ public class PrepareServerMojo extends AbstractMojo
                 moduleDirectory,
                 selectedExecutionId,
                 executionContext,
-                runtimePreparation
+                runtimePreparation,
+                resolvedPlugins
             );
         }
         catch (IllegalStateException exception)
@@ -296,11 +358,10 @@ public class PrepareServerMojo extends AbstractMojo
         Path moduleDirectory,
         String selectedExecutionId,
         PrepareServerExecutionContext executionContext,
-        PrepareServerRuntimePreparation runtimePreparation)
+        PrepareServerRuntimePreparation runtimePreparation,
+        List<ResolvedPluginArtifact> resolvedPlugins)
         throws MojoExecutionException
     {
-        final List<ResolvedPluginArtifact> resolvedPlugins =
-            resolvePluginArtifacts(executionContext.pluginArtifactSpecs());
         final String fingerprint;
         try
         {
@@ -765,7 +826,82 @@ public class PrepareServerMojo extends AbstractMojo
     private List<PluginArtifactSpec> resolvePluginArtifactSpecs()
         throws MojoExecutionException
     {
-        return inputResolver().resolvePluginArtifactSpecs(plugins);
+        final List<PluginArtifactSpec> explicit = inputResolver().resolvePluginArtifactSpecs(plugins);
+        return project == null ? explicit : PrepareServerAssetConventions.plugins(
+            project.getBasedir().toPath(), explicit
+        );
+    }
+
+    private List<ResolvedPluginArtifact> resolvePreparedPlugins(PrepareServerExecutionContext context)
+        throws MojoExecutionException
+    {
+        if (serverOnly && pluginUnderTest != null)
+        {
+            throw new MojoExecutionException("serverOnly=true cannot be combined with pluginUnderTest.");
+        }
+        final List<ResolvedPluginArtifact> resolved = new ArrayList<>();
+        final boolean legacyPlugins = pluginUnderTest == null && plugins != null && !plugins.isEmpty();
+        if (!serverOnly && !legacyPlugins)
+        {
+            final MavenProject currentProject = project;
+            if (currentProject == null)
+            {
+                throw new MojoExecutionException(
+                    "Maven did not provide the current project for plugin-under-test selection."
+                );
+            }
+            final ResolvedPluginArtifact target = new PluginUnderTestResolver().resolve(
+                currentProject,
+                Objects.requireNonNullElse(reactorProjects, List.of()),
+                pluginUnderTest
+            );
+            PluginDescriptorValidator.validate(target, currentProject.getId());
+            getLog().info("LK_TARGET: " + target.sourceDescription() + " at '" + target.sourceJar() + "'.");
+            resolved.add(target);
+        }
+        if (legacyPlugins && !serverOnly)
+        {
+            getLog().warn("Using legacy explicit plugins configuration. Select pluginUnderTest to enable target "
+                + "validation, or serverOnly=true for a server-only fixture.");
+        }
+        resolved.addAll(resolvePluginArtifacts(context.pluginArtifactSpecs()));
+        return PrepareServerAssetConventions.uniquePlugins(resolved, configOverlayPath);
+    }
+
+    private boolean failsafeIsSkipped()
+        throws MojoExecutionException
+    {
+        final MavenProject currentProject = project;
+        if (currentProject == null || currentProject.getPlugin(PrepareServerSkipPolicy.FAILSAFE_KEY) == null)
+        {
+            return false;
+        }
+        final var evaluator = new PluginParameterExpressionEvaluator(
+            Objects.requireNonNull(mavenSession, "Maven did not inject the session for Failsafe skip evaluation."),
+            Objects.requireNonNull(mojoExecution, "Maven did not inject the execution for Failsafe skip evaluation.")
+        );
+        try
+        {
+            return PrepareServerSkipPolicy.shouldSkip(currentProject, expression ->
+            {
+                try
+                {
+                    return evaluator.evaluate(expression);
+                }
+                catch (ExpressionEvaluationException exception)
+                {
+                    throw new IllegalArgumentException(
+                        "Cannot evaluate Maven expression '" + expression + "'.", exception
+                    );
+                }
+            }, skipTests);
+        }
+        catch (IllegalArgumentException exception)
+        {
+            throw new MojoExecutionException(
+                "Cannot evaluate effective Failsafe skips: " + exception.getMessage(), exception
+            );
+        }
     }
 
     List<ResolvedPluginArtifact> resolvePluginArtifacts(List<PluginArtifactSpec> specs)

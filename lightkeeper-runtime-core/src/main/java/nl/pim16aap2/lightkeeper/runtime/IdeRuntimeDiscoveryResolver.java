@@ -116,8 +116,8 @@ public final class IdeRuntimeDiscoveryResolver
 
     private static String setupFailureMessage(String cause)
     {
-        return cause + " Run the configured setup execution with "
-            + "'mvn lightkeeper:prepare-server@<execution-id> -Dlightkeeper.ide=true', or set "
+        return cause + " Run the configured preparation lifecycle with "
+            + "'mvn pre-integration-test -Dlightkeeper.ide=true', or set "
             + "'-Dlightkeeper.runtimeManifestPath=<path>' explicitly.";
     }
 }

@@ -688,6 +688,37 @@ class PrepareServerMojoInternalTest
     }
 
     @Test
+    void execute_shouldRejectInvalidTargetBeforeResolvingOrDownloadingServer(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final PaperDownloadsClient paper = mock();
+        final SpigotDownloadsClient spigot = mock();
+        final TestPrepareServerMojo mojo = new TestPrepareServerMojo(paper, spigot);
+        configureRequiredFields(mojo, tempDirectory, "paper");
+        setField(mojo, "serverOnly", false);
+        final MavenProject project = new MavenProject();
+        project.setGroupId("example");
+        project.setArtifactId("invalid-plugin");
+        project.setVersion("1.0");
+        project.setFile(tempDirectory.resolve("pom.xml").toFile());
+        final org.apache.maven.artifact.Artifact artifact = mock();
+        when(artifact.getFile()).thenReturn(
+            Files.writeString(tempDirectory.resolve("corrupt.jar"), "not a jar").toFile()
+        );
+        project.setArtifact(artifact);
+        setField(mojo, "project", project);
+
+        // execute
+        final var result = assertThatThrownBy(mojo::execute);
+
+        // verify
+        result.hasMessageContaining("Invalid plugin under test").hasMessageContaining("corrupt.jar");
+        verifyNoInteractions(paper, spigot);
+        assertThat(tempDirectory.resolve("work")).doesNotExist();
+    }
+
+    @Test
     void execute_shouldDoNothingWhenSkipIsSet()
         throws Exception
     {
@@ -1094,6 +1125,7 @@ class PrepareServerMojoInternalTest
     private static void configureRequiredFields(PrepareServerMojo mojo, Path tempDirectory, String serverType)
         throws Exception
     {
+        setField(mojo, "serverOnly", true);
         setField(mojo, "serverType", serverType);
         setField(mojo, "serverVersion", "latest-supported");
         setField(mojo, "jarCacheDirectoryRoot", tempDirectory.resolve("jars"));

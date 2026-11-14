@@ -2,7 +2,6 @@
 
 [Documentation](https://lightkeeper.pim16aap2.nl/) · [API Reference and versions](https://lightkeeper.pim16aap2.nl/javadoc/)
 
-[![](https://jitpack.io/v/PimvanderLoos/LightKeeper.svg)](https://jitpack.io/#PimvanderLoos/LightKeeper)
 
 LightKeeper is an end-to-end testing stack for Minecraft plugins.
 
@@ -60,141 +59,144 @@ planned and reviewed by a human.
 
 ## Developers
 
-This project can be included as a dependency using [JitPack](https://jitpack.io/#PimvanderLoos/LightKeeper).
+Use the EldoNexus snapshot repository for both dependencies and build plugins. The native group is
+`nl.pim16aap2.lightkeeper`; the current development version is `1.2.0-SNAPSHOT`.
 
-The usual test setup needs both the Maven plugin and the JUnit framework module. The Maven plugin provisions the server
-runtime, and the framework module provides the API used by your tests.
+Add the starter with **test scope**. It supplies the framework, Jupiter API/engine/launcher, AssertJ and the Bukkit API
+used by test handles. The existing `lightkeeper-framework-junit` remains available if you manage those dependencies.
+Keep your existing production API dependencies and packaging configuration.
 
-### Maven
+See the [starter README](lightkeeper-junit-starter/README.md) for what it includes and how its role differs from
+`lightkeeper-maven-plugin`.
 
 ```xml
-
+<properties>
+    <lightkeeper.version>1.2.0-SNAPSHOT</lightkeeper.version>
+</properties>
 <repositories>
     <repository>
-        <id>jitpack.io</id>
-        <url>https://jitpack.io</url>
+        <id>eldonexus-snapshots</id>
+        <url>https://eldonexus.de/repository/maven-snapshots/</url>
     </repository>
 </repositories>
-
 <pluginRepositories>
     <pluginRepository>
-        <id>jitpack.io</id>
-        <url>https://jitpack.io</url>
+        <id>eldonexus-snapshots</id>
+        <url>https://eldonexus.de/repository/maven-snapshots/</url>
     </pluginRepository>
 </pluginRepositories>
-```
-
-```xml
-
-<build>
-    <plugins>
-        <plugin>
-            <groupId>com.github.PimvanderLoos.LightKeeper</groupId>
-            <artifactId>lightkeeper-maven-plugin</artifactId>
-            <version>1.2.0</version>
-        </plugin>
-    </plugins>
-</build>
-
 <dependencies>
     <dependency>
-        <groupId>com.github.PimvanderLoos.LightKeeper</groupId>
-        <artifactId>lightkeeper-framework-junit</artifactId>
-        <version>1.2.0</version>
+        <groupId>nl.pim16aap2.lightkeeper</groupId>
+        <artifactId>lightkeeper-junit-starter</artifactId>
+        <version>${lightkeeper.version}</version>
         <scope>test</scope>
     </dependency>
 </dependencies>
 ```
 
-Both goals support `-Dlightkeeper.skip=true` to disable a whole LightKeeper lane (e.g. per job in a
-CI matrix) without pom changes. Skipping `prepare-server` deletes any stale runtime manifest, so
-integration tests that still run will fail fast instead of using leftover server state; combine
-with `-DskipITs` to skip the tests too.
+### Gradle dependency
 
-
-### Gradle
+For an explicitly prepared runtime, the same test dependency is available to Gradle projects:
 
 ```gradle
 repositories {
-    maven { url "https://jitpack.io/" }
+    maven { url "https://eldonexus.de/repository/maven-snapshots/" }
+    maven { url "https://hub.spigotmc.org/nexus/content/groups/public/" }
 }
-
 dependencies {
-    testImplementation("com.github.PimvanderLoos.LightKeeper:lightkeeper-framework-junit:1.2.0")
+    testImplementation("nl.pim16aap2.lightkeeper:lightkeeper-junit-starter:1.2.0-SNAPSHOT")
 }
 ```
 
+The Maven goals below provision the runtime; adding a Gradle dependency does not register Maven lifecycle goals.
+The explicit `Lightkeeper.start(Path)` / `lightkeeper.runtimeManifestPath` route remains available.
+
 ## Quick Start
 
-### Run tests from your IDE
+### 1) Bind preparation and Failsafe in your existing plugin module
 
-Run the configured Maven preparation once with `-Dlightkeeper.ide=true`, then use IntelliJ's ordinary class or method
-gutter button without VM options or a Maven before-launch task. The durable runtime survives `mvn clean` and is reused
-until its packaged inputs change. See the [IDE test setup guide](docs/ide-testing.md) for the exact command, refresh,
-platform selection, and troubleshooting.
-
-### 1) Add the Maven plugin and framework dependency
+The module must package a deployable plugin with `plugin.yml` or `paper-plugin.yml`. LightKeeper selects its actual
+Maven main artifact after packaging, including Shade/Assembly replacement. It does not reconstruct a JAR filename.
+Paper, the supported Minecraft version, cache paths, Java and a LightKeeper-specific User-Agent have defaults.
 
 ```xml
-
 <build>
     <plugins>
         <plugin>
             <groupId>nl.pim16aap2.lightkeeper</groupId>
             <artifactId>lightkeeper-maven-plugin</artifactId>
             <version>${lightkeeper.version}</version>
+            <executions>
+                <execution>
+                    <goals><goal>prepare-server</goal></goals>
+                </execution>
+            </executions>
+        </plugin>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <version>3.6.1</version>
             <configuration>
-                <userAgent>LightKeeper/${project.version} ([email protected])</userAgent>
+                <failIfNoTests>true</failIfNoTests>
+                <systemPropertyVariables>
+                    <lightkeeper.runtimeManifestPath>${project.build.directory}/lightkeeper/runtime-manifest.json</lightkeeper.runtimeManifestPath>
+                </systemPropertyVariables>
             </configuration>
             <executions>
                 <execution>
-                    <id>prepare-server</id>
                     <goals>
-                        <goal>prepare-server</goal>
+                        <goal>integration-test</goal>
+                        <goal>verify</goal>
                     </goals>
-                    <configuration>
-                        <serverType>paper</serverType>
-                        <runtimeManifestPath>${project.build.directory}/lightkeeper/runtime-manifest.json</runtimeManifestPath>
-                    </configuration>
-                </execution>
-                <execution>
-                    <id>cleanup-server</id>
-                    <phase>post-integration-test</phase>
-                    <goals>
-                        <goal>cleanup-server</goal>
-                    </goals>
-                    <configuration>
-                        <deleteTargetServerOnSuccess>true</deleteTargetServerOnSuccess>
-                        <failsafeSummaryPath>${project.build.directory}/failsafe-reports/failsafe-summary.xml</failsafeSummaryPath>
-                        <serverWorkDirectoryRoot>${project.build.directory}/lightkeeper-server</serverWorkDirectoryRoot>
-                    </configuration>
                 </execution>
             </executions>
         </plugin>
     </plugins>
-
 </build>
-
-<dependencies>
-<dependency>
-    <groupId>nl.pim16aap2.lightkeeper</groupId>
-    <artifactId>lightkeeper-framework-junit</artifactId>
-    <version>${lightkeeper.version}</version>
-    <scope>test</scope>
-</dependency>
-</dependencies>
 ```
 
-### 2) Pass runtime manifest to tests
+The extension stops the server process; a separate `cleanup-server` execution is optional. Failsafe 3.6 uses
+`-DskipITs` for integration tests and `-Dmaven.test.skip=true` for all tests. `-DskipTests` alone skips Surefire unit
+tests; with Failsafe 3.5 it also skips ITs. Preparation respects the effective Failsafe skip configuration.
+`-Dlightkeeper.skip=true` still skips LightKeeper preparation/cleanup; skip the ITs too if they need that runtime.
 
-Use Failsafe/Surefire system properties:
+### 2) Select another producer or add fixtures when needed
+
+A separate E2E module needs a real test-scoped dependency on the producer for reactor order and `-am`. Select that
+existing dependency with:
 
 ```xml
-
-<systemPropertyVariables>
-    <lightkeeper.runtimeManifestPath>${project.build.directory}/lightkeeper/runtime-manifest.json</lightkeeper.runtimeManifestPath>
-</systemPropertyVariables>
+<configuration>
+    <pluginUnderTest>
+        <artifactId>spigot-packager</artifactId>
+    </pluginUnderTest>
+</configuration>
 ```
+
+Add `groupId` if the short selector is ambiguous. A `classifier` alone selects the current project's attached JAR;
+a classifier on a dependency selector matches the declared dependency classifier. An explicit `path` is authoritative
+and cannot be combined with artifact coordinates. A failed explicit selection never falls back to another JAR.
+Use `<serverOnly>true</serverOnly>` for intentional server-only tests.
+
+Extra fixture JARs in `src/test/lightkeeper/plugins/*.jar` are installed in sorted order; server config files in
+`src/test/lightkeeper/config/` are overlaid automatically. Missing directories are normal. An explicit
+`configOverlayPath` replaces the conventional overlay. Existing path/Maven/URL/Modrinth asset configuration remains
+available. Duplicate inputs are installed once; conflicting output names or replacements of the target/agent fail.
+
+Legacy explicit `plugins` lists keep their original asset-only behavior when `pluginUnderTest` is omitted, with a
+migration warning. Add `<pluginUnderTest/>` to select this module as the target while retaining explicit additional
+assets, or choose a producer/path/serverOnly. This preserves existing test-only modules without guessing their target.
+
+Validation checks archive/descriptor metadata before server provisioning. It does not require the target to load or
+be enabled, check that the main class exists, or install dependencies named in plugin metadata. Include Vault or
+other dependency plugins explicitly only when your test scenario needs them.
+
+### Run tests from your IDE
+
+The existing durable IDE preparation remains available using `-Dlightkeeper.ide=true`. Repackage changed production
+sources before refreshing that preparation; an existing JAR hash alone cannot prove that sources were built.
+See the [IDE test setup guide](docs/ide-testing.md) for module selection and refresh commands.
 
 ### 3) Write tests with the framework
 
@@ -365,6 +367,7 @@ defaults).
 ```xml
 
 <configuration>
+    <pluginUnderTest/>
     <worlds>
         <world>
             <name>fixture-world</name>
@@ -419,13 +422,8 @@ uses a reproducible artifact; update both values when Vault publishes a newer re
 <configuration>
     <serverType>paper</serverType>
     <serverVersion>latest-supported</serverVersion>
-    <runtimeManifestPath>${project.build.directory}/lightkeeper/runtime-manifest.json</runtimeManifestPath>
+    <pluginUnderTest/>
     <plugins>
-        <plugin>
-            <sourceType>path</sourceType>
-            <path>${project.build.directory}/${project.build.finalName}.jar</path>
-            <renameTo>${project.artifactId}.jar</renameTo>
-        </plugin>
         <plugin>
             <sourceType>url</sourceType>
             <url>${vault.url}</url>

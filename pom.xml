@@ -16,6 +16,7 @@
         <module>lightkeeper-agent-spigot</module>
         <module>lightkeeper-spigot-test-plugin</module>
         <module>lightkeeper-framework-junit</module>
+        <module>lightkeeper-junit-starter</module>
         <module>lightkeeper-maven-plugin</module>
         <module>lightkeeper-integration-tests</module>
         <module>lightkeeper-report-aggregate</module>
@@ -50,6 +51,7 @@
         <version.spigot-api>${lightkeeper.minecraft-version}-R0.2-SNAPSHOT</version.spigot-api>
         <version.pmd>7.29.0</version.pmd>
         <version.semver4j>6.0.0</version.semver4j>
+        <version.snakeyaml>2.7</version.snakeyaml>
 
         <version.maven-checkstyle-plugin>3.6.0</version.maven-checkstyle-plugin>
         <version.maven-clean-plugin>3.5.0</version.maven-clean-plugin>
