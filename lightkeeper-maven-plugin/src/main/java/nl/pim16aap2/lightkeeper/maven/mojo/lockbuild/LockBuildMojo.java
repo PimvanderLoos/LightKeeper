@@ -9,6 +9,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.jspecify.annotations.Nullable;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.Objects;
 
@@ -54,13 +55,14 @@ public final class LockBuildMojo extends AbstractMojo
                 current.getUserProperties(),
                 getLog()
             );
+            ModuleTestPlanExporter.write(Objects.requireNonNull(project), current);
         }
         catch (MojoExecutionException exception)
         {
             BuildInvocationLeases.releaseAfterFailure(session, exception);
             throw exception;
         }
-        catch (RuntimeException exception)
+        catch (IOException | RuntimeException exception)
         {
             BuildInvocationLeases.releaseAfterFailure(session, exception);
             throw new MojoExecutionException(
