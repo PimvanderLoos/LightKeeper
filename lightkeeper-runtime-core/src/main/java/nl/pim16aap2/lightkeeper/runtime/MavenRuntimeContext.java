@@ -30,6 +30,15 @@ public record MavenRuntimeContext(
     /** Supported runtime export format. */
     public static final int SCHEMA_VERSION = 1;
 
+    /** Private bootstrap environment selecting the one owning test module to prepare. */
+    public static final String BOOTSTRAP_MODULE_ENV = "LIGHTKEEPER_BOOTSTRAP_MODULE";
+    /** Private bootstrap environment selecting a prepare-server execution within that module. */
+    public static final String BOOTSTRAP_EXECUTION_ENV = "LIGHTKEEPER_BOOTSTRAP_EXECUTION";
+    /** Private bootstrap environment identifying a unique launch export, separate from shared context pointers. */
+    public static final String BOOTSTRAP_RESULT_ENV = "LIGHTKEEPER_BOOTSTRAP_RESULT";
+    /** Private bootstrap environment proving that an export belongs to the requesting launch. */
+    public static final String BOOTSTRAP_NONCE_ENV = "LIGHTKEEPER_BOOTSTRAP_NONCE";
+
     /** Validates export format, snapshot ownership and invocation identity. */
     public MavenRuntimeContext
     {

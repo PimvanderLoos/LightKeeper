@@ -267,7 +267,21 @@ public class PrepareServerMojo extends AbstractMojo
     {
         try
         {
+            if (project != null && executionId != null &&
+                !PrepareServerPlanExporter.isSelected(project, executionId))
+            {
+                return;
+            }
             executePreparation();
+            if (PrepareServerPlanExporter.isLastPreparation(project, executionId))
+            {
+                BuildInvocationLeases.release(mavenSession);
+            }
+        }
+        catch (IOException exception)
+        {
+            BuildInvocationLeases.releaseAfterFailure(mavenSession, exception);
+            throw new MojoExecutionException("Failed to export the prepared LightKeeper test plan.", exception);
         }
         catch (ProvisioningException exception)
         {
@@ -279,20 +293,12 @@ public class PrepareServerMojo extends AbstractMojo
             BuildInvocationLeases.releaseAfterFailure(mavenSession, exception);
             throw exception;
         }
-        try
-        {
-            BuildInvocationLeases.release(mavenSession);
-        }
-        catch (RuntimeException exception)
-        {
-            throw new MojoExecutionException("Failed to release producer outputs after preparation.", exception);
-        }
     }
 
     private void executePreparation()
-        throws MojoExecutionException
+        throws IOException, MojoExecutionException
     {
-        if (skip || skipITs || skipAllTests || failsafeIsSkipped())
+        if (!PrepareServerPlanExporter.isBootstrap() && (skip || skipITs || skipAllTests || failsafeIsSkipped()))
         {
             getLog().info("Skipping server preparation because LightKeeper or the effective IT execution is skipped.");
             deleteStaleRuntimeManifest();
@@ -317,7 +323,7 @@ public class PrepareServerMojo extends AbstractMojo
         createRequiredDirectories(executionContext);
 
         final PrepareServerRuntimePreparation runtimePreparation = prepareRuntimePreparation(executionContext);
-        if (ide)
+        if (ide && !PrepareServerPlanExporter.isBootstrap())
         {
             executeIdePreparation(executionContext, runtimePreparation, resolvedPlugins);
             return;
@@ -351,6 +357,17 @@ public class PrepareServerMojo extends AbstractMojo
             executionContext.worldInputSpecs()
         );
         writeRuntimeManifest(runtimeManifest, executionContext.runtimeManifestPath());
+        PrepareServerPlanExporter.write(
+            project,
+            mavenSession,
+            executionId,
+            pluginUnderTest,
+            serverOnly,
+            executionContext,
+            resolvedPlugins,
+            configOverlayPath,
+            runtimeManifest
+        );
     }
 
     private void executeIdePreparation(

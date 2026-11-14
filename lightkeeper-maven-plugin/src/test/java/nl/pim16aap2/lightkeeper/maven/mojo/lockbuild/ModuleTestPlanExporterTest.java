@@ -99,7 +99,7 @@ class ModuleTestPlanExporterTest
         final Build build = new Build();
         build.setTestOutputDirectory(root.resolve("custom/tests").toString());
         final Plugin plugin = new Plugin();
-        plugin.setGroupId("nl.pim16aap2");
+        plugin.setGroupId("nl.pim16aap2.lightkeeper");
         plugin.setArtifactId("lightkeeper-maven-plugin");
         for (final String id : executions)
         {
