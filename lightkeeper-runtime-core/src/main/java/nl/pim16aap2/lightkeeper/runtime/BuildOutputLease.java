@@ -24,6 +24,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public final class BuildOutputLease implements AutoCloseable
 {
+    /** Private child environment entry authorizing a descendant Maven build to borrow the parent's lease. */
+    public static final String BORROW_NONCE_ENV = "LIGHTKEEPER_BUILD_LEASE_NONCE";
     /** Name of the current holder's private process identity document. */
     private static final String OWNER_FILE = "owner.json";
     /** Maximum interval before observing cancellation or an available lease again. */

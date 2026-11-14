@@ -2,6 +2,7 @@ package nl.pim16aap2.lightkeeper.maven.mojo.prepareserver;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import nl.pim16aap2.lightkeeper.maven.mojo.lockbuild.BuildInvocationLeases;
 import nl.pim16aap2.lightkeeper.provisioning.LightkeeperEmbeddedAgent;
 import nl.pim16aap2.lightkeeper.provisioning.PaperBuildMetadata;
 import nl.pim16aap2.lightkeeper.provisioning.PaperDownloadsClient;
@@ -270,7 +271,21 @@ public class PrepareServerMojo extends AbstractMojo
         }
         catch (ProvisioningException exception)
         {
+            BuildInvocationLeases.releaseAfterFailure(mavenSession, exception);
             throw new MojoExecutionException(exception.getMessage(), exception);
+        }
+        catch (MojoExecutionException | RuntimeException exception)
+        {
+            BuildInvocationLeases.releaseAfterFailure(mavenSession, exception);
+            throw exception;
+        }
+        try
+        {
+            BuildInvocationLeases.release(mavenSession);
+        }
+        catch (RuntimeException exception)
+        {
+            throw new MojoExecutionException("Failed to release producer outputs after preparation.", exception);
         }
     }
 
