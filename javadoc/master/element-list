@@ -1,5 +1,9 @@
 nl.pim16aap2.lightkeeper.framework
 nl.pim16aap2.lightkeeper.framework.assertions
 nl.pim16aap2.lightkeeper.protocol
+nl.pim16aap2.lightkeeper.provisioning
+nl.pim16aap2.lightkeeper.provisioning.assets
+nl.pim16aap2.lightkeeper.provisioning.serverprocess
+nl.pim16aap2.lightkeeper.provisioning.serverprovider
+nl.pim16aap2.lightkeeper.provisioning.util
 nl.pim16aap2.lightkeeper.runtime
-nl.pim16aap2.lightkeeper.starter
