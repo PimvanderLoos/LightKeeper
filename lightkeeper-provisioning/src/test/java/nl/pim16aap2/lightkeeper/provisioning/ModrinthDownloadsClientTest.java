@@ -1,9 +1,6 @@
-package nl.pim16aap2.lightkeeper.maven;
+package nl.pim16aap2.lightkeeper.provisioning;
 
-import nl.pim16aap2.lightkeeper.provisioning.ModrinthPluginMetadata;
 import nl.pim16aap2.lightkeeper.provisioning.assets.PluginArtifactSpec;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.logging.SystemStreamLog;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.DeserializationFeature;
@@ -129,7 +126,7 @@ class ModrinthDownloadsClientTest
 
         // execute + verify
         assertThatThrownBy(() -> client.resolvePluginFile(modrinthProjectSpec()))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("Could not find Modrinth version");
     }
 
@@ -170,7 +167,7 @@ class ModrinthDownloadsClientTest
 
         // execute + verify
         assertThatThrownBy(() -> client.resolvePluginFile(modrinthProjectSpec()))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("resolved to 2 entries");
     }
 
@@ -199,7 +196,7 @@ class ModrinthDownloadsClientTest
 
         // execute + verify
         assertThatThrownBy(() -> client.resolvePluginFile(modrinthVersionIdSpec()))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("not compatible with loader");
     }
 
@@ -228,7 +225,7 @@ class ModrinthDownloadsClientTest
 
         // execute + verify
         assertThatThrownBy(() -> client.resolvePluginFile(modrinthVersionIdSpec("1.21.11")))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("not compatible with Minecraft version");
     }
 
@@ -263,7 +260,7 @@ class ModrinthDownloadsClientTest
 
         // execute + verify
         assertThatThrownBy(() -> client.resolvePluginFile(modrinthVersionIdSpec()))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("no SHA-512 checksum");
     }
 
@@ -280,7 +277,7 @@ class ModrinthDownloadsClientTest
 
         // execute + verify
         assertThatThrownBy(() -> client.resolvePluginFile(modrinthVersionIdSpec()))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("failed with status 500");
     }
 
@@ -319,7 +316,7 @@ class ModrinthDownloadsClientTest
 
         // execute + verify
         assertThatThrownBy(() -> client.resolvePluginFile(modrinthVersionIdSpec()))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("ambiguous jar files");
     }
 
@@ -361,7 +358,7 @@ class ModrinthDownloadsClientTest
 
         // execute + verify
         assertThatThrownBy(() -> client.resolvePluginFile(modrinthVersionIdSpec()))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("multiple primary jar files");
     }
 
@@ -397,7 +394,7 @@ class ModrinthDownloadsClientTest
 
         // execute + verify
         assertThatThrownBy(() -> client.resolvePluginFile(modrinthVersionIdSpec()))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("no installable jar file");
     }
 
@@ -418,7 +415,7 @@ class ModrinthDownloadsClientTest
 
         // execute + verify
         assertThatThrownBy(() -> client.resolvePluginFile(modrinthVersionIdSpec()))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("has no download URL");
     }
 
@@ -440,7 +437,7 @@ class ModrinthDownloadsClientTest
 
         // execute + verify
         assertThatThrownBy(() -> client.resolvePluginFile(modrinthVersionIdSpec()))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("has no download URL");
     }
 
@@ -462,7 +459,7 @@ class ModrinthDownloadsClientTest
 
         // execute + verify
         assertThatThrownBy(() -> client.resolvePluginFile(modrinthVersionIdSpec()))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("has invalid download URL");
     }
 
@@ -484,7 +481,7 @@ class ModrinthDownloadsClientTest
 
         // execute + verify
         assertThatThrownBy(() -> client.resolvePluginFile(modrinthVersionIdSpec()))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("must use http or https");
     }
 
@@ -570,7 +567,7 @@ class ModrinthDownloadsClientTest
 
         // execute + verify
         assertThatThrownBy(() -> client.resolvePluginFile(modrinthVersionIdSpec()))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("ambiguous jar files for loader 'bukkit'")
             .hasMessageContaining("choose a version with one primary jar");
     }
@@ -613,7 +610,7 @@ class ModrinthDownloadsClientTest
 
         // execute + verify
         assertThatThrownBy(() -> client.resolvePluginFile(modrinthVersionIdSpec("paper", null)))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("ambiguous jar files for loader 'paper'");
     }
 
@@ -700,7 +697,7 @@ class ModrinthDownloadsClientTest
             return response;
         });
         return new ModrinthDownloadsClient(
-            new SystemStreamLog(),
+            System.getLogger("LightKeeper.Tests"),
             "LightKeeper/Test",
             httpClient,
             JsonMapper.builder()

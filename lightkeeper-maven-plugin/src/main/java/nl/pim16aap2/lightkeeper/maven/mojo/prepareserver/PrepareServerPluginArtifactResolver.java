@@ -1,6 +1,6 @@
 package nl.pim16aap2.lightkeeper.maven.mojo.prepareserver;
 
-import nl.pim16aap2.lightkeeper.maven.ModrinthDownloadsClient;
+import nl.pim16aap2.lightkeeper.provisioning.ModrinthDownloadsClient;
 import nl.pim16aap2.lightkeeper.provisioning.ModrinthPluginMetadata;
 import nl.pim16aap2.lightkeeper.provisioning.assets.PluginArtifactSpec;
 import nl.pim16aap2.lightkeeper.provisioning.assets.ResolvedPluginArtifact;
@@ -58,7 +58,11 @@ final class PrepareServerPluginArtifactResolver
             .followRedirects(HttpClient.Redirect.NORMAL)
             .connectTimeout(Duration.ofSeconds(15))
             .build();
-        final ModrinthDownloadsClient modrinthDownloadsClient = new ModrinthDownloadsClient(log, userAgent, httpClient);
+        final ModrinthDownloadsClient modrinthDownloadsClient = new ModrinthDownloadsClient(
+            System.getLogger(PrepareServerPluginArtifactResolver.class.getName()),
+            userAgent,
+            httpClient
+        );
         return resolvePluginArtifacts(
             specs,
             repositorySystem,

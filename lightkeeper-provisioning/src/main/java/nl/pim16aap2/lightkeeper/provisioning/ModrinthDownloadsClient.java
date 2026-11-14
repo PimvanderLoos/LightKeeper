@@ -1,9 +1,6 @@
-package nl.pim16aap2.lightkeeper.maven;
+package nl.pim16aap2.lightkeeper.provisioning;
 
-import nl.pim16aap2.lightkeeper.provisioning.ModrinthPluginMetadata;
 import nl.pim16aap2.lightkeeper.provisioning.assets.PluginArtifactSpec;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.logging.Log;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
@@ -34,7 +31,7 @@ public final class ModrinthDownloadsClient
 {
     private static final URI API_BASE_URI = URI.create("https://api.modrinth.com/v2");
 
-    private final Log log;
+    private final System.Logger log;
     private final String userAgent;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
@@ -43,11 +40,11 @@ public final class ModrinthDownloadsClient
      * Creates a Modrinth downloads client.
      *
      * @param log
-     *     Maven log sink.
+     *     Diagnostic log sink.
      * @param userAgent
      *     HTTP user-agent header value.
      */
-    public ModrinthDownloadsClient(Log log, String userAgent)
+    public ModrinthDownloadsClient(System.Logger log, String userAgent)
     {
         this(
             log,
@@ -63,7 +60,17 @@ public final class ModrinthDownloadsClient
         );
     }
 
-    public ModrinthDownloadsClient(Log log, String userAgent, HttpClient httpClient)
+    /**
+     * Creates a metadata client using a caller-owned HTTP client.
+     *
+     * @param log
+     *     Diagnostic log sink.
+     * @param userAgent
+     *     HTTP user-agent header value.
+     * @param httpClient
+     *     Client used for metadata requests.
+     */
+    public ModrinthDownloadsClient(System.Logger log, String userAgent, HttpClient httpClient)
     {
         this(
             log,
@@ -76,7 +83,7 @@ public final class ModrinthDownloadsClient
         );
     }
 
-    ModrinthDownloadsClient(Log log, String userAgent, HttpClient httpClient, ObjectMapper objectMapper)
+    ModrinthDownloadsClient(System.Logger log, String userAgent, HttpClient httpClient, ObjectMapper objectMapper)
     {
         this.log = Objects.requireNonNull(log, "log");
         this.userAgent = validateUserAgent(userAgent);
@@ -90,11 +97,11 @@ public final class ModrinthDownloadsClient
      * @param spec
      *     Validated Modrinth plugin spec.
      * @return Selected Modrinth file metadata.
-     * @throws MojoExecutionException
+     * @throws ProvisioningException
      *     When metadata cannot be resolved unambiguously.
      */
     public ModrinthPluginMetadata resolvePluginFile(PluginArtifactSpec spec)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         final VersionResponse version = spec.modrinthVersionId() == null
             ? resolveByProjectAndVersionNumber(spec)
@@ -106,7 +113,7 @@ public final class ModrinthDownloadsClient
         );
         final FileResponse file = selectFile(version, Objects.requireNonNull(spec.modrinthLoader()));
 
-        log.info("LK_PLUGIN: Resolved Modrinth plugin '%s' version '%s' file '%s'."
+        log.log(System.Logger.Level.INFO, "LK_PLUGIN: Resolved Modrinth plugin '%s' version '%s' file '%s'."
             .formatted(version.projectId(), version.versionNumber(), file.filename()));
 
         return new ModrinthPluginMetadata(
@@ -119,7 +126,7 @@ public final class ModrinthDownloadsClient
     }
 
     private VersionResponse resolveByProjectAndVersionNumber(PluginArtifactSpec spec)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         final String project = Objects.requireNonNull(spec.modrinthProject());
         final String loader = Objects.requireNonNull(spec.modrinthLoader());
@@ -138,14 +145,14 @@ public final class ModrinthDownloadsClient
             .toList();
         if (matches.isEmpty())
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Could not find Modrinth version '%s' for project '%s' with loader '%s'."
                     .formatted(spec.modrinthVersion(), project, loader)
             );
         }
         if (matches.size() > 1)
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Modrinth version '%s' for project '%s' resolved to %d entries; use modrinthVersionId."
                     .formatted(spec.modrinthVersion(), project, matches.size())
             );
@@ -154,14 +161,14 @@ public final class ModrinthDownloadsClient
     }
 
     private VersionResponse fetchVersion(String versionId)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         final URI uri = API_BASE_URI.resolve("/v2/version/%s".formatted(encodePath(versionId)));
         return parseVersion(fetchJson(uri), uri);
     }
 
     private List<VersionResponse> fetchVersions(URI uri)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         try
         {
@@ -171,13 +178,13 @@ public final class ModrinthDownloadsClient
         }
         catch (JacksonException exception)
         {
-            throw new MojoExecutionException("Failed to parse Modrinth versions response from '%s'.".formatted(uri),
+            throw new ProvisioningException("Failed to parse Modrinth versions response from '%s'.".formatted(uri),
                 exception);
         }
     }
 
     private VersionResponse parseVersion(JsonNode root, URI uri)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         try
         {
@@ -185,7 +192,7 @@ public final class ModrinthDownloadsClient
         }
         catch (JacksonException exception)
         {
-            throw new MojoExecutionException("Failed to parse Modrinth version response from '%s'.".formatted(uri),
+            throw new ProvisioningException("Failed to parse Modrinth version response from '%s'.".formatted(uri),
                 exception);
         }
     }
@@ -194,18 +201,18 @@ public final class ModrinthDownloadsClient
         VersionResponse version,
         String loader,
         @Nullable String gameVersion)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         if (!containsIgnoreCase(nonNullList(version.loaders()), loader))
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Modrinth version '%s' is not compatible with loader '%s'."
                     .formatted(version.id(), loader)
             );
         }
         if (gameVersion != null && !nonNullList(version.gameVersions()).contains(gameVersion))
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Modrinth version '%s' is not compatible with Minecraft version '%s'."
                     .formatted(version.id(), gameVersion)
             );
@@ -213,7 +220,7 @@ public final class ModrinthDownloadsClient
     }
 
     private FileResponse selectFile(VersionResponse version, String loader)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         final List<FileResponse> jarFiles = nonNullList(version.files()).stream()
             .filter(file -> file.filename() != null && file.filename().toLowerCase(Locale.ROOT).endsWith(".jar"))
@@ -221,7 +228,7 @@ public final class ModrinthDownloadsClient
             .toList();
         if (jarFiles.isEmpty())
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Modrinth version '%s' has no installable jar file.".formatted(version.id())
             );
         }
@@ -231,7 +238,7 @@ public final class ModrinthDownloadsClient
             return primaryFiles.getFirst();
         if (primaryFiles.size() > 1)
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Modrinth version '%s' has multiple primary jar files.".formatted(version.id())
             );
         }
@@ -245,28 +252,28 @@ public final class ModrinthDownloadsClient
         if (requiredFiles.size() == 1)
             return requiredFiles.getFirst();
 
-        throw new MojoExecutionException(
+        throw new ProvisioningException(
             "Modrinth version '%s' has ambiguous jar files for loader '%s'; choose a version with one primary jar."
                 .formatted(version.id(), loader)
         );
     }
 
     private static String requireSha512(FileResponse file)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         final String sha512 = nonNullMap(file.hashes()).get("sha512");
         if (sha512 == null || sha512.isBlank())
-            throw new MojoExecutionException("Modrinth file '%s' has no SHA-512 checksum.".formatted(file.filename()));
+            throw new ProvisioningException("Modrinth file '%s' has no SHA-512 checksum.".formatted(file.filename()));
         return sha512.toLowerCase(Locale.ROOT);
     }
 
     private static URI requireDownloadUri(FileResponse file, VersionResponse version)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         final String url = file.url();
         if (url == null || url.isBlank())
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Modrinth file '%s' in version '%s' has no download URL.".formatted(file.filename(), version.id())
             );
         }
@@ -278,7 +285,7 @@ public final class ModrinthDownloadsClient
         }
         catch (IllegalArgumentException exception)
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Modrinth file '%s' in version '%s' has invalid download URL '%s'."
                     .formatted(file.filename(), version.id(), url),
                 exception
@@ -288,7 +295,7 @@ public final class ModrinthDownloadsClient
         final String scheme = uri.getScheme();
         if (!"https".equalsIgnoreCase(scheme) && !"http".equalsIgnoreCase(scheme))
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Modrinth file '%s' in version '%s' download URL '%s' must use http or https."
                     .formatted(file.filename(), version.id(), url)
             );
@@ -297,7 +304,7 @@ public final class ModrinthDownloadsClient
     }
 
     private JsonNode fetchJson(URI uri)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         final HttpRequest request = HttpRequest.newBuilder(uri)
             .header("User-Agent", userAgent)
@@ -314,15 +321,15 @@ public final class ModrinthDownloadsClient
         catch (InterruptedException exception)
         {
             Thread.currentThread().interrupt();
-            throw new MojoExecutionException("Failed to query Modrinth API at '%s'.".formatted(uri), exception);
+            throw new ProvisioningException("Failed to query Modrinth API at '%s'.".formatted(uri), exception);
         }
         catch (IOException exception)
         {
-            throw new MojoExecutionException("Failed to query Modrinth API at '%s'.".formatted(uri), exception);
+            throw new ProvisioningException("Failed to query Modrinth API at '%s'.".formatted(uri), exception);
         }
 
         if (response.statusCode() < 200 || response.statusCode() >= 300)
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Modrinth API request to '%s' failed with status %d.".formatted(uri, response.statusCode())
             );
 
@@ -332,7 +339,7 @@ public final class ModrinthDownloadsClient
         }
         catch (JacksonException exception)
         {
-            throw new MojoExecutionException("Failed to parse Modrinth API response from '%s'.".formatted(uri),
+            throw new ProvisioningException("Failed to parse Modrinth API response from '%s'.".formatted(uri),
                 exception);
         }
     }
