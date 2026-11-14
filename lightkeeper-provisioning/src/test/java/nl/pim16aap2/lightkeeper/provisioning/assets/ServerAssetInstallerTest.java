@@ -1,9 +1,8 @@
-package nl.pim16aap2.lightkeeper.maven.provisioning;
+package nl.pim16aap2.lightkeeper.provisioning.assets;
 
+import nl.pim16aap2.lightkeeper.provisioning.ProvisioningException;
 import nl.pim16aap2.lightkeeper.provisioning.assets.ResolvedPluginArtifact;
 import nl.pim16aap2.lightkeeper.provisioning.assets.WorldInputSpec;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.logging.SystemStreamLog;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -21,6 +20,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ServerAssetInstallerTest
 {
+    /** Standard JVM sink used by asset regression tests. */
+    private static final System.Logger LOG = System.getLogger(ServerAssetInstallerTest.class.getName());
+
     @Test
     void installWorlds_shouldCopyWorldFolderWhenSourceTypeIsFolder(@TempDir Path tempDirectory)
         throws Exception
@@ -43,7 +45,7 @@ class ServerAssetInstallerTest
         );
 
         // execute
-        ServerAssetInstaller.installWorlds(targetServerDirectory, List.of(worldInputSpec), new SystemStreamLog());
+        ServerAssetInstaller.installWorlds(targetServerDirectory, List.of(worldInputSpec), LOG);
 
         // verify
         assertThat(targetServerDirectory.resolve("fixture-world/fixtures/marker.txt"))
@@ -79,7 +81,7 @@ class ServerAssetInstallerTest
         );
 
         // execute
-        ServerAssetInstaller.installWorlds(targetServerDirectory, List.of(worldInputSpec), new SystemStreamLog());
+        ServerAssetInstaller.installWorlds(targetServerDirectory, List.of(worldInputSpec), LOG);
 
         // verify
         assertThat(targetServerDirectory.resolve("imported-world/data/marker.txt"))
@@ -114,11 +116,11 @@ class ServerAssetInstallerTest
 
         // execute
         final var thrown = assertThatThrownBy(
-            () -> ServerAssetInstaller.installWorlds(targetServerDirectory, List.of(worldInputSpec), new SystemStreamLog())
+            () -> ServerAssetInstaller.installWorlds(targetServerDirectory, List.of(worldInputSpec), LOG)
         );
 
         // verify
-        thrown.isInstanceOf(MojoExecutionException.class)
+        thrown.isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("escapes root");
     }
 
@@ -138,7 +140,7 @@ class ServerAssetInstallerTest
         Files.writeString(overlayConfig, "value: new");
 
         // execute
-        ServerAssetInstaller.applyConfigOverlay(overlayDirectory, targetServerDirectory, new SystemStreamLog());
+        ServerAssetInstaller.applyConfigOverlay(overlayDirectory, targetServerDirectory, LOG);
 
         // verify
         assertThat(existingConfig).hasContent("value: new");
@@ -165,12 +167,12 @@ class ServerAssetInstallerTest
             () -> ServerAssetInstaller.installPluginArtifacts(
                 targetServerDirectory,
                 resolvedPluginArtifacts,
-                new SystemStreamLog()
+                LOG
             )
         );
 
         // verify
-        thrown.isInstanceOf(MojoExecutionException.class)
+        thrown.isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("Duplicate plugin output filename");
     }
 
@@ -187,7 +189,7 @@ class ServerAssetInstallerTest
         );
 
         // execute
-        ServerAssetInstaller.installPluginArtifacts(targetServerDirectory, resolvedPluginArtifacts, new SystemStreamLog());
+        ServerAssetInstaller.installPluginArtifacts(targetServerDirectory, resolvedPluginArtifacts, LOG);
 
         // verify
         assertThat(targetServerDirectory.resolve("plugins/my-plugin.jar")).isRegularFile().hasContent("plugin");
@@ -216,9 +218,9 @@ class ServerAssetInstallerTest
 
         // execute + verify
         assertThatThrownBy(
-            () -> ServerAssetInstaller.installWorlds(targetServerDirectory, List.of(worldInputSpec), new SystemStreamLog())
+            () -> ServerAssetInstaller.installWorlds(targetServerDirectory, List.of(worldInputSpec), LOG)
         )
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("overwrite=false");
     }
 
@@ -249,9 +251,9 @@ class ServerAssetInstallerTest
 
         // execute + verify
         assertThatThrownBy(
-            () -> ServerAssetInstaller.installWorlds(targetServerDirectory, List.of(worldInputSpec), new SystemStreamLog())
+            () -> ServerAssetInstaller.installWorlds(targetServerDirectory, List.of(worldInputSpec), LOG)
         )
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("ambiguous");
     }
 
@@ -266,9 +268,9 @@ class ServerAssetInstallerTest
         assertThatThrownBy(() -> ServerAssetInstaller.applyConfigOverlay(
             overlayDirectory,
             targetServerDirectory,
-            new SystemStreamLog()
+            LOG
         ))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("does not exist");
     }
 
@@ -285,9 +287,9 @@ class ServerAssetInstallerTest
         assertThatThrownBy(() -> ServerAssetInstaller.applyConfigOverlay(
             overlayFile,
             targetServerDirectory,
-            new SystemStreamLog()
+            LOG
         ))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("is not a directory");
     }
 
@@ -299,7 +301,7 @@ class ServerAssetInstallerTest
         final Path targetServerDirectory = tempDirectory.resolve("server");
 
         // execute
-        ServerAssetInstaller.installPluginArtifacts(targetServerDirectory, List.of(), new SystemStreamLog());
+        ServerAssetInstaller.installPluginArtifacts(targetServerDirectory, List.of(), LOG);
 
         // verify
         assertThat(targetServerDirectory.resolve("plugins")).doesNotExist();
@@ -320,9 +322,9 @@ class ServerAssetInstallerTest
         assertThatThrownBy(() -> ServerAssetInstaller.installPluginArtifacts(
             targetServerDirectory,
             List.of(resolvedPluginArtifact),
-            new SystemStreamLog()
+            LOG
         ))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("does not exist as a regular file");
     }
 
@@ -344,9 +346,9 @@ class ServerAssetInstallerTest
         assertThatThrownBy(() -> ServerAssetInstaller.installPluginArtifacts(
             targetServerDirectory,
             List.of(resolvedPluginArtifact),
-            new SystemStreamLog()
+            LOG
         ))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("may not contain path separators");
     }
 
@@ -368,9 +370,9 @@ class ServerAssetInstallerTest
         assertThatThrownBy(() -> ServerAssetInstaller.installPluginArtifacts(
             targetServerDirectory,
             List.of(resolvedPluginArtifact),
-            new SystemStreamLog()
+            LOG
         ))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("must end with .jar");
     }
 
@@ -392,9 +394,9 @@ class ServerAssetInstallerTest
         assertThatThrownBy(() -> ServerAssetInstaller.installPluginArtifacts(
             targetServerDirectory,
             List.of(resolvedPluginArtifact),
-            new SystemStreamLog()
+            LOG
         ))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("may not be blank");
     }
 
@@ -419,9 +421,9 @@ class ServerAssetInstallerTest
         assertThatThrownBy(() -> ServerAssetInstaller.installPluginArtifacts(
             targetServerDirectory,
             List.of(resolvedPluginArtifact),
-            new SystemStreamLog()
+            LOG
         ))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("already exists");
     }
 
@@ -448,9 +450,9 @@ class ServerAssetInstallerTest
         assertThatThrownBy(() -> ServerAssetInstaller.installWorlds(
             targetServerDirectory,
             List.of(worldInputSpec),
-            new SystemStreamLog()
+            LOG
         ))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("is not a directory");
     }
 
@@ -474,9 +476,9 @@ class ServerAssetInstallerTest
         assertThatThrownBy(() -> ServerAssetInstaller.installWorlds(
             targetServerDirectory,
             List.of(worldInputSpec),
-            new SystemStreamLog()
+            LOG
         ))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("does not exist");
     }
 

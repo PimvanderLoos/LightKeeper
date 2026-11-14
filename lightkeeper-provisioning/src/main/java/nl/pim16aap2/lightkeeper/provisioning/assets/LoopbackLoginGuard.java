@@ -1,7 +1,8 @@
-package nl.pim16aap2.lightkeeper.maven.provisioning;
+package nl.pim16aap2.lightkeeper.provisioning.assets;
 
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.logging.Log;
+import java.lang.System.Logger.Level;
+import java.lang.System.Logger;
+import nl.pim16aap2.lightkeeper.provisioning.ProvisioningException;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -65,21 +66,21 @@ public final class LoopbackLoginGuard
      * @param targetServerDirectory
      *     The materialized server directory to validate.
      * @param log
-     *     Maven log sink for the pass confirmation.
-     * @throws MojoExecutionException
+     *     Provisioning log sink for the pass confirmation.
+     * @throws ProvisioningException
      *     If a configuration file enables online mode or proxy forwarding, or a present file cannot be read.
      */
-    public static void validate(Path targetServerDirectory, Log log)
-        throws MojoExecutionException
+    public static void validate(Path targetServerDirectory, Logger log)
+        throws ProvisioningException
     {
         validateServerProperties(targetServerDirectory.resolve("server.properties"));
         validateSpigotConfiguration(targetServerDirectory.resolve("spigot.yml"));
         validatePaperGlobalConfiguration(targetServerDirectory.resolve("config").resolve("paper-global.yml"));
-        log.info("LK_GUARD: Loopback-login guard passed: offline mode, no proxy forwarding.");
+        log.log(Level.INFO, "LK_GUARD: Loopback-login guard passed: offline mode, no proxy forwarding.");
     }
 
     private static void validateServerProperties(Path serverPropertiesFile)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         for (final String line : readLinesIfPresent(serverPropertiesFile))
         {
@@ -96,7 +97,7 @@ public final class LoopbackLoginGuard
             final String value = trimmed.substring(separatorIndex + 1).trim().toLowerCase(Locale.ROOT);
             if ("true".equals(value))
             {
-                throw new MojoExecutionException(
+                throw new ProvisioningException(
                     ("Provisioned server configuration '%s' sets 'online-mode=true'. FULL_LOGIN bots complete a "
                         + "real offline-mode login over loopback TCP; online mode makes the server demand Mojang "
                         + "session authentication and breaks every full-login join. Remove the override "
@@ -108,13 +109,13 @@ public final class LoopbackLoginGuard
     }
 
     private static void validateSpigotConfiguration(Path spigotConfigurationFile)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         for (final String line : readLinesIfPresent(spigotConfigurationFile))
         {
             if (SPIGOT_BUNGEECORD_ENABLED_PATTERN.matcher(line).matches())
             {
-                throw new MojoExecutionException(
+                throw new ProvisioningException(
                     ("Provisioned server configuration '%s' enables BungeeCord proxy forwarding "
                         + "('bungeecord: true'). The server would expect proxy-forwarded handshakes, which breaks "
                         + "FULL_LOGIN loopback logins. Remove the setting from the config overlay.")
@@ -125,7 +126,7 @@ public final class LoopbackLoginGuard
     }
 
     private static void validatePaperGlobalConfiguration(Path paperGlobalConfigurationFile)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         int velocitySectionIndent = -1;
         for (final String line : readLinesIfPresent(paperGlobalConfigurationFile))
@@ -147,7 +148,7 @@ public final class LoopbackLoginGuard
 
             if (velocitySectionIndent >= 0 && VELOCITY_ENABLED_PATTERN.matcher(line).matches())
             {
-                throw new MojoExecutionException(
+                throw new ProvisioningException(
                     ("Provisioned server configuration '%s' enables Velocity proxy forwarding "
                         + "('proxies.velocity.enabled: true'). The server would expect proxy-forwarded handshakes, "
                         + "which breaks FULL_LOGIN loopback logins. Remove the setting from the config overlay.")
@@ -158,7 +159,7 @@ public final class LoopbackLoginGuard
     }
 
     private static List<String> readLinesIfPresent(Path configurationFile)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         if (Files.notExists(configurationFile))
             return List.of();
@@ -169,7 +170,7 @@ public final class LoopbackLoginGuard
         }
         catch (IOException exception)
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Failed to read provisioned server configuration '%s' for the loopback-login guard."
                     .formatted(configurationFile),
                 exception

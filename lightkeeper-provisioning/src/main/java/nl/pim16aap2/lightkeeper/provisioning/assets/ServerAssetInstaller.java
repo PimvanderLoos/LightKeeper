@@ -1,10 +1,9 @@
-package nl.pim16aap2.lightkeeper.maven.provisioning;
+package nl.pim16aap2.lightkeeper.provisioning.assets;
 
-import nl.pim16aap2.lightkeeper.provisioning.assets.ResolvedPluginArtifact;
-import nl.pim16aap2.lightkeeper.provisioning.assets.WorldInputSpec;
+import java.lang.System.Logger.Level;
+import java.lang.System.Logger;
+import nl.pim16aap2.lightkeeper.provisioning.ProvisioningException;
 import nl.pim16aap2.lightkeeper.provisioning.util.FileUtil;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.logging.Log;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -31,22 +30,34 @@ public final class ServerAssetInstaller
     {
     }
 
-    public static void installWorlds(Path targetServerDirectory, List<WorldInputSpec> worlds, Log log)
-        throws MojoExecutionException
+    /**
+     * Installs the selected world folders or guarded archives.
+     *
+     * @param targetServerDirectory
+     *     Destination server directory.
+     * @param worlds
+     *     Explicitly selected world inputs.
+     * @param log
+     *     Provisioning log sink.
+     * @throws ProvisioningException
+     *     If an input is invalid or cannot be installed.
+     */
+    public static void installWorlds(Path targetServerDirectory, List<WorldInputSpec> worlds, Logger log)
+        throws ProvisioningException
     {
         for (final WorldInputSpec world : worlds)
         {
             final long startTimeNanos = System.nanoTime();
             final Path targetWorldDirectory = resolveChildPath(targetServerDirectory, world.name(), "world name");
 
-            log.info("LK_WORLD: Installing world '%s' from '%s' (%s)."
+            log.log(Level.INFO, "LK_WORLD: Installing world '%s' from '%s' (%s)."
                 .formatted(world.name(), world.sourcePath(), world.sourceType()));
 
             if (Files.exists(targetWorldDirectory))
             {
                 if (!world.overwrite())
                 {
-                    throw new MojoExecutionException(
+                    throw new ProvisioningException(
                         "World target directory '%s' already exists and overwrite=false for world '%s'."
                             .formatted(targetWorldDirectory, world.name())
                     );
@@ -61,17 +72,29 @@ public final class ServerAssetInstaller
             }
 
             final long durationMillis = (System.nanoTime() - startTimeNanos) / 1_000_000L;
-            log.info("LK_WORLD: Installed world '%s' to '%s' in %d ms."
+            log.log(Level.INFO, "LK_WORLD: Installed world '%s' to '%s' in %d ms."
                 .formatted(world.name(), targetWorldDirectory, durationMillis));
         }
     }
 
+    /**
+     * Copies selected plugin JARs without replacing existing plugin files.
+     *
+     * @param targetServerDirectory
+     *     Destination server directory.
+     * @param pluginArtifacts
+     *     Resolved plugin files and deployment names.
+     * @param log
+     *     Provisioning log sink.
+     * @throws ProvisioningException
+     *     If a file is missing, conflicts, or cannot be copied.
+     */
     public static void installPluginArtifacts(
         Path targetServerDirectory,
         List<ResolvedPluginArtifact> pluginArtifacts,
-        Log log
+        Logger log
     )
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         if (pluginArtifacts.isEmpty())
             return;
@@ -85,7 +108,7 @@ public final class ServerAssetInstaller
             final Path sourceJar = pluginArtifact.sourceJar();
             if (!Files.isRegularFile(sourceJar))
             {
-                throw new MojoExecutionException(
+                throw new ProvisioningException(
                     "Resolved plugin artifact '%s' does not exist as a regular file."
                         .formatted(sourceJar)
                 );
@@ -95,7 +118,7 @@ public final class ServerAssetInstaller
             final String outputFileNameLowerCase = outputFileName.toLowerCase(Locale.ROOT);
             if (!usedFileNames.add(outputFileNameLowerCase))
             {
-                throw new MojoExecutionException(
+                throw new ProvisioningException(
                     "Duplicate plugin output filename '%s' detected while installing additional plugins."
                         .formatted(outputFileName)
                 );
@@ -104,12 +127,12 @@ public final class ServerAssetInstaller
             final Path targetPath = pluginsDirectory.resolve(outputFileName);
             if (Files.exists(targetPath))
             {
-                throw new MojoExecutionException(
+                throw new ProvisioningException(
                     "Plugin target path '%s' already exists. Use a unique renameTo value."
                         .formatted(targetPath)
                 );
             }
-            log.info("LK_PLUGIN: Copying plugin '%s' from '%s' to '%s'."
+            log.log(Level.INFO, "LK_PLUGIN: Copying plugin '%s' from '%s' to '%s'."
                 .formatted(pluginArtifact.sourceDescription(), sourceJar, targetPath));
 
             try
@@ -118,7 +141,7 @@ public final class ServerAssetInstaller
             }
             catch (IOException exception)
             {
-                throw new MojoExecutionException(
+                throw new ProvisioningException(
                     "Failed to copy plugin artifact from '%s' to '%s'."
                         .formatted(sourceJar, targetPath),
                     exception
@@ -127,26 +150,38 @@ public final class ServerAssetInstaller
         }
     }
 
-    public static void applyConfigOverlay(Path configOverlayPath, Path targetServerDirectory, Log log)
-        throws MojoExecutionException
+    /**
+     * Applies a configuration tree while rejecting links and escaping paths.
+     *
+     * @param configOverlayPath
+     *     Explicit or conventional configuration directory.
+     * @param targetServerDirectory
+     *     Destination server directory.
+     * @param log
+     *     Provisioning log sink.
+     * @throws ProvisioningException
+     *     If the overlay is invalid or copying fails.
+     */
+    public static void applyConfigOverlay(Path configOverlayPath, Path targetServerDirectory, Logger log)
+        throws ProvisioningException
     {
         if (Files.notExists(configOverlayPath))
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Configured configOverlayPath '%s' does not exist."
                     .formatted(configOverlayPath)
             );
         }
         if (!Files.isDirectory(configOverlayPath))
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Configured configOverlayPath '%s' is not a directory."
                     .formatted(configOverlayPath)
             );
         }
 
         final AtomicLong copiedFileCount = new AtomicLong(0L);
-        log.info("LK_CONFIG: Applying configuration overlay from '%s' to '%s'."
+        log.log(Level.INFO, "LK_CONFIG: Applying configuration overlay from '%s' to '%s'."
             .formatted(configOverlayPath, targetServerDirectory));
 
         final Path overlayRoot = configOverlayPath.toAbsolutePath().normalize();
@@ -194,22 +229,22 @@ public final class ServerAssetInstaller
         }
         catch (IOException exception)
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Failed to apply config overlay from '%s' to '%s'."
                     .formatted(configOverlayPath, targetServerDirectory),
                 exception
             );
         }
 
-        log.info("LK_CONFIG: Applied overlay with %d file(s).".formatted(copiedFileCount.get()));
+        log.log(Level.INFO, "LK_CONFIG: Applied overlay with %d file(s).".formatted(copiedFileCount.get()));
     }
 
     private static void installWorldFromFolder(WorldInputSpec world, Path targetWorldDirectory)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         if (!Files.isDirectory(world.sourcePath()))
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "World sourcePath '%s' is not a directory for world '%s'."
                     .formatted(world.sourcePath(), world.name())
             );
@@ -219,14 +254,14 @@ public final class ServerAssetInstaller
     }
 
     private static void installWorldFromArchive(WorldInputSpec world, Path targetWorldDirectory)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         final String normalizedName = world.sourcePath().getFileName() == null
             ? world.sourcePath().toString().toLowerCase(Locale.ROOT)
             : world.sourcePath().getFileName().toString().toLowerCase(Locale.ROOT);
         if (!normalizedName.endsWith(".zip"))
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "World archive '%s' is not a .zip file for world '%s'."
                     .formatted(world.sourcePath(), world.name())
             );
@@ -234,7 +269,7 @@ public final class ServerAssetInstaller
 
         if (!Files.isRegularFile(world.sourcePath()))
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "World archive sourcePath '%s' does not exist for world '%s'."
                     .formatted(world.sourcePath(), world.name())
             );
@@ -256,7 +291,7 @@ public final class ServerAssetInstaller
         }
         catch (IOException exception)
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Failed to prepare temporary extraction directory for world archive '%s'."
                     .formatted(world.sourcePath()),
                 exception
@@ -265,7 +300,7 @@ public final class ServerAssetInstaller
     }
 
     private static void extractZipArchive(Path archivePath, Path extractionRoot)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         try (ZipInputStream zipInputStream = new ZipInputStream(Files.newInputStream(archivePath)))
         {
@@ -297,7 +332,7 @@ public final class ServerAssetInstaller
         }
         catch (IOException exception)
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Failed to extract world archive '%s'."
                     .formatted(archivePath),
                 exception
@@ -306,7 +341,7 @@ public final class ServerAssetInstaller
     }
 
     private static Path resolveExtractedWorldRoot(Path extractionRoot, Path archivePath)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         if (Files.isRegularFile(extractionRoot.resolve("level.dat")))
             return extractionRoot;
@@ -318,7 +353,7 @@ public final class ServerAssetInstaller
         }
         catch (IOException exception)
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Failed to inspect extracted world archive '%s'."
                     .formatted(archivePath),
                 exception
@@ -328,23 +363,23 @@ public final class ServerAssetInstaller
         if (topLevelEntries.size() == 1 && Files.isDirectory(topLevelEntries.getFirst()))
             return topLevelEntries.getFirst();
 
-        throw new MojoExecutionException(
+        throw new ProvisioningException(
             "World archive '%s' is ambiguous. Expected exactly one world root directory."
                 .formatted(archivePath)
         );
     }
 
     private static String validatePluginOutputFileName(String fileName)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         final String trimmed = fileName == null ? "" : fileName.trim();
         if (trimmed.isEmpty())
-            throw new MojoExecutionException("Plugin output filename may not be blank.");
+            throw new ProvisioningException("Plugin output filename may not be blank.");
         if (!trimmed.toLowerCase(Locale.ROOT).endsWith(".jar"))
-            throw new MojoExecutionException("Plugin output filename '%s' must end with .jar.".formatted(trimmed));
+            throw new ProvisioningException("Plugin output filename '%s' must end with .jar.".formatted(trimmed));
         if (trimmed.contains("/") || trimmed.contains("\\"))
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Plugin output filename '%s' may not contain path separators."
                     .formatted(trimmed)
             );
@@ -353,7 +388,7 @@ public final class ServerAssetInstaller
     }
 
     private static Path resolveChildPath(Path root, String childName, String context)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         final Path normalizedRoot = root.toAbsolutePath().normalize();
         final Path child = normalizedRoot.resolve(childName).normalize();
@@ -362,11 +397,11 @@ public final class ServerAssetInstaller
     }
 
     private static void ensureInsideRoot(Path candidate, Path root, String context)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         if (!candidate.startsWith(root))
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Resolved %s path '%s' escapes root '%s'."
                     .formatted(context, candidate, root)
             );

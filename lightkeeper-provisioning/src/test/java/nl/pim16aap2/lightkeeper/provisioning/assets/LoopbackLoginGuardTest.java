@@ -1,7 +1,6 @@
-package nl.pim16aap2.lightkeeper.maven.provisioning;
+package nl.pim16aap2.lightkeeper.provisioning.assets;
 
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.logging.SystemStreamLog;
+import nl.pim16aap2.lightkeeper.provisioning.ProvisioningException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -15,6 +14,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class LoopbackLoginGuardTest
 {
+    /** Standard JVM sink used by asset regression tests. */
+    private static final System.Logger LOG = System.getLogger(LoopbackLoginGuardTest.class.getName());
+
     @Test
     void validate_shouldPassOnDefaultProvisionedConfiguration(@TempDir Path serverDirectory)
         throws Exception
@@ -31,7 +33,7 @@ class LoopbackLoginGuardTest
         );
 
         // execute + verify
-        assertThatCode(() -> LoopbackLoginGuard.validate(serverDirectory, new SystemStreamLog()))
+        assertThatCode(() -> LoopbackLoginGuard.validate(serverDirectory, LOG))
             .doesNotThrowAnyException();
     }
 
@@ -41,7 +43,7 @@ class LoopbackLoginGuardTest
         // setup — an empty directory: nothing to validate must mean nothing to fail on.
 
         // execute + verify
-        assertThatCode(() -> LoopbackLoginGuard.validate(serverDirectory, new SystemStreamLog()))
+        assertThatCode(() -> LoopbackLoginGuard.validate(serverDirectory, LOG))
             .doesNotThrowAnyException();
     }
 
@@ -53,8 +55,8 @@ class LoopbackLoginGuardTest
         writeServerProperties(serverDirectory, "server-port=25565", "online-mode=TRUE");
 
         // execute + verify
-        assertThatThrownBy(() -> LoopbackLoginGuard.validate(serverDirectory, new SystemStreamLog()))
-            .isInstanceOf(MojoExecutionException.class)
+        assertThatThrownBy(() -> LoopbackLoginGuard.validate(serverDirectory, LOG))
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("online-mode=true")
             .hasMessageContaining("FULL_LOGIN");
     }
@@ -67,8 +69,8 @@ class LoopbackLoginGuardTest
         writeSpigotConfiguration(serverDirectory, "settings:", "  bungeecord: true # enabled by overlay");
 
         // execute + verify
-        assertThatThrownBy(() -> LoopbackLoginGuard.validate(serverDirectory, new SystemStreamLog()))
-            .isInstanceOf(MojoExecutionException.class)
+        assertThatThrownBy(() -> LoopbackLoginGuard.validate(serverDirectory, LOG))
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("BungeeCord")
             .hasMessageContaining("FULL_LOGIN");
     }
@@ -87,8 +89,8 @@ class LoopbackLoginGuardTest
         );
 
         // execute + verify
-        assertThatThrownBy(() -> LoopbackLoginGuard.validate(serverDirectory, new SystemStreamLog()))
-            .isInstanceOf(MojoExecutionException.class)
+        assertThatThrownBy(() -> LoopbackLoginGuard.validate(serverDirectory, LOG))
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("Velocity")
             .hasMessageContaining("FULL_LOGIN");
     }
@@ -101,8 +103,8 @@ class LoopbackLoginGuardTest
         writeServerProperties(serverDirectory, "online-mode = true");
 
         // execute + verify
-        assertThatThrownBy(() -> LoopbackLoginGuard.validate(serverDirectory, new SystemStreamLog()))
-            .isInstanceOf(MojoExecutionException.class)
+        assertThatThrownBy(() -> LoopbackLoginGuard.validate(serverDirectory, LOG))
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("online-mode=true")
             .hasMessageContaining("FULL_LOGIN");
     }
@@ -115,8 +117,8 @@ class LoopbackLoginGuardTest
         writeSpigotConfiguration(serverDirectory, "settings:", "  bungeecord: True");
 
         // execute + verify
-        assertThatThrownBy(() -> LoopbackLoginGuard.validate(serverDirectory, new SystemStreamLog()))
-            .isInstanceOf(MojoExecutionException.class)
+        assertThatThrownBy(() -> LoopbackLoginGuard.validate(serverDirectory, LOG))
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("BungeeCord")
             .hasMessageContaining("FULL_LOGIN");
     }
@@ -134,8 +136,8 @@ class LoopbackLoginGuardTest
         );
 
         // execute + verify
-        assertThatThrownBy(() -> LoopbackLoginGuard.validate(serverDirectory, new SystemStreamLog()))
-            .isInstanceOf(MojoExecutionException.class)
+        assertThatThrownBy(() -> LoopbackLoginGuard.validate(serverDirectory, LOG))
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("Velocity")
             .hasMessageContaining("FULL_LOGIN");
     }
@@ -157,7 +159,7 @@ class LoopbackLoginGuardTest
         );
 
         // execute + verify
-        assertThatCode(() -> LoopbackLoginGuard.validate(serverDirectory, new SystemStreamLog()))
+        assertThatCode(() -> LoopbackLoginGuard.validate(serverDirectory, LOG))
             .doesNotThrowAnyException();
     }
 
@@ -178,7 +180,7 @@ class LoopbackLoginGuardTest
         );
 
         // execute + verify
-        assertThatCode(() -> LoopbackLoginGuard.validate(serverDirectory, new SystemStreamLog()))
+        assertThatCode(() -> LoopbackLoginGuard.validate(serverDirectory, LOG))
             .doesNotThrowAnyException();
     }
 
