@@ -1,4 +1,4 @@
-package nl.pim16aap2.lightkeeper.maven.serverprovider;
+package nl.pim16aap2.lightkeeper.provisioning.serverprovider;
 
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -10,8 +10,6 @@ import nl.pim16aap2.lightkeeper.provisioning.ServerSpecification;
 import nl.pim16aap2.lightkeeper.provisioning.util.FileUtil;
 import nl.pim16aap2.lightkeeper.provisioning.util.HashUtil;
 import org.apache.commons.io.FileUtils;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.logging.Log;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -45,7 +43,7 @@ public abstract class ServerProvider
     private static final Pattern SPIGOT_WATCHDOG_TIMEOUT_PATTERN = Pattern.compile("^(\\s*)timeout-time:\\s*\\d+\\s*$");
     private static final int SPIGOT_WATCHDOG_TIMEOUT_SECONDS = 600;
 
-    private final Log log;
+    private final System.Logger log;
 
     /**
      * The name of the server type.
@@ -104,7 +102,7 @@ public abstract class ServerProvider
      */
     private final boolean shouldRecreateJar;
 
-    protected ServerProvider(Log log, String name, ServerSpecification serverSpecification)
+    protected ServerProvider(System.Logger log, String name, ServerSpecification serverSpecification)
     {
         this.log = log;
         this.name = name;
@@ -161,7 +159,7 @@ public abstract class ServerProvider
     {
         if (Files.notExists(baseServerJarFile()))
         {
-            log.info("Expected JAR file '" + baseServerJarFile() + "' does not exist.");
+            log.log(System.Logger.Level.INFO, "Expected JAR file '" + baseServerJarFile() + "' does not exist.");
             return false;
         }
         return true;
@@ -183,21 +181,21 @@ public abstract class ServerProvider
      * Accepts the EULA for the server by creating a file named {@code eula.txt} in the base server directory with the
      * content {@code eula=true}.
      *
-     * @throws MojoExecutionException
+     * @throws ProvisioningException
      *     If the EULA file already exists or could not be created.
      */
     protected void acceptEula()
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         final Path eulaFile = baseServerDirectory().resolve(EULA_FILE_NAME);
         try
         {
-            log.info("Creating EULA file at " + eulaFile);
+            log.log(System.Logger.Level.INFO, "Creating EULA file at " + eulaFile);
             Files.writeString(eulaFile, "eula=true", StandardOpenOption.CREATE_NEW);
         }
         catch (IOException e)
         {
-            throw new MojoExecutionException("Failed to create EULA file at " + eulaFile, e);
+            throw new ProvisioningException("Failed to create EULA file at " + eulaFile, e);
         }
     }
 
@@ -206,21 +204,21 @@ public abstract class ServerProvider
      *
      * @param properties
      *     The properties to write to the server properties file.
-     * @throws MojoExecutionException
+     * @throws ProvisioningException
      *     If the server properties file already exists or could not be created.
      */
     protected void writeServerProperties(String properties)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         final Path serverPropertiesFile = baseServerDirectory().resolve("server.properties");
         try
         {
-            log.info("Writing server properties to " + serverPropertiesFile);
+            log.log(System.Logger.Level.INFO, "Writing server properties to " + serverPropertiesFile);
             Files.writeString(serverPropertiesFile, properties, StandardOpenOption.CREATE_NEW);
         }
         catch (IOException e)
         {
-            throw new MojoExecutionException("Failed to write server properties to " + serverPropertiesFile, e);
+            throw new ProvisioningException("Failed to write server properties to " + serverPropertiesFile, e);
         }
     }
 
@@ -229,7 +227,7 @@ public abstract class ServerProvider
      *
      * @return The server properties content.
      *
-     * @throws MojoExecutionException
+     * @throws ProvisioningException
      *     If no free local TCP port can be reserved.
      */
     protected String createDefaultServerProperties()
@@ -249,16 +247,16 @@ public abstract class ServerProvider
      * Integration world generation can exceed the default watchdog threshold on slower systems. Raising this limit
      * avoids premature server shutdowns during integration tests while keeping watchdog protection enabled.
      *
-     * @throws MojoExecutionException
+     * @throws ProvisioningException
      *     If the Spigot configuration file exists but cannot be read or updated.
      */
     protected void configureSpigotWatchdogTimeout()
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         final Path spigotConfigurationFile = baseServerDirectory().resolve("spigot.yml");
         if (Files.notExists(spigotConfigurationFile))
         {
-            log().info(
+            log().log(System.Logger.Level.INFO,
                 "Skipping Spigot watchdog configuration because '%s' does not exist."
                     .formatted(spigotConfigurationFile)
             );
@@ -272,7 +270,7 @@ public abstract class ServerProvider
         }
         catch (IOException exception)
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Failed to read Spigot configuration from '%s'."
                     .formatted(spigotConfigurationFile),
                 exception
@@ -322,14 +320,14 @@ public abstract class ServerProvider
         }
         catch (IOException exception)
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Failed to write Spigot configuration to '%s'."
                     .formatted(spigotConfigurationFile),
                 exception
             );
         }
 
-        log().info(
+        log().log(System.Logger.Level.INFO,
             "Configured Spigot watchdog timeout to %d second(s) in '%s'."
                 .formatted(SPIGOT_WATCHDOG_TIMEOUT_SECONDS, spigotConfigurationFile)
         );
@@ -340,11 +338,11 @@ public abstract class ServerProvider
      *
      * @return A currently available local TCP port.
      *
-     * @throws MojoExecutionException
+     * @throws ProvisioningException
      *     If no local TCP port could be reserved.
      */
     protected static int reserveAvailableTcpPort()
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         try (ServerSocket socket = new ServerSocket(0, 0, InetAddress.getLoopbackAddress()))
         {
@@ -353,27 +351,27 @@ public abstract class ServerProvider
         }
         catch (IOException exception)
         {
-            throw new MojoExecutionException("Failed to reserve an available TCP port for server startup.", exception);
+            throw new ProvisioningException("Failed to reserve an available TCP port for server startup.", exception);
         }
     }
 
     /**
      * Copies a JAR file from {@link #jarCacheFile()} to {@link #targetJarFile()}.
      *
-     * @throws MojoExecutionException
+     * @throws ProvisioningException
      *     If the JAR file could not be copied from the cache to the base server directory.
      */
     protected void copyJarFromCacheToBaseServer()
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         try
         {
             Files.copy(jarCacheFile(), baseServerJarFile(), StandardCopyOption.REPLACE_EXISTING);
-            log().info("Copied " + jarCacheFile() + " to " + baseServerJarFile());
+            log().log(System.Logger.Level.INFO, "Copied " + jarCacheFile() + " to " + baseServerJarFile());
         }
         catch (IOException exception)
         {
-            throw new MojoExecutionException("Failed to copy JAR file from cache", exception);
+            throw new ProvisioningException("Failed to copy JAR file from cache", exception);
         }
     }
 
@@ -381,13 +379,13 @@ public abstract class ServerProvider
      * Prepares the server for use.
      */
     public final void prepareServer()
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         pruneUnusedCacheDirectoriesIfConfigured();
 
         if (shouldRecreateJar())
         {
-            log().info("Recreating server JAR file");
+            log().log(System.Logger.Level.INFO, "Recreating server JAR file");
             FileUtil.cleanDirectory(jarCacheDirectory(), "jar cache directory");
             createBaseServerJar();
 
@@ -400,7 +398,7 @@ public abstract class ServerProvider
 
         if (shouldRecreateBaseServer())
         {
-            log().info("Recreating base server directory");
+            log().log(System.Logger.Level.INFO, "Recreating base server directory");
             FileUtil.cleanDirectory(baseServerDirectory(), "base server directory");
             copyJarFromCacheToBaseServer();
             createBaseServer();
@@ -408,7 +406,7 @@ public abstract class ServerProvider
 
         configureSpigotWatchdogTimeout();
 
-        log().info("Copying base server to target server directory");
+        log().log(System.Logger.Level.INFO, "Copying base server to target server directory");
         FileUtil.cleanDirectory(targetServerDirectory(), "target server directory");
         createTargetServer();
         installEmbeddedAgentJar();
@@ -441,7 +439,7 @@ public abstract class ServerProvider
     {
         if (!serverSpecification().cleanupUnusedCacheDirectories())
         {
-            log().info("Unused cache directory cleanup disabled.");
+            log().log(System.Logger.Level.INFO, "Unused cache directory cleanup disabled.");
             return;
         }
 
@@ -462,7 +460,7 @@ public abstract class ServerProvider
         }
         catch (ProvisioningException exception)
         {
-            log().warn(
+            log().log(System.Logger.Level.WARNING,
                 "Failed to enumerate unused %s directories for cleanup under '%s'. Cause: %s"
                     .formatted(cacheKind, currentDirectory.getParent(), exception.getMessage())
             );
@@ -471,15 +469,18 @@ public abstract class ServerProvider
 
         for (final Path deletedDirectory : pruneResult.deletedDirectories())
         {
-            log().info("Deleted unused %s directory: '%s'.".formatted(cacheKind, deletedDirectory));
+            log().log(
+                System.Logger.Level.INFO,
+                "Deleted unused %s directory: '%s'.".formatted(cacheKind, deletedDirectory)
+            );
         }
 
         for (final Path failedDirectory : pruneResult.failedDirectories())
         {
-            log().warn("Failed to delete unused %s directory: '%s'. Keeping directory.".formatted(
-                cacheKind,
-                failedDirectory
-            ));
+            log().log(
+                System.Logger.Level.WARNING,
+                "Failed to delete unused %s directory: '%s'. Keeping directory.".formatted(cacheKind, failedDirectory)
+            );
         }
     }
 
@@ -488,31 +489,31 @@ public abstract class ServerProvider
      * <p>
      * When this method is called, {@link #jarCacheDirectory()} is guaranteed to be empty.
      *
-     * @throws MojoExecutionException
+     * @throws ProvisioningException
      *     If the base server JAR file could not be created.
      */
     protected abstract void createBaseServerJar()
-        throws MojoExecutionException;
+        throws ProvisioningException;
 
     /**
      * Creates and initializes the base server.
      * <p>
      * When this method is called, {@link #baseServerDirectory()} is guaranteed to be empty.
      *
-     * @throws MojoExecutionException
+     * @throws ProvisioningException
      *     If the base server directory could not be initialized.
      */
     protected abstract void createBaseServer()
-        throws MojoExecutionException;
+        throws ProvisioningException;
 
     /**
      * Deletes transient lock/socket files created by failed startup attempts.
      *
-     * @throws MojoExecutionException
+     * @throws ProvisioningException
      *     If cleanup fails.
      */
     protected final void cleanTransientFilesForRetry()
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         try (Stream<Path> fileStream = Files.walk(baseServerDirectory()))
         {
@@ -523,7 +524,7 @@ public abstract class ServerProvider
         }
         catch (UncheckedIOException exception)
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Failed to delete transient retry file in '%s'."
                     .formatted(baseServerDirectory()),
                 exception
@@ -531,7 +532,7 @@ public abstract class ServerProvider
         }
         catch (IOException exception)
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Failed to clean transient files in base server directory '%s' before retry."
                     .formatted(baseServerDirectory()),
                 exception
@@ -546,20 +547,20 @@ public abstract class ServerProvider
      *     The URL from which to download the file.
      * @param targetFile
      *     The path where the downloaded file should be saved.
-     * @throws MojoExecutionException
+     * @throws ProvisioningException
      *     If the file could not be downloaded.
      */
     protected void downloadFile(String url, Path targetFile)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         try
         {
-            log().info("Downloading file from %s to %s".formatted(url, targetFile));
+            log().log(System.Logger.Level.INFO, "Downloading file from %s to %s".formatted(url, targetFile));
             FileUtils.copyURLToFile(URI.create(url).toURL(), targetFile.toFile(), 10_000, 10_000);
         }
         catch (IOException e)
         {
-            throw new MojoExecutionException("Failed to download file from %s to %s".formatted(url, targetFile), e);
+            throw new ProvisioningException("Failed to download file from %s to %s".formatted(url, targetFile), e);
         }
     }
 
@@ -568,11 +569,11 @@ public abstract class ServerProvider
      * <p>
      * This method copies the entire base server directory to the target server directory.
      *
-     * @throws MojoExecutionException
+     * @throws ProvisioningException
      *     if the base server directory could not be copied to the target server directory.
      */
     protected void createTargetServer()
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         FileUtil.copyDirectoryRecursively(baseServerDirectory, targetServerDirectory);
         rewriteTargetServerPropertiesWithReservedPort();
@@ -581,16 +582,16 @@ public abstract class ServerProvider
     /**
      * Rewrites target-server {@code server.properties} with a port reserved for this target server materialization.
      *
-     * @throws MojoExecutionException
+     * @throws ProvisioningException
      *     If reading or updating the target {@code server.properties} fails.
      */
     protected void rewriteTargetServerPropertiesWithReservedPort()
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         final Path targetServerPropertiesFile = targetServerDirectory.resolve("server.properties");
         if (Files.notExists(targetServerPropertiesFile))
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Target server properties file '%s' does not exist."
                     .formatted(targetServerPropertiesFile)
             );
@@ -605,11 +606,11 @@ public abstract class ServerProvider
      *
      * @return A currently available local TCP port.
      *
-     * @throws MojoExecutionException
+     * @throws ProvisioningException
      *     If no local TCP port could be reserved.
      */
     protected int reserveTargetServerPort()
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         return reserveAvailableTcpPort();
     }
@@ -693,19 +694,22 @@ public abstract class ServerProvider
     {
         if (forceRecreate)
         {
-            log.info("Forcing recreation of '" + file + "'.");
+            log.log(System.Logger.Level.INFO, "Forcing recreation of '" + file + "'.");
             return true;
         }
 
         if (Files.notExists(file))
         {
-            log.info("File '" + file + "' does not exist. Going to create it.");
+            log.log(System.Logger.Level.INFO, "File '" + file + "' does not exist. Going to create it.");
             return true;
         }
 
         if (FileUtil.getFileAgeInDays(file) >= expiryDays)
         {
-            log.info("File '" + file + "' is older than " + expiryDays + " days. Going to recreate it.");
+            log.log(
+                System.Logger.Level.INFO,
+                "File '" + file + "' is older than " + expiryDays + " days. Going to recreate it."
+            );
             return true;
         }
 
@@ -713,7 +717,7 @@ public abstract class ServerProvider
     }
 
     private void installEmbeddedAgentJar()
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         final Path pluginsDirectory = targetServerDirectory().resolve("plugins");
         FileUtil.createDirectories(pluginsDirectory, "plugins directory");
@@ -724,7 +728,7 @@ public abstract class ServerProvider
             Files.copy(embeddedAgentStream, targetAgentJar, StandardCopyOption.REPLACE_EXISTING);
             if (Files.notExists(targetAgentJar) || !Files.isReadable(targetAgentJar))
             {
-                throw new MojoExecutionException(
+                throw new ProvisioningException(
                     "Embedded LightKeeper agent was extracted to '%s' but is not readable."
                         .formatted(targetAgentJar)
                 );
@@ -732,22 +736,22 @@ public abstract class ServerProvider
 
             final String expectedSha256 = serverSpecification().agentJarSha256();
             if (expectedSha256 == null || expectedSha256.isBlank())
-                throw new MojoExecutionException("Embedded LightKeeper agent SHA-256 metadata is missing.");
+                throw new ProvisioningException("Embedded LightKeeper agent SHA-256 metadata is missing.");
 
             final String actualSha256 = HashUtil.sha256(targetAgentJar);
             if (!expectedSha256.equalsIgnoreCase(actualSha256))
             {
-                throw new MojoExecutionException(
+                throw new ProvisioningException(
                     "Installed LightKeeper agent hash mismatch. Expected %s, got %s."
                         .formatted(expectedSha256, actualSha256)
                 );
             }
 
-            log.info("Installed LightKeeper agent JAR at '%s'.".formatted(targetAgentJar));
+            log.log(System.Logger.Level.INFO, "Installed LightKeeper agent JAR at '%s'.".formatted(targetAgentJar));
         }
         catch (IOException exception)
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Failed to extract embedded LightKeeper agent jar to '%s'."
                     .formatted(targetAgentJar),
                 exception

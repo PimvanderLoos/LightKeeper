@@ -1,4 +1,4 @@
-package nl.pim16aap2.lightkeeper.maven.serverprovider;
+package nl.pim16aap2.lightkeeper.provisioning.serverprovider;
 
 import lombok.ToString;
 import nl.pim16aap2.lightkeeper.provisioning.ProvisioningException;
@@ -6,8 +6,6 @@ import nl.pim16aap2.lightkeeper.provisioning.ServerSpecification;
 import nl.pim16aap2.lightkeeper.provisioning.SpigotBuildMetadata;
 import nl.pim16aap2.lightkeeper.provisioning.serverprocess.MinecraftServerProcess;
 import nl.pim16aap2.lightkeeper.provisioning.util.FileUtil;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.logging.Log;
 import org.jspecify.annotations.Nullable;
 
 import java.io.BufferedReader;
@@ -39,7 +37,7 @@ public class SpigotServerProvider extends ServerProvider
     private final SpigotBuildMetadata spigotBuildMetadata;
 
     public SpigotServerProvider(
-        Log log,
+        System.Logger log,
         ServerSpecification serverSpecification,
         SpigotBuildMetadata spigotBuildMetadata)
     {
@@ -55,7 +53,7 @@ public class SpigotServerProvider extends ServerProvider
 
     @Override
     protected void createBaseServerJar()
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         final Path buildToolsJar = jarCacheDirectory().resolve("BuildTools.jar");
         final Path buildToolsWorkDirectory = jarCacheDirectory().resolve("buildtools-work");
@@ -72,7 +70,7 @@ public class SpigotServerProvider extends ServerProvider
         }
         catch (IOException exception)
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Failed to copy built Spigot jar from '%s' to '%s'."
                     .formatted(builtJar, jarCacheFile()),
                 exception
@@ -82,7 +80,7 @@ public class SpigotServerProvider extends ServerProvider
 
     @Override
     protected void createBaseServer()
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         acceptEula();
         writeServerProperties(createDefaultServerProperties());
@@ -95,28 +93,28 @@ public class SpigotServerProvider extends ServerProvider
 
             try
             {
-                log().info(
+                log().log(System.Logger.Level.INFO,
                     "LK_SERVER: Starting Spigot base server process (attempt %d/%d)."
                         .formatted(attempt, maxAttempts)
                 );
                 serverProcess.start(serverSpecification().serverInitTimeoutSeconds());
-                log().info("LK_SERVER: Spigot base server started successfully.");
-                log().info("LK_SERVER: Stopping Spigot base server process.");
+                log().log(System.Logger.Level.INFO, "LK_SERVER: Spigot base server started successfully.");
+                log().log(System.Logger.Level.INFO, "LK_SERVER: Stopping Spigot base server process.");
                 serverProcess.stop(serverSpecification().serverStopTimeoutSeconds());
-                log().info("LK_SERVER: Spigot base server stopped successfully.");
+                log().log(System.Logger.Level.INFO, "LK_SERVER: Spigot base server stopped successfully.");
                 return;
             }
             catch (ProvisioningException exception)
             {
                 if (attempt >= maxAttempts)
                 {
-                    throw new MojoExecutionException(
+                    throw new ProvisioningException(
                         "Spigot server failed to start after %d attempt(s).".formatted(maxAttempts),
                         exception
                     );
                 }
 
-                log().warn(
+                log().log(System.Logger.Level.WARNING,
                     ("LK_RETRY_STARTUP_PROCESS_ONLY: Spigot startup attempt %d/%d failed. " +
                         "Retrying process startup without re-downloading or rebuilding cache. Cause: %s")
                         .formatted(attempt, maxAttempts, exception.getMessage())
@@ -138,7 +136,7 @@ public class SpigotServerProvider extends ServerProvider
     }
 
     private void runBuildTools(Path buildToolsJar, Path buildToolsWorkDirectory)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         final Path buildToolsLogFile = buildToolsWorkDirectory.resolve(BUILDTOOLS_LOG_FILE_NAME);
         final List<String> command = new ArrayList<>();
@@ -161,12 +159,12 @@ public class SpigotServerProvider extends ServerProvider
         final Process process;
         try
         {
-            log().info("Starting Spigot BuildTools process. Output log: " + buildToolsLogFile);
+            log().log(System.Logger.Level.INFO, "Starting Spigot BuildTools process. Output log: " + buildToolsLogFile);
             process = processBuilder.start();
         }
         catch (IOException exception)
         {
-            throw new MojoExecutionException("Failed to start BuildTools process.", exception);
+            throw new ProvisioningException("Failed to start BuildTools process.", exception);
         }
 
         final boolean finished;
@@ -179,14 +177,14 @@ public class SpigotServerProvider extends ServerProvider
             Thread.currentThread().interrupt();
             if (process.isAlive())
                 process.destroyForcibly();
-            throw new MojoExecutionException("Interrupted while waiting for BuildTools to finish.", exception);
+            throw new ProvisioningException("Interrupted while waiting for BuildTools to finish.", exception);
         }
 
         if (!finished)
         {
             if (process.isAlive())
                 process.destroyForcibly();
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "BuildTools timed out after %s. Tail:%n%s"
                     .formatted(BUILDTOOLS_TIMEOUT, readOutputTail(buildToolsLogFile))
             );
@@ -194,13 +192,13 @@ public class SpigotServerProvider extends ServerProvider
 
         if (process.exitValue() != 0)
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "BuildTools failed with exit code %d. Tail:%n%s"
                     .formatted(process.exitValue(), readOutputTail(buildToolsLogFile))
             );
         }
 
-        log().info("BuildTools completed successfully. Output log: " + buildToolsLogFile);
+        log().log(System.Logger.Level.INFO, "BuildTools completed successfully. Output log: " + buildToolsLogFile);
     }
 
     private static String readOutputTail(Path outputFile)
@@ -231,7 +229,7 @@ public class SpigotServerProvider extends ServerProvider
     }
 
     private static Path resolveBuiltSpigotJar(Path jarCacheDirectory, String minecraftVersion)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         final String expectedJarFileName = "spigot-%s.jar".formatted(minecraftVersion).toLowerCase(Locale.ROOT);
 
@@ -245,7 +243,7 @@ public class SpigotServerProvider extends ServerProvider
 
             if (candidates.isEmpty())
             {
-                throw new MojoExecutionException(
+                throw new ProvisioningException(
                     "BuildTools did not produce the runtime Spigot jar '%s' in '%s'."
                         .formatted(expectedJarFileName, jarCacheDirectory)
                 );
@@ -255,7 +253,7 @@ public class SpigotServerProvider extends ServerProvider
         }
         catch (IOException exception)
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Failed to inspect BuildTools output directory '%s'."
                     .formatted(jarCacheDirectory),
                 exception

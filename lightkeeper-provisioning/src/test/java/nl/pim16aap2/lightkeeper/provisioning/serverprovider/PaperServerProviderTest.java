@@ -1,4 +1,4 @@
-package nl.pim16aap2.lightkeeper.maven.serverprovider;
+package nl.pim16aap2.lightkeeper.provisioning.serverprovider;
 
 import nl.pim16aap2.lightkeeper.provisioning.LightkeeperEmbeddedAgent;
 import nl.pim16aap2.lightkeeper.provisioning.PaperBuildMetadata;
@@ -6,9 +6,6 @@ import nl.pim16aap2.lightkeeper.provisioning.ProvisioningException;
 import nl.pim16aap2.lightkeeper.provisioning.ServerSpecification;
 import nl.pim16aap2.lightkeeper.provisioning.serverprocess.MinecraftServerProcess;
 import nl.pim16aap2.lightkeeper.provisioning.util.HashUtil;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.logging.Log;
-import org.apache.maven.plugin.logging.SystemStreamLog;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -80,7 +77,7 @@ class PaperServerProviderTest
         final var thrown = assertThatThrownBy(provider::prepareServer);
 
         // verify
-        thrown.isInstanceOf(MojoExecutionException.class)
+        thrown.isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("failed to start after 2 attempt(s)");
         assertThat(provider.createBaseServerJarInvocations()).isEqualTo(1);
         assertThat(provider.createServerProcessInvocations()).isEqualTo(2);
@@ -189,7 +186,7 @@ class PaperServerProviderTest
 
         // execute + verify
         assertThatThrownBy(provider::runCreateBaseServerJar)
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("Checksum mismatch");
     }
 
@@ -209,7 +206,7 @@ class PaperServerProviderTest
         boolean createTransientLockOnFailure,
         boolean cleanupUnusedCacheDirectories)
     {
-        final Log log = new SystemStreamLog();
+        final System.Logger log = System.getLogger("LightKeeper.Tests");
         final ServerSpecification serverSpecification = new ServerSpecification(
             "1.21.11",
             tempDirectory.resolve("jars"),
@@ -276,7 +273,7 @@ class PaperServerProviderTest
             "embedded-agent"
         );
         return new TestPaperJarProvider(
-            new SystemStreamLog(),
+            System.getLogger("LightKeeper.Tests"),
             serverSpecification,
             metadata,
             downloadedJarContents
@@ -291,7 +288,7 @@ class PaperServerProviderTest
         private int createServerProcessInvocations;
 
         private TestPaperServerProvider(
-            Log log,
+            System.Logger log,
             ServerSpecification serverSpecification,
             PaperBuildMetadata paperBuildMetadata,
             int failingAttempts,
@@ -304,7 +301,7 @@ class PaperServerProviderTest
 
         @Override
         protected void createBaseServerJar()
-            throws MojoExecutionException
+            throws ProvisioningException
         {
             createBaseServerJarInvocations++;
             try
@@ -314,7 +311,7 @@ class PaperServerProviderTest
             }
             catch (IOException exception)
             {
-                throw new MojoExecutionException("Failed to create test server jar.", exception);
+                throw new ProvisioningException("Failed to create test server jar.", exception);
             }
         }
 
@@ -412,7 +409,7 @@ class PaperServerProviderTest
         private final String downloadedJarContents;
 
         private TestPaperJarProvider(
-            Log log,
+            System.Logger log,
             ServerSpecification serverSpecification,
             PaperBuildMetadata paperBuildMetadata,
             String downloadedJarContents)
@@ -422,7 +419,7 @@ class PaperServerProviderTest
         }
 
         private void runCreateBaseServerJar()
-            throws MojoExecutionException
+            throws ProvisioningException
         {
             createBaseServerJar();
         }
@@ -434,7 +431,7 @@ class PaperServerProviderTest
 
         @Override
         protected void downloadFile(String url, Path targetFile)
-            throws MojoExecutionException
+            throws ProvisioningException
         {
             try
             {
@@ -443,7 +440,7 @@ class PaperServerProviderTest
             }
             catch (IOException exception)
             {
-                throw new MojoExecutionException("Failed to write fake jar.", exception);
+                throw new ProvisioningException("Failed to write fake jar.", exception);
             }
         }
 

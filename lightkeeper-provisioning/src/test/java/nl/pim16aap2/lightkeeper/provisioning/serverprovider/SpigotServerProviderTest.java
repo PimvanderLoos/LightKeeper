@@ -1,4 +1,4 @@
-package nl.pim16aap2.lightkeeper.maven.serverprovider;
+package nl.pim16aap2.lightkeeper.provisioning.serverprovider;
 
 import nl.pim16aap2.lightkeeper.provisioning.LightkeeperEmbeddedAgent;
 import nl.pim16aap2.lightkeeper.provisioning.ProvisioningException;
@@ -6,9 +6,6 @@ import nl.pim16aap2.lightkeeper.provisioning.ServerSpecification;
 import nl.pim16aap2.lightkeeper.provisioning.SpigotBuildMetadata;
 import nl.pim16aap2.lightkeeper.provisioning.serverprocess.MinecraftServerProcess;
 import nl.pim16aap2.lightkeeper.provisioning.util.HashUtil;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.logging.Log;
-import org.apache.maven.plugin.logging.SystemStreamLog;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -83,7 +80,7 @@ class SpigotServerProviderTest
         final var thrown = assertThatThrownBy(provider::prepareServer);
 
         // verify
-        thrown.isInstanceOf(MojoExecutionException.class)
+        thrown.isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("failed to start after 2 attempt(s)");
         assertThat(provider.createBaseServerJarInvocations()).isEqualTo(1);
         assertThat(provider.createServerProcessInvocations()).isEqualTo(2);
@@ -115,7 +112,7 @@ class SpigotServerProviderTest
         final var thrown = assertThatThrownBy(() -> resolveBuiltSpigotJarForTests(tempDirectory, "1.21.11"));
 
         // verify
-        thrown.isInstanceOf(MojoExecutionException.class)
+        thrown.isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("spigot-1.21.11.jar");
     }
 
@@ -130,7 +127,7 @@ class SpigotServerProviderTest
         final var thrown = assertThatThrownBy(() -> resolveBuiltSpigotJarForTests(notDirectory, "1.21.11"));
 
         // verify
-        thrown.isInstanceOf(MojoExecutionException.class)
+        thrown.isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("Failed to inspect BuildTools output directory");
     }
 
@@ -160,7 +157,7 @@ class SpigotServerProviderTest
 
         // execute + verify
         assertThatThrownBy(provider::runCreateBaseServerJar)
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("BuildTools failed with exit code");
     }
 
@@ -203,7 +200,7 @@ class SpigotServerProviderTest
         int failingAttempts,
         boolean createTransientLockOnFailure)
     {
-        final Log log = new SystemStreamLog();
+        final System.Logger log = System.getLogger("LightKeeper.Tests");
         final ServerSpecification serverSpecification = new ServerSpecification(
             "1.21.11",
             tempDirectory.resolve("jars"),
@@ -241,7 +238,7 @@ class SpigotServerProviderTest
 
     private TestSpigotJarProvider createJarProvider(Path tempDirectory, Path buildToolsJar)
     {
-        final Log log = new SystemStreamLog();
+        final System.Logger log = System.getLogger("LightKeeper.Tests");
         final ServerSpecification serverSpecification = new ServerSpecification(
             "1.21.11",
             tempDirectory.resolve("jars"),
@@ -362,7 +359,7 @@ class SpigotServerProviderTest
         private int createServerProcessInvocations;
 
         private TestSpigotServerProvider(
-            Log log,
+            System.Logger log,
             ServerSpecification serverSpecification,
             SpigotBuildMetadata spigotBuildMetadata,
             int failingAttempts,
@@ -375,7 +372,7 @@ class SpigotServerProviderTest
 
         @Override
         protected void createBaseServerJar()
-            throws MojoExecutionException
+            throws ProvisioningException
         {
             createBaseServerJarInvocations++;
             try
@@ -385,7 +382,7 @@ class SpigotServerProviderTest
             }
             catch (IOException exception)
             {
-                throw new MojoExecutionException("Failed to create test server jar.", exception);
+                throw new ProvisioningException("Failed to create test server jar.", exception);
             }
         }
 
@@ -478,7 +475,7 @@ class SpigotServerProviderTest
         private final Path fakeBuildToolsJar;
 
         private TestSpigotJarProvider(
-            Log log,
+            System.Logger log,
             ServerSpecification serverSpecification,
             SpigotBuildMetadata spigotBuildMetadata,
             Path fakeBuildToolsJar)
@@ -488,7 +485,7 @@ class SpigotServerProviderTest
         }
 
         private void runCreateBaseServerJar()
-            throws MojoExecutionException
+            throws ProvisioningException
         {
             createBaseServerJar();
         }
@@ -505,7 +502,7 @@ class SpigotServerProviderTest
 
         @Override
         protected void downloadFile(String url, Path targetFile)
-            throws MojoExecutionException
+            throws ProvisioningException
         {
             try
             {
@@ -514,7 +511,7 @@ class SpigotServerProviderTest
             }
             catch (IOException exception)
             {
-                throw new MojoExecutionException("Failed to copy fake BuildTools jar.", exception);
+                throw new ProvisioningException("Failed to copy fake BuildTools jar.", exception);
             }
         }
     }

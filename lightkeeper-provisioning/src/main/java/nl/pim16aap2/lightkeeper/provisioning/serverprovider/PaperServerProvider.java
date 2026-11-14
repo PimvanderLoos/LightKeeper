@@ -1,4 +1,4 @@
-package nl.pim16aap2.lightkeeper.maven.serverprovider;
+package nl.pim16aap2.lightkeeper.provisioning.serverprovider;
 
 import lombok.ToString;
 import nl.pim16aap2.lightkeeper.provisioning.PaperBuildMetadata;
@@ -7,8 +7,6 @@ import nl.pim16aap2.lightkeeper.provisioning.ServerSpecification;
 import nl.pim16aap2.lightkeeper.provisioning.serverprocess.MinecraftServerProcess;
 import nl.pim16aap2.lightkeeper.provisioning.serverprocess.PaperServerProcess;
 import nl.pim16aap2.lightkeeper.provisioning.util.HashUtil;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.logging.Log;
 
 import java.nio.file.Path;
 
@@ -19,7 +17,7 @@ public class PaperServerProvider extends ServerProvider
     private final PaperBuildMetadata paperBuildMetadata;
 
     public PaperServerProvider(
-        Log log,
+        System.Logger log,
         ServerSpecification serverSpecification,
         PaperBuildMetadata paperBuildMetadata)
     {
@@ -35,10 +33,10 @@ public class PaperServerProvider extends ServerProvider
 
     @Override
     protected void createBaseServerJar()
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         final Path targetFile = jarCacheFile();
-        log().info(
+        log().log(System.Logger.Level.INFO,
             "Downloading Paper build %d for version %s."
                 .formatted(paperBuildMetadata.buildId(), paperBuildMetadata.minecraftVersion())
         );
@@ -47,7 +45,7 @@ public class PaperServerProvider extends ServerProvider
         final String actualHash = HashUtil.sha256(targetFile);
         if (!actualHash.equalsIgnoreCase(paperBuildMetadata.sha256()))
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Checksum mismatch for downloaded Paper jar. Expected %s, got %s."
                     .formatted(paperBuildMetadata.sha256(), actualHash)
             );
@@ -56,7 +54,7 @@ public class PaperServerProvider extends ServerProvider
 
     @Override
     protected void createBaseServer()
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         acceptEula();
         writeServerProperties(createDefaultServerProperties());
@@ -69,28 +67,28 @@ public class PaperServerProvider extends ServerProvider
 
             try
             {
-                log().info(
+                log().log(System.Logger.Level.INFO,
                     "LK_SERVER: Starting Paper base server process (attempt %d/%d)."
                         .formatted(attempt, maxAttempts)
                 );
                 serverProcess.start(serverSpecification().serverInitTimeoutSeconds());
-                log().info("LK_SERVER: Paper base server started successfully.");
-                log().info("LK_SERVER: Stopping Paper base server process.");
+                log().log(System.Logger.Level.INFO, "LK_SERVER: Paper base server started successfully.");
+                log().log(System.Logger.Level.INFO, "LK_SERVER: Stopping Paper base server process.");
                 serverProcess.stop(serverSpecification().serverStopTimeoutSeconds());
-                log().info("LK_SERVER: Paper base server stopped successfully.");
+                log().log(System.Logger.Level.INFO, "LK_SERVER: Paper base server stopped successfully.");
                 return;
             }
             catch (ProvisioningException exception)
             {
                 if (attempt >= maxAttempts)
                 {
-                    throw new MojoExecutionException(
+                    throw new ProvisioningException(
                         "Paper server failed to start after %d attempt(s).".formatted(maxAttempts),
                         exception
                     );
                 }
 
-                log().warn(
+                log().log(System.Logger.Level.WARNING,
                     ("LK_RETRY_STARTUP_PROCESS_ONLY: Paper startup attempt %d/%d failed. " +
                         "Retrying process startup without re-downloading or rebuilding cache. Cause: %s")
                         .formatted(attempt, maxAttempts, exception.getMessage())

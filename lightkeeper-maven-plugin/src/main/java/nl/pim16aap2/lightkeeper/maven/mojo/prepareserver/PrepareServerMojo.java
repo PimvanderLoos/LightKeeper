@@ -2,9 +2,6 @@ package nl.pim16aap2.lightkeeper.maven.mojo.prepareserver;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import nl.pim16aap2.lightkeeper.maven.serverprovider.PaperServerProvider;
-import nl.pim16aap2.lightkeeper.maven.serverprovider.ServerProvider;
-import nl.pim16aap2.lightkeeper.maven.serverprovider.SpigotServerProvider;
 import nl.pim16aap2.lightkeeper.provisioning.LightkeeperEmbeddedAgent;
 import nl.pim16aap2.lightkeeper.provisioning.PaperBuildMetadata;
 import nl.pim16aap2.lightkeeper.provisioning.PaperDownloadsClient;
@@ -18,6 +15,9 @@ import nl.pim16aap2.lightkeeper.provisioning.assets.PluginDescriptorValidator;
 import nl.pim16aap2.lightkeeper.provisioning.assets.ResolvedPluginArtifact;
 import nl.pim16aap2.lightkeeper.provisioning.assets.ServerAssetInstaller;
 import nl.pim16aap2.lightkeeper.provisioning.assets.WorldInputSpec;
+import nl.pim16aap2.lightkeeper.provisioning.serverprovider.PaperServerProvider;
+import nl.pim16aap2.lightkeeper.provisioning.serverprovider.ServerProvider;
+import nl.pim16aap2.lightkeeper.provisioning.serverprovider.SpigotServerProvider;
 import nl.pim16aap2.lightkeeper.provisioning.util.CacheKeyUtil;
 import nl.pim16aap2.lightkeeper.provisioning.util.FileUtil;
 import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeDiscovery;
@@ -649,7 +649,7 @@ public class PrepareServerMojo extends AbstractMojo
             runtimeProtocolVersion
         );
         return new PrepareServerResolvedServerSetup(
-            new PaperServerProvider(getLog(), serverSpecification, paperBuildMetadata),
+            new PaperServerProvider(PROVISIONING_LOG, serverSpecification, paperBuildMetadata),
             paperBuildMetadata.minecraftVersion(),
             paperBuildMetadata.buildId(),
             cacheKey,
@@ -687,7 +687,7 @@ public class PrepareServerMojo extends AbstractMojo
             runtimeProtocolVersion
         );
         return new PrepareServerResolvedServerSetup(
-            new SpigotServerProvider(getLog(), serverSpecification, spigotBuildMetadata),
+            new SpigotServerProvider(PROVISIONING_LOG, serverSpecification, spigotBuildMetadata),
             spigotBuildMetadata.minecraftVersion(),
             0L,
             cacheKey,

@@ -1,7 +1,6 @@
-package nl.pim16aap2.lightkeeper.maven.serverprovider;
+package nl.pim16aap2.lightkeeper.provisioning.serverprovider;
 
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.logging.Log;
+import nl.pim16aap2.lightkeeper.provisioning.ProvisioningException;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -28,11 +27,11 @@ final class TargetServerPropertiesConfigurer
      *     Path to target {@code server.properties}.
      * @param port
      *     Runtime port to apply.
-     * @throws MojoExecutionException
+     * @throws ProvisioningException
      *     If reading or writing properties fails.
      */
-    static void rewriteWithRuntimePort(Log log, Path targetServerPropertiesFile, int port)
-        throws MojoExecutionException
+    static void rewriteWithRuntimePort(System.Logger log, Path targetServerPropertiesFile, int port)
+        throws ProvisioningException
     {
         final List<String> lines;
         try
@@ -41,7 +40,7 @@ final class TargetServerPropertiesConfigurer
         }
         catch (IOException exception)
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Failed to read target server properties '%s'."
                     .formatted(targetServerPropertiesFile),
                 exception
@@ -79,13 +78,16 @@ final class TargetServerPropertiesConfigurer
         }
         catch (IOException exception)
         {
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Failed to write updated target server properties '%s'."
                     .formatted(targetServerPropertiesFile),
                 exception
             );
         }
 
-        log.info("Assigned target server port %d in '%s'.".formatted(port, targetServerPropertiesFile));
+        log.log(
+            System.Logger.Level.INFO,
+            "Assigned target server port %d in '%s'.".formatted(port, targetServerPropertiesFile)
+        );
     }
 }

@@ -1,9 +1,7 @@
-package nl.pim16aap2.lightkeeper.maven.serverprovider;
+package nl.pim16aap2.lightkeeper.provisioning.serverprovider;
 
+import nl.pim16aap2.lightkeeper.provisioning.ProvisioningException;
 import nl.pim16aap2.lightkeeper.provisioning.ServerSpecification;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.logging.Log;
-import org.apache.maven.plugin.logging.SystemStreamLog;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -217,7 +215,7 @@ class ServerProviderTest
 
         // execute + verify
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> provider.downloadFileForTests(source, target))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("Failed to download file");
     }
 
@@ -232,7 +230,7 @@ class ServerProviderTest
 
         // execute + verify
         assertThatThrownBy(provider::acceptEulaForTests)
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("Failed to create EULA");
     }
 
@@ -247,7 +245,7 @@ class ServerProviderTest
 
         // execute + verify
         assertThatThrownBy(() -> provider.writeServerPropertiesForTests("motd=test"))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("Failed to write server properties");
     }
 
@@ -330,7 +328,7 @@ class ServerProviderTest
 
     private static TestServerProvider createProvider(Path tempDirectory, int reservedPort)
     {
-        final Log log = new SystemStreamLog();
+        final System.Logger log = System.getLogger("LightKeeper.Tests");
         final ServerSpecification specification = new ServerSpecification(
             "1.21.11",
             tempDirectory.resolve("jars"),
@@ -363,7 +361,7 @@ class ServerProviderTest
     {
         private final int reservedPort;
 
-        private TestServerProvider(Log log, ServerSpecification serverSpecification, int reservedPort)
+        private TestServerProvider(System.Logger log, ServerSpecification serverSpecification, int reservedPort)
         {
             super(log, "test", serverSpecification);
             this.reservedPort = reservedPort;
@@ -377,7 +375,7 @@ class ServerProviderTest
 
         @Override
         protected void createBaseServer()
-            throws MojoExecutionException
+            throws ProvisioningException
         {
             throw new UnsupportedOperationException("Not used in this test.");
         }
@@ -389,13 +387,13 @@ class ServerProviderTest
         }
 
         private String createDefaultServerPropertiesForTests()
-            throws MojoExecutionException
+            throws ProvisioningException
         {
             return createDefaultServerProperties();
         }
 
         private void configureSpigotWatchdogTimeoutForTests()
-            throws MojoExecutionException
+            throws ProvisioningException
         {
             configureSpigotWatchdogTimeout();
         }
@@ -406,13 +404,13 @@ class ServerProviderTest
         }
 
         private void acceptEulaForTests()
-            throws MojoExecutionException
+            throws ProvisioningException
         {
             acceptEula();
         }
 
         private void writeServerPropertiesForTests(String properties)
-            throws MojoExecutionException
+            throws ProvisioningException
         {
             writeServerProperties(properties);
         }
@@ -448,19 +446,19 @@ class ServerProviderTest
         }
 
         private void copyJarFromCacheToBaseServerForTests()
-            throws MojoExecutionException
+            throws ProvisioningException
         {
             copyJarFromCacheToBaseServer();
         }
 
         private void cleanTransientFilesForRetryForTests()
-            throws MojoExecutionException
+            throws ProvisioningException
         {
             cleanTransientFilesForRetry();
         }
 
         private void downloadFileForTests(String url, Path targetFile)
-            throws MojoExecutionException
+            throws ProvisioningException
         {
             downloadFile(url, targetFile);
         }
@@ -477,7 +475,7 @@ class ServerProviderTest
         }
 
         private void rewriteTargetServerPropertiesWithReservedPortForTests()
-            throws MojoExecutionException
+            throws ProvisioningException
         {
             rewriteTargetServerPropertiesWithReservedPort();
         }

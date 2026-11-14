@@ -1,6 +1,6 @@
 package nl.pim16aap2.lightkeeper.maven.mojo.prepareserver;
 
-import nl.pim16aap2.lightkeeper.maven.serverprovider.ServerProvider;
+import nl.pim16aap2.lightkeeper.provisioning.serverprovider.ServerProvider;
 
 import java.nio.file.Path;
 

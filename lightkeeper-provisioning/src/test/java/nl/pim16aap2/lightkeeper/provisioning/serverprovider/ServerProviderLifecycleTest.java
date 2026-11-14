@@ -1,11 +1,9 @@
-package nl.pim16aap2.lightkeeper.maven.serverprovider;
+package nl.pim16aap2.lightkeeper.provisioning.serverprovider;
 
 import nl.pim16aap2.lightkeeper.provisioning.LightkeeperEmbeddedAgent;
+import nl.pim16aap2.lightkeeper.provisioning.ProvisioningException;
 import nl.pim16aap2.lightkeeper.provisioning.ServerSpecification;
 import nl.pim16aap2.lightkeeper.provisioning.util.HashUtil;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.logging.Log;
-import org.apache.maven.plugin.logging.SystemStreamLog;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -56,7 +54,7 @@ class ServerProviderLifecycleTest
 
         // execute + verify
         assertThatThrownBy(provider::prepareServer)
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("hash mismatch");
     }
 
@@ -182,7 +180,7 @@ class ServerProviderLifecycleTest
         String cacheKey,
         PortSupplier portSupplier)
     {
-        final Log log = new SystemStreamLog();
+        final System.Logger log = System.getLogger("LightKeeper.Tests");
         final ServerSpecification specification = new ServerSpecification(
             "1.21.11",
             tempDirectory.resolve("jars"),
@@ -230,7 +228,7 @@ class ServerProviderLifecycleTest
         {
             provider.prepareServer();
         }
-        catch (MojoExecutionException exception)
+        catch (ProvisioningException exception)
         {
             throw new IllegalStateException("Failed to prepare server in parallel test.", exception);
         }
@@ -257,7 +255,7 @@ class ServerProviderLifecycleTest
         private int createBaseServerInvocations;
         private final PortSupplier portSupplier;
 
-        private LifecycleServerProvider(Log log, ServerSpecification serverSpecification, PortSupplier portSupplier)
+        private LifecycleServerProvider(System.Logger log, ServerSpecification serverSpecification, PortSupplier portSupplier)
         {
             super(log, "test", serverSpecification);
             this.portSupplier = portSupplier;
@@ -265,7 +263,7 @@ class ServerProviderLifecycleTest
 
         @Override
         protected void createBaseServerJar()
-            throws MojoExecutionException
+            throws ProvisioningException
         {
             createBaseServerJarInvocations++;
             try
@@ -275,13 +273,13 @@ class ServerProviderLifecycleTest
             }
             catch (IOException exception)
             {
-                throw new MojoExecutionException("Failed to create cached jar in test.", exception);
+                throw new ProvisioningException("Failed to create cached jar in test.", exception);
             }
         }
 
         @Override
         protected void createBaseServer()
-            throws MojoExecutionException
+            throws ProvisioningException
         {
             createBaseServerInvocations++;
             acceptEula();
@@ -310,7 +308,7 @@ class ServerProviderLifecycleTest
         }
 
         private void configureSpigotWatchdogTimeoutForTests()
-            throws MojoExecutionException
+            throws ProvisioningException
         {
             configureSpigotWatchdogTimeout();
         }
@@ -322,7 +320,7 @@ class ServerProviderLifecycleTest
 
         @Override
         protected int reserveTargetServerPort()
-            throws MojoExecutionException
+            throws ProvisioningException
         {
             return portSupplier.getAsInt();
         }
@@ -332,6 +330,6 @@ class ServerProviderLifecycleTest
     private interface PortSupplier
     {
         int getAsInt()
-            throws MojoExecutionException;
+            throws ProvisioningException;
     }
 }
