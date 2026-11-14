@@ -2,7 +2,9 @@ package nl.pim16aap2.lightkeeper.runtime;
 
 import org.jspecify.annotations.Nullable;
 
+import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Runtime manifest written by {@code prepare-server}.
@@ -61,6 +63,60 @@ public record RuntimeManifest(
     public RuntimeManifest
     {
         provisionedWorlds = provisionedWorlds == null ? List.of() : List.copyOf(provisionedWorlds);
+    }
+
+    /**
+     * Relocates a complete prepared server into a private snapshot or session directory.
+     *
+     * @param destination
+     *     New server directory containing copies of all prepared files.
+     * @param socketPath
+     *     Socket allocated to the new runtime.
+     * @param authToken
+     *     Handshake token allocated to the new runtime.
+     * @return A manifest referring exclusively to files within the destination.
+     * @throws IllegalArgumentException
+     *     If a server or agent artifact is outside the prepared server directory.
+     */
+    public RuntimeManifest relocate(Path destination, Path socketPath, String authToken)
+    {
+        Objects.requireNonNull(destination, "destination may not be null.");
+        Objects.requireNonNull(socketPath, "socketPath may not be null.");
+        if (Objects.requireNonNull(authToken, "authToken may not be null.").isBlank())
+        {
+            throw new IllegalArgumentException("authToken may not be blank.");
+        }
+        final Path original = Path.of(serverDirectory).toAbsolutePath().normalize();
+        final Path relocated = destination.toAbsolutePath().normalize();
+        return new RuntimeManifest(
+            serverType,
+            serverVersion,
+            paperBuildId,
+            cacheKey,
+            relocated.toString(),
+            relocateArtifact(original, relocated, serverJar),
+            memoryMb,
+            socketPath.toAbsolutePath().normalize().toString(),
+            authToken,
+            agentJar == null ? null : relocateArtifact(original, relocated, agentJar),
+            agentJarSha256,
+            runtimeProtocolVersion,
+            agentCacheIdentity,
+            extraJvmArgs,
+            provisionedWorlds
+        );
+    }
+
+    private static String relocateArtifact(Path original, Path destination, String artifact)
+    {
+        final Path path = Path.of(artifact).toAbsolutePath().normalize();
+        if (!path.startsWith(original) || path.equals(original))
+        {
+            throw new IllegalArgumentException(
+                "Prepared artifact '%s' must be inside server directory '%s'.".formatted(path, original)
+            );
+        }
+        return destination.resolve(original.relativize(path)).toString();
     }
 
     /**

@@ -6,6 +6,7 @@ import nl.pim16aap2.lightkeeper.provisioning.util.FileUtil;
 import nl.pim16aap2.lightkeeper.provisioning.util.HashUtil;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestWriter;
+import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
 import nl.pim16aap2.lightkeeper.runtime.UserOnlyDirectory;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
@@ -27,7 +28,6 @@ import java.util.regex.Pattern;
  */
 final class PrepareServerRuntimeSupport
 {
-    private static final int UNIX_SOCKET_PATH_MAX_BYTES = 100;
     private static final Pattern UNRESOLVED_PLACEHOLDER_PATTERN = Pattern.compile("\\$\\{[^}]+}");
     private final Log log;
     private final Path defaultSocketDirectory;
@@ -250,12 +250,12 @@ final class PrepareServerRuntimeSupport
         throws MojoExecutionException
     {
         final int pathBytes = socketPath.toString().getBytes(StandardCharsets.UTF_8).length;
-        if (pathBytes <= UNIX_SOCKET_PATH_MAX_BYTES)
+        if (pathBytes <= RuntimeProtocol.UNIX_SOCKET_PATH_MAX_BYTES)
             return;
 
         throw new MojoExecutionException(
             "Agent socket path '%s' is %d bytes long, exceeding the AF_UNIX limit of %d bytes. %s"
-                .formatted(socketPath, pathBytes, UNIX_SOCKET_PATH_MAX_BYTES, remedy)
+                .formatted(socketPath, pathBytes, RuntimeProtocol.UNIX_SOCKET_PATH_MAX_BYTES, remedy)
         );
     }
 }
