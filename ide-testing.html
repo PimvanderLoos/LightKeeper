@@ -85,19 +85,30 @@ mvn -pl lightkeeper-integration-tests \
         <p>After plugin changes, package or install the plugin and repeat preparation. Rebuild the LightKeeper
             agent after changes requiring new agent/protocol behavior. Matching packaged inputs reuse the runtime;
             changed hashes or launch settings create a new preparation.</p>
-        <p>Worlds, plugin data, and other server state persist across runs. To start fresh:</p>
+        <p>Each discovered test class gets a private server session copied from immutable prepared inputs. Independent classes
+            and launches start clean. To recreate the prepared inputs:</p>
         <p>Run this from the test module's directory, or retain the same <code>-pl</code>/<code>-f</code> selection
             and execution ID used during initial setup:</p>
         <pre><code>mvn pre-integration-test -Dlightkeeper.ide=true -Dlightkeeper.ide.refresh=true</code></pre>
-        <p>Refresh creates a new preparation and switches later launches atomically. It never changes a runtime
-            held by an active test. Old preparations are not pruned automatically. For a complete reset, close
+        <p>Refresh creates a new preparation and switches later launches atomically. Active tests keep their private server copies. Old preparations are not pruned automatically. For a complete reset, close
             running tests, move the module's <code>.lightkeeper/</code> directory to trash, and repeat setup.</p>
+    </section>
+    <section class="panel">
+        <h2>Session lifecycle</h2>
+        <p>Ordinary methods share one server process within their class. <code>@FreshServer</code> creates a new process
+            against the same class session, preserving world and plugin data. An explicit
+            <code>framework.server().restart()</code> preserves that data too.</p>
+        <p>Sessions have independent copied JARs, sockets, tokens, and runtime ports. The preparation lock is released
+            before Minecraft starts. Successful sessions under <code>.lightkeeper/sessions/</code> are removed after
+            their processes stop; failed sessions retain their files for diagnosis. Maven's selected Java executable
+            and extra JVM arguments also apply to these processes.</p>
     </section>
     <section class="panel">
         <h2>Overrides and validation</h2>
         <p><code>-Dlightkeeper.runtimeManifestPath=/absolute/path/runtime-manifest.json</code> overrides discovery.
             An invalid explicit path fails immediately; it does not fall back. <code>Lightkeeper.start(Path)</code>
-            follows the same contract. For custom IDE class-output layouts, use the explicit property.</p>
+            follows the same contract. Explicit manifests retain their existing server directory and support deliberate state
+            reuse. For custom IDE class-output layouts, use the explicit property.</p>
         <p>Preparation fingerprints resolved server metadata, JVM settings, the embedded agent, deployed plugins,
             world templates, and overlays. Launch checks ownership and durable files. It cannot detect unbuilt
             edits or new remote snapshots until Maven resolves those inputs during another preparation.</p>
@@ -114,8 +125,8 @@ mvn -pl lightkeeper-integration-tests \
             or load that child's execution configuration. Moving the plugin declaration into the root POM also does
             not make preparation automatically choose the test module.</p>
         <p>Missing or corrupt discovery: repeat preparation in the owning module. Moved checkout: repeat setup at
-            the new path. Stale runtime: rebuild packaged inputs, then prepare again. Busy runtime: close the
-            other test/server. Dirty state: use <code>-Dlightkeeper.ide.refresh=true</code>. Missing server cache:
+            the new path. Stale runtime: rebuild packaged inputs, then prepare again. Busy preparation: let the
+            other preparation finish and retry. To recreate prepared inputs, use <code>-Dlightkeeper.ide.refresh=true</code>. Missing server cache:
             repeat preparation to recreate required artifacts.</p>
         <p>Debug framework/JUnit code with your IDE's test debugger. Bukkit/Paper code runs in a separate JVM;
             use the Maven plugin's server JVM debug arguments for it.</p>
