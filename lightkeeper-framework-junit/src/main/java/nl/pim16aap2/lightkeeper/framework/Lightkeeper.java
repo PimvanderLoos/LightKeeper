@@ -1,21 +1,16 @@
 package nl.pim16aap2.lightkeeper.framework;
 
 import nl.pim16aap2.lightkeeper.framework.internal.DefaultLightkeeperFramework;
+import nl.pim16aap2.lightkeeper.framework.internal.NativeMavenPreparation;
+import nl.pim16aap2.lightkeeper.framework.internal.PreparedTestRuntime;
 import nl.pim16aap2.lightkeeper.provisioning.session.PreparedServerSnapshot;
 import nl.pim16aap2.lightkeeper.provisioning.session.ServerSession;
-import nl.pim16aap2.lightkeeper.provisioning.session.ServerSnapshots;
-import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeLock;
 import nl.pim16aap2.lightkeeper.runtime.IdeRuntimePaths;
-import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeSelection;
-import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeValidator;
-import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
-import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestReader;
-import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestValidator;
-import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
+import nl.pim16aap2.lightkeeper.runtime.ModuleTestPlan;
 import org.jspecify.annotations.Nullable;
 
-import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Objects;
 
 /**
  * Factory for creating framework instances from runtime manifests.
@@ -39,7 +34,8 @@ public final class Lightkeeper
     }
 
     /**
-     * Resolves the runtime selected for a test class and starts a private mutable server session.
+     * Packages current production inputs for a test class and starts a private mutable server session.
+     * A live Maven Failsafe run uses its own immutable export without a nested producer build.
      * Explicit manifest properties retain direct control over their server directory.
      *
      * @param testClass
@@ -50,36 +46,17 @@ public final class Lightkeeper
     {
         final LightkeeperRuntimeResolver.ResolvedRuntime resolvedRuntime =
             LightkeeperRuntimeResolver.resolveRuntime(testClass);
-        final @Nullable IdeRuntimeSelection selection = resolvedRuntime.ideSelection();
-        if (selection == null)
+        final @Nullable ModuleTestPlan plan = resolvedRuntime.modulePlan();
+        if (plan == null)
         {
-            return start(resolvedRuntime.manifestPath());
+            return start(Objects.requireNonNull(resolvedRuntime.manifestPath()));
         }
-
-        final PreparedServerSnapshot snapshot = prepareSnapshot(selection);
-        return DefaultLightkeeperFramework.start(createSession(snapshot, selection.moduleDirectory()));
-    }
-
-    static PreparedServerSnapshot prepareSnapshot(IdeRuntimeSelection selection)
-    {
-        try (IdeRuntimeLock ignored = IdeRuntimeLock.acquire(selection.moduleDirectory()))
+        final ServerSession session;
+        try (PreparedTestRuntime runtime = NativeMavenPreparation.prepare(plan))
         {
-            final RuntimeManifest manifest = new RuntimeManifestReader().read(selection.runtimeManifestPath());
-            RuntimeManifestValidator.validateForRuntimeStartup(manifest, RuntimeProtocol.VERSION);
-            IdeRuntimeValidator.validate(selection.discovery(), selection.moduleDirectory(), manifest);
-            final Path metadata = ServerSnapshots.capture(
-                manifest,
-                IdeRuntimePaths.stateDirectory(selection.moduleDirectory()).resolve("snapshots")
-            );
-            return ServerSnapshots.read(metadata);
+            session = createSession(runtime.snapshot(), runtime.moduleDirectory());
         }
-        catch (IOException exception)
-        {
-            throw new IllegalStateException(
-                "Failed to read prepared runtime '" + selection.runtimeManifestPath() + "'.",
-                exception
-            );
-        }
+        return DefaultLightkeeperFramework.start(session);
     }
 
     static ServerSession createSession(PreparedServerSnapshot snapshot, Path moduleDirectory)

@@ -1,17 +1,20 @@
 package nl.pim16aap2.lightkeeper.framework;
 
-import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeDiscovery;
-import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeDiscoveryWriter;
-import nl.pim16aap2.lightkeeper.runtime.IdeRuntimePaths;
+import nl.pim16aap2.lightkeeper.runtime.GeneratedMetadata;
+import nl.pim16aap2.lightkeeper.runtime.MavenBuildContext;
+import nl.pim16aap2.lightkeeper.runtime.ModulePlanPaths;
+import nl.pim16aap2.lightkeeper.runtime.ModuleTestPlan;
+import nl.pim16aap2.lightkeeper.runtime.TestModuleAnchor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 
 class LightkeeperRuntimeResolverTest
 {
@@ -39,7 +42,7 @@ class LightkeeperRuntimeResolverTest
 
         // verify
         assertThat(resolved.manifestPath()).isEqualTo(explicitManifest.toAbsolutePath().normalize());
-        assertThat(resolved.ideSelection()).isNull();
+        assertThat(resolved.modulePlan()).isNull();
     }
 
     @Test
@@ -49,7 +52,7 @@ class LightkeeperRuntimeResolverTest
         // setup
         final Path moduleDirectory = Files.createDirectories(tempDirectory.resolve("module"));
         final Path classOutput = Files.createDirectories(moduleDirectory.resolve("target/test-classes"));
-        writeValidDiscovery(moduleDirectory);
+        writeModulePlan(moduleDirectory, classOutput);
         final Path missingExplicitManifest = tempDirectory.resolve("missing.json");
         System.setProperty(
             LightkeeperRuntimeResolver.RUNTIME_MANIFEST_PROPERTY,
@@ -70,15 +73,15 @@ class LightkeeperRuntimeResolverTest
         // setup
         final Path moduleDirectory = Files.createDirectories(tempDirectory.resolve("module"));
         final Path classOutput = Files.createDirectories(moduleDirectory.resolve("target/test-classes"));
-        final Path manifest = writeValidDiscovery(moduleDirectory);
+        final ModuleTestPlan plan = writeModulePlan(moduleDirectory, classOutput);
 
         // execute
         final LightkeeperRuntimeResolver.ResolvedRuntime resolved =
             LightkeeperRuntimeResolver.resolveFromClassOutput(classOutput);
 
         // verify
-        assertThat(resolved.manifestPath()).isEqualTo(manifest);
-        assertThat(resolved.ideSelection()).isNotNull();
+        assertThat(resolved.manifestPath()).isNull();
+        assertThat(resolved.modulePlan()).isEqualTo(plan);
     }
 
     @Test
@@ -95,29 +98,22 @@ class LightkeeperRuntimeResolverTest
 
         // verify
         assertThat(resolved.manifestPath()).isEqualTo(explicitManifest.toAbsolutePath().normalize());
-        assertThat(resolved.ideSelection()).isNull();
+        assertThat(resolved.modulePlan()).isNull();
     }
 
-    private static Path writeValidDiscovery(Path moduleDirectory)
+    private static ModuleTestPlan writeModulePlan(Path moduleDirectory, Path classOutput)
         throws Exception
     {
-        final Path manifest = IdeRuntimePaths.preparationsDirectory(moduleDirectory)
-            .resolve("fingerprint/runtime-manifest.json")
-            .toAbsolutePath()
-            .normalize();
-        Files.createDirectories(manifest.getParent());
-        Files.writeString(manifest, "{}");
-        new IdeRuntimeDiscoveryWriter().write(
-            new IdeRuntimeDiscovery(
-                IdeRuntimeDiscovery.SCHEMA_VERSION,
-                moduleDirectory.toRealPath().toString(),
-                "prepare-server",
-                "paper",
-                manifest.toString(),
-                "fingerprint"
-            ),
-            IdeRuntimePaths.discoveryFile(moduleDirectory)
+        final Path pom = Files.writeString(moduleDirectory.resolve("pom.xml"), "<project/>");
+        final ModuleTestPlan plan = new ModuleTestPlan(
+            ModuleTestPlan.SCHEMA_VERSION, moduleDirectory.toRealPath().toString(), pom.toString(), pom.toString(),
+            classOutput.toString(), List.of("default"), "default",
+            new MavenBuildContext("mvn", System.getProperty("java.home"), List.of(), List.of(), Map.of(),
+                null, null, null, null)
         );
-        return manifest;
+        GeneratedMetadata.write(plan, ModulePlanPaths.modulePlan(moduleDirectory));
+        GeneratedMetadata.write(new TestModuleAnchor(TestModuleAnchor.SCHEMA_VERSION, plan.moduleDirectory(),
+            plan.classOutputDirectory()), ModulePlanPaths.classOutputAnchor(classOutput));
+        return plan;
     }
 }

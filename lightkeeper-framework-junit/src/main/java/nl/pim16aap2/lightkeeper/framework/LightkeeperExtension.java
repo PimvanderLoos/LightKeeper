@@ -2,9 +2,10 @@ package nl.pim16aap2.lightkeeper.framework;
 
 import nl.pim16aap2.lightkeeper.framework.internal.DefaultLightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.internal.FailureDiagnosticsWriter;
-import nl.pim16aap2.lightkeeper.provisioning.session.PreparedServerSnapshot;
+import nl.pim16aap2.lightkeeper.framework.internal.NativeMavenPreparation;
+import nl.pim16aap2.lightkeeper.framework.internal.PreparedTestRuntime;
 import nl.pim16aap2.lightkeeper.provisioning.session.ServerSession;
-import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeSelection;
+import nl.pim16aap2.lightkeeper.runtime.ModuleTestPlan;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -17,7 +18,9 @@ import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 /**
  * JUnit extension for framework lifecycle management.
@@ -263,19 +266,20 @@ public final class LightkeeperExtension implements
     {
         final LightkeeperRuntimeResolver.ResolvedRuntime resolved =
             LightkeeperRuntimeResolver.resolveRuntime(context.getRequiredTestClass());
-        final @Nullable IdeRuntimeSelection selection = resolved.ideSelection();
-        if (selection == null)
+        final @Nullable ModuleTestPlan plan = resolved.modulePlan();
+        if (plan == null)
         {
-            return Lightkeeper.start(resolved.manifestPath());
+            return Lightkeeper.start(Objects.requireNonNull(resolved.manifestPath()));
         }
-        final PreparedServerSnapshot snapshot = context.getRoot().getStore(NAMESPACE).computeIfAbsent(
-            selection.discovery(),
-            ignored -> Lightkeeper.prepareSnapshot(selection),
-            PreparedServerSnapshot.class
+        final PreparedTestRuntime runtime = context.getRoot().getStore(NAMESPACE).computeIfAbsent(
+            List.of("prepared-runtime", plan.moduleDirectory(),
+                System.getProperty(NativeMavenPreparation.EXECUTION_PROPERTY, "")),
+            ignored -> NativeMavenPreparation.prepare(plan),
+            PreparedTestRuntime.class
         );
         final ServerSession session = getClassStore(context).computeIfAbsent(
             KEY_SESSION,
-            ignored -> Lightkeeper.createSession(snapshot, selection.moduleDirectory()),
+            ignored -> Lightkeeper.createSession(runtime.snapshot(), runtime.moduleDirectory()),
             ServerSession.class
         );
         try
