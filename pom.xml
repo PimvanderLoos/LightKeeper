@@ -16,6 +16,7 @@
         <module>lightkeeper-agent-spigot</module>
         <module>lightkeeper-spigot-test-plugin</module>
         <module>lightkeeper-framework-junit</module>
+        <module>lightkeeper-junit-starter</module>
         <module>lightkeeper-maven-plugin</module>
         <module>lightkeeper-integration-tests</module>
         <module>lightkeeper-report-aggregate</module>

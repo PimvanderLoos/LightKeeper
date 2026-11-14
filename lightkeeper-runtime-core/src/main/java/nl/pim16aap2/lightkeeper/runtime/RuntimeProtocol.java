@@ -27,6 +27,9 @@ public final class RuntimeProtocol
      */
     public static final String SUPPORTED_MINECRAFT_VERSION = loadSupportedMinecraftVersion();
 
+    /** Version of the LightKeeper distribution, independent of the consumer project's version. */
+    public static final String LIGHTKEEPER_VERSION = loadMetadata("lightkeeperVersion");
+
     /**
      * Default maximum time, in seconds, the agent waits for a scheduled synchronous server operation before reporting
      * {@code TIMEOUT}. Shared so the client can derive a strictly larger response timeout.
@@ -67,6 +70,11 @@ public final class RuntimeProtocol
 
     private static String loadSupportedMinecraftVersion()
     {
+        return loadMetadata(SUPPORTED_MINECRAFT_VERSION_KEY);
+    }
+
+    private static String loadMetadata(String key)
+    {
         final Properties properties = new Properties();
         try (InputStream inputStream = RuntimeProtocol.class.getResourceAsStream(METADATA_RESOURCE))
         {
@@ -81,12 +89,12 @@ public final class RuntimeProtocol
                 exception);
         }
 
-        final String supportedMinecraftVersion = properties.getProperty(SUPPORTED_MINECRAFT_VERSION_KEY, "").trim();
+        final String supportedMinecraftVersion = properties.getProperty(key, "").trim();
         if (supportedMinecraftVersion.isEmpty())
         {
             throw new IllegalStateException(
                 "Runtime metadata resource '%s' does not define '%s'."
-                    .formatted(METADATA_RESOURCE, SUPPORTED_MINECRAFT_VERSION_KEY)
+                    .formatted(METADATA_RESOURCE, key)
             );
         }
         return supportedMinecraftVersion;
