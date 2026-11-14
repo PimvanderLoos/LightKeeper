@@ -52,11 +52,11 @@
             </article>
             <article class="flow-step">
                 <h3>4. Runtime Manifest Emission</h3>
-                <p>Manifest captures server path, jar path, UDS socket path, auth token, and preloaded world metadata.</p>
+                <p>Manifest captures server path, jar path, Java executable, JVM arguments, UDS socket path, auth token, and preloaded world metadata.</p>
             </article>
             <article class="flow-step">
                 <h3>5. Test Execution</h3>
-                <p><code>LightkeeperExtension</code> starts framework sessions from runtime manifest and injects <code>ILightkeeperFramework</code>.</p>
+                <p><code>LightkeeperExtension</code> shares prepared inputs within the JUnit launch and creates a private mutable session per class. Processes restart within that session; independent classes receive independent copies. Explicit manifests retain direct directory control.</p>
             </article>
             <article class="flow-step">
                 <h3>6. Optional Cleanup</h3>
@@ -69,6 +69,7 @@
         <h2>Module responsibilities</h2>
         <ul class="checklist">
             <li><code>lightkeeper-maven-plugin</code>: provisioning, caching, runtime manifest creation, cleanup</li>
+            <li><code>lightkeeper-provisioning</code>: shared providers, downloads, assets, embedded agent, immutable snapshots, and private session copies</li>
             <li><code>lightkeeper-runtime-core</code>: runtime manifests and cross-process constants</li>
             <li><code>lightkeeper-agent-spigot</code>: in-server command execution and data collection</li>
             <li><code>lightkeeper-framework-junit</code>: user-facing handles, extension lifecycle, assertions</li>

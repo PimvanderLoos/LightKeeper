@@ -42,6 +42,14 @@
     </section>
 
     <section class="panel">
+        <h2>Do tests share their server state?</h2>
+        <p>Discovered runs use a private session per class. Ordinary methods share its process;
+            <code>@FreshServer</code> restarts the process while keeping the class's world and plugin data.
+            Other classes and later launches start from clean prepared inputs. Explicit manifest paths retain
+            their server directory for deliberate reuse. Failed private sessions are kept for diagnosis.</p>
+    </section>
+
+    <section class="panel">
         <h2>Where are integration-test logs?</h2>
         <p>See Failsafe output and summaries under:</p>
         <pre><code>lightkeeper-integration-tests/target/failsafe-reports/</code></pre>
