@@ -115,6 +115,6 @@ public final class IdeRuntimeValidator
     private static String invalidMessage(String cause)
     {
         return "IDE runtime is stale or invalid: " + cause + ". Rebuild changed artifacts and rerun "
-            + "'mvn lightkeeper:prepare-server@<execution-id> -Dlightkeeper.ide=true'.";
+            + "'mvn pre-integration-test -Dlightkeeper.ide=true' in the owning module.";
     }
 }

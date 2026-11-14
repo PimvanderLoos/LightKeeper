@@ -10,16 +10,27 @@ Prerequisites are Java 21 or newer, Maven 3.9 or newer, Linux or macOS for Unix-
 LightKeeper version containing IDE test setup. Keep the existing `prepare-server` execution and framework dependency
 from the main README.
 
-1. Package or install every locally developed plugin referenced by the LightKeeper Maven configuration.
-2. Run the configured preparation execution from the module or reactor that owns the tests:
+1. Keep the producer dependency and target selector from the main README when tests live in a separate module.
+2. Run the preparation lifecycle in the module that owns the tests; this packages the current Maven artifact first:
 
    ```sh
-   mvn lightkeeper:prepare-server@prepare-server -Dlightkeeper.ide=true
+   mvn pre-integration-test -Dlightkeeper.ide=true
    ```
 
 3. Confirm the output says `Created IDE test setup` or `Reused IDE test setup` and names the expected module and
    platform. It deliberately does not print the runtime authentication token.
 4. Click the JUnit gutter button beside a LightKeeper test class or method.
+
+For a separate test module, invoke the lifecycle from the reactor root:
+
+```sh
+mvn -pl :my-plugin-e2e -am pre-integration-test -Dlightkeeper.ide=true
+```
+
+Unlike appending a direct preparation goal with `-am`, the lifecycle executes LK only where its execution is bound.
+A direct goal by itself cannot discover a replaced main artifact from a previous Maven invocation; package and
+preparation must share the current Maven artifact model. Advanced named executions remain supported for explicit
+legacy fixtures and platform selection.
 
 For plugin configuration inherited from a parent POM, invoke the goal for the child module containing the test output.
 In a multi-module checkout, each child module owns its own `.lightkeeper/ide/` discovery record; LightKeeper never
@@ -61,7 +72,7 @@ change.
 To discard persistent world/plugin state without changing inputs, request a fresh runtime:
 
 ```sh
-mvn lightkeeper:prepare-server@prepare-server -Dlightkeeper.ide=true -Dlightkeeper.ide.refresh=true
+mvn pre-integration-test -Dlightkeeper.ide=true -Dlightkeeper.ide.refresh=true
 ```
 
 Refresh creates a new preparation and atomically switches later launches to it. It never mutates a runtime held by a
