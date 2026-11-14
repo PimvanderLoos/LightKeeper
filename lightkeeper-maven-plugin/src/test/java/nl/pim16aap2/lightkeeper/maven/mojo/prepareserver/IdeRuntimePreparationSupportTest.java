@@ -1,8 +1,8 @@
 package nl.pim16aap2.lightkeeper.maven.mojo.prepareserver;
 
-import nl.pim16aap2.lightkeeper.maven.provisioning.ResolvedPluginArtifact;
-import nl.pim16aap2.lightkeeper.maven.provisioning.WorldInputSpec;
-import nl.pim16aap2.lightkeeper.maven.serverprovider.ServerProvider;
+import nl.pim16aap2.lightkeeper.provisioning.assets.ResolvedPluginArtifact;
+import nl.pim16aap2.lightkeeper.provisioning.assets.WorldInputSpec;
+import nl.pim16aap2.lightkeeper.provisioning.serverprovider.ServerProvider;
 import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeDiscovery;
 import nl.pim16aap2.lightkeeper.runtime.IdeRuntimePaths;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;

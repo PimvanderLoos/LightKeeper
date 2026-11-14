@@ -1,0 +1,260 @@
+package nl.pim16aap2.lightkeeper.provisioning;
+
+import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+
+import java.io.IOException;
+import java.lang.System.Logger;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.regex.Pattern;
+
+/**
+ * Small client for PaperMC Fill v3.
+ */
+public final class PaperDownloadsClient
+{
+    private static final URI PROJECT_URI = URI.create("https://fill.papermc.io/v3/projects/paper");
+    private static final String STABLE_CHANNEL = "STABLE";
+    private static final String SERVER_DOWNLOAD_KEY = "server:default";
+    private static final String LATEST_SUPPORTED = "latest-supported";
+    private static final Pattern URL_HASH_PATTERN =
+        Pattern.compile(".*/v1/objects/(?<hash>[a-fA-F0-9]{64})/.*");
+
+    private final Logger log;
+    private final String userAgent;
+    private final HttpClient httpClient;
+    private final ObjectMapper objectMapper;
+
+    /**
+     * Creates a client for querying Paper metadata and downloads.
+     *
+     * @param log
+     *     Diagnostic log sink.
+     * @param userAgent
+     *     HTTP user-agent header value.
+     */
+    public PaperDownloadsClient(Logger log, String userAgent)
+    {
+        this(
+            log,
+            userAgent,
+            HttpClient.newBuilder()
+                .followRedirects(HttpClient.Redirect.NORMAL)
+                .connectTimeout(Duration.ofSeconds(15))
+                .build(),
+            JsonMapper.builder()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build()
+        );
+    }
+
+    PaperDownloadsClient(Logger log, String userAgent, HttpClient httpClient, ObjectMapper objectMapper)
+    {
+        this.log = Objects.requireNonNull(log, "log");
+        this.userAgent = validateUserAgent(userAgent);
+        this.httpClient = Objects.requireNonNull(httpClient, "httpClient");
+        this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper");
+    }
+
+    /**
+     * Resolves a stable Paper build for a requested version or the {@code latest-supported} alias.
+     *
+     * @param requestedVersion
+     *     Requested Minecraft/Paper version or {@code latest-supported}.
+     * @return Resolved Paper build metadata.
+     * @throws ProvisioningException
+     *     When metadata resolution fails.
+     */
+    public PaperBuildMetadata resolveBuild(String requestedVersion)
+        throws ProvisioningException
+    {
+        final String resolvedVersion = resolveSupportedMinecraftVersion(requestedVersion);
+
+        return resolveStableBuildForVersion(resolvedVersion)
+            .orElseThrow(() -> new ProvisioningException(
+                "Could not find a stable Paper build for version '%s'.".formatted(resolvedVersion))
+            );
+    }
+
+    private static String resolveSupportedMinecraftVersion(String requestedVersion)
+        throws ProvisioningException
+    {
+        final String normalizedRequestedVersion = Objects.requireNonNull(requestedVersion, "requestedVersion")
+            .trim();
+        if (normalizedRequestedVersion.isEmpty())
+            throw new IllegalArgumentException("requestedVersion may not be blank.");
+
+        if (normalizedRequestedVersion.equalsIgnoreCase(LATEST_SUPPORTED))
+            return RuntimeProtocol.SUPPORTED_MINECRAFT_VERSION;
+
+        if (normalizedRequestedVersion.equals(RuntimeProtocol.SUPPORTED_MINECRAFT_VERSION))
+            return normalizedRequestedVersion;
+
+        throw new ProvisioningException(
+            "Unsupported Paper version '%s'. This LightKeeper build supports Minecraft version '%s'."
+                .formatted(normalizedRequestedVersion, RuntimeProtocol.SUPPORTED_MINECRAFT_VERSION)
+        );
+    }
+
+    private Optional<PaperBuildMetadata> resolveStableBuildForVersion(String minecraftVersion)
+        throws ProvisioningException
+    {
+        final URI buildsUri = URI.create("%s/versions/%s/builds".formatted(PROJECT_URI, minecraftVersion));
+        final JsonNode root = fetchJson(buildsUri);
+        if (!root.isArray())
+            throw new ProvisioningException(
+                "Expected Fill builds endpoint to return an array for version '%s'."
+                    .formatted(minecraftVersion)
+            );
+
+        final List<BuildResponse> buildResponses = parseBuildResponses(root);
+        for (final BuildResponse buildResponse : buildResponses)
+        {
+            if (!STABLE_CHANNEL.equalsIgnoreCase(buildResponse.channel()))
+                continue;
+
+            final DownloadResponse downloadResponse = buildResponse.downloads().get(SERVER_DOWNLOAD_KEY);
+            if (downloadResponse == null || downloadResponse.url() == null || downloadResponse.url().isBlank())
+                continue;
+
+            final URI downloadUri = URI.create(downloadResponse.url());
+            final String sha256 = resolveSha256(downloadResponse, downloadUri)
+                .orElseThrow(() -> new ProvisioningException(
+                    "Unable to resolve SHA-256 checksum for Paper build '%d' (%s)."
+                        .formatted(buildResponse.id(), minecraftVersion)
+                ));
+
+            log.log(System.Logger.Level.INFO,
+                "Resolved stable Paper build %d for version %s."
+                    .formatted(buildResponse.id(), minecraftVersion)
+            );
+
+            return Optional.of(
+                new PaperBuildMetadata(
+                    minecraftVersion,
+                    buildResponse.id(),
+                    downloadUri,
+                    sha256.toLowerCase(Locale.ROOT)
+                )
+            );
+        }
+
+        return Optional.empty();
+    }
+
+    private Optional<String> resolveSha256(DownloadResponse downloadResponse, URI downloadUri)
+    {
+        if (downloadResponse.checksums() != null && downloadResponse.checksums().sha256() != null)
+            return Optional.of(downloadResponse.checksums().sha256());
+
+        final var matcher = URL_HASH_PATTERN.matcher(downloadUri.toString());
+        if (matcher.matches())
+            return Optional.of(matcher.group("hash"));
+
+        return Optional.empty();
+    }
+
+    private List<BuildResponse> parseBuildResponses(JsonNode root)
+        throws ProvisioningException
+    {
+        try
+        {
+            return objectMapper.treeToValue(root, new TypeReference<>()
+            {
+            });
+        }
+        catch (JacksonException exception)
+        {
+            throw new ProvisioningException("Failed to parse Fill builds response.", exception);
+        }
+    }
+
+    private JsonNode fetchJson(URI uri)
+        throws ProvisioningException
+    {
+        final HttpRequest request = HttpRequest.newBuilder(uri)
+            .header("User-Agent", userAgent)
+            .header("Accept", "application/json")
+            .timeout(Duration.ofSeconds(30))
+            .GET()
+            .build();
+
+        final HttpResponse<String> response;
+        try
+        {
+            response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        }
+        catch (InterruptedException exception)
+        {
+            Thread.currentThread().interrupt();
+            throw new ProvisioningException("Failed to query Fill API at '%s'.".formatted(uri), exception);
+        }
+        catch (IOException exception)
+        {
+            throw new ProvisioningException("Failed to query Fill API at '%s'.".formatted(uri), exception);
+        }
+
+        if (response.statusCode() < 200 || response.statusCode() >= 300)
+            throw new ProvisioningException(
+                "Fill API request to '%s' failed with status %d."
+                    .formatted(uri, response.statusCode())
+            );
+
+        try
+        {
+            final JsonNode root = objectMapper.readTree(response.body());
+            if (root.isObject() && root.has("ok") && !root.path("ok").asBoolean(true))
+                throw new ProvisioningException(
+                    "Fill API request to '%s' failed: %s".formatted(uri, root.path("message").asString("unknown error"))
+                );
+            return root;
+        }
+        catch (JacksonException exception)
+        {
+            throw new ProvisioningException("Failed to parse Fill API response from '%s'.".formatted(uri), exception);
+        }
+    }
+
+    private static String validateUserAgent(String userAgent)
+    {
+        if (userAgent == null || userAgent.isBlank())
+            throw new IllegalArgumentException("A non-empty Fill API User-Agent is required.");
+        return userAgent;
+    }
+
+    private record BuildResponse(
+        long id,
+        String channel,
+        Map<String, DownloadResponse> downloads
+    )
+    {
+    }
+
+    private record DownloadResponse(
+        String name,
+        String url,
+        Checksums checksums
+    )
+    {
+    }
+
+    private record Checksums(
+        String sha256
+    )
+    {
+    }
+}

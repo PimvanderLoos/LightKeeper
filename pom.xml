@@ -14,6 +14,7 @@
         <module>lightkeeper-protocol</module>
         <module>lightkeeper-nms-parent</module>
         <module>lightkeeper-agent-spigot</module>
+        <module>lightkeeper-provisioning</module>
         <module>lightkeeper-spigot-test-plugin</module>
         <module>lightkeeper-framework-junit</module>
         <module>lightkeeper-junit-starter</module>

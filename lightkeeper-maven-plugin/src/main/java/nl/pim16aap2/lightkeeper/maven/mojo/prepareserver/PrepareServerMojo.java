@@ -2,23 +2,24 @@ package nl.pim16aap2.lightkeeper.maven.mojo.prepareserver;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import nl.pim16aap2.lightkeeper.maven.LightkeeperEmbeddedAgent;
-import nl.pim16aap2.lightkeeper.maven.PaperBuildMetadata;
-import nl.pim16aap2.lightkeeper.maven.PaperDownloadsClient;
-import nl.pim16aap2.lightkeeper.maven.ServerSpecification;
-import nl.pim16aap2.lightkeeper.maven.SpigotBuildMetadata;
-import nl.pim16aap2.lightkeeper.maven.SpigotDownloadsClient;
-import nl.pim16aap2.lightkeeper.maven.provisioning.LoopbackLoginGuard;
-import nl.pim16aap2.lightkeeper.maven.provisioning.PluginArtifactSpec;
-import nl.pim16aap2.lightkeeper.maven.provisioning.PluginDescriptorValidator;
-import nl.pim16aap2.lightkeeper.maven.provisioning.ResolvedPluginArtifact;
-import nl.pim16aap2.lightkeeper.maven.provisioning.ServerAssetInstaller;
-import nl.pim16aap2.lightkeeper.maven.provisioning.WorldInputSpec;
-import nl.pim16aap2.lightkeeper.maven.serverprovider.PaperServerProvider;
-import nl.pim16aap2.lightkeeper.maven.serverprovider.ServerProvider;
-import nl.pim16aap2.lightkeeper.maven.serverprovider.SpigotServerProvider;
-import nl.pim16aap2.lightkeeper.maven.util.CacheKeyUtil;
-import nl.pim16aap2.lightkeeper.maven.util.FileUtil;
+import nl.pim16aap2.lightkeeper.provisioning.LightkeeperEmbeddedAgent;
+import nl.pim16aap2.lightkeeper.provisioning.PaperBuildMetadata;
+import nl.pim16aap2.lightkeeper.provisioning.PaperDownloadsClient;
+import nl.pim16aap2.lightkeeper.provisioning.ProvisioningException;
+import nl.pim16aap2.lightkeeper.provisioning.ServerSpecification;
+import nl.pim16aap2.lightkeeper.provisioning.SpigotBuildMetadata;
+import nl.pim16aap2.lightkeeper.provisioning.SpigotDownloadsClient;
+import nl.pim16aap2.lightkeeper.provisioning.assets.LoopbackLoginGuard;
+import nl.pim16aap2.lightkeeper.provisioning.assets.PluginArtifactSpec;
+import nl.pim16aap2.lightkeeper.provisioning.assets.PluginDescriptorValidator;
+import nl.pim16aap2.lightkeeper.provisioning.assets.ResolvedPluginArtifact;
+import nl.pim16aap2.lightkeeper.provisioning.assets.ServerAssetInstaller;
+import nl.pim16aap2.lightkeeper.provisioning.assets.WorldInputSpec;
+import nl.pim16aap2.lightkeeper.provisioning.serverprovider.PaperServerProvider;
+import nl.pim16aap2.lightkeeper.provisioning.serverprovider.ServerProvider;
+import nl.pim16aap2.lightkeeper.provisioning.serverprovider.SpigotServerProvider;
+import nl.pim16aap2.lightkeeper.provisioning.util.CacheKeyUtil;
+import nl.pim16aap2.lightkeeper.provisioning.util.FileUtil;
 import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeDiscovery;
 import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeLock;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
@@ -63,6 +64,10 @@ public class PrepareServerMojo extends AbstractMojo
     private static final String SERVER_TYPE_PAPER = "paper";
     private static final String SERVER_TYPE_SPIGOT = "spigot";
     private static final List<String> SUPPORTED_SERVER_TYPES = List.of(SERVER_TYPE_PAPER, SERVER_TYPE_SPIGOT);
+
+    /** Standard JVM log sink used by the shared provisioning implementation. */
+    private static final System.Logger PROVISIONING_LOG =
+        System.getLogger("nl.pim16aap2.lightkeeper.provisioning");
 
     /**
      * Skips server preparation entirely when set. Shared with the cleanup goal so a single
@@ -259,6 +264,19 @@ public class PrepareServerMojo extends AbstractMojo
     public void execute()
         throws MojoExecutionException
     {
+        try
+        {
+            executePreparation();
+        }
+        catch (ProvisioningException exception)
+        {
+            throw new MojoExecutionException(exception.getMessage(), exception);
+        }
+    }
+
+    private void executePreparation()
+        throws MojoExecutionException
+    {
         if (skip || skipITs || skipAllTests || failsafeIsSkipped())
         {
             getLog().info("Skipping server preparation because LightKeeper or the effective IT execution is skipped.");
@@ -301,7 +319,7 @@ public class PrepareServerMojo extends AbstractMojo
         );
         // Runs after ALL provisioning mutations (base copy, plugins, overlay): a config overlay is the one
         // vector through which online-mode/proxy-forwarding could enter and silently break FULL_LOGIN joins.
-        LoopbackLoginGuard.validate(targetServerDirectory, getLog());
+        LoopbackLoginGuard.validate(targetServerDirectory, PROVISIONING_LOG);
 
         final RuntimeManifest runtimeManifest = createRuntimeManifest(
             executionContext.normalizedServerType(),
@@ -429,7 +447,7 @@ public class PrepareServerMojo extends AbstractMojo
         serverProvider.prepareServer();
         final Path targetServerDirectory = serverProvider.targetServerDirectoryPath();
         installServerAssets(targetServerDirectory, ideContext, resolvedPlugins);
-        LoopbackLoginGuard.validate(targetServerDirectory, getLog());
+        LoopbackLoginGuard.validate(targetServerDirectory, PROVISIONING_LOG);
 
         final RuntimeManifest runtimeManifest = createRuntimeManifest(
             ideContext.normalizedServerType(),
@@ -631,7 +649,7 @@ public class PrepareServerMojo extends AbstractMojo
             runtimeProtocolVersion
         );
         return new PrepareServerResolvedServerSetup(
-            new PaperServerProvider(getLog(), serverSpecification, paperBuildMetadata),
+            new PaperServerProvider(PROVISIONING_LOG, serverSpecification, paperBuildMetadata),
             paperBuildMetadata.minecraftVersion(),
             paperBuildMetadata.buildId(),
             cacheKey,
@@ -669,7 +687,7 @@ public class PrepareServerMojo extends AbstractMojo
             runtimeProtocolVersion
         );
         return new PrepareServerResolvedServerSetup(
-            new SpigotServerProvider(getLog(), serverSpecification, spigotBuildMetadata),
+            new SpigotServerProvider(PROVISIONING_LOG, serverSpecification, spigotBuildMetadata),
             spigotBuildMetadata.minecraftVersion(),
             0L,
             cacheKey,
@@ -683,14 +701,14 @@ public class PrepareServerMojo extends AbstractMojo
         List<ResolvedPluginArtifact> resolvedPluginArtifacts)
         throws MojoExecutionException
     {
-        ServerAssetInstaller.installWorlds(targetServerDirectory, executionContext.worldInputSpecs(), getLog());
+        ServerAssetInstaller.installWorlds(targetServerDirectory, executionContext.worldInputSpecs(), PROVISIONING_LOG);
         ServerAssetInstaller.installPluginArtifacts(
             targetServerDirectory,
             resolvedPluginArtifacts,
-            getLog()
+            PROVISIONING_LOG
         );
         if (configOverlayPath != null)
-            ServerAssetInstaller.applyConfigOverlay(configOverlayPath, targetServerDirectory, getLog());
+            ServerAssetInstaller.applyConfigOverlay(configOverlayPath, targetServerDirectory, PROVISIONING_LOG);
     }
 
     RuntimeManifest createRuntimeManifest(
@@ -739,12 +757,12 @@ public class PrepareServerMojo extends AbstractMojo
 
     protected PaperDownloadsClient createPaperDownloadsClient(String effectiveUserAgent)
     {
-        return new PaperDownloadsClient(getLog(), effectiveUserAgent);
+        return new PaperDownloadsClient(PROVISIONING_LOG, effectiveUserAgent);
     }
 
     protected SpigotDownloadsClient createSpigotDownloadsClient(String effectiveUserAgent)
     {
-        return new SpigotDownloadsClient(getLog(), effectiveUserAgent);
+        return new SpigotDownloadsClient(PROVISIONING_LOG, effectiveUserAgent);
     }
 
     static void writeRuntimeManifest(RuntimeManifest runtimeManifest, Path runtimeManifestPathValue)

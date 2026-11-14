@@ -22,22 +22,15 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.yaml</groupId>
-            <artifactId>snakeyaml</artifactId>
-            <version>${version.snakeyaml}</version>
+            <groupId>nl.pim16aap2.lightkeeper</groupId>
+            <artifactId>lightkeeper-provisioning</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>nl.pim16aap2.lightkeeper</groupId>
             <artifactId>lightkeeper-runtime-core</artifactId>
             <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>nl.pim16aap2.lightkeeper</groupId>
-            <artifactId>lightkeeper-agent-spigot</artifactId>
-            <version>${project.version}</version>
-            <scope>runtime</scope>
         </dependency>
 
         <dependency>
@@ -90,68 +83,8 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <version>${version.maven-dependency-plugin}</version>
-                <executions>
-                    <execution>
-                        <id>embed-spigot-agent-jar-for-tests</id>
-                        <phase>process-test-resources</phase>
-                        <goals>
-                            <goal>copy</goal>
-                        </goals>
-                        <configuration>
-                            <artifactItems>
-                                <artifactItem>
-                                    <groupId>nl.pim16aap2.lightkeeper</groupId>
-                                    <artifactId>lightkeeper-agent-spigot</artifactId>
-                                    <version>${project.version}</version>
-                                    <type>jar</type>
-                                    <classifier>reactor-test</classifier>
-                                    <outputDirectory>${project.build.testOutputDirectory}/embedded</outputDirectory>
-                                    <destFileName>lightkeeper-agent-spigot.jar</destFileName>
-                                </artifactItem>
-                            </artifactItems>
-                            <overWriteReleases>true</overWriteReleases>
-                        </configuration>
-                    </execution>
-
-                    <execution>
-                        <id>embed-spigot-agent-jar</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>copy</goal>
-                        </goals>
-                        <configuration>
-                            <artifactItems>
-                                <artifactItem>
-                                    <groupId>nl.pim16aap2.lightkeeper</groupId>
-                                    <artifactId>lightkeeper-agent-spigot</artifactId>
-                                    <version>${project.version}</version>
-                                    <type>jar</type>
-                                    <outputDirectory>${project.build.outputDirectory}/embedded</outputDirectory>
-                                    <destFileName>lightkeeper-agent-spigot.jar</destFileName>
-                                </artifactItem>
-                            </artifactItems>
-                            <overWriteReleases>true</overWriteReleases>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${version.maven-compiler-plugin}</version>
-            </plugin>
-
-            <plugin>
-                <groupId>org.jacoco</groupId>
-                <artifactId>jacoco-maven-plugin</artifactId>
-                <configuration>
-                    <excludes>
-                        <exclude>embedded/**</exclude>
-                    </excludes>
-                </configuration>
             </plugin>
         </plugins>
     </build>

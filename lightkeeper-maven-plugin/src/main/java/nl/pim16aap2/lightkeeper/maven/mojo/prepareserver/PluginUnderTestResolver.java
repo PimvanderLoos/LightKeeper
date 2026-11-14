@@ -1,6 +1,6 @@
 package nl.pim16aap2.lightkeeper.maven.mojo.prepareserver;
 
-import nl.pim16aap2.lightkeeper.maven.provisioning.ResolvedPluginArtifact;
+import nl.pim16aap2.lightkeeper.provisioning.assets.ResolvedPluginArtifact;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.plugin.MojoExecutionException;
