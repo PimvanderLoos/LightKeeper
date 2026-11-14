@@ -1,4 +1,4 @@
-package nl.pim16aap2.lightkeeper.maven.serverprocess;
+package nl.pim16aap2.lightkeeper.provisioning.serverprocess;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;

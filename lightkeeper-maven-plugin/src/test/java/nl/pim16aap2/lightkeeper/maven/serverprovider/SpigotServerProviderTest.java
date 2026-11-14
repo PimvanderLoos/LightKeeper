@@ -1,9 +1,10 @@
 package nl.pim16aap2.lightkeeper.maven.serverprovider;
 
 import nl.pim16aap2.lightkeeper.provisioning.LightkeeperEmbeddedAgent;
-import nl.pim16aap2.lightkeeper.maven.serverprocess.MinecraftServerProcess;
+import nl.pim16aap2.lightkeeper.provisioning.ProvisioningException;
 import nl.pim16aap2.lightkeeper.provisioning.ServerSpecification;
 import nl.pim16aap2.lightkeeper.provisioning.SpigotBuildMetadata;
+import nl.pim16aap2.lightkeeper.provisioning.serverprocess.MinecraftServerProcess;
 import nl.pim16aap2.lightkeeper.provisioning.util.HashUtil;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
@@ -429,13 +430,13 @@ class SpigotServerProviderTest
 
         @Override
         public void start(int timeoutSeconds)
-            throws MojoExecutionException
+            throws ProvisioningException
         {
             if (failStart)
             {
                 if (createTransientLockOnFailure)
                     createTransientFile();
-                throw new MojoExecutionException("Simulated startup failure");
+                throw new ProvisioningException("Simulated startup failure");
             }
 
             running = true;
@@ -443,10 +444,10 @@ class SpigotServerProviderTest
 
         @Override
         public void stop(int timeoutSeconds)
-            throws MojoExecutionException
+            throws ProvisioningException
         {
             if (!running)
-                throw new MojoExecutionException("Process not running.");
+                throw new ProvisioningException("Process not running.");
             running = false;
         }
 
@@ -457,7 +458,7 @@ class SpigotServerProviderTest
         }
 
         private void createTransientFile()
-            throws MojoExecutionException
+            throws ProvisioningException
         {
             final Path lockFile = serverDirectory.resolve("world/session.lock");
             try
@@ -467,7 +468,7 @@ class SpigotServerProviderTest
             }
             catch (IOException exception)
             {
-                throw new MojoExecutionException("Failed to create transient lock file.", exception);
+                throw new ProvisioningException("Failed to create transient lock file.", exception);
             }
         }
     }

@@ -1,9 +1,10 @@
 package nl.pim16aap2.lightkeeper.maven.serverprovider;
 
 import lombok.ToString;
-import nl.pim16aap2.lightkeeper.maven.serverprocess.MinecraftServerProcess;
+import nl.pim16aap2.lightkeeper.provisioning.ProvisioningException;
 import nl.pim16aap2.lightkeeper.provisioning.ServerSpecification;
 import nl.pim16aap2.lightkeeper.provisioning.SpigotBuildMetadata;
+import nl.pim16aap2.lightkeeper.provisioning.serverprocess.MinecraftServerProcess;
 import nl.pim16aap2.lightkeeper.provisioning.util.FileUtil;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
@@ -105,7 +106,7 @@ public class SpigotServerProvider extends ServerProvider
                 log().info("LK_SERVER: Spigot base server stopped successfully.");
                 return;
             }
-            catch (MojoExecutionException exception)
+            catch (ProvisioningException exception)
             {
                 if (attempt >= maxAttempts)
                 {

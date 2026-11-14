@@ -1,9 +1,9 @@
-package nl.pim16aap2.lightkeeper.maven.serverprocess;
+package nl.pim16aap2.lightkeeper.provisioning.serverprocess;
 
-import org.apache.maven.plugin.MojoExecutionException;
+import nl.pim16aap2.lightkeeper.provisioning.ProvisioningException;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.jspecify.annotations.Nullable;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -32,7 +32,7 @@ class MinecraftServerProcessTest
 
         // execute + verify
         assertThatThrownBy(() -> minecraftServerProcess.start(1))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("already running");
     }
 
@@ -44,7 +44,7 @@ class MinecraftServerProcessTest
 
         // execute + verify
         assertThatThrownBy(() -> minecraftServerProcess.stop(1))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("not running");
     }
 
@@ -76,7 +76,7 @@ class MinecraftServerProcessTest
 
         // execute + verify
         assertThatThrownBy(() -> minecraftServerProcess.stop(1))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("Failed to stop server");
         assertThat(stubProcess.destroyForciblyInvoked()).isTrue();
     }
@@ -160,7 +160,7 @@ class MinecraftServerProcessTest
         final var thrown = assertThatThrownBy(() -> minecraftServerProcess.waitForStartupForTests(1));
 
         // verify
-        thrown.isInstanceOf(MojoExecutionException.class)
+        thrown.isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("Server startup failed:");
         assertThat(stubProcess.destroyForciblyInvoked()).isTrue();
     }
@@ -178,7 +178,7 @@ class MinecraftServerProcessTest
         final var thrown = assertThatThrownBy(() -> minecraftServerProcess.waitForStartupForTests(1));
 
         // verify
-        thrown.isInstanceOf(MojoExecutionException.class)
+        thrown.isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("Startup timeout after 1 second(s)");
         assertThat(stubProcess.destroyForciblyInvoked()).isTrue();
     }
@@ -195,7 +195,7 @@ class MinecraftServerProcessTest
 
         // execute + verify
         assertThatThrownBy(() -> minecraftServerProcess.waitForStartupForTests(1))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("ended before startup completed");
     }
 
@@ -210,7 +210,7 @@ class MinecraftServerProcessTest
 
         // execute + verify
         assertThatThrownBy(() -> minecraftServerProcess.waitForStartupForTests(1))
-            .isInstanceOf(MojoExecutionException.class)
+            .isInstanceOf(ProvisioningException.class)
             .hasMessageContaining("Failed to read server startup output");
     }
 
@@ -241,7 +241,7 @@ class MinecraftServerProcessTest
         }
 
         private void waitForStartupForTests(int timeoutSeconds)
-            throws MojoExecutionException
+            throws ProvisioningException
         {
             waitForStartup(timeoutSeconds);
         }

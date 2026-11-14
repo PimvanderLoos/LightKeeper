@@ -1,7 +1,7 @@
-package nl.pim16aap2.lightkeeper.maven.serverprocess;
+package nl.pim16aap2.lightkeeper.provisioning.serverprocess;
 
 import lombok.RequiredArgsConstructor;
-import org.apache.maven.plugin.MojoExecutionException;
+import nl.pim16aap2.lightkeeper.provisioning.ProvisioningException;
 import org.jspecify.annotations.Nullable;
 
 import java.io.BufferedReader;
@@ -32,23 +32,37 @@ import java.util.concurrent.TimeUnit;
  * specified Java executable and memory settings, and stopping it gracefully.
   * <p>
  * Intentionally not guarded by the framework's orphan reaper: this build-time server is short-lived and
- * driven synchronously by the mojo, unlike the long-lived per-test server the reaper protects.
+ * driven synchronously by the provisioner, unlike the long-lived per-test server the reaper protects.
  */
 @RequiredArgsConstructor
 public class MinecraftServerProcess
 {
+    /** Working directory of this baseline initialization process. */
     private final Path serverDirectory;
+    /** Prepared Minecraft server JAR. */
     private final Path jarFile;
+    /** Java executable selected by the provisioning caller. */
     private final String javaExecutable;
+    /** Optional additional server JVM arguments. */
     private final @Nullable String extraJvmArgs;
+    /** Maximum server heap size in MiB. */
     private final int memoryMb;
+    /** Current initialization process, absent before startup or after cleanup. */
     private @Nullable Process process;
 
+    /**
+     * Starts the server and waits for its readiness output.
+     *
+     * @param timeoutSeconds
+     *     Maximum startup wait.
+     * @throws ProvisioningException
+     *     If already running, startup fails, or readiness times out.
+     */
     public void start(int timeoutSeconds)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         if (isRunning())
-            throw new MojoExecutionException("Server is already running");
+            throw new ProvisioningException("Server is already running");
 
         final var pb = new ProcessBuilder(buildCommand())
             .directory(serverDirectory.toFile())
@@ -61,15 +75,23 @@ public class MinecraftServerProcess
         catch (Exception e)
         {
             forceStopProcess();
-            throw new MojoExecutionException("Failed to start server", e);
+            throw new ProvisioningException("Failed to start server", e);
         }
     }
 
+    /**
+     * Requests a clean server shutdown and bounds the wait.
+     *
+     * @param timeoutSeconds
+     *     Maximum shutdown wait before force termination.
+     * @throws ProvisioningException
+     *     If not running or shutdown fails.
+     */
     public void stop(int timeoutSeconds)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         if (!isRunning())
-            throw new MojoExecutionException("Server is not running");
+            throw new ProvisioningException("Server is not running");
 
         final Process runningProcess = requireRunningProcess();
 
@@ -85,7 +107,7 @@ public class MinecraftServerProcess
         catch (IOException exception)
         {
             forceStopProcess();
-            throw new MojoExecutionException("Failed to send stop command to server process", exception);
+            throw new ProvisioningException("Failed to send stop command to server process", exception);
         }
 
         try
@@ -93,27 +115,37 @@ public class MinecraftServerProcess
             if (!runningProcess.waitFor(timeoutSeconds, TimeUnit.SECONDS))
             {
                 forceStopProcess();
-                throw new MojoExecutionException("Server didn't stop gracefully, force killed");
+                throw new ProvisioningException("Server didn't stop gracefully, force killed");
             }
         }
         catch (InterruptedException e)
         {
             forceStopProcess();
             Thread.currentThread().interrupt();
-            throw new MojoExecutionException("Thread was interrupted while waiting for the server to shut down", e);
+            throw new ProvisioningException("Thread was interrupted while waiting for the server to shut down", e);
         }
         catch (Exception e)
         {
             forceStopProcess();
-            throw new MojoExecutionException("Failed to stop server", e);
+            throw new ProvisioningException("Failed to stop server", e);
         }
     }
 
+    /**
+     * Reports whether the current process is alive.
+     *
+     * @return Whether this initialization process is running.
+     */
     public boolean isRunning()
     {
         return process != null && process.isAlive();
     }
 
+    /**
+     * Builds the server process argument list.
+     *
+     * @return Java command and server arguments.
+     */
     protected List<String> buildCommand()
     {
         final List<String> cmd = new ArrayList<>();
@@ -128,8 +160,16 @@ public class MinecraftServerProcess
         return cmd;
     }
 
+    /**
+     * Watches process output for readiness without waiting indefinitely.
+     *
+     * @param timeoutSeconds
+     *     Maximum readiness wait.
+     * @throws ProvisioningException
+     *     If startup output, process state, or the wait fails.
+     */
     protected void waitForStartup(int timeoutSeconds)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         final Process runningProcess = requireRunningProcess();
         final long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(timeoutSeconds);
@@ -155,20 +195,20 @@ public class MinecraftServerProcess
                         return;
 
                     if (line.contains("Failed to initialize server"))
-                        throw new MojoExecutionException("Server startup failed: " + line);
+                        throw new ProvisioningException("Server startup failed: " + line);
                 }
 
                 if (!runningProcess.isAlive() && outputLines.isEmpty())
-                    throw new MojoExecutionException("Server process ended before startup completed.");
+                    throw new ProvisioningException("Server process ended before startup completed.");
 
                 if (outputReaderFuture.isDone() && outputLines.isEmpty())
                 {
                     awaitOutputReader(outputReaderFuture);
-                    throw new MojoExecutionException("Server output closed before startup completed.");
+                    throw new ProvisioningException("Server output closed before startup completed.");
                 }
             }
 
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Startup timeout after %d second(s) waiting for readiness output.".formatted(timeoutSeconds)
             );
         }
@@ -176,9 +216,9 @@ public class MinecraftServerProcess
         {
             Thread.currentThread().interrupt();
             forceStopProcess();
-            throw new MojoExecutionException("Interrupted while monitoring startup", e);
+            throw new ProvisioningException("Interrupted while monitoring startup", e);
         }
-        catch (MojoExecutionException e)
+        catch (ProvisioningException e)
         {
             forceStopProcess();
             throw e;
@@ -186,7 +226,7 @@ public class MinecraftServerProcess
         catch (Exception e)
         {
             forceStopProcess();
-            throw new MojoExecutionException("Failed to monitor startup", e);
+            throw new ProvisioningException("Failed to monitor startup", e);
         }
         finally
         {
@@ -217,7 +257,7 @@ public class MinecraftServerProcess
     }
 
     private static void awaitOutputReader(Future<?> outputReaderFuture)
-        throws MojoExecutionException
+        throws ProvisioningException
     {
         try
         {
@@ -226,14 +266,14 @@ public class MinecraftServerProcess
         catch (InterruptedException exception)
         {
             Thread.currentThread().interrupt();
-            throw new MojoExecutionException("Interrupted while monitoring startup output.", exception);
+            throw new ProvisioningException("Interrupted while monitoring startup output.", exception);
         }
         catch (ExecutionException exception)
         {
             final Throwable cause = exception.getCause();
             if (cause instanceof UncheckedIOException uncheckedIOException)
             {
-                throw new MojoExecutionException(
+                throw new ProvisioningException(
                     Objects.requireNonNullElse(
                         uncheckedIOException.getMessage(),
                         "Failed while reading server startup output."
@@ -241,7 +281,7 @@ public class MinecraftServerProcess
                     exception
                 );
             }
-            throw new MojoExecutionException(
+            throw new ProvisioningException(
                 "Failed while reading server startup output.",
                 exception
             );
