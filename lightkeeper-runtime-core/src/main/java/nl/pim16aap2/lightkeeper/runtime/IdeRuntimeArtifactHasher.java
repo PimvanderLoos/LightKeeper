@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 /**
- * Canonically hashes files and directory trees used by IDE runtime preparation and validation.
+ * Canonically hashes build inputs and immutable server trees without treating hashes as source-freshness proofs.
  */
 public final class IdeRuntimeArtifactHasher
 {
@@ -20,6 +20,18 @@ public final class IdeRuntimeArtifactHasher
 
     private IdeRuntimeArtifactHasher()
     {
+    }
+
+    /**
+     * Computes SHA-256 for canonical metadata text without writing it to disk.
+     *
+     * @param input
+     *     Text whose UTF-8 bytes describe the effective inputs.
+     * @return Lowercase hexadecimal SHA-256.
+     */
+    public static String sha256(String input)
+    {
+        return HexFormat.of().formatHex(digest().digest(input.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
     }
 
     /**

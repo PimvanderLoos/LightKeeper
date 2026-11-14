@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
+import java.util.zip.CRC32;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -113,6 +114,42 @@ class PluginDescriptorValidatorTest
 
         // verify
         result.hasMessageContaining("broken.jar").hasMessageContaining("Invalid plugin under test");
+    }
+
+    @Test
+    void validate_shouldRejectCorruptPayloadEvenWhenItsDescriptorIsValid()
+        throws Exception
+    {
+        // setup
+        final Path path = directory.resolve("payload.jar");
+        final byte[] payload = "payload-v1".getBytes(StandardCharsets.UTF_8);
+        try (var output = new JarOutputStream(Files.newOutputStream(path)))
+        {
+            output.putNextEntry(new JarEntry("plugin.yml"));
+            output.write("name: Example\nversion: 1\nmain: absent.Main\n".getBytes(StandardCharsets.UTF_8));
+            output.closeEntry();
+            final JarEntry entry = new JarEntry("payload.bin");
+            entry.setMethod(JarEntry.STORED);
+            entry.setSize(payload.length);
+            final CRC32 checksum = new CRC32();
+            checksum.update(payload);
+            entry.setCrc(checksum.getValue());
+            output.putNextEntry(entry);
+            output.write(payload);
+            output.closeEntry();
+        }
+        final byte[] archive = Files.readAllBytes(path);
+        final int offset = new String(archive, StandardCharsets.ISO_8859_1).indexOf("payload-v1");
+        assertThat(offset).isPositive();
+        archive[offset] ^= 1;
+        Files.write(path, archive);
+        final var artifact = new ResolvedPluginArtifact(path, "payload.jar", "fixture");
+
+        // execute
+        final Throwable failure = catchThrowable(() -> PluginDescriptorValidator.validate(artifact, "example:plugin"));
+
+        // verify
+        assertThat(failure).hasMessageContaining("payload.bin", "CRC mismatch", "example:plugin");
     }
 
     @Test

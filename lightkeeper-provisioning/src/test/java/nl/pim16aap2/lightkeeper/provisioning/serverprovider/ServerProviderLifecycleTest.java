@@ -21,6 +21,27 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class ServerProviderLifecycleTest
 {
     @Test
+    void prepareServer_shouldReevaluateCachesCreatedAfterProviderConstruction(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final String hash = resolveEmbeddedAgentSha256();
+        final LifecycleServerProvider first = createProvider(tempDirectory, false, false, hash);
+        final LifecycleServerProvider waiting = createProvider(tempDirectory, false, false, hash);
+
+        // execute
+        first.prepareServer();
+        waiting.prepareServer();
+
+        // verify
+        assertThat(first.createBaseServerJarInvocations()).isEqualTo(1);
+        assertThat(first.createBaseServerInvocations()).isEqualTo(1);
+        assertThat(waiting.createBaseServerJarInvocations()).isZero();
+        assertThat(waiting.createBaseServerInvocations()).isZero();
+        assertThat(waiting.targetJarFilePath()).isRegularFile();
+    }
+
+    @Test
     void prepareServer_shouldCreateTargetServerAndInstallAgentJar(@TempDir Path tempDirectory)
         throws Exception
     {

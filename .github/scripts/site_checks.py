@@ -86,6 +86,10 @@ def compile_examples(site, classpath, output, plugin_descriptor):
     mojos = {mojo.findtext("goal"): {p.findtext("name") for p in mojo.findall("parameters/parameter")}
              for mojo in descriptor.findall("mojos/mojo")}
     properties = set(re.findall(r"\$\{(lightkeeper\.[\w.]+)\}", ET.tostring(descriptor, encoding="unicode")))
+    framework_sources = Path(__file__).resolve().parents[2] / "lightkeeper-framework-junit/src/main/java"
+    for source in framework_sources.rglob("*.java"):
+        properties.update(re.findall(r'static final String \w+\s*=\s*"(lightkeeper\.[\w.]+)"',
+                                     source.read_text(encoding="utf-8")))
     plugin_count = 0
     for page in pages(site).values():
         if page.properties - properties:

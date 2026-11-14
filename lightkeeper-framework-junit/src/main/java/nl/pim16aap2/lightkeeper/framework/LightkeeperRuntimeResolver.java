@@ -1,16 +1,19 @@
 package nl.pim16aap2.lightkeeper.framework;
 
-import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeDiscoveryResolver;
-import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeSelection;
+import nl.pim16aap2.lightkeeper.runtime.GeneratedMetadata;
+import nl.pim16aap2.lightkeeper.runtime.ModulePlanPaths;
+import nl.pim16aap2.lightkeeper.runtime.ModuleTestPlan;
+import nl.pim16aap2.lightkeeper.runtime.TestModuleAnchor;
 import org.jspecify.annotations.Nullable;
 
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 
 /**
- * Resolves a LightKeeper runtime manifest for a JUnit test class.
+ * Resolves a JUnit class's Maven-owned module plan or an authoritative explicit runtime manifest.
  */
 public final class LightkeeperRuntimeResolver
 {
@@ -26,7 +29,9 @@ public final class LightkeeperRuntimeResolver
         Objects.requireNonNull(testClass, "testClass may not be null.");
         final String explicitPath = System.getProperty(RUNTIME_MANIFEST_PROPERTY, "").trim();
         if (!explicitPath.isBlank())
+        {
             return new ResolvedRuntime(validateExplicitPath(Path.of(explicitPath)), null);
+        }
 
         final Path classOutputDirectory;
         try
@@ -46,17 +51,42 @@ public final class LightkeeperRuntimeResolver
                 exception
             );
         }
-        final IdeRuntimeSelection selection = IdeRuntimeDiscoveryResolver.resolveSelection(classOutputDirectory);
-        return new ResolvedRuntime(selection.runtimeManifestPath(), selection);
+        return resolveFromClassOutput(classOutputDirectory);
     }
 
     static ResolvedRuntime resolveFromClassOutput(Path classOutputDirectory)
     {
         final String explicitPath = System.getProperty(RUNTIME_MANIFEST_PROPERTY, "").trim();
         if (!explicitPath.isBlank())
+        {
             return new ResolvedRuntime(validateExplicitPath(Path.of(explicitPath)), null);
-        final IdeRuntimeSelection selection = IdeRuntimeDiscoveryResolver.resolveSelection(classOutputDirectory);
-        return new ResolvedRuntime(selection.runtimeManifestPath(), selection);
+        }
+        final Path output = classOutputDirectory.toAbsolutePath().normalize();
+        try
+        {
+            final TestModuleAnchor anchor = GeneratedMetadata.read(
+                ModulePlanPaths.classOutputAnchor(output), TestModuleAnchor.class
+            );
+            if (!Files.isSameFile(output, Path.of(anchor.classOutputDirectory())))
+            {
+                throw new IOException("Test-class ownership anchor belongs to another output directory.");
+            }
+            final ModuleTestPlan plan = GeneratedMetadata.read(
+                ModulePlanPaths.modulePlan(Path.of(anchor.moduleDirectory())), ModuleTestPlan.class
+            );
+            if (!plan.moduleDirectory().equals(anchor.moduleDirectory()) ||
+                !Files.isSameFile(output, Path.of(plan.classOutputDirectory())))
+            {
+                throw new IOException("Module plan does not belong to these test classes.");
+            }
+            return new ResolvedRuntime(null, plan);
+        }
+        catch (IOException exception)
+        {
+            throw new IllegalStateException("Cannot resolve LightKeeper module for test output '" + output
+                + "'. Run 'mvn verify' once with the lock-build and prepare-server goals bound, or set -D"
+                + RUNTIME_MANIFEST_PROPERTY + "=<path> explicitly.", exception);
+        }
     }
 
     private static Path validateExplicitPath(Path path)
@@ -72,7 +102,7 @@ public final class LightkeeperRuntimeResolver
         return manifestPath;
     }
 
-    record ResolvedRuntime(Path manifestPath, @Nullable IdeRuntimeSelection ideSelection)
+    record ResolvedRuntime(@Nullable Path manifestPath, @Nullable ModuleTestPlan modulePlan)
     {
     }
 }

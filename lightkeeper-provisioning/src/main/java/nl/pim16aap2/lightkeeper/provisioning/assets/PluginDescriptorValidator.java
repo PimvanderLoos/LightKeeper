@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.zip.CRC32;
 
 /**
  * Validates packaged plugin metadata without loading classes or requiring successful plugin startup.
@@ -21,6 +22,12 @@ public final class PluginDescriptorValidator
 {
     /** Maximum uncompressed size of one plugin descriptor in bytes. */
     private static final int MAX_DESCRIPTOR_BYTES = 256 * 1024;
+    /** Bounded archive traversal prevents corrupt or highly expanded payloads from exhausting preparation. */
+    private static final long MAX_ENTRY_BYTES = 256L * 1024 * 1024;
+    /** Maximum total uncompressed target-plugin payload checked before server provisioning. */
+    private static final long MAX_ARCHIVE_BYTES = 1024L * 1024 * 1024;
+    /** Bound on central-directory entries visited during static archive verification. */
+    private static final int MAX_ENTRIES = 100_000;
 
     private PluginDescriptorValidator()
     {
@@ -39,7 +46,7 @@ public final class PluginDescriptorValidator
     public static void validate(ResolvedPluginArtifact plugin, String module)
         throws ProvisioningException
     {
-        try (JarFile jar = new JarFile(plugin.sourceJar().toFile()))
+        try (JarFile jar = new JarFile(plugin.sourceJar().toFile(), false))
         {
             boolean found = false;
             for (final String name : List.of("plugin.yml", "paper-plugin.yml"))
@@ -66,6 +73,7 @@ public final class PluginDescriptorValidator
             {
                 throw new IllegalArgumentException("the JAR contains neither plugin.yml nor paper-plugin.yml");
             }
+            validateArchive(jar);
         }
         catch (IOException | IllegalArgumentException | YAMLException exception)
         {
@@ -75,6 +83,43 @@ public final class PluginDescriptorValidator
                     + "pluginUnderTest.artifactId/classifier/path, or use serverOnly=true for server-only tests.",
                 exception
             );
+        }
+    }
+
+    private static void validateArchive(JarFile jar)
+        throws IOException
+    {
+        final byte[] buffer = new byte[8192];
+        final var entries = jar.entries();
+        int count = 0;
+        long total = 0;
+        while (entries.hasMoreElements())
+        {
+            final JarEntry entry = entries.nextElement();
+            if (++count > MAX_ENTRIES || entry.getSize() > MAX_ENTRY_BYTES)
+            {
+                throw new IllegalArgumentException("JAR exceeds the static archive validation limits");
+            }
+            final CRC32 checksum = new CRC32();
+            long size = 0;
+            try (var input = jar.getInputStream(entry))
+            {
+                int read;
+                while ((read = input.read(buffer)) != -1)
+                {
+                    size += read;
+                    total += read;
+                    if (size > MAX_ENTRY_BYTES || total > MAX_ARCHIVE_BYTES)
+                    {
+                        throw new IllegalArgumentException("JAR exceeds the static archive validation limits");
+                    }
+                    checksum.update(buffer, 0, read);
+                }
+            }
+            if (size != entry.getSize() || checksum.getValue() != entry.getCrc())
+            {
+                throw new IllegalArgumentException("corrupt JAR entry '" + entry.getName() + "': size/CRC mismatch");
+            }
         }
     }
 

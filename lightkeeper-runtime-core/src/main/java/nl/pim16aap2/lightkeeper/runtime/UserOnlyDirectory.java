@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
@@ -37,6 +38,30 @@ public final class UserOnlyDirectory
     public static void prepare(Path directory)
         throws IOException
     {
+        prepare(directory, false);
+    }
+
+    /**
+     * Creates private LK-generated state or migrates its existing current-user-owned directory to {@code 0700}.
+     * Symbolic links and foreign owners are rejected before permissions change; configurable user directories
+     * must use the strict {@link #prepare(Path)} contract instead.
+     *
+     * @param directory
+     *     Reserved generated-state directory.
+     * @throws IOException
+     *     If the directory or its permissions cannot be accessed.
+     * @throws IllegalStateException
+     *     If the path is not a real directory owned by the current user.
+     */
+    public static void prepareGenerated(Path directory)
+        throws IOException
+    {
+        prepare(directory, true);
+    }
+
+    private static void prepare(Path directory, boolean generated)
+        throws IOException
+    {
         final Path resolvedDirectory = Objects.requireNonNull(directory, "directory may not be null.");
         if (!resolvedDirectory.getFileSystem().supportedFileAttributeViews().contains("posix"))
         {
@@ -51,6 +76,14 @@ public final class UserOnlyDirectory
         final UserPrincipal currentUser = resolvedDirectory.getFileSystem()
             .getUserPrincipalLookupService()
             .lookupPrincipalByName(Objects.requireNonNull(System.getProperty("user.name"), "user.name must be set."));
+        if (generated)
+        {
+            final PosixFileAttributeView view = Objects.requireNonNull(Files.getFileAttributeView(
+                resolvedDirectory, PosixFileAttributeView.class, LinkOption.NOFOLLOW_LINKS
+            ));
+            verifyOwner(resolvedDirectory, view.readAttributes(), currentUser);
+            view.setPermissions(USER_ONLY_PERMISSIONS);
+        }
         verify(resolvedDirectory, currentUser);
     }
 
@@ -59,17 +92,7 @@ public final class UserOnlyDirectory
     {
         final PosixFileAttributes attributes =
             Files.readAttributes(directory, PosixFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
-        if (!attributes.isDirectory())
-            throw new IllegalStateException("User-only path '%s' is not a directory.".formatted(directory));
-
-        if (!attributes.owner().equals(currentUser))
-        {
-            throw new IllegalStateException(
-                "User-only directory '%s' is owned by '%s' instead of the current user '%s'."
-                    .formatted(directory, attributes.owner().getName(), currentUser.getName())
-            );
-        }
-
+        verifyOwner(directory, attributes, currentUser);
         if (!attributes.permissions().equals(USER_ONLY_PERMISSIONS))
         {
             throw new IllegalStateException(
@@ -79,6 +102,22 @@ public final class UserOnlyDirectory
                         PosixFilePermissions.toString(attributes.permissions()),
                         PosixFilePermissions.toString(USER_ONLY_PERMISSIONS)
                     )
+            );
+        }
+    }
+
+    private static void verifyOwner(Path directory, PosixFileAttributes attributes, UserPrincipal currentUser)
+    {
+        if (!attributes.isDirectory())
+        {
+            throw new IllegalStateException("User-only path '%s' is not a directory.".formatted(directory));
+        }
+
+        if (!attributes.owner().equals(currentUser))
+        {
+            throw new IllegalStateException(
+                "User-only directory '%s' is owned by '%s' instead of the current user '%s'."
+                    .formatted(directory, attributes.owner().getName(), currentUser.getName())
             );
         }
     }
