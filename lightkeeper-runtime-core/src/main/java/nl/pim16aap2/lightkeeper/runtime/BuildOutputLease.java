@@ -101,11 +101,9 @@ public final class BuildOutputLease implements AutoCloseable
                 final FileLock lock = tryLock(channel);
                 if (lock != null)
                 {
-                    final ProcessHandle owner = ProcessHandle.current();
                     final BuildLeaseIdentity identity = new BuildLeaseIdentity(
                         reactor.toString(),
-                        owner.pid(),
-                        owner.info().startInstant().orElseThrow().toString(),
+                        ProcessIdentity.current(),
                         UUID.randomUUID().toString().replace("-", "")
                     );
                     final Path ownerFile = lockPath.resolveSibling(OWNER_FILE);
@@ -166,9 +164,9 @@ public final class BuildOutputLease implements AutoCloseable
             final Path lockPath = lockPath(reactor);
             final Path ownerFile = lockPath.resolveSibling(OWNER_FILE);
             final BuildLeaseIdentity owner = GeneratedMetadata.read(ownerFile, BuildLeaseIdentity.class);
-            if (owner.processId() == ProcessHandle.current().pid() ||
+            if (owner.process().processId() == ProcessHandle.current().pid() ||
                 !owner.reactorDirectory().equals(reactor.toString()) || !owner.nonce().equals(nonce) ||
-                !owner.isCurrentProcessAncestor())
+                !owner.process().matchesCurrentAncestry())
             {
                 throw new IllegalStateException("Borrowed build lease does not belong to a live ancestor invocation.");
             }

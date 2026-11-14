@@ -30,8 +30,8 @@ class BuildOutputLeaseTest
         lease.close();
 
         // verify
-        assertThat(identity.processId()).isEqualTo(ProcessHandle.current().pid());
-        assertThat(identity.isCurrentProcessAncestor()).isTrue();
+        assertThat(identity.process().processId()).isEqualTo(ProcessHandle.current().pid());
+        assertThat(identity.process().matchesCurrentAncestry()).isTrue();
         assertThat(lockPath).isRegularFile();
         assertThat(ownerPath).doesNotExist();
         try (var next = BuildOutputLease.acquire(root, Duration.ofSeconds(1)))
@@ -93,7 +93,7 @@ class BuildOutputLeaseTest
             assertThat(waiter.isAlive()).isFalse();
             assertThat(failed).isTrue();
             assertThat(interrupted).isTrue();
-            assertThat(held.identity().isCurrentProcessAncestor()).isTrue();
+            assertThat(held.identity().process().matchesCurrentAncestry()).isTrue();
         }
     }
 
@@ -134,7 +134,7 @@ class BuildOutputLeaseTest
             // verify
             assertThat(failure).isInstanceOf(IllegalStateException.class);
             assertThat(externalProbe).isEqualTo("BUSY");
-            assertThat(held.identity().isCurrentProcessAncestor()).isTrue();
+            assertThat(held.identity().process().matchesCurrentAncestry()).isTrue();
         }
     }
 
@@ -165,7 +165,7 @@ class BuildOutputLeaseTest
 
             // verify
             assertThat(result).isEqualTo("REJECTED");
-            assertThat(held.identity().isCurrentProcessAncestor()).isTrue();
+            assertThat(held.identity().process().matchesCurrentAncestry()).isTrue();
         }
     }
 
