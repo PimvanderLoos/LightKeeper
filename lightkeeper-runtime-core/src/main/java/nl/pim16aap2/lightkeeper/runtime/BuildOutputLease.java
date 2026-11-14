@@ -1,71 +1,42 @@
 package nl.pim16aap2.lightkeeper.runtime;
 
-import org.jspecify.annotations.Nullable;
-
 import java.io.IOException;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
-import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.time.Duration;
-import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Cooperative checkout-wide lease covering producer packaging through immutable snapshot capture.
- * Release before starting Minecraft. Lock files remain in place so waiting processes always lock the same inode.
+ * Cooperative checkout-wide ownership covering producer packaging through immutable snapshot capture.
+ * Release before starting Minecraft. The underlying file lease keeps a stable inode for waiting processes.
  */
 public final class BuildOutputLease implements AutoCloseable
 {
-    /** Name of the current holder's private process identity document. */
-    private static final String OWNER_FILE = "owner.json";
-    /** Maximum interval before observing cancellation or an available lease again. */
-    private static final long POLL_NANOS = TimeUnit.MILLISECONDS.toNanos(50);
-    /** Avoids opening another descriptor for a file already locked by this JVM, including failed acquisitions. */
-    private static final ConcurrentHashMap<Path, Semaphore> JVM_LEASES = new ConcurrentHashMap<>();
-    /** Channel whose lifetime owns the kernel lease. */
-    private final FileChannel channel;
-    /** Exclusive kernel lock acquired before any protected build output is changed. */
-    private final FileLock lock;
-    /** Metadata removed while the kernel lease is still held. */
+    /** Kernel ownership shared with cache coordination through the canonical file-lease implementation. */
+    private final FileLockLease lease;
+    /** Private identity removed before kernel ownership is released. */
     private final Path ownerFile;
-    /** Identity of the Maven process holding this kernel lease. */
+    /** Actual producer JVM and unique invocation identity. */
     private final BuildLeaseIdentity identity;
-    /** Prevents repeated cleanup by shutdown hooks and ordinary lifecycle callbacks. */
+    /** Prevents repeated cleanup by hooks and normal lifecycle callbacks. */
     private final AtomicBoolean closed = new AtomicBoolean();
-    /** Process-local permit retained until the kernel channel is closed. */
-    private final Semaphore jvmLease;
 
-    private BuildOutputLease(
-        FileChannel channel,
-        FileLock lock,
-        Path ownerFile,
-        BuildLeaseIdentity identity,
-        Semaphore jvmLease
-    )
+    private BuildOutputLease(FileLockLease lease, Path ownerFile, BuildLeaseIdentity identity)
     {
-        this.channel = channel;
-        this.lock = lock;
+        this.lease = lease;
         this.ownerFile = ownerFile;
         this.identity = identity;
-        this.jvmLease = jvmLease;
     }
 
     /**
-     * Waits for exclusive access to this reactor's producer outputs, respecting timeout and interruption.
+     * Waits for exclusive access to this reactor's producer outputs.
      *
      * @param reactorDirectory
      *     Existing checkout/reactor root.
      * @param timeout
      *     Maximum positive wait duration.
-     * @return Acquired lease; callers transfer ownership explicitly and close it after capture.
+     * @return Acquired ownership; close after immutable capture.
      */
     public static BuildOutputLease acquire(Path reactorDirectory, Duration timeout)
     {
@@ -73,80 +44,42 @@ public final class BuildOutputLease implements AutoCloseable
         {
             throw new IllegalArgumentException("Build lease timeout must be positive.");
         }
-        FileChannel channel = null;
-        Semaphore jvmLease = null;
-        boolean hasPermit = false;
         try
         {
-            final long started = System.nanoTime();
             final Path reactor = reactorDirectory.toRealPath();
             final Path lockPath = lockPath(reactor);
-            jvmLease = JVM_LEASES.computeIfAbsent(reactor, ignored -> new Semaphore(1, true));
-            hasPermit = jvmLease.tryAcquire(timeout.toNanos(), TimeUnit.NANOSECONDS);
-            if (!hasPermit)
+            final FileLockLease lease = FileLockLease.acquire(lockPath, timeout);
+            try
             {
-                throw new IllegalStateException("Timed out waiting for the JVM's producer build lease: " + lockPath);
+                final BuildLeaseIdentity identity = new BuildLeaseIdentity(
+                    reactor.toString(), ProcessIdentity.current(), UUID.randomUUID().toString().replace("-", "")
+                );
+                final Path ownerFile = lockPath.resolveSibling("owner.json");
+                GeneratedMetadata.write(identity, ownerFile);
+                return new BuildOutputLease(lease, ownerFile, identity);
             }
-            UserOnlyDirectory.prepare(Objects.requireNonNull(lockPath.getParent()));
-            channel = FileChannel.open(
-                lockPath,
-                StandardOpenOption.CREATE,
-                StandardOpenOption.WRITE,
-                LinkOption.NOFOLLOW_LINKS
-            );
-            while (true)
+            catch (IOException | RuntimeException exception)
             {
-                final FileLock lock = tryLock(channel);
-                if (lock != null)
+                try
                 {
-                    final BuildLeaseIdentity identity = new BuildLeaseIdentity(
-                        reactor.toString(),
-                        ProcessIdentity.current(),
-                        UUID.randomUUID().toString().replace("-", "")
-                    );
-                    final Path ownerFile = lockPath.resolveSibling(OWNER_FILE);
-                    GeneratedMetadata.write(identity, ownerFile);
-                    return new BuildOutputLease(channel, lock, ownerFile, identity, jvmLease);
+                    lease.close();
                 }
-                final long remaining = timeout.toNanos() - (System.nanoTime() - started);
-                if (remaining <= 0)
+                catch (RuntimeException cleanupFailure)
                 {
-                    throw new IllegalStateException(
-                        "Timed out waiting for LightKeeper producer build lease '" + lockPath + "'."
-                    );
+                    exception.addSuppressed(cleanupFailure);
                 }
-                TimeUnit.NANOSECONDS.sleep(Math.min(POLL_NANOS, remaining));
+                throw exception;
             }
-        }
-        catch (InterruptedException exception)
-        {
-            Thread.currentThread().interrupt();
-            closeFailedAcquisition(channel, exception);
-            if (hasPermit && jvmLease != null)
-            {
-                jvmLease.release();
-            }
-            throw new IllegalStateException(
-                "Interrupted while waiting for the LightKeeper producer build lease.",
-                exception
-            );
         }
         catch (IOException | RuntimeException exception)
         {
-            closeFailedAcquisition(channel, exception);
-            if (hasPermit && jvmLease != null)
-            {
-                jvmLease.release();
-            }
-            throw new IllegalStateException(
-                "Cannot acquire producer build lease for '" + reactorDirectory + "'.",
-                exception
-            );
+            throw new IllegalStateException("Cannot acquire producer build lease for '" + reactorDirectory + "'.",
+                exception);
         }
     }
 
     /**
-     * Returns the held invocation identity without transferring lease ownership.
+     * Returns the held invocation identity without transferring ownership.
      *
      * @return Current lease identity.
      */
@@ -156,62 +89,30 @@ public final class BuildOutputLease implements AutoCloseable
     }
 
     /**
-     * Returns the canonical generated lock location for a reactor root.
+     * Returns the stable kernel lock location for a reactor root.
      *
      * @param reactorDirectory
      *     Checkout/reactor root.
-     * @return Stable lock file path.
+     * @return Lock file retained across invocations.
      */
     public static Path lockPath(Path reactorDirectory)
     {
         return reactorDirectory.toAbsolutePath().normalize().resolve(".lightkeeper/build/outputs.lock");
     }
 
-    /** Releases the process identity and kernel lease, retaining the lock file for waiting processes. */
+    /** Removes the process identity while ownership is held, then releases the kernel lease. */
     @Override
     public void close()
     {
         if (closed.compareAndSet(false, true))
         {
-            try (channel; lock)
+            try (lease)
             {
                 Files.deleteIfExists(ownerFile);
             }
             catch (IOException exception)
             {
                 throw new IllegalStateException("Failed to release LightKeeper producer build lease.", exception);
-            }
-            finally
-            {
-                jvmLease.release();
-            }
-        }
-    }
-
-    private static @Nullable FileLock tryLock(FileChannel channel)
-        throws IOException
-    {
-        try
-        {
-            return channel.tryLock();
-        }
-        catch (OverlappingFileLockException exception)
-        {
-            return null;
-        }
-    }
-
-    private static void closeFailedAcquisition(@Nullable FileChannel channel, Exception failure)
-    {
-        if (channel != null)
-        {
-            try
-            {
-                channel.close();
-            }
-            catch (IOException cleanupFailure)
-            {
-                failure.addSuppressed(cleanupFailure);
             }
         }
     }

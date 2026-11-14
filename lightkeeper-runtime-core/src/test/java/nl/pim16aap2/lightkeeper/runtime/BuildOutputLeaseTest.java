@@ -56,7 +56,7 @@ class BuildOutputLeaseTest
 
             // verify
             assertThat(failure).isInstanceOf(IllegalStateException.class).hasRootCauseMessage(
-                "Timed out waiting for the JVM's producer build lease: " + BuildOutputLease.lockPath(root)
+                "Timed out waiting for the JVM's file lease: " + BuildOutputLease.lockPath(root)
             );
             assertThat(owner).isEqualTo(held.identity());
         }
