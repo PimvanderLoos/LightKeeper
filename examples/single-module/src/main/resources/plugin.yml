@@ -1,0 +1,7 @@
+name: ConsumerPlugin
+version: ${project.version}
+main: example.ConsumerPlugin
+api-version: '1.21.11'
+commands:
+  lkversion:
+    description: Return the packaged production revision
