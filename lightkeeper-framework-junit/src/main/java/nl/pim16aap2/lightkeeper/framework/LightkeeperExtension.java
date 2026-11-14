@@ -24,6 +24,7 @@ import java.util.Objects;
 
 /**
  * JUnit extension for framework lifecycle management.
+ * Direct launches package current producer inputs through Maven; live Failsafe runs use their own Maven export.
  *
  * <p>Discovered prepared runtimes are copied into a private mutable session for each test class. Methods normally
  * share one process; {@link FreshServer} restarts the process against the same class session and retains its world

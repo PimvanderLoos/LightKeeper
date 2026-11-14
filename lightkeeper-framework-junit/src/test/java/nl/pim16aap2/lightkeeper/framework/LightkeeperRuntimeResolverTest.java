@@ -67,12 +67,12 @@ class LightkeeperRuntimeResolverTest
     }
 
     @Test
-    void resolveFromClassOutput_shouldDiscoverModuleRuntimeWithoutExplicitProperty(@TempDir Path tempDirectory)
+    void resolveFromClassOutput_shouldUseMavensCustomOutputWithoutExplicitProperty(@TempDir Path tempDirectory)
         throws Exception
     {
         // setup
         final Path moduleDirectory = Files.createDirectories(tempDirectory.resolve("module"));
-        final Path classOutput = Files.createDirectories(moduleDirectory.resolve("target/test-classes"));
+        final Path classOutput = Files.createDirectories(moduleDirectory.resolve("custom/nested/test-output"));
         final ModuleTestPlan plan = writeModulePlan(moduleDirectory, classOutput);
 
         // execute
@@ -82,6 +82,26 @@ class LightkeeperRuntimeResolverTest
         // verify
         assertThat(resolved.manifestPath()).isNull();
         assertThat(resolved.modulePlan()).isEqualTo(plan);
+    }
+
+    @Test
+    void resolveFromClassOutput_shouldRejectAnAnchorCopiedFromAnotherOutput(@TempDir Path tempDirectory)
+        throws Exception
+    {
+        // setup
+        final Path module = Files.createDirectories(tempDirectory.resolve("module"));
+        final Path owned = Files.createDirectories(module.resolve("custom/owned"));
+        final Path unrelated = Files.createDirectories(module.resolve("custom/unrelated"));
+        writeModulePlan(module, owned);
+        Files.createDirectories(ModulePlanPaths.classOutputAnchor(unrelated).getParent());
+        Files.copy(ModulePlanPaths.classOutputAnchor(owned), ModulePlanPaths.classOutputAnchor(unrelated));
+
+        // execute
+        final Throwable failure = catchThrowable(() -> LightkeeperRuntimeResolver.resolveFromClassOutput(unrelated));
+
+        // verify
+        assertThat(failure).isInstanceOf(IllegalStateException.class)
+            .hasRootCauseMessage("Test-class ownership anchor belongs to another output directory.");
     }
 
     @Test

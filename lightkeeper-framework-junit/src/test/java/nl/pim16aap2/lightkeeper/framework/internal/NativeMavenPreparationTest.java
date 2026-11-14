@@ -21,6 +21,8 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -131,6 +133,54 @@ class NativeMavenPreparationTest
     }
 
     @Test
+    void prepare_shouldTerminateItsProducerAfterTimeout()
+        throws Exception
+    {
+        // setup
+        final Path executable = sleepingProducer();
+        final ModuleTestPlan plan = plan(executable.toString(), List.of("default"),
+            Map.of("lightkeeper.buildTimeoutSeconds", "1"));
+
+        // execute
+        final Throwable failure = catchThrowable(() -> NativeMavenPreparation.prepare(plan));
+
+        // verify
+        assertThat(failure).isInstanceOf(IllegalStateException.class).hasMessageContaining("timed out after 1");
+        assertThat(producerIsAlive()).isFalse();
+    }
+
+    @Test
+    void prepare_shouldRetainInterruptionAndTerminateItsProducer()
+        throws Exception
+    {
+        // setup
+        final ModuleTestPlan plan = plan(sleepingProducer().toString(), List.of("default"));
+        final AtomicReference<Throwable> failure = new AtomicReference<>();
+        final AtomicBoolean interrupted = new AtomicBoolean();
+        final Thread worker = Thread.ofPlatform().unstarted(() ->
+        {
+            failure.set(catchThrowable(() -> NativeMavenPreparation.prepare(plan)));
+            interrupted.set(Thread.currentThread().isInterrupted());
+        });
+
+        // execute
+        worker.start();
+        final long deadline = System.nanoTime() + Duration.ofSeconds(5).toNanos();
+        while (!Files.isRegularFile(root.resolve("child.pid")) && System.nanoTime() < deadline)
+        {
+            Thread.sleep(10);
+        }
+        worker.interrupt();
+        worker.join(5_000);
+
+        // verify
+        assertThat(worker.isAlive()).isFalse();
+        assertThat(failure.get()).isInstanceOf(IllegalStateException.class).hasMessageContaining("cancelled");
+        assertThat(interrupted).isTrue();
+        assertThat(producerIsAlive()).isFalse();
+    }
+
+    @Test
     void prepare_shouldFailWithItsBuildLogInsteadOfFallingBackToOldInputs()
         throws Exception
     {
@@ -153,12 +203,33 @@ class NativeMavenPreparationTest
 
     private ModuleTestPlan plan(String executable, List<String> executions)
     {
+        return plan(executable, executions, Map.of("revision", "2"));
+    }
+
+    private Path sleepingProducer()
+        throws Exception
+    {
+        final Path executable = Files.writeString(root.resolve("sleeping-maven"),
+            "#!/bin/sh\necho $$ > child.pid\nexec sleep 30\n");
+        Files.setPosixFilePermissions(executable, PosixFilePermissions.fromString("rwx------"));
+        return executable;
+    }
+
+    private boolean producerIsAlive()
+        throws Exception
+    {
+        final long pid = Long.parseLong(Files.readString(root.resolve("child.pid")).trim());
+        return ProcessHandle.of(pid).map(ProcessHandle::isAlive).orElse(false);
+    }
+
+    private ModuleTestPlan plan(String executable, List<String> executions, Map<String, String> properties)
+    {
         return new ModuleTestPlan(
             ModuleTestPlan.SCHEMA_VERSION, root.toString(), root.resolve("pom.xml").toString(),
             root.resolve("pom.xml").toString(), root.resolve("custom/test-output").toString(), executions,
             executions.size() == 1 ? executions.getFirst() : null,
             new MavenBuildContext(executable, System.getProperty("java.home"), List.of("integration"),
-                List.of("release"), Map.of("revision", "2"), null, null, null, null)
+                List.of("release"), properties, null, null, null, null)
         );
     }
 }

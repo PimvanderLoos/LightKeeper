@@ -13,7 +13,7 @@ import java.nio.file.Path;
 import java.util.Objects;
 
 /**
- * Resolves a LightKeeper runtime manifest for a JUnit test class.
+ * Resolves a JUnit class's Maven-owned module plan or an authoritative explicit runtime manifest.
  */
 public final class LightkeeperRuntimeResolver
 {
