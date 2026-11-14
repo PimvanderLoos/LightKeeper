@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 /**
- * Canonically hashes files and directory trees used by IDE runtime preparation and validation.
+ * Canonically hashes build inputs and immutable server trees without treating hashes as source-freshness proofs.
  */
 public final class IdeRuntimeArtifactHasher
 {

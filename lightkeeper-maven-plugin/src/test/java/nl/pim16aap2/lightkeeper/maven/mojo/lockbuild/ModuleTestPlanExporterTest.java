@@ -6,6 +6,7 @@ import nl.pim16aap2.lightkeeper.runtime.ModuleTestPlan;
 import nl.pim16aap2.lightkeeper.runtime.TestModuleAnchor;
 import org.apache.maven.execution.DefaultMavenExecutionRequest;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.execution.ProjectDependencyGraph;
 import org.apache.maven.model.Build;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.model.PluginExecution;
@@ -74,6 +75,47 @@ class ModuleTestPlanExporterTest
     }
 
     @Test
+    void write_shouldRejectAnUnguardedUpstreamProducer()
+        throws Exception
+    {
+        // setup
+        final MavenProject project = project("default");
+        final MavenProject producer = new MavenProject();
+        producer.setGroupId("example");
+        producer.setArtifactId("producer");
+        producer.setVersion("1");
+        final ProjectDependencyGraph graph = mock();
+        final MavenSession session = mock();
+        when(session.getProjectDependencyGraph()).thenReturn(graph);
+        when(graph.getUpstreamProjects(project, true)).thenReturn(List.of(producer));
+
+        // execute
+        final Throwable failure = catchThrowable(() -> ModuleTestPlanExporter.write(project, session));
+
+        // verify
+        assertThat(failure).isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("example:producer", "early", "reactor parent");
+        assertThat(ModulePlanPaths.modulePlan(root)).doesNotExist();
+    }
+
+    @Test
+    void write_shouldRejectAGuardBoundAfterProductionCompilation()
+        throws Exception
+    {
+        // setup
+        final MavenProject project = project("default");
+        project.getBuildPlugins().getFirst().getExecutions().getFirst().setPhase("package");
+        final MavenSession session = mock();
+
+        // execute
+        final Throwable failure = catchThrowable(() -> ModuleTestPlanExporter.write(project, session));
+
+        // verify
+        assertThat(failure).isInstanceOf(IllegalStateException.class).hasMessageContaining("early", "lock-build");
+        verifyNoInteractions(session);
+    }
+
+    @Test
     void write_shouldIgnoreProducerModulesWithoutPreparation()
         throws Exception
     {
@@ -105,6 +147,7 @@ class ModuleTestPlanExporterTest
         {
             final PluginExecution execution = new PluginExecution();
             execution.setId(id);
+            execution.addGoal("lock-build");
             execution.addGoal("prepare-server");
             plugin.addExecution(execution);
         }

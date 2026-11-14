@@ -43,6 +43,7 @@ final class ProductionOutputInvalidator
         try
         {
             final Path module = project.getBasedir().toPath().toRealPath();
+            IdeRuntimePaths.prepareStateDirectory(module);
             final Path build = canonicalCandidate(Path.of(project.getBuild().getDirectory()));
             final Path output = canonicalCandidate(Path.of(project.getBuild().getOutputDirectory()));
             final Path testOutput = canonicalCandidate(Path.of(project.getBuild().getTestOutputDirectory()));

@@ -47,6 +47,7 @@ public final class BuildOutputLease implements AutoCloseable
         try
         {
             final Path reactor = reactorDirectory.toRealPath();
+            IdeRuntimePaths.prepareStateDirectory(reactor);
             final Path lockPath = lockPath(reactor);
             final FileLockLease lease = FileLockLease.acquire(lockPath, timeout);
             try

@@ -11,9 +11,6 @@ import nl.pim16aap2.lightkeeper.provisioning.assets.WorldInputSpec;
 import nl.pim16aap2.lightkeeper.provisioning.serverprovider.PaperServerProvider;
 import nl.pim16aap2.lightkeeper.provisioning.serverprovider.ServerProvider;
 import nl.pim16aap2.lightkeeper.provisioning.serverprovider.SpigotServerProvider;
-import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeDiscovery;
-import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeDiscoveryReader;
-import nl.pim16aap2.lightkeeper.runtime.IdeRuntimePaths;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
 import org.eclipse.aether.RepositorySystem;
@@ -171,7 +168,7 @@ class PrepareServerMojoInternalTest
     }
 
     @Test
-    void validateConfiguration_shouldRejectIdeRefreshWithoutIdeMode()
+    void validateConfiguration_shouldAcceptRetiredIdeFlagsWithoutASeparateMode()
         throws Exception
     {
         // setup
@@ -184,10 +181,8 @@ class PrepareServerMojoInternalTest
         setField(mojo, "ideRefresh", true);
 
         // execute + verify
-        assertThatThrownBy(() -> invokePrivate(mojo, "validateConfiguration", new Class<?>[0]))
-            .isInstanceOf(MojoExecutionException.class)
-            .hasMessageContaining("lightkeeper.ide.refresh=true")
-            .hasMessageContaining("lightkeeper.ide=true");
+        assertThatCode(() -> invokePrivate(mojo, "validateConfiguration", new Class<?>[0]))
+            .doesNotThrowAnyException();
     }
 
     @Test
@@ -826,7 +821,7 @@ class PrepareServerMojoInternalTest
     }
 
     @Test
-    void execute_shouldCreateReuseAndRefreshDurableIdeRuntime(@TempDir Path tempDirectory)
+    void execute_shouldUseCanonicalPreparationWhenRetiredIdeFlagsArePresent(@TempDir Path tempDirectory)
         throws Exception
     {
         // setup
@@ -836,58 +831,27 @@ class PrepareServerMojoInternalTest
         );
         configureRequiredFields(mojo, tempDirectory, "paper");
         setField(mojo, "ide", true);
-        final MavenProject project = new MavenProject();
-        project.setFile(tempDirectory.resolve("pom.xml").toFile());
-        setField(mojo, "project", project);
-        setField(mojo, "executionId", "prepare-server-paper");
-
-        final ServerProvider resolvedProvider = mock(ServerProvider.class);
-        final ServerProvider durableProvider = mock(ServerProvider.class);
-        final Path durableServerDirectory = tempDirectory.resolve("durable-server");
-        Files.createDirectories(durableServerDirectory.resolve("plugins"));
-        Files.writeString(durableServerDirectory.resolve("paper.jar"), "server");
-        Files.writeString(
-            durableServerDirectory.resolve("plugins/lightkeeper-agent-spigot.jar"),
-            "agent"
-        );
-        when(resolvedProvider.withRuntimeLocations(any(Path.class), any(Path.class))).thenReturn(durableProvider);
-        when(durableProvider.targetServerDirectoryPath()).thenReturn(durableServerDirectory);
-        when(durableProvider.targetJarFilePath()).thenReturn(durableServerDirectory.resolve("paper.jar"));
+        setField(mojo, "ideRefresh", true);
+        final ServerProvider provider = mock();
+        final Path server = Files.createDirectories(tempDirectory.resolve("prepared-server"));
+        Files.createDirectories(server.resolve("plugins"));
+        Files.writeString(server.resolve("paper.jar"), "server");
+        Files.writeString(server.resolve("server.properties"), "online-mode=false\n");
+        when(provider.targetServerDirectoryPath()).thenReturn(server);
+        when(provider.targetJarFilePath()).thenReturn(server.resolve("paper.jar"));
         mojo.setResolvedServerSetupForTests(new PrepareServerResolvedServerSetup(
-            resolvedProvider,
-            "1.21.11",
-            116L,
-            "paper-cache-key",
-            768
+            provider, "1.21.11", 116L, "paper-cache-key", 768
         ));
         mojo.setResolvedAgentMetadataForTests(new PrepareServerAgentMetadata("abc123", "agent-cache-id"));
         mojo.setResolvedSocketPathForTests(tempDirectory.resolve("sockets/lk-test.sock"));
 
         // execute
         mojo.execute();
-        final IdeRuntimeDiscovery initial = new IdeRuntimeDiscoveryReader().read(
-            IdeRuntimePaths.discoveryFile(tempDirectory)
-        );
-        mojo.execute();
-        final IdeRuntimeDiscovery reused = new IdeRuntimeDiscoveryReader().read(
-            IdeRuntimePaths.discoveryFile(tempDirectory)
-        );
-        setField(mojo, "ideRefresh", true);
-        mojo.execute();
-        final IdeRuntimeDiscovery refreshed = new IdeRuntimeDiscoveryReader().read(
-            IdeRuntimePaths.discoveryFile(tempDirectory)
-        );
 
         // verify
-        assertThat(Path.of(initial.runtimeManifestPath())).isRegularFile();
-        assertThat(initial).isEqualTo(reused);
-        assertThat(refreshed.runtimeManifestPath()).isNotEqualTo(initial.runtimeManifestPath());
-        assertThat(Path.of(refreshed.runtimeManifestPath())).isRegularFile();
-        assertThat(tempDirectory.resolve("runtime-manifest.json")).doesNotExist();
-        assertThat(IdeRuntimePaths.stateDirectory(tempDirectory).resolve(".gitignore")).isRegularFile();
-        verify(resolvedProvider, times(2)).withRuntimeLocations(any(Path.class), any(Path.class));
-        verify(durableProvider, times(2)).prepareServer();
-        verify(resolvedProvider, never()).prepareServer();
+        assertThat(tempDirectory.resolve("runtime-manifest.json")).isRegularFile();
+        assertThat(tempDirectory.resolve(".lightkeeper/ide")).doesNotExist();
+        verify(provider).prepareServer();
     }
 
     @Test

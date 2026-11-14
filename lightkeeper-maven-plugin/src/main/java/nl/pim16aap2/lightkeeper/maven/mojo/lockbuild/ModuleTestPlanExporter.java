@@ -1,6 +1,7 @@
 package nl.pim16aap2.lightkeeper.maven.mojo.lockbuild;
 
 import nl.pim16aap2.lightkeeper.runtime.GeneratedMetadata;
+import nl.pim16aap2.lightkeeper.runtime.IdeRuntimePaths;
 import nl.pim16aap2.lightkeeper.runtime.MavenBuildContext;
 import nl.pim16aap2.lightkeeper.runtime.ModulePlanPaths;
 import nl.pim16aap2.lightkeeper.runtime.ModuleTestPlan;
@@ -47,9 +48,11 @@ final class ModuleTestPlanExporter
         {
             return;
         }
+        validateGuard(project);
         validateProducerGuards(project, session);
 
         final Path module = project.getBasedir().toPath().toRealPath();
+        IdeRuntimePaths.prepareStateDirectory(module);
         final Path output = Path.of(project.getBuild().getTestOutputDirectory()).toAbsolutePath().normalize();
         final MavenExecutionRequest request = session.getRequest();
         final File reactorPom = Objects.requireNonNull(request.getPom(), "Maven request has no reactor POM.");
@@ -83,15 +86,20 @@ final class ModuleTestPlanExporter
             {
                 continue;
             }
-            final Plugin plugin = upstream.getPlugin(PLUGIN_KEY);
-            if (plugin == null || plugin.getExecutions().stream().noneMatch(execution ->
-                execution.getGoals().contains("lock-build") && (execution.getPhase() == null ||
-                    "initialize".equals(execution.getPhase()) || "validate".equals(execution.getPhase()))))
-            {
-                throw new IllegalStateException("Producer module '" + upstream.getId()
-                    + "' has no early LightKeeper lock-build execution. Inherit the lightweight lock-build goal "
-                    + "from the reactor parent so packaging and snapshot capture cannot overlap another build.");
-            }
+            validateGuard(upstream);
+        }
+    }
+
+    private static void validateGuard(MavenProject project)
+    {
+        final Plugin plugin = project.getPlugin(PLUGIN_KEY);
+        if (plugin == null || plugin.getExecutions().stream().noneMatch(execution ->
+            execution.getGoals().contains("lock-build") && (execution.getPhase() == null ||
+                "initialize".equals(execution.getPhase()) || "validate".equals(execution.getPhase()))))
+        {
+            throw new IllegalStateException("Producer module '" + project.getId()
+                + "' has no early LightKeeper lock-build execution. Inherit the lightweight lock-build goal "
+                + "from the reactor parent so packaging and snapshot capture cannot overlap another build.");
         }
     }
 
