@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
@@ -86,20 +87,6 @@ public abstract class ServerProvider
      */
     private final Path baseServerJarFile;
 
-    /**
-     * Indicates whether the base server should be recreated.
-     * <p>
-     * This is determined based on the server specification and the current state of the base server directory.
-     */
-    private final boolean shouldRecreateBaseServer;
-
-    /**
-     * Indicates whether the server JAR file should be recreated.
-     * <p>
-     * This is determined based on the server specification and the current state of the JAR file in the cache.
-     */
-    private final boolean shouldRecreateJar;
-
     protected ServerProvider(System.Logger log, String name, ServerSpecification serverSpecification)
     {
         this.log = log;
@@ -132,17 +119,34 @@ public abstract class ServerProvider
         this.jarCacheFile = this.jarCacheDirectory.resolve(outputJarFileName);
         this.baseServerJarFile = this.baseServerDirectory.resolve(outputJarFileName);
 
-        this.shouldRecreateJar = shouldBeRecreated(
+    }
+
+    /**
+     * Evaluates JAR expiry after shared cache ownership has been acquired.
+     *
+     * @return Whether the current cache contents require rebuilding.
+     */
+    protected final boolean shouldRecreateJar()
+    {
+        return shouldBeRecreated(
             serverSpecification.forceRebuildJar(),
             serverSpecification.jarCacheExpiryDays(),
-            this.jarCacheFile
+            jarCacheFile
         );
+    }
 
-        this.shouldRecreateBaseServer = shouldBeRecreated(
+    /**
+     * Evaluates base expiry/version after shared cache ownership has been acquired.
+     *
+     * @return Whether the current base server requires initialization.
+     */
+    protected final boolean shouldRecreateBaseServer()
+    {
+        return shouldBeRecreated(
             serverSpecification.forceRecreateBaseServer(),
             serverSpecification.baseServerCacheExpiryDays(),
-            this.baseServerDirectory.resolve(EULA_FILE_NAME)
-        ) || !this.baseServerVersionMatches();
+            baseServerDirectory.resolve(EULA_FILE_NAME)
+        ) || !baseServerVersionMatches();
     }
 
     /**
@@ -357,22 +361,36 @@ public abstract class ServerProvider
     public final void prepareServer()
         throws ProvisioningException
     {
-        pruneUnusedCacheDirectoriesIfConfigured();
+        try (ServerCacheLease ignored = ServerCacheLease.acquire(
+            serverSpecification.jarCacheDirectoryRoot(),
+            serverSpecification.baseServerCacheDirectoryRoot(),
+            Duration.ofMinutes(5)
+        ))
+        {
+            prepareWithOwnedCaches();
+        }
+    }
 
-        if (shouldRecreateJar())
+    private void prepareWithOwnedCaches()
+    {
+        pruneUnusedCacheDirectoriesIfConfigured();
+        final boolean recreateJar = shouldRecreateJar();
+        final boolean recreateBase = shouldRecreateBaseServer();
+
+        if (recreateJar)
         {
             log().log(System.Logger.Level.INFO, "Recreating server JAR file");
             FileUtil.cleanDirectory(jarCacheDirectory(), "jar cache directory");
             createBaseServerJar();
 
             // The jar file can be updated without recreating the base server directory.
-            if (!shouldRecreateBaseServer())
+            if (!recreateBase)
             {
                 copyJarFromCacheToBaseServer();
             }
         }
 
-        if (shouldRecreateBaseServer())
+        if (recreateBase)
         {
             log().log(System.Logger.Level.INFO, "Recreating base server directory");
             FileUtil.cleanDirectory(baseServerDirectory(), "base server directory");

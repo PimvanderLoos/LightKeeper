@@ -69,7 +69,7 @@ class BuildInvocationLeasesTest
 
         // verify
         assertThat(failure).isInstanceOf(IllegalStateException.class).hasRootCauseMessage(
-            "Timed out waiting for the JVM's producer build lease: " + BuildOutputLease.lockPath(root)
+            "Timed out waiting for the JVM's file lease: " + BuildOutputLease.lockPath(root)
         );
         verify(log, times(3)).info(anyString());
         verify(first).getExecutionRootDirectory();
