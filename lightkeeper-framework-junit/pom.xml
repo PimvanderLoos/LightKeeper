@@ -31,6 +31,12 @@
     <dependencies>
         <dependency>
             <groupId>nl.pim16aap2.lightkeeper</groupId>
+            <artifactId>lightkeeper-provisioning</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>nl.pim16aap2.lightkeeper</groupId>
             <artifactId>lightkeeper-runtime-core</artifactId>
             <version>${project.version}</version>
         </dependency>

@@ -1,10 +1,20 @@
 package nl.pim16aap2.lightkeeper.framework;
 
 import nl.pim16aap2.lightkeeper.framework.internal.DefaultLightkeeperFramework;
+import nl.pim16aap2.lightkeeper.provisioning.session.PreparedServerSnapshot;
+import nl.pim16aap2.lightkeeper.provisioning.session.ServerSession;
+import nl.pim16aap2.lightkeeper.provisioning.session.ServerSnapshots;
 import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeLock;
+import nl.pim16aap2.lightkeeper.runtime.IdeRuntimePaths;
 import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeSelection;
+import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeValidator;
+import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
+import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestReader;
+import nl.pim16aap2.lightkeeper.runtime.RuntimeManifestValidator;
+import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
 import org.jspecify.annotations.Nullable;
 
+import java.io.IOException;
 import java.nio.file.Path;
 
 /**
@@ -29,9 +39,11 @@ public final class Lightkeeper
     }
 
     /**
-     * Resolves and starts the runtime selected for a test class, including IDE discovery and locking.
+     * Resolves the runtime selected for a test class and starts a private mutable server session.
+     * Explicit manifest properties retain direct control over their server directory.
      *
-     * @param testClass Test class whose module owns the prepared runtime.
+     * @param testClass
+     *     Test class whose module owns the prepared runtime.
      * @return A started framework.
      */
     public static ILightkeeperFramework start(Class<?> testClass)
@@ -40,9 +52,38 @@ public final class Lightkeeper
             LightkeeperRuntimeResolver.resolveRuntime(testClass);
         final @Nullable IdeRuntimeSelection selection = resolvedRuntime.ideSelection();
         if (selection == null)
+        {
             return start(resolvedRuntime.manifestPath());
+        }
 
-        final IdeRuntimeLock lock = IdeRuntimeLock.acquire(selection.moduleDirectory());
-        return DefaultLightkeeperFramework.start(selection, lock);
+        final PreparedServerSnapshot snapshot = prepareSnapshot(selection);
+        return DefaultLightkeeperFramework.start(createSession(snapshot, selection.moduleDirectory()));
+    }
+
+    static PreparedServerSnapshot prepareSnapshot(IdeRuntimeSelection selection)
+    {
+        try (IdeRuntimeLock ignored = IdeRuntimeLock.acquire(selection.moduleDirectory()))
+        {
+            final RuntimeManifest manifest = new RuntimeManifestReader().read(selection.runtimeManifestPath());
+            RuntimeManifestValidator.validateForRuntimeStartup(manifest, RuntimeProtocol.VERSION);
+            IdeRuntimeValidator.validate(selection.discovery(), selection.moduleDirectory(), manifest);
+            final Path metadata = ServerSnapshots.capture(
+                manifest,
+                IdeRuntimePaths.stateDirectory(selection.moduleDirectory()).resolve("snapshots")
+            );
+            return ServerSnapshots.read(metadata);
+        }
+        catch (IOException exception)
+        {
+            throw new IllegalStateException(
+                "Failed to read prepared runtime '" + selection.runtimeManifestPath() + "'.",
+                exception
+            );
+        }
+    }
+
+    static ServerSession createSession(PreparedServerSnapshot snapshot, Path moduleDirectory)
+    {
+        return ServerSession.create(snapshot, IdeRuntimePaths.stateDirectory(moduleDirectory).resolve("sessions"));
     }
 }

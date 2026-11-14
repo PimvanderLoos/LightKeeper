@@ -14,8 +14,6 @@ import org.apache.commons.io.FileUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.net.InetAddress;
-import java.net.ServerSocket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -334,28 +332,6 @@ public abstract class ServerProvider
     }
 
     /**
-     * Reserves an available local TCP port.
-     *
-     * @return A currently available local TCP port.
-     *
-     * @throws ProvisioningException
-     *     If no local TCP port could be reserved.
-     */
-    protected static int reserveAvailableTcpPort()
-        throws ProvisioningException
-    {
-        try (ServerSocket socket = new ServerSocket(0, 0, InetAddress.getLoopbackAddress()))
-        {
-            socket.setReuseAddress(true);
-            return socket.getLocalPort();
-        }
-        catch (IOException exception)
-        {
-            throw new ProvisioningException("Failed to reserve an available TCP port for server startup.", exception);
-        }
-    }
-
-    /**
      * Copies a JAR file from {@link #jarCacheFile()} to {@link #targetJarFile()}.
      *
      * @throws ProvisioningException
@@ -612,7 +588,7 @@ public abstract class ServerProvider
     protected int reserveTargetServerPort()
         throws ProvisioningException
     {
-        return reserveAvailableTcpPort();
+        return TargetServerPropertiesConfigurer.reserveAvailableTcpPort();
     }
 
     private boolean isTransientRetryFile(Path path)

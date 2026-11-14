@@ -22,6 +22,9 @@ public final class RuntimeProtocol
      */
     public static final int VERSION = 12;
 
+    /** Portable upper bound for the UTF-8 length of Unix domain socket paths. */
+    public static final int UNIX_SOCKET_PATH_MAX_BYTES = 100;
+
     /**
      * Minecraft server version supported by this LightKeeper build.
      */

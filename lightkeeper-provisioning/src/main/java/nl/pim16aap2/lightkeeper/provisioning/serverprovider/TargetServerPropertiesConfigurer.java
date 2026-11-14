@@ -3,6 +3,8 @@ package nl.pim16aap2.lightkeeper.provisioning.serverprovider;
 import nl.pim16aap2.lightkeeper.provisioning.ProvisioningException;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -12,10 +14,32 @@ import java.util.List;
 /**
  * Rewrites target-server {@code server.properties} with runtime-specific networking values.
  */
-final class TargetServerPropertiesConfigurer
+public final class TargetServerPropertiesConfigurer
 {
     private TargetServerPropertiesConfigurer()
     {
+    }
+
+    /**
+     * Reserves an available local TCP port.
+     *
+     * @return A currently available local TCP port.
+     *
+     * @throws ProvisioningException
+     *     If no local TCP port could be reserved.
+     */
+    public static int reserveAvailableTcpPort()
+        throws ProvisioningException
+    {
+        try (ServerSocket socket = new ServerSocket(0, 0, InetAddress.getLoopbackAddress()))
+        {
+            socket.setReuseAddress(true);
+            return socket.getLocalPort();
+        }
+        catch (IOException exception)
+        {
+            throw new ProvisioningException("Failed to reserve an available TCP port for server startup.", exception);
+        }
     }
 
     /**
@@ -30,7 +54,7 @@ final class TargetServerPropertiesConfigurer
      * @throws ProvisioningException
      *     If reading or writing properties fails.
      */
-    static void rewriteWithRuntimePort(System.Logger log, Path targetServerPropertiesFile, int port)
+    public static void rewriteWithRuntimePort(System.Logger log, Path targetServerPropertiesFile, int port)
         throws ProvisioningException
     {
         final List<String> lines;

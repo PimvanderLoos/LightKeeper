@@ -69,14 +69,14 @@ agent after framework changes that also require new protocol or agent behavior. 
 the effective packaged inputs are unchanged and creates a new preparation when their hashes or launch configuration
 change.
 
-To discard persistent world/plugin state without changing inputs, request a fresh runtime:
+To recreate the immutable prepared inputs without changing their configuration, request a fresh preparation:
 
 ```sh
 mvn pre-integration-test -Dlightkeeper.ide=true -Dlightkeeper.ide.refresh=true
 ```
 
-Refresh creates a new preparation and atomically switches later launches to it. It never mutates a runtime held by a
-running test. Old preparations are not pruned automatically in this release. To recover all generated state, close any
+Refresh creates a new preparation and atomically switches later launches to it. Active tests keep their private
+session copies. Old preparations are not pruned automatically in this release. To recover all generated state, close any
 running LightKeeper test and move the module's `.lightkeeper/` directory to trash, then run setup again.
 
 ## Overrides and persistence
@@ -85,8 +85,16 @@ running LightKeeper test and move the module's `.lightkeeper/` directory to tras
 explicit path fails immediately and does not fall back to IDE discovery. `Lightkeeper.start(Path)` has the same explicit
 contract. Custom IDE class-output layouts are not guessed; use the explicit property for those layouts.
 
-The prepared server is intentionally persistent. Worlds, plugin data, and other live server files carry over between
-runs. The setup fingerprint records resolved server metadata, launch settings, the embedded agent, deployed plugins,
+Discovered runtimes use an immutable prepared snapshot and a private mutable session per test class. Ordinary methods
+share a server process. `@FreshServer` creates a new process against the same class session, preserving world and plugin
+data; an explicit `framework.server().restart()` also preserves that data. Independent classes and launches start from
+the prepared inputs. Successful sessions under `.lightkeeper/sessions/` are removed after their processes stop; failed
+sessions retain their files for diagnosis. The preparation lock is released before a server starts.
+
+Explicit manifest paths retain direct control over their server directory and remain the route for deliberate state
+reuse. The selected Java executable and extra JVM arguments are carried into each private session.
+
+The setup fingerprint records resolved server metadata, launch settings, the embedded agent, deployed plugins,
 world templates, and overlays. Launch validation proves that durable files are intact and that still-present local
 inputs match what setup examined. It cannot detect unbuilt source edits or a newly published remote snapshot until
 Maven resolves those inputs during another setup run.
@@ -98,8 +106,8 @@ Maven resolves those inputs during another setup run.
 | Discovery is missing or corrupt | Setup has not run for this module, or `.lightkeeper` was removed | Rerun the module's setup execution |
 | Ownership or checkout path mismatch | The checkout/module moved after setup | Rerun setup in the new checkout |
 | Runtime is stale or incompatible | A required artifact, source input, schema, or protocol changed | Rebuild local artifacts, then rerun setup |
-| Runtime is busy | Another setup or test JVM holds the module lock | Close that test/server and retry |
-| Server state is dirty | Reuse preserves worlds and plugin data | Run setup with `-Dlightkeeper.ide.refresh=true` |
+| Preparation is busy | Another setup or snapshot capture holds the module lock | Let preparation finish and retry |
+| Explicit runtime state is dirty | An explicit manifest reuses its server directory | Reset that explicitly owned runtime, or use discovery for private sessions |
 | Server cache disappeared | Durable preparation references a removed required artifact | Rerun setup; Maven recreates what is needed |
 
 Debug the JUnit side with the IDE's test-JVM debugger. Code inside Bukkit/Paper runs in the separate server JVM; use

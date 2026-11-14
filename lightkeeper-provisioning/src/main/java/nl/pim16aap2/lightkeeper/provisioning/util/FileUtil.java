@@ -288,6 +288,7 @@ public final class FileUtil
                     Files.copy(
                         file,
                         target.resolve(relative),
+                        java.nio.file.LinkOption.NOFOLLOW_LINKS,
                         StandardCopyOption.REPLACE_EXISTING,
                         StandardCopyOption.COPY_ATTRIBUTES
                     );

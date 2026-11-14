@@ -2,6 +2,9 @@ package nl.pim16aap2.lightkeeper.framework;
 
 import nl.pim16aap2.lightkeeper.framework.internal.DefaultLightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.internal.FailureDiagnosticsWriter;
+import nl.pim16aap2.lightkeeper.provisioning.session.PreparedServerSnapshot;
+import nl.pim16aap2.lightkeeper.provisioning.session.ServerSession;
+import nl.pim16aap2.lightkeeper.runtime.IdeRuntimeSelection;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -18,6 +21,11 @@ import java.util.Locale;
 
 /**
  * JUnit extension for framework lifecycle management.
+ *
+ * <p>Discovered prepared runtimes are copied into a private mutable session for each test class. Methods normally
+ * share one process; {@link FreshServer} restarts the process against the same class session and retains its world
+ * state. Independent classes and JUnit launches start from the clean prepared inputs. An explicitly configured
+ * runtime manifest retains direct control over its existing server directory.
  *
  * <p>On test failure the extension writes a diagnostics bundle (test outcome, captured server errors, server
  * console output) before any cleanup runs — see {@link FailureDiagnosticsWriter}. Two system properties control
@@ -40,6 +48,7 @@ public final class LightkeeperExtension implements
     private static final String KEY_METHOD_FRAMEWORK = "method-framework";
     private static final String KEY_CLASS_USES_FRESH_LIFECYCLE = "class-uses-fresh-lifecycle";
     private static final String KEY_CLASS_HAS_METHOD_FRESH_SERVERS = "class-has-method-fresh-servers";
+    private static final String KEY_SESSION = "server-session";
 
     /**
      * Starts a shared framework when tests are not configured for per-method fresh servers.
@@ -84,6 +93,10 @@ public final class LightkeeperExtension implements
     @Override
     public void afterEach(ExtensionContext context)
     {
+        if (context.getExecutionException().isPresent())
+        {
+            preserveSession(context);
+        }
         maybeWriteDiagnostics(context);
 
         if (!usesFreshLifecycleForMethod(context))
@@ -102,7 +115,9 @@ public final class LightkeeperExtension implements
             ILightkeeperFramework.class
         );
         if (framework != null)
-            framework.close();
+        {
+            closeFramework(framework, context);
+        }
     }
 
     /**
@@ -115,8 +130,18 @@ public final class LightkeeperExtension implements
             KEY_SHARED_FRAMEWORK,
             ILightkeeperFramework.class
         );
-        if (framework != null)
-            framework.close();
+        final ServerSession session = getClassStore(context).get(KEY_SESSION, ServerSession.class);
+        try (session)
+        {
+            if (framework != null)
+            {
+                closeFramework(framework, context);
+            }
+        }
+        finally
+        {
+            getClassStore(context).remove(KEY_SESSION);
+        }
     }
 
     /**
@@ -215,7 +240,9 @@ public final class LightkeeperExtension implements
             ILightkeeperFramework.class
         );
         if (sharedFramework != null)
-            sharedFramework.close();
+        {
+            closeFramework(sharedFramework, context);
+        }
     }
 
     private static ExtensionContext.Store getMethodStore(ExtensionContext context)
@@ -234,7 +261,54 @@ public final class LightkeeperExtension implements
 
     private static ILightkeeperFramework startFramework(ExtensionContext context)
     {
-        return Lightkeeper.start(context.getRequiredTestClass());
+        final LightkeeperRuntimeResolver.ResolvedRuntime resolved =
+            LightkeeperRuntimeResolver.resolveRuntime(context.getRequiredTestClass());
+        final @Nullable IdeRuntimeSelection selection = resolved.ideSelection();
+        if (selection == null)
+        {
+            return Lightkeeper.start(resolved.manifestPath());
+        }
+        final PreparedServerSnapshot snapshot = context.getRoot().getStore(NAMESPACE).computeIfAbsent(
+            selection.discovery(),
+            ignored -> Lightkeeper.prepareSnapshot(selection),
+            PreparedServerSnapshot.class
+        );
+        final ServerSession session = getClassStore(context).computeIfAbsent(
+            KEY_SESSION,
+            ignored -> Lightkeeper.createSession(snapshot, selection.moduleDirectory()),
+            ServerSession.class
+        );
+        try
+        {
+            return DefaultLightkeeperFramework.start(session.manifestPath());
+        }
+        catch (RuntimeException exception)
+        {
+            session.preserve();
+            throw exception;
+        }
+    }
+
+    private static void closeFramework(ILightkeeperFramework framework, ExtensionContext context)
+    {
+        try
+        {
+            framework.close();
+        }
+        catch (RuntimeException exception)
+        {
+            preserveSession(context);
+            throw exception;
+        }
+    }
+
+    private static void preserveSession(ExtensionContext context)
+    {
+        final ServerSession session = getClassStore(context).get(KEY_SESSION, ServerSession.class);
+        if (session != null)
+        {
+            session.preserve();
+        }
     }
 
     /**

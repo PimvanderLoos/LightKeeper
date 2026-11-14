@@ -32,6 +32,10 @@ public final class IdeRuntimeArtifactHasher
     public static String sha256(Path input)
         throws IOException
     {
+        if (Files.isSymbolicLink(input))
+        {
+            throw new IOException("Symbolic links are not allowed in preparation inputs: " + input);
+        }
         if (Files.isRegularFile(input))
             return hashFile(input);
         if (!Files.isDirectory(input))
@@ -49,7 +53,13 @@ public final class IdeRuntimeArtifactHasher
         for (final Path entry : entries)
         {
             if (Files.isSymbolicLink(entry))
+            {
                 throw new IOException("Symbolic links are not allowed in IDE preparation inputs: " + entry);
+            }
+            if (!Files.isDirectory(entry) && !Files.isRegularFile(entry))
+            {
+                throw new IOException("Non-regular files are not allowed in preparation inputs: " + entry);
+            }
             update(digest, Files.isDirectory(entry) ? "directory:" : "file:");
             update(digest, normalizedRelativePath(input, entry));
             if (Files.isRegularFile(entry))
