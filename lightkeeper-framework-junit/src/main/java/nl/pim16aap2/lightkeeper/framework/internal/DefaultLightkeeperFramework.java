@@ -151,6 +151,8 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
             new MinecraftServerProcess(runtimeManifest, diagnosticsDirectory);
 
         UdsAgentClient agentClient = null;
+        String phase = "server-startup";
+        final long started = System.nanoTime();
         try
         {
             LOG.log(
@@ -158,6 +160,8 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
                 () -> "LK_FRAMEWORK: Starting Minecraft server from '" + serverDirectory + "'."
             );
             minecraftServerProcess.start(STARTUP_TIMEOUT);
+            phase = "agent-handshake";
+            LOG.log(System.Logger.Level.INFO, "LK_PROGRESS: Server started; connecting to LightKeeper agent.");
 
             agentClient = new UdsAgentClient(
                 Path.of(runtimeManifest.udsSocketPath()),
@@ -175,14 +179,33 @@ public final class DefaultLightkeeperFramework implements ILightkeeperFramework,
                 agentClient
             );
             final DefaultLightkeeperFramework framework = component.framework();
+            phase = "configured-worlds";
             framework.preloadConfiguredWorlds();
+            LOG.log(System.Logger.Level.INFO, "LK_PROGRESS: Server and agent ready for tests ({0} ms).",
+                java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started));
             return framework;
         }
         catch (Exception exception)
         {
+            final Path report = "server-startup".equals(phase) ? null
+                : minecraftServerProcess.writeDiagnostics(phase, exception);
             if (agentClient != null)
+            {
                 agentClient.close();
-            minecraftServerProcess.stop(SHUTDOWN_TIMEOUT);
+            }
+            try
+            {
+                minecraftServerProcess.stop(SHUTDOWN_TIMEOUT);
+            }
+            catch (RuntimeException shutdownFailure)
+            {
+                exception.addSuppressed(shutdownFailure);
+            }
+            if (report != null)
+            {
+                throw new IllegalStateException("LightKeeper failed during " + phase + ". Inspect " + report
+                    + " for the cause, next action and server logs.", exception);
+            }
             throw exception;
         }
     }

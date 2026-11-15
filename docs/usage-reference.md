@@ -324,12 +324,37 @@ explicit reasons for APIs that should not receive custom assertions.
 
 Run `mvn lightkeeper:doctor`, or `mvn -pl :your-e2e-module -am lightkeeper:doctor` from a reactor root.
 The aggregate goal inspects the selected preparation modules once: Maven/Java, transport, effective server settings,
-producer guards, target selection, Failsafe bindings/skips and direct-JUnit ownership metadata. It never executes build
+producer guards, target selection, Failsafe bindings/skips and direct-JUnit ownership metadata. Configured server
+JDK versions are read from local release metadata without executing them; unknown wrapper versions are warnings. It never executes build
 phases, resolves server downloads or writes project files; Maven may resolve the plugin itself. Errors include a fix
-and fail the command; warnings cover expected first-run conditions such as an unbuilt JAR or absent IDE metadata.
+and fail the command; warnings include artifacts unavailable to a doctor-only invocation and absent IDE metadata.
+Doctor does not build or resolve dependencies, so an artifact warning alone never labels an existing JAR stale.
+An explicit missing/unreadable `pluginUnderTest.path` is a definite configuration error.
 Run normal `verify` once to initialize those generated inputs. It validates available selected archives statically,
 without loading classes or requiring the target plugin to enable.
 
 The [website configurator](https://pimvanderloos.github.io/LightKeeper/setup.html) supplies fragments derived from the
 executable single-module and reactor examples, plus a complete first test. Merge existing POM sections and preserve
 your compiler, API dependency and packaging configuration. No automatic POM rewriting is performed.
+
+## Preparation progress and failure reports
+
+Direct JUnit streams actual Maven resource/compile/package phases, producer-guard waits and LightKeeper server
+preparation. A 15-second elapsed-time update shows that a long phase is still running. Normal Maven preparation
+reports whether the server JAR and base-server caches are reused or refreshed; first-run server bootstrap is explicit.
+The framework reports server startup, agent connection and readiness with measured elapsed time. There are no
+percentage estimates or assumptions that the tested plugin must enable successfully.
+
+Build failure messages include the first useful Maven error (including compiler source locations), module, phase,
+next action, original log and a self-contained HTML report. Failed native builds retain
+`.lightkeeper/launches/<id>/index.html` beside `maven.log`; successful launch metadata is cleaned normally.
+Server lifecycle failures link their report in the existing `lightkeeper-diagnostics/bundle-<timestamp>/` directory
+beside the server directory. Per-test diagnostics add `index.html` to the existing outcome/errors/console bundle
+under `target/lightkeeper-reports/` (relative to the test JVM's working directory). Existing diagnostics mode and
+directory properties keep their meaning. Overview excerpts are bounded, escaped and redact common credential
+fields; original complete logs remain unchanged. Report creation is best-effort and never replaces the original
+failure. Fix the reported build error and rerun; a failed build never uses an older prepared runtime.
+
+For CI artifacts, retain the report and original logs with their directory structure. Native failures are under
+the hidden `.lightkeeper/launches/` directory; GitHub Actions upload-artifact needs `include-hidden-files: true`
+when selecting its `index.html` and `maven.log`. Do not archive runtime export/authentication metadata.

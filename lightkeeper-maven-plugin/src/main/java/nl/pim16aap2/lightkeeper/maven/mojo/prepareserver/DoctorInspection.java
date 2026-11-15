@@ -19,19 +19,26 @@ import org.jspecify.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 
 import static nl.pim16aap2.lightkeeper.maven.mojo.prepareserver.DoctorFinding.Level.*;
 
 /** Read-only inspection of effective Maven configuration; no downloads, build execution or generated state. */
 final class DoctorInspection
 {
+    /** Feature version required by the currently supported Minecraft server runtime. */
+    private static final int MINIMUM_JAVA_FEATURE = 21;
+    /** Both modern release values and legacy 1.8 release values can be diagnosed without executing them. */
+    private static final Pattern JAVA_FEATURE = Pattern.compile("^(?:1\\.)?(\\d+)");
     /** Effective selected test module. */
     private final MavenProject project;
     /** Current invocation supplies selected upstreams and user-property precedence. */
@@ -138,9 +145,7 @@ final class DoctorInspection
                     + "the LightKeeper infrastructure must remain compatible.");
             final String java = value(configuration, "javaExecutablePath", "lightkeeper.javaExecutablePath",
                 "${java.home}/bin/java");
-            final boolean available = executable(java);
-            add(available ? OK : ERROR, "Server Java", available ? java : "Executable not found: " + java,
-                available ? "" : "Set javaExecutablePath to an existing Java executable, or restore its default.");
+            inspectJava(java);
             inspectTarget(configuration);
         }
         catch (IllegalArgumentException | MojoExecutionException exception)
@@ -183,8 +188,18 @@ final class DoctorInspection
         }
         catch (MojoExecutionException exception)
         {
-            add(WARN, "Packaged JAR", "The selected packaged artifact is not available yet.",
-                "Run normal Maven verify with the producer selected (-pl :test-module -am for a reactor).");
+            if (selection.path() != null)
+            {
+                add(ERROR, "Packaged JAR", message(exception),
+                    "Fix pluginUnderTest.path to name an existing readable packaged plugin JAR.");
+            }
+            else
+            {
+                add(WARN, "Packaged JAR", "This doctor-only invocation does not expose the packaged artifact; "
+                    + "no build or dependency resolution was requested.",
+                    "Run normal Maven verify to validate the actual packaging. This warning alone does not "
+                        + "mean an existing JAR is stale or invalid.");
+            }
             return;
         }
         try
@@ -266,22 +281,69 @@ final class DoctorInspection
         return value instanceof Xpp3Dom configuration ? new Xpp3Dom(configuration) : new Xpp3Dom("configuration");
     }
 
-    private static boolean executable(String value)
+    private void inspectJava(String executable)
+    {
+        final Path selected = executable(executable);
+        if (selected == null)
+        {
+            add(ERROR, "Server Java", "Executable not found: " + executable,
+                "Set javaExecutablePath to an existing Java executable, or restore its default.");
+            return;
+        }
+        try
+        {
+            final Path bin = selected.toRealPath().getParent();
+            final Path home = bin == null ? null : bin.getParent();
+            if (home == null)
+            {
+                throw new IOException("Java home cannot be determined.");
+            }
+            final byte[] bytes;
+            try (var input = Files.newInputStream(home.resolve("release")))
+            {
+                bytes = input.readNBytes(65_537);
+            }
+            if (bytes.length > 65_536)
+            {
+                throw new IOException("JDK release metadata is too large.");
+            }
+            final Properties release = new Properties();
+            release.load(new StringReader(new String(bytes, java.nio.charset.StandardCharsets.UTF_8)));
+            final String version = release.getProperty("JAVA_VERSION", "").replace("\"", "");
+            final var feature = JAVA_FEATURE.matcher(version);
+            if (!feature.find())
+            {
+                throw new IOException("JDK feature version cannot be determined.");
+            }
+            final boolean supported = Integer.parseInt(feature.group(1)) >= MINIMUM_JAVA_FEATURE;
+            add(supported ? OK : ERROR, "Server Java", selected + "; version " + version,
+                supported ? "" : "Use Java " + MINIMUM_JAVA_FEATURE + "+ for this server, then rerun doctor.");
+        }
+        catch (IOException | IllegalArgumentException exception)
+        {
+            add(WARN, "Server Java", "Executable found, but its Java version cannot be verified: " + selected,
+                "Check that this executable or wrapper runs Java " + MINIMUM_JAVA_FEATURE + "+. Doctor never runs it.");
+        }
+    }
+
+    private @Nullable Path executable(String value)
     {
         final Path path = Path.of(value);
         if (path.isAbsolute() || path.getNameCount() > 1)
         {
-            return Files.isExecutable(path);
+            final Path selected = path.isAbsolute() ? path : project.getBasedir().toPath().resolve(path);
+            return Files.isRegularFile(selected) && Files.isExecutable(selected) ? selected : null;
         }
         final String searchPath = Objects.requireNonNullElse(System.getenv("PATH"), "");
         for (final String directory : searchPath.split(File.pathSeparator, -1))
         {
-            if (!directory.isEmpty() && Files.isExecutable(Path.of(directory).resolve(path)))
+            final Path selected = Path.of(directory).resolve(path);
+            if (!directory.isEmpty() && Files.isRegularFile(selected) && Files.isExecutable(selected))
             {
-                return true;
+                return selected;
             }
         }
-        return false;
+        return null;
     }
 
     private static String message(Exception exception)

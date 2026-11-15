@@ -298,6 +298,34 @@ class NativeMavenPreparationTest
         }
     }
 
+    @Test
+    void prepare_shouldReportCompilerLocationAndPreserveItsConsolidatedFailureOverview()
+        throws Exception
+    {
+        // setup
+        final Path executable = Files.writeString(root.resolve("compiler-failure"), """
+            #!/bin/sh
+            echo '[INFO] --- compiler:3.15.0:compile (default-compile) @ producer ---'
+            echo '17:00:35,124 [main] [ERROR] /source/Plugin.java:[7,4] invalid symbol'
+            exit 17
+            """);
+        Files.setPosixFilePermissions(executable, PosixFilePermissions.fromString("rwx------"));
+        final ModuleTestPlan plan = plan(executable.toString(), List.of("default"));
+
+        // execute
+        final Throwable failure = catchThrowable(() -> NativeMavenPreparation.prepare(plan));
+
+        // verify
+        assertThat(failure).isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("Plugin.java:[7,4]", "Compiling production inputs", "Next:", "index.html");
+        try (var launches = Files.list(root.resolve(".lightkeeper/launches")))
+        {
+            final Path launch = launches.findFirst().orElseThrow();
+            assertThat(Files.readString(launch.resolve("index.html")))
+                .contains("Plugin.java:[7,4]", "href=\"maven.log\"", "Next action");
+        }
+    }
+
     private ModuleTestPlan plan(String executable, List<String> executions)
     {
         return plan(executable, executions, Map.of("revision", "2"));

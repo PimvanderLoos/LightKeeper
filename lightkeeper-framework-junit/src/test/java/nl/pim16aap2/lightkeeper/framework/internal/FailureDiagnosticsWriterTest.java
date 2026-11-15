@@ -50,6 +50,8 @@ class FailureDiagnosticsWriterTest
         assertThat(writtenDirectory).isNotNull();
         final Path bundleDirectory = java.util.Objects.requireNonNull(writtenDirectory);
         assertThat(bundleDirectory).isDirectory();
+        assertThat(Files.readString(bundleDirectory.resolve("index.html")))
+            .contains("test assertion failed", "href=\"outcome.txt\"", "href=\"server-errors.txt\"");
         assertThat(java.util.Objects.requireNonNull(bundleDirectory.getParent()).getFileName().toString())
             .isEqualTo("MyTestClass");
         assertThat(bundleDirectory.getFileName().toString()).startsWith("myTestMethod-");

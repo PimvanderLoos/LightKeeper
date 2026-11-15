@@ -17,7 +17,8 @@ import java.util.List;
  *
  * <p>A bundle is a directory of plain-text files under the configured reports root:
  * {@code <root>/<TestClass>/<testMethod>-<timestamp>/} containing the test outcome and failure
- * ({@code outcome.txt}), all captured server errors ({@code server-errors.txt}), and the captured server
+ * ({@code outcome.txt}), a redacted overview ({@code index.html}), all captured server errors
+ * ({@code server-errors.txt}), and the captured server
  * console output ({@code server-output.log}). The timestamp suffix keeps repeated runs (and repeated
  * invocations of parameterized tests) from colliding; in shared-server mode the console output is the full
  * bounded buffer for the server, not just the failing test's own window (unlike the server errors, which are
@@ -68,10 +69,12 @@ public final class FailureDiagnosticsWriter
             writeOutcome(bundleDirectory, testClassName, testMethodName, failure);
             writeSection(bundleDirectory, "server-errors.txt", () -> renderServerErrors(framework));
             writeSection(bundleDirectory, "server-output.log", () -> renderServerOutput(framework));
+            DiagnosticReport.write(bundleDirectory, "Test execution", testClassName + "." + testMethodName,
+                failure, "Read the assertion in outcome.txt, then inspect captured errors and console output.");
 
             LOG.log(
                 System.Logger.Level.INFO,
-                () -> "LK_DIAGNOSTICS: Wrote diagnostics bundle for %s.%s to '%s'."
+                () -> "LK_DIAGNOSTICS: Wrote diagnostics bundle for %s.%s to '%s' (open index.html)."
                     .formatted(testClassName, testMethodName, bundleDirectory)
             );
             return bundleDirectory;

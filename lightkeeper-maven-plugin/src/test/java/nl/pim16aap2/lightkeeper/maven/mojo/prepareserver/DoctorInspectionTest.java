@@ -169,6 +169,88 @@ class DoctorInspectionTest
             finding.level() == DoctorFinding.Level.WARN && finding.action().contains("skip"));
     }
 
+    @Test
+    void inspect_shouldRejectConfiguredOldServerJavaWithoutExecutingIt()
+        throws Exception
+    {
+        // setup
+        final MavenProject project = project();
+        final Path home = Files.createDirectory(root.resolve("java17"));
+        final Path bin = Files.createDirectory(home.resolve("bin"));
+        final Path executable = Files.writeString(bin.resolve("java"), "#!/bin/sh\nexit 99\n");
+        Files.setPosixFilePermissions(executable,
+            java.nio.file.attribute.PosixFilePermissions.fromString("rwx------"));
+        Files.writeString(home.resolve("release"), "JAVA_VERSION=\"17.0.10\"\n");
+        project.getBuildPlugins().getFirst().setConfiguration(
+            configuration("javaExecutablePath", executable.toString()));
+        final MavenSession session = session();
+
+        // execute
+        final var findings = inspect(project, session);
+
+        // verify
+        assertThat(findings).filteredOn(finding -> finding.subject().equals("Server Java"))
+            .singleElement().satisfies(finding ->
+            {
+                assertThat(finding.level()).isEqualTo(DoctorFinding.Level.ERROR);
+                assertThat(finding.detail()).contains("17.0.10");
+                assertThat(finding.action()).contains("Java 21+");
+            });
+    }
+
+    @Test
+    void inspect_shouldWarnForAnUnknownWrapperVersionWithoutExecutingIt()
+        throws Exception
+    {
+        // setup
+        final MavenProject project = project();
+        final Path executable = Files.writeString(root.resolve("java-wrapper"), "#!/bin/sh\nexit 99\n");
+        Files.setPosixFilePermissions(executable,
+            java.nio.file.attribute.PosixFilePermissions.fromString("rwx------"));
+        project.getBuildPlugins().getFirst().setConfiguration(
+            configuration("javaExecutablePath", executable.toString()));
+        final MavenSession session = session();
+
+        // execute
+        final var findings = inspect(project, session);
+
+        // verify
+        assertThat(findings).filteredOn(finding -> finding.subject().equals("Server Java"))
+            .singleElement().satisfies(finding ->
+            {
+                assertThat(finding.level()).isEqualTo(DoctorFinding.Level.WARN);
+                assertThat(finding.action()).contains("never runs it");
+            });
+    }
+
+    @Test
+    void inspect_shouldRejectAnExplicitMissingJarWithoutSuggestingThatDoctorCanBuildIt()
+        throws Exception
+    {
+        // setup
+        final MavenProject project = project();
+        final Xpp3Dom config = new Xpp3Dom("configuration");
+        final Xpp3Dom target = new Xpp3Dom("pluginUnderTest");
+        final Xpp3Dom path = new Xpp3Dom("path");
+        path.setValue("missing-plugin.jar");
+        target.addChild(path);
+        config.addChild(target);
+        project.getBuildPlugins().getFirst().setConfiguration(config);
+        final MavenSession session = session();
+
+        // execute
+        final var findings = inspect(project, session);
+
+        // verify
+        assertThat(findings).filteredOn(finding -> finding.subject().equals("Packaged JAR"))
+            .singleElement().satisfies(finding ->
+            {
+                assertThat(finding.level()).isEqualTo(DoctorFinding.Level.ERROR);
+                assertThat(finding.detail()).contains("missing-plugin.jar", "not a readable JAR");
+                assertThat(finding.action()).contains("pluginUnderTest.path");
+            });
+    }
+
     private List<DoctorFinding> inspect(MavenProject project, MavenSession session)
     {
         return new DoctorInspection(project, session,

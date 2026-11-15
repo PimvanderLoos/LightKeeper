@@ -159,6 +159,9 @@ After that initial build, save production changes and run a JUnit class or metho
 automatically packages the current production inputs before starting the server. No manifest VM options or IDE
 plugin are needed. See the [IDE guide](docs/ide-testing.md) for setup details and supported build context.
 
+Builds report their current phase and cache reuse. Failures link a readable `index.html` overview with the cause,
+next action and original logs; see [progress and reports](https://pimvanderloos.github.io/LightKeeper/ide-testing.html#progress-and-reports).
+
 ## Test your plugin's behavior next
 
 The [standalone consumer](examples/single-module) includes a command returning values from its deployed Java code

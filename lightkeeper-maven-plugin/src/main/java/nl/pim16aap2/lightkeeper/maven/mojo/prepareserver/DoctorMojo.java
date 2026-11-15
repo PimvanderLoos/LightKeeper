@@ -20,6 +20,7 @@ import java.util.Objects;
 
 /**
  * Checks effective LightKeeper setup without running build phases, resolving server downloads or changing files.
+ * Configured JDK versions are read from local release metadata; wrappers with unknown versions get a warning.
  * Run {@code mvn lightkeeper:doctor} after adding the plugin. In a reactor, select the E2E module and upstreams with
  * {@code -pl :my-e2e -am}; this aggregate goal reports the selected preparation modules once.
  */
