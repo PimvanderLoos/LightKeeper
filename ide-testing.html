@@ -76,6 +76,10 @@
             Per-test diagnostics keep the existing <code>lightkeeper.diagnostics</code> and
             <code>lightkeeper.diagnosticsDirectory</code> settings. Report generation is best-effort and cannot replace
             the original failure. Failed builds retain their diagnostics and never reuse an old prepared runtime.</p>
+        <p>In CI, archive the overview and its adjacent original logs with their directory structure intact. Native
+            build failures live under the hidden <code>.lightkeeper/launches/</code> directory; artifact uploaders must
+            include those explicitly (for GitHub Actions, <code>include-hidden-files: true</code>). Archive the report
+            and <code>maven.log</code>, rather than runtime exports or authentication metadata.</p>
         <p>For setup errors, run <code>mvn lightkeeper:doctor</code> first; the
             <a href="setup.html#doctor">doctor guide</a> explains errors, expected first-run warnings and reactor selection.</p>
     </section>
