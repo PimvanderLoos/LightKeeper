@@ -93,7 +93,7 @@ class ConsumerChecks:
                 and not (root / "target/lightkeeper-server").exists(),
                 "An unrelated unit test triggered LightKeeper preparation")
         log = self.maven(root, platform + "-verify", f"-Dlightkeeper.serverType={platform}",
-                         f"-Dexpected.platform={platform.upper()}", "-Dit.test=SourceFreshnessIT", "verify")
+                         f"-Dexpected.platform={platform.upper()}", "-Dit.test=GettingStartedIT,SourceFreshnessIT", "verify")
         require("LK_BUILD:" not in log, "Failsafe unexpectedly invoked a nested producer build")
         cp = self.classpath(root)
         source = root / "src/main/java/example/ConsumerPlugin.java"

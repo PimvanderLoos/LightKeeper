@@ -100,6 +100,8 @@ def compile_examples(site, classpath, output, plugin_descriptor):
                     raise ValueError(f"Invalid Java example name: {name}")
                 path = output / f"{name}.java"
                 if path in sources:
+                    if path.read_text(encoding="utf-8") == text:
+                        continue
                     raise ValueError(f"Duplicate Java example: {name}")
                 path.write_text(text, encoding="utf-8")
                 sources.append(path)

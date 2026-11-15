@@ -50,6 +50,7 @@ jobs:
         run: |
           python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
           python3 .github/scripts/site_checks.py --site website-source --source-only
+          python3 .github/scripts/check_onboarding.py
 
       - name: Prepare documentation provenance
         id: docs
