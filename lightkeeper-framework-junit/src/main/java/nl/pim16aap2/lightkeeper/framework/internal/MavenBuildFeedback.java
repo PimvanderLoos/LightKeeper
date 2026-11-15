@@ -25,6 +25,8 @@ final class MavenBuildFeedback
         "--- (?:maven-)?(resources|compiler|jar|shade|assembly):[^: ]+:"
             + "(resources|compile|jar|shade|single) .* @ (\\S+) ---"
     );
+    /** The first Maven severity token follows optional timestamps, thread names or other logger prefixes. */
+    private static final Pattern LEVEL = Pattern.compile("\\[(ERROR|WARNING|WARN|INFO|DEBUG|TRACE)]");
     /** Maximum bytes consumed during one polling interval. */
     private static final int POLL_BYTES = 64 * 1024;
     /** No line can retain unbounded process output. */
@@ -140,10 +142,14 @@ final class MavenBuildFeedback
         {
             progress(line.substring(marker + "LK_PHASE:".length()).trim());
         }
-        if (problem == null && line.startsWith("[ERROR]") && line.length() > 8 &&
-            !line.contains("COMPILATION ERROR") && !line.matches("\\[ERROR] [- ]+"))
+        final Matcher level = LEVEL.matcher(line);
+        if (problem == null && level.find() && "ERROR".equals(level.group(1)))
         {
-            problem = line.substring(8, Math.min(line.length(), 608)).trim();
+            final String detail = line.substring(level.end()).trim();
+            if (!detail.isEmpty() && !detail.contains("COMPILATION ERROR") && !detail.matches("[- ]+"))
+            {
+                problem = detail.substring(0, Math.min(detail.length(), 600));
+            }
         }
     }
 

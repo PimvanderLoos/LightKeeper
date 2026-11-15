@@ -306,7 +306,7 @@ class NativeMavenPreparationTest
         final Path executable = Files.writeString(root.resolve("compiler-failure"), """
             #!/bin/sh
             echo '[INFO] --- compiler:3.15.0:compile (default-compile) @ producer ---'
-            echo '[ERROR] /source/Plugin.java:[7,4] invalid symbol'
+            echo '17:00:35,124 [main] [ERROR] /source/Plugin.java:[7,4] invalid symbol'
             exit 17
             """);
         Files.setPosixFilePermissions(executable, PosixFilePermissions.fromString("rwx------"));

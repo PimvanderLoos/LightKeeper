@@ -44,6 +44,26 @@ class MavenBuildFeedbackTest
     }
 
     @Test
+    void finish_shouldFindCompilerErrorsBehindTimestampAndThreadPrefixes()
+        throws Exception
+    {
+        // setup
+        final Path log = Files.writeString(directory.resolve("maven.log"), """
+            17:00:35,123 [main] [INFO] Documentation mentions [ERROR] as a log-level example
+            17:00:35,123 [main] [WARNING] Documentation also mentions [ERROR]
+            17:00:35,124 [main] [ERROR] COMPILATION ERROR :
+            17:00:35,124 [main] [ERROR] /source/ConsumerPlugin.java:[34,1] invalid symbol
+            """);
+        final var feedback = new MavenBuildFeedback(log, ignored -> { });
+
+        // execute
+        feedback.finish();
+
+        // verify
+        assertThat(feedback.problem()).isEqualTo("/source/ConsumerPlugin.java:[34,1] invalid symbol");
+    }
+
+    @Test
     void drain_shouldPreservePartialUtf8LinesAndDeduplicateRepeatedProgress()
         throws Exception
     {

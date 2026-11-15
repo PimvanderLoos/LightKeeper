@@ -37,6 +37,7 @@ public final class NativeMavenPreparation
      * Cancellation terminates the native producer before restoring the caller's interrupt status, within a bounded
      * cleanup deadline; failed preparations retain their Maven log instead of reusing an older runtime.
      * Actual build phases and elapsed time are streamed while Maven runs; failures include an actionable overview.
+     * Compiler locations remain available when Maven logging includes timestamp or thread prefixes.
      *
      * @param plan
      *     Maven-derived module ownership and retained build context.
