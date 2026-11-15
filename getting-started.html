@@ -125,7 +125,8 @@
 
     <section class="panel">
         <h2>4. Write your first test</h2>
-        <pre><code data-java-class="GettingStartedExample">import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
+        <p>Save this as <code>src/test/java/GettingStartedIT.java</code> so Failsafe selects it during <code>mvn verify</code>.</p>
+        <pre><code data-java-class="GettingStartedIT">import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.LightkeeperExtension;
 import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
@@ -135,7 +136,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
 
 @ExtendWith(LightkeeperExtension.class)
-class GettingStartedExample
+class GettingStartedIT
 {
     @Test
     void placeBlock_shouldUpdateWorld(ILightkeeperFramework framework)
