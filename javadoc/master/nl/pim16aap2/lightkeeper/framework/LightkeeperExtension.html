@@ -20,7 +20,7 @@ loadScripts(document, 'script');</script>
 <div>JavaScript is disabled on your browser.</div>
 </noscript>
 <div class="flex-box">
-<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/56da8091fdcec163732506cb400155540f53c12c">56da8091fdce</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
+<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/c0cb687b5820aed61bd475f80e684c11c755be28">c0cb687b5820</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
 <nav role="navigation">
 <!-- ========= START OF TOP NAVBAR ======= -->
 <div class="top-nav" id="navbar-top"><button id="navbar-toggle-button" aria-controls="navbar-top" aria-expanded="false" aria-label="Toggle navigation links"><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span></button>
@@ -106,7 +106,8 @@ implements org.junit.jupiter.api.extension.BeforeAllCallback, org.junit.jupiter.
  runtime manifest retains direct control over its existing server directory.
 
  <p>On test failure the extension writes a diagnostics bundle (test outcome, captured server errors, server
- console output) before any cleanup runs — see <code>FailureDiagnosticsWriter</code>. Two system properties control
+ console output and a redacted <code>index.html</code> overview) before cleanup — see <code>FailureDiagnosticsWriter</code>.
+ Build and server-startup failures also link their retained logs and actionable report. Two system properties control
  this: <code>lightkeeper.diagnostics</code> (<code>on-failure</code> (default) | <code>always</code> | <code>off</code>) and
  <code>lightkeeper.diagnosticsDirectory</code> (default <code>target/lightkeeper-reports</code>, resolved against the
  test JVM's working directory).</div>
