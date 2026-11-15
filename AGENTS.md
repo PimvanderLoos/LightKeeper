@@ -6,14 +6,17 @@
   Website HTML, CSS, JavaScript, and CNAME belong exclusively on `gh_pages`, which remains the hosted source.
   Do not add webpages or website assets to `master`. Its publisher may update only `javadoc/` on `gh_pages`.
 
-- Between commits, run only the tests and quality checks affected by the changes. Do not run the entire test suite
-  just to establish a baseline or after every implementation step.
+- At every stage, including before commits and PR creation, run only tests and quality checks relevant to the changes.
+  Broaden validation only when the change scope, failures, or unresolved concerns justify it. Do not run broad suites
+  solely to establish a baseline or create a PR. If no relevant tests or checks apply, run none and explain why in the PR.
+- For documentation or instruction-only changes, run only applicable documentation checks, such as link validation
+  or compiling changed code examples. Do not run Java unit or integration suites unless the changes warrant them.
 - Select unit tests with `-Dtest=...` and integration tests with `-Dit.test=...`. The integration module runs selected
   integration tests in both its Paper and Spigot executions. With `-am`, use
   `-Dsurefire.failIfNoSpecifiedTests=false` for reactor modules without matching unit tests.
-- Before creating a PR, run the full quality pipeline:
+- Run the full quality pipeline only when needed to validate broad code/build changes or when explicitly requested:
   `mvn clean verify install -Perrorprone -Dmaven.javadoc.skip=true checkstyle:checkstyle pmd:check jacoco:report`
-  All checks must pass before creating the PR. Fix failures in affected checks before committing.
+  All selected relevant checks must pass before committing or creating the PR. Fix failures in affected checks.
 
 
 ## Git handling
