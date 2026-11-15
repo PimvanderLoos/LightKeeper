@@ -71,9 +71,12 @@
         <h2>Check setup before starting Minecraft</h2>
         <pre><code>mvn lightkeeper:doctor</code></pre>
         <p>Doctor inspects the effective selected modules: Maven/Java, server configuration, producer guards,
-            plugin-under-test selection, Failsafe skips and IDE ownership metadata. It reports concrete errors and next
+            plugin-under-test selection, Failsafe skips and IDE ownership metadata. It reads configured JDK release
+            metadata without executing that JVM; an unknown wrapper version is a warning. It reports errors and next
             actions without running build phases, downloading a server or writing project files. Maven may resolve the
-            doctor plugin itself. An unbuilt plugin or missing first-run metadata is a warning: run normal verify once.</p>
+            doctor plugin itself. A packaged artifact not exposed by this doctor-only invocation is a warning, not a verdict
+            that an existing JAR is stale. Normal verify checks actual packaging. Missing initial IDE metadata is a
+            warning too; an explicit missing <code>pluginUnderTest.path</code> is an error.</p>
         <p>Run the copied test with Maven first, then use the ordinary JUnit run button as described in the
             <a href="ide-testing.html">IDE guide</a>. Native Windows transport remains unverified.</p>
     </section>

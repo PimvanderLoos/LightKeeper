@@ -55,6 +55,34 @@
         <p>Preparation runs once per selected module/variant within a JUnit launch. Multiple test classes share immutable inputs, then copy them into separate mutable class sessions. Separate launches serialize producer preparation and may run Minecraft concurrently afterwards. Shared server caches also use kernel leases through rebuild, pruning and copying.</p>
         <p>Deleted source/resource outputs are refreshed before Maven rebuilds changed production inputs, so a deleted resource cannot survive silently in <code>target/classes</code>. Unchanged inputs retain incremental output. This refresh leaves test classes in place; packaging still runs for every direct JUnit launch.</p>
     </section>
+    <section class="panel" id="progress-and-reports">
+        <h2>See what is running, then find the first useful error</h2>
+        <p>A direct JUnit launch streams real resource, compile and package phases while Maven is running. It also
+            reports producer-guard waits and server preparation. Long phases show elapsed time every 15 seconds.
+            Maven preparation tells you whether the server JAR and prepared base-server caches are reused or refreshed;
+            first-run downloading/building and bootstrapping are explicit. Startup then reports server readiness,
+            agent connection and readiness for tests, with measured elapsed time.</p>
+        <p>There are no percentage estimates. A warm cache still runs your current production packaging, so a saved
+            source edit is tested. Build failures identify the module, current phase, first useful error (including
+            compiler file/line when Maven supplies it), recovery action and original log.</p>
+        <table>
+            <tr><th>Failure</th><th>Open the reported overview</th></tr>
+            <tr><td>Native producer build</td><td><code>.lightkeeper/launches/&lt;id&gt;/index.html</code>, beside the original <code>maven.log</code>.</td></tr>
+            <tr><td>Server startup, agent connection or shutdown</td><td>The linked <code>lightkeeper-diagnostics/bundle-&lt;timestamp&gt;/index.html</code>, beside the server directory.</td></tr>
+            <tr><td>Test assertion</td><td><code>target/lightkeeper-reports/&lt;class&gt;/&lt;method-timestamp&gt;/index.html</code>, relative to the test JVM working directory unless configured otherwise.</td></tr>
+        </table>
+        <p>The self-contained overview combines phase, location, failure, next action and bounded log excerpts. Its
+            text is escaped and common credential fields are redacted; complete original logs remain beside it.
+            Per-test diagnostics keep the existing <code>lightkeeper.diagnostics</code> and
+            <code>lightkeeper.diagnosticsDirectory</code> settings. Report generation is best-effort and cannot replace
+            the original failure. Failed builds retain their diagnostics and never reuse an old prepared runtime.</p>
+        <p>In CI, archive the overview and its adjacent original logs with their directory structure intact. Native
+            build failures live under the hidden <code>.lightkeeper/launches/</code> directory; artifact uploaders must
+            include those explicitly (for GitHub Actions, <code>include-hidden-files: true</code>). Archive the report
+            and <code>maven.log</code>, rather than runtime exports or authentication metadata.</p>
+        <p>For setup errors, run <code>mvn lightkeeper:doctor</code> first; the
+            <a href="setup.html#doctor">doctor guide</a> explains errors, expected first-run warnings and reactor selection.</p>
+    </section>
     <section class="panel">
         <h2>Build context and variants</h2>
         <p>The module plan retains explicitly requested active/inactive profiles, the Maven executable and Java home, existing settings/toolchains <strong>paths</strong>, and a documented allowlist of non-secret user properties. Credentials remain in Maven settings or the environment. Maven reads the current POM, wrapper and <code>.mvn</code> configuration on each native build.</p>
@@ -78,7 +106,7 @@
         <table>
             <tr><th>Symptom</th><th>Action</th></tr>
             <tr><td>Missing module ownership anchor</td><td>Bind <code>lock-build</code> and <code>prepare-server</code>, then run normal <code>mvn verify</code> once.</td></tr>
-            <tr><td>Preparation build failed</td><td>Open the reported <code>.lightkeeper/launches/&lt;id&gt;/maven.log</code>, fix the producer build and rerun JUnit.</td></tr>
+            <tr><td>Preparation build failed</td><td>Open the reported <code>.lightkeeper/launches/&lt;id&gt;/index.html</code>, fix the first producer error and rerun JUnit. The original <code>maven.log</code> stays beside it.</td></tr>
             <tr><td>Several active preparations</td><td>Select <code>lightkeeper.executionId</code> or activate one server profile.</td></tr>
             <tr><td>Direct <code>mvn -Dtest=... test</code> runs before packaging</td><td>Use standard Failsafe: <code>mvn &quot;-Dit.test=MyPluginIT#method&quot; verify</code>, or direct JUnit.</td></tr>
             <tr><td>Moved checkout or changed retained CLI context</td><td>Run normal <code>mvn verify</code> from the intended reactor entry point.</td></tr>

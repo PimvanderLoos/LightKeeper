@@ -54,7 +54,9 @@
 cd LightKeeper
 mvn -f examples/single-module/pom.xml -Dit.test=GettingStartedIT verify</code></pre>
         <p>Success ends with <code>Tests run: 1, Failures: 0, Errors: 0</code> for <code>GettingStartedIT</code>
-            and <code>BUILD SUCCESS</code>. The first run downloads and prepares server files; later runs reuse caches.
+            and <code>BUILD SUCCESS</code>. The first run downloads and prepares server files; later runs reuse caches. Progress messages show the current
+            build/preparation phase and actual cache reuse. Failures link a readable report; see
+            <a href="ide-testing.html#progress-and-reports">progress and diagnostics</a>.
             Download and startup times depend on your computer and connection.</p>
         <p>Ready to use your own plugin? Continue with the configuration below. For a reactor,
             see the <a href="https://github.com/PimvanderLoos/LightKeeper/blob/master/examples/reactor/README.md">separate test-module example</a>.</p>
