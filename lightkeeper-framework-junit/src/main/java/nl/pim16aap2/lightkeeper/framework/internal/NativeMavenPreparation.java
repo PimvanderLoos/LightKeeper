@@ -34,6 +34,8 @@ public final class NativeMavenPreparation
 
     /**
      * Uses a live ancestor Maven export or performs a fresh producer build for a direct JUnit launch.
+     * Cancellation terminates the native producer before restoring the caller's interrupt status, within a bounded
+     * cleanup deadline; failed preparations retain their Maven log instead of reusing an older runtime.
      *
      * @param plan
      *     Maven-derived module ownership and retained build context.
@@ -226,11 +228,36 @@ public final class NativeMavenPreparation
         {
             child.descendants().forEach(ProcessHandle::destroyForcibly);
             child.destroyForcibly();
-            try
+            awaitTermination(child);
+        }
+    }
+
+    /** Awaits forced termination within one deadline, restoring cancellation only after cleanup has finished. */
+    private static void awaitTermination(Process child)
+    {
+        boolean interrupted = Thread.interrupted();
+        final long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        try
+        {
+            long remaining;
+            while ((remaining = deadline - System.nanoTime()) > 0)
             {
-                child.waitFor(5, TimeUnit.SECONDS);
+                try
+                {
+                    if (child.waitFor(remaining, TimeUnit.NANOSECONDS))
+                    {
+                        break;
+                    }
+                }
+                catch (InterruptedException exception)
+                {
+                    interrupted = true;
+                }
             }
-            catch (InterruptedException exception)
+        }
+        finally
+        {
+            if (interrupted)
             {
                 Thread.currentThread().interrupt();
             }

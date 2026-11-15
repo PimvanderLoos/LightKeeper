@@ -13,19 +13,29 @@ import nl.pim16aap2.lightkeeper.runtime.RuntimeManifest;
 import nl.pim16aap2.lightkeeper.runtime.RuntimeProtocol;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class NativeMavenPreparationTest
 {
     @TempDir
@@ -178,6 +188,60 @@ class NativeMavenPreparationTest
         assertThat(failure.get()).isInstanceOf(IllegalStateException.class).hasMessageContaining("cancelled");
         assertThat(interrupted).isTrue();
         assertThat(producerIsAlive()).isFalse();
+    }
+
+    @Test
+    void prepare_shouldAwaitForcedTerminationBeforeRestoringInterruption()
+        throws Exception
+    {
+        // setup
+        final ModuleTestPlan plan = plan("mvn", List.of("default"));
+        final Process child = mock();
+        final AtomicInteger waits = new AtomicInteger();
+        when(child.getOutputStream()).thenReturn(OutputStream.nullOutputStream());
+        when(child.isAlive()).thenReturn(true);
+        when(child.descendants()).thenAnswer(ignored -> Stream.empty());
+        when(child.waitFor(anyLong(), any(TimeUnit.class))).thenAnswer(ignored ->
+        {
+            final int attempt = waits.incrementAndGet();
+            if (attempt == 1)
+            {
+                throw new InterruptedException("cancelled producer wait");
+            }
+            assertThat(Thread.currentThread().isInterrupted()).isFalse();
+            if (attempt == 2)
+            {
+                throw new InterruptedException("interrupted again during cleanup");
+            }
+            return true;
+        });
+        try (var builders = mockConstruction(ProcessBuilder.class, (builder, context) ->
+        {
+            when(builder.environment()).thenReturn(new HashMap<>());
+            when(builder.start()).thenReturn(child);
+        }); var reaper = mockStatic(OrphanReaperLauncher.class))
+        {
+            // execute
+            final Throwable failure;
+            final boolean interrupted;
+            try
+            {
+                failure = catchThrowable(() -> NativeMavenPreparation.prepare(plan));
+                interrupted = Thread.currentThread().isInterrupted();
+            }
+            finally
+            {
+                Thread.interrupted();
+            }
+
+            // verify
+            assertThat(failure).isInstanceOf(IllegalStateException.class).hasMessageContaining("cancelled");
+            assertThat(interrupted).isTrue();
+            assertThat(waits).hasValue(3);
+            assertThat(builders.constructed()).hasSize(1);
+            verify(child).destroyForcibly();
+            reaper.verify(() -> OrphanReaperLauncher.launch(eq(ProcessHandle.current().pid()), eq(0L)));
+        }
     }
 
     @Test
