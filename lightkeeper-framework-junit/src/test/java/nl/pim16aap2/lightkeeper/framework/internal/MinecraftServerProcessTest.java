@@ -6,8 +6,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 
 import java.io.ByteArrayInputStream;
 import java.lang.reflect.Field;
@@ -24,14 +22,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.STRICT_STUBS)
 class MinecraftServerProcessTest
 {
     @Test
@@ -497,6 +491,29 @@ class MinecraftServerProcessTest
             MinecraftServerProcess.class.getDeclaredMethod("appendOutputLine", String.class, boolean.class);
         appendOutputLine.setAccessible(true);
         appendOutputLine.invoke(serverProcess, line, fromStderr);
+    }
+
+    @Test
+    void start_shouldRetainAReadableReportWhenTheRealJavaProcessCannotOpenItsServerJar(@TempDir Path directory)
+        throws Exception
+    {
+        // setup
+        final Path diagnostics = directory.resolve("diagnostics");
+        final var server = new MinecraftServerProcess(runtimeManifest(directory), diagnostics);
+
+        // execute
+        final Throwable failure = catchThrowable(() -> server.start(Duration.ofSeconds(5)));
+
+        // verify
+        assertThat(failure).isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("Failed to start Minecraft server", "index.html");
+        try (var files = Files.walk(diagnostics))
+        {
+            final Path report = files.filter(path -> path.getFileName().toString().equals("index.html"))
+                .findFirst().orElseThrow();
+            assertThat(Files.readString(report)).contains("startup-failure", "server.jar", "Next action");
+        }
+        assertThat(server.isRunning()).isFalse();
     }
 
     private static RuntimeManifest runtimeManifest(Path tempDirectory)

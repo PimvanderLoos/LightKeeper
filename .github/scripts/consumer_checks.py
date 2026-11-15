@@ -112,6 +112,9 @@ class ConsumerChecks:
         log = self.native(root, cp, platform + "-native-method", expected, [METHOD], 1,
                           jvm=[f"-Dexpected.platform={platform.upper()}"])
         require(log.count("LK_BUILD:") == 1, "Native method did not build exactly once")
+        require("LK_PROGRESS: Compiling production inputs" in log and "cache" in log
+                and "Server and agent ready for tests" in log,
+                "Native launch did not expose actual build/cache/startup progress")
         if platform == "paper":
             self.single_launch_cases(root, cp, expected)
         self.completed.append(f"{platform}: ordinary unit, normal Failsafe, native source/POM/resource freshness")
@@ -139,6 +142,10 @@ class ConsumerChecks:
             match = re.search(r"log: (.*maven.log)", log)
             require(match is not None and "COMPILATION ERROR" in Path(match[1]).read_text(),
                     "Original producer compilation diagnostic missing")
+            report = Path(match[1]).with_name("index.html")
+            require(report.is_file() and "ConsumerPlugin.java" in report.read_text()
+                    and "Next action" in report.read_text() and "Cause:" in log,
+                    "Failed producer did not retain an actionable consolidated report")
         finally:
             source.write_text(original)
         # Recovery must release build locks rather than leave the checkout unusable.

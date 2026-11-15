@@ -33,7 +33,8 @@ import java.util.Objects;
  * runtime manifest retains direct control over its existing server directory.
  *
  * <p>On test failure the extension writes a diagnostics bundle (test outcome, captured server errors, server
- * console output) before any cleanup runs — see {@link FailureDiagnosticsWriter}. Two system properties control
+ * console output and a redacted {@code index.html} overview) before cleanup — see {@link FailureDiagnosticsWriter}.
+ * Build and server-startup failures also link their retained logs and actionable report. Two system properties control
  * this: {@code lightkeeper.diagnostics} ({@code on-failure} (default) | {@code always} | {@code off}) and
  * {@code lightkeeper.diagnosticsDirectory} (default {@code target/lightkeeper-reports}, resolved against the
  * test JVM's working directory).

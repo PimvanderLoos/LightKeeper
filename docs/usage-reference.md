@@ -333,3 +333,21 @@ without loading classes or requiring the target plugin to enable.
 The [website configurator](https://pimvanderloos.github.io/LightKeeper/setup.html) supplies fragments derived from the
 executable single-module and reactor examples, plus a complete first test. Merge existing POM sections and preserve
 your compiler, API dependency and packaging configuration. No automatic POM rewriting is performed.
+
+## Preparation progress and failure reports
+
+Direct JUnit streams actual Maven resource/compile/package phases, producer-guard waits and LightKeeper server
+preparation. A 15-second elapsed-time update shows that a long phase is still running. Normal Maven preparation
+reports whether the server JAR and base-server caches are reused or refreshed; first-run server bootstrap is explicit.
+The framework reports server startup, agent connection and readiness with measured elapsed time. There are no
+percentage estimates or assumptions that the tested plugin must enable successfully.
+
+Build failure messages include the first useful Maven error (including compiler source locations), module, phase,
+next action, original log and a self-contained HTML report. Failed native builds retain
+`.lightkeeper/launches/<id>/index.html` beside `maven.log`; successful launch metadata is cleaned normally.
+Server lifecycle failures link their report in the existing `lightkeeper-diagnostics/bundle-<timestamp>/` directory
+beside the server directory. Per-test diagnostics add `index.html` to the existing outcome/errors/console bundle
+under `target/lightkeeper-reports/` (relative to the test JVM's working directory). Existing diagnostics mode and
+directory properties keep their meaning. Overview excerpts are bounded, escaped and redact common credential
+fields; original complete logs remain unchanged. Report creation is best-effort and never replaces the original
+failure. Fix the reported build error and rerun; a failed build never uses an older prepared runtime.

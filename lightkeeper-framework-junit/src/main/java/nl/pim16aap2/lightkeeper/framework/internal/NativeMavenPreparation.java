@@ -36,6 +36,7 @@ public final class NativeMavenPreparation
      * Uses a live ancestor Maven export or performs a fresh producer build for a direct JUnit launch.
      * Cancellation terminates the native producer before restoring the caller's interrupt status, within a bounded
      * cleanup deadline; failed preparations retain their Maven log instead of reusing an older runtime.
+     * Actual build phases and elapsed time are streamed while Maven runs; failures include an actionable overview.
      *
      * @param plan
      *     Maven-derived module ownership and retained build context.
@@ -112,7 +113,17 @@ public final class NativeMavenPreparation
         final long timeout = timeoutSeconds(plan);
         LOG.log(System.Logger.Level.INFO, "LK_BUILD: Packaging current production inputs for ''{0}''; log: {1}",
             module, log);
-        final Process child = builder.start();
+        final var feedback = new MavenBuildFeedback(log, message -> LOG.log(System.Logger.Level.INFO, message));
+        final long started = System.nanoTime();
+        final Process child;
+        try
+        {
+            child = builder.start();
+        }
+        catch (IOException exception)
+        {
+            throw buildFailure(launch, module, feedback, "Cannot start the configured Maven executable.", exception);
+        }
         final Process reaper = OrphanReaperLauncher.launch(ProcessHandle.current().pid(), child.pid());
         final Thread shutdown = Thread.ofPlatform().name("lightkeeper-maven-cancellation")
             .unstarted(() -> terminate(child));
@@ -120,15 +131,16 @@ public final class NativeMavenPreparation
         try
         {
             child.getOutputStream().close();
-            if (!child.waitFor(timeout, TimeUnit.SECONDS))
+            if (!awaitBuild(child, timeout, feedback, started))
             {
-                throw new IllegalStateException("LightKeeper Maven preparation timed out after " + timeout
-                    + " seconds. See '" + log + "'.");
+                throw buildFailure(launch, module, feedback,
+                    "LightKeeper Maven preparation timed out after " + timeout + " seconds.", null);
             }
             if (child.exitValue() != 0)
             {
-                throw new IllegalStateException("LightKeeper Maven preparation failed with exit code "
-                    + child.exitValue() + ". See '" + log + "'. No previous runtime will be used.");
+                throw buildFailure(launch, module, feedback,
+                    "LightKeeper Maven preparation failed with exit code " + child.exitValue()
+                        + ". No previous runtime will be used.", null);
             }
             final MavenRuntimeContext context = GeneratedMetadata.read(result, MavenRuntimeContext.class);
             validateOwner(context, plan, execution.isEmpty() ? context.plan().executionId() : execution);
@@ -136,13 +148,19 @@ public final class NativeMavenPreparation
             {
                 throw new IllegalStateException("Maven runtime export belongs to another JUnit launch: " + result);
             }
+            LOG.log(System.Logger.Level.INFO, "LK_PROGRESS: Production build and server preparation ready ({0} ms).",
+                TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started));
             return new PreparedTestRuntime(context, launch);
+        }
+        catch (IOException exception)
+        {
+            throw buildFailure(launch, module, feedback,
+                "Maven completed without a valid current runtime export.", exception);
         }
         catch (InterruptedException exception)
         {
             Thread.currentThread().interrupt();
-            throw new IllegalStateException("LightKeeper Maven preparation was cancelled. See '" + log + "'.",
-                exception);
+            throw buildFailure(launch, module, feedback, "LightKeeper Maven preparation was cancelled.", exception);
         }
         finally
         {
@@ -153,6 +171,58 @@ public final class NativeMavenPreparation
                 reaper.destroy();
             }
         }
+    }
+
+    private static boolean awaitBuild(Process child, long timeout, MavenBuildFeedback feedback, long started)
+        throws InterruptedException
+    {
+        final long allowed = TimeUnit.SECONDS.toNanos(timeout);
+        long lastUpdate = started;
+        while (true)
+        {
+            feedback.drain();
+            final long now = System.nanoTime();
+            final long remaining = allowed - (now - started);
+            if (remaining <= 0)
+            {
+                feedback.finish();
+                return false;
+            }
+            if (child.waitFor(Math.min(remaining, TimeUnit.MILLISECONDS.toNanos(250)), TimeUnit.NANOSECONDS))
+            {
+                feedback.finish();
+                return true;
+            }
+            if (now - lastUpdate >= TimeUnit.SECONDS.toNanos(15))
+            {
+                LOG.log(System.Logger.Level.INFO, "LK_PROGRESS: {0} (elapsed {1} s).", feedback.phase(),
+                    TimeUnit.NANOSECONDS.toSeconds(now - started));
+                lastUpdate = now;
+            }
+        }
+    }
+
+    private static IllegalStateException buildFailure(
+        Path launch,
+        Path module,
+        MavenBuildFeedback feedback,
+        String reason,
+        @Nullable Throwable cause
+    )
+    {
+        feedback.finish();
+        final String problem = feedback.problem();
+        final String detail = reason + (problem == null ? "" : "\nCause: " + problem);
+        final String action = cause instanceof InterruptedException
+            ? "Rerun the intended test when ready; the cancelled producer is stopped before preparation returns."
+            : "Run normal Maven verify from the same reactor with the producer selected; "
+            + "fix the first error in maven.log. Use lightkeeper:doctor for configuration errors. "
+            + "For a timeout, inspect the current phase before increasing lightkeeper.buildTimeoutSeconds.";
+        final var failure = new IllegalStateException(detail, cause);
+        final Path report = DiagnosticReport.write(launch, feedback.phase(), module.toString(), failure, action);
+        return new IllegalStateException(detail + "\nModule: " + module + "\nPhase: " + feedback.phase()
+            + "\nNext: " + action + "\nLog: " + launch.resolve("maven.log")
+            + (report == null ? "" : "\nReport: " + report), cause);
     }
 
     static List<String> command(ModuleTestPlan plan)

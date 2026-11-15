@@ -120,9 +120,11 @@ final class MinecraftServerProcess
         }
         catch (Exception exception)
         {
-            writeDiagnostics("startup-failure", exception);
+            final Path report = writeDiagnostics("startup-failure", exception);
             stop(Duration.ofSeconds(5));
-            throw new IllegalStateException("Failed to start Minecraft server.", exception);
+            throw new IllegalStateException("Failed to start Minecraft server in '" + runtimeManifest.serverDirectory()
+                + "'. Check Java, memory and the server console output. Diagnostics: "
+                + (report == null ? diagnosticsDirectory : report), exception);
         }
     }
 
@@ -477,7 +479,8 @@ final class MinecraftServerProcess
         );
     }
 
-    private void writeDiagnostics(String reason, Throwable failure)
+    /** Writes a lifecycle failure and its existing raw logs; returns the overview when available. */
+    @Nullable Path writeDiagnostics(String reason, Throwable failure)
     {
         try
         {
@@ -502,10 +505,20 @@ final class MinecraftServerProcess
                 String.join(System.lineSeparator(), snapshotOutputLines()),
                 StandardCharsets.UTF_8
             );
+            final String action = switch (reason)
+            {
+                case "agent-handshake" -> "Check the supported server revision, embedded agent and socket access "
+                    + "in server-output.log. Target-plugin load or enable failures can be asserted by your tests.";
+                case "configured-worlds" -> "Check the configured world names and fixture directories in your POM; "
+                    + "inspect failure.txt and server-output.log for the failed world operation.";
+                default -> "Inspect failure.txt and server-output.log; check the configured Java, memory and files.";
+            };
+            return DiagnosticReport.write(bundleDirectory, reason, runtimeManifest.serverDirectory(), failure, action);
         }
         catch (IOException exception)
         {
             LOG.log(System.Logger.Level.WARNING, "Failed to write Minecraft server diagnostics bundle.", exception);
+            return null;
         }
     }
 
