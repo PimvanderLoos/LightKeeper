@@ -47,6 +47,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+import static nl.pim16aap2.lightkeeper.maven.mojo.prepareserver.PrepareServerConfigurationValidator.*;
+
 /**
  * Resolves/caches a Minecraft test server installation and writes a runtime manifest for integration tests.
  */
@@ -59,10 +61,6 @@ import java.util.UUID;
 @NoArgsConstructor
 public class PrepareServerMojo extends AbstractMojo
 {
-    private static final String SERVER_TYPE_PAPER = "paper";
-    private static final String SERVER_TYPE_SPIGOT = "spigot";
-    private static final List<String> SUPPORTED_SERVER_TYPES = List.of(SERVER_TYPE_PAPER, SERVER_TYPE_SPIGOT);
-
     /** Standard JVM log sink used by the shared provisioning implementation. */
     private static final System.Logger PROVISIONING_LOG =
         System.getLogger("nl.pim16aap2.lightkeeper.provisioning");
@@ -133,7 +131,7 @@ public class PrepareServerMojo extends AbstractMojo
     @Nullable
     private String serverType;
 
-    @Parameter(property = "lightkeeper.serverVersion", defaultValue = "latest-supported")
+    @Parameter(property = "lightkeeper.serverVersion", defaultValue = DEFAULT_SERVER_VERSION)
     @Nullable
     private String serverVersion;
 

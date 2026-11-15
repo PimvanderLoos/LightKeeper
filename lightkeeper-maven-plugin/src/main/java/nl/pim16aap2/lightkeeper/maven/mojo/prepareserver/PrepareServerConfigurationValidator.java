@@ -13,6 +13,15 @@ import java.util.Objects;
  */
 final class PrepareServerConfigurationValidator
 {
+    /** Canonical IDs used by server providers and setup diagnostics. */
+    static final String SERVER_TYPE_PAPER = "paper";
+    /** Spigot provider ID. */
+    static final String SERVER_TYPE_SPIGOT = "spigot";
+    /** Server types implemented by this Maven adapter. */
+    static final List<String> SUPPORTED_SERVER_TYPES = List.of(SERVER_TYPE_PAPER, SERVER_TYPE_SPIGOT);
+    /** Default server revision alias, resolved against the embedded agent's supported version. */
+    static final String DEFAULT_SERVER_VERSION = "latest-supported";
+
     private final List<String> supportedServerTypes;
 
     PrepareServerConfigurationValidator(List<String> supportedServerTypes)

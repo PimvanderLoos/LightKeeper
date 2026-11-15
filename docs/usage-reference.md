@@ -319,3 +319,17 @@ explicit reasons for APIs that should not receive custom assertions.
     - `lightkeeper-integration-tests/target/lightkeeper/*-runtime-manifest.json`
 - Prepared server directories:
     - `lightkeeper-integration-tests/target/lightkeeper-server/`
+
+## Diagnose setup without running a server
+
+Run `mvn lightkeeper:doctor`, or `mvn -pl :your-e2e-module -am lightkeeper:doctor` from a reactor root.
+The aggregate goal inspects the selected preparation modules once: Maven/Java, transport, effective server settings,
+producer guards, target selection, Failsafe bindings/skips and direct-JUnit ownership metadata. It never executes build
+phases, resolves server downloads or writes project files; Maven may resolve the plugin itself. Errors include a fix
+and fail the command; warnings cover expected first-run conditions such as an unbuilt JAR or absent IDE metadata.
+Run normal `verify` once to initialize those generated inputs. It validates available selected archives statically,
+without loading classes or requiring the target plugin to enable.
+
+The [website configurator](https://pimvanderloos.github.io/LightKeeper/setup.html) supplies fragments derived from the
+executable single-module and reactor examples, plus a complete first test. Merge existing POM sections and preserve
+your compiler, API dependency and packaging configuration. No automatic POM rewriting is performed.
