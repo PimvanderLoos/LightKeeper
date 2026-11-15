@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#080f14">
+    <title>LightKeeper - Setup configurator</title>
+    <meta name="description" content="Generate tested Maven configuration and a complete first test for your plugin.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/styles.css">
+    <script defer src="assets/main.js"></script>
+    <script type="module" src="assets/setup.mjs"></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="site-kicker"><span class="status-dot" aria-hidden="true"></span> LightKeeper / Open-source Minecraft plugin testing</div>
+<header class="site-header">
+    <a class="brand" href="index.html"><svg class="brand-mark" viewBox="0 0 32 36" aria-hidden="true"><path d="M19 1h9v9h-9zM10 12h9v9h-9zM21 13h7v7h-7zM2 24h8v9H2zM12 23h7v7h-7z"/></svg>LightKeeper</a>
+    <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" hidden>Menu <span aria-hidden="true">☰</span></button>
+    <nav class="site-nav" id="site-nav" aria-label="Main navigation">
+        <a href="getting-started.html">Getting Started</a>
+        <a href="features.html">Features</a>
+        <a href="ide-testing.html">IDE Setup</a>
+        <a href="javadoc/">API Reference</a>
+        <a class="nav-github" href="https://github.com/PimvanderLoos/LightKeeper">GitHub <span aria-hidden="true">↗</span></a>
+    </nav>
+</header>
+
+<main id="main" class="docs-main">
+    <section class="guide-hero">
+        <p class="eyebrow">Setup configurator</p>
+        <h1>Your project. One complete first test.</h1>
+        <p class="lead">Choose where your tests live and copy configuration from our executable consumer examples.</p>
+    </section>
+    <section class="panel">
+        <h2>Choose your layout</h2>
+        <p>Start with an existing Maven plugin project using Java 21 and Maven 3.9+. Keep your normal API dependency,
+            compiler settings and packaging (including Shade or Assembly). Merge each generated section into its existing
+            POM section rather than creating duplicate properties, dependencies or build elements.</p>
+        <form id="setup-form">
+            <label for="layout">Tests live in</label>
+            <select name="layout" id="layout">
+                <option value="single">My plugin module</option>
+                <option value="reactor">A separate E2E module in my reactor</option>
+            </select>
+            <fieldset id="producer-fields" hidden>
+                <legend>The producer containing the packaged plugin</legend>
+                <label for="e2eArtifactId">E2E module artifactId</label>
+                <input id="e2eArtifactId" name="e2eArtifactId" value="e2e" maxlength="200" autocomplete="off">
+                <label for="groupId">Producer groupId</label>
+                <input id="groupId" name="groupId" value="com.example" maxlength="200" autocomplete="off">
+                <label for="artifactId">Producer artifactId</label>
+                <input id="artifactId" name="artifactId" value="my-plugin" maxlength="200" autocomplete="off">
+                <label for="version">Producer version</label>
+                <input id="version" name="version" value="${project.version}" maxlength="200" autocomplete="off">
+            </fieldset>
+        </form>
+        <p>For a separate E2E module, first add a normal JAR module with your reactor parent and list it in the parent's
+            modules. All producers and the E2E module must inherit the generated parent guard. The E2E dependency selects
+            the actual packaged plugin. For attached artifacts, add the same classifier to that dependency and selector;
+            see the <a href="https://github.com/PimvanderLoos/LightKeeper/tree/master/examples/reactor">tested Shade/Assembly example</a>.</p>
+        <p>No project data is sent anywhere. These are copyable fragments; this page does not edit your project.</p>
+        <noscript>Enable JavaScript for the configurator or copy the complete
+            <a href="https://github.com/PimvanderLoos/LightKeeper/tree/master/examples">source examples</a>.</noscript>
+        <p id="setup-status" role="status" aria-live="polite">Loading tested setup examples…</p>
+    </section>
+    <div id="setup-output"></div>
+    <section class="panel" id="doctor">
+        <h2>Check setup before starting Minecraft</h2>
+        <pre><code>mvn lightkeeper:doctor</code></pre>
+        <p>Doctor inspects the effective selected modules: Maven/Java, server configuration, producer guards,
+            plugin-under-test selection, Failsafe skips and IDE ownership metadata. It reports concrete errors and next
+            actions without running build phases, downloading a server or writing project files. Maven may resolve the
+            doctor plugin itself. An unbuilt plugin or missing first-run metadata is a warning: run normal verify once.</p>
+        <p>Run the copied test with Maven first, then use the ordinary JUnit run button as described in the
+            <a href="ide-testing.html">IDE guide</a>. Native Windows transport remains unverified.</p>
+    </section>
+</main>
+
+<footer class="site-footer">
+    <p>LightKeeper <span aria-hidden="true">/</span> Open-source Minecraft plugin testing</p>
+    <nav aria-label="Footer navigation">
+        <a href="getting-started.html">Guides</a>
+        <a href="ide-testing.html">IDE Setup</a>
+        <a href="architecture.html">Architecture</a>
+        <a href="faq.html">FAQ</a>
+        <a href="javadoc/">API versions <span aria-hidden="true">↗</span></a>
+        <a href="https://github.com/PimvanderLoos/LightKeeper">GitHub <span aria-hidden="true">↗</span></a>
+        <a href="LICENSE">License</a>
+    </nav>
+</footer>
+</body>
+</html>
