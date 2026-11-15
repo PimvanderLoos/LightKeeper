@@ -303,6 +303,7 @@ public class PrepareServerMojo extends AbstractMojo
         }
         validateConfiguration();
         final PrepareServerExecutionContext executionContext = buildExecutionContext();
+        getLog().info("LK_PHASE: Selecting and validating the packaged plugin under test.");
         final List<ResolvedPluginArtifact> resolvedPlugins = resolvePreparedPlugins(executionContext);
         logPreparationStart(executionContext);
         createRequiredDirectories(executionContext);
@@ -312,6 +313,7 @@ public class PrepareServerMojo extends AbstractMojo
         serverProvider.prepareServer();
 
         final Path targetServerDirectory = serverProvider.targetServerDirectoryPath();
+        getLog().info("LK_PHASE: Installing target plugin and test assets.");
         installServerAssets(
             targetServerDirectory,
             executionContext,
@@ -335,6 +337,7 @@ public class PrepareServerMojo extends AbstractMojo
             runtimePreparation.runtimeProtocolVersion(),
             executionContext.worldInputSpecs()
         );
+        getLog().info("LK_PHASE: Exporting prepared runtime and isolated test inputs.");
         writeRuntimeManifest(runtimeManifest, executionContext.runtimeManifestPath());
         PrepareServerPlanExporter.write(
             project,

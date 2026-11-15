@@ -356,11 +356,12 @@ public abstract class ServerProvider
     }
 
     /**
-     * Prepares the server for use.
+     * Prepares the server for use, reporting actual JAR/base-cache reuse or refresh and elapsed preparation time.
      */
     public final void prepareServer()
         throws ProvisioningException
     {
+        log().log(System.Logger.Level.INFO, "LK_PHASE: Waiting for shared server-cache ownership.");
         try (ServerCacheLease ignored = ServerCacheLease.acquire(
             serverSpecification.jarCacheDirectoryRoot(),
             serverSpecification.baseServerCacheDirectoryRoot(),
@@ -373,13 +374,15 @@ public abstract class ServerProvider
 
     private void prepareWithOwnedCaches()
     {
+        final long started = System.nanoTime();
         pruneUnusedCacheDirectoriesIfConfigured();
         final boolean recreateJar = shouldRecreateJar();
         final boolean recreateBase = shouldRecreateBaseServer();
 
         if (recreateJar)
         {
-            log().log(System.Logger.Level.INFO, "Recreating server JAR file");
+            log().log(System.Logger.Level.INFO,
+                "LK_PHASE: Server JAR cache refresh required; downloading/building server.");
             FileUtil.cleanDirectory(jarCacheDirectory(), "jar cache directory");
             createBaseServerJar();
 
@@ -389,21 +392,31 @@ public abstract class ServerProvider
                 copyJarFromCacheToBaseServer();
             }
         }
+        else
+        {
+            log().log(System.Logger.Level.INFO, "LK_PHASE: Reusing server JAR cache.");
+        }
 
         if (recreateBase)
         {
-            log().log(System.Logger.Level.INFO, "Recreating base server directory");
+            log().log(System.Logger.Level.INFO, "LK_PHASE: Base-server cache refresh required; bootstrapping server.");
             FileUtil.cleanDirectory(baseServerDirectory(), "base server directory");
             copyJarFromCacheToBaseServer();
             createBaseServer();
         }
+        else
+        {
+            log().log(System.Logger.Level.INFO, "LK_PHASE: Reusing prepared base-server cache.");
+        }
 
         configureSpigotWatchdogTimeout();
 
-        log().log(System.Logger.Level.INFO, "Copying base server to target server directory");
+        log().log(System.Logger.Level.INFO, "LK_PHASE: Creating test server and installing LightKeeper agent.");
         FileUtil.cleanDirectory(targetServerDirectory(), "target server directory");
         createTargetServer();
         installEmbeddedAgentJar();
+        log().log(System.Logger.Level.INFO, "LK_PHASE: Server files ready ("
+            + java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started) + " ms).");
     }
 
     /**
