@@ -84,6 +84,25 @@ class SiteChecksTest(unittest.TestCase):
         # verify
         self.assertTrue((self.root / "compiled/Example.class").is_file())
 
+    def test_compileExamples_shouldReuseIdenticalExamplesAcrossPages(self):
+        # setup
+        self.snippets()
+        (self.root / "guide.html").write_text('<code data-java-class="Example">class Example {}</code>')
+        # execute
+        site_checks.compile_examples(self.root, "", self.root / "compiled", self.descriptor)
+        # verify
+        self.assertTrue((self.root / "compiled/Example.class").is_file())
+
+    def test_compileExamples_shouldRejectDifferentExamplesWithTheSameName(self):
+        # setup
+        self.snippets()
+        (self.root / "guide.html").write_text('<code data-java-class="Example">class Example { int changed; }</code>')
+        # execute
+        with self.assertRaisesRegex(ValueError, "Duplicate Java example"):
+            site_checks.compile_examples(self.root, "", self.root / "compiled", self.descriptor)
+        # verify
+        self.assertFalse((self.root / "compiled/Example.class").exists())
+
     def test_compileExamples_shouldRejectUnknownMavenConfiguration(self):
         # setup
         self.snippets(parameter="removedParameter")
