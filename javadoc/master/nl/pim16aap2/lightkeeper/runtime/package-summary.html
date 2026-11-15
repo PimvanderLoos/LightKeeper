@@ -20,7 +20,7 @@ loadScripts(document, 'script');</script>
 <div>JavaScript is disabled on your browser.</div>
 </noscript>
 <div class="flex-box">
-<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/3500b645423473bbbcc588919eec5e238af95883">3500b6454234</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
+<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/7a5a2f402c0d6c98711cce924650b67aa4a5715d">7a5a2f402c0d</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
 <nav role="navigation">
 <!-- ========= START OF TOP NAVBAR ======= -->
 <div class="top-nav" id="navbar-top"><button id="navbar-toggle-button" aria-controls="navbar-top" aria-expanded="false" aria-label="Toggle navigation links"><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span></button>
@@ -71,68 +71,79 @@ loadScripts(document, 'script');</script>
 <div class="package-signature"><span class="annotations">@NullMarked
 </span>package <span class="element-name">nl.pim16aap2.lightkeeper.runtime</span></div>
 <section class="package-description" id="package-description">
-<div class="block">Runtime manifest model and cross-process constants used by provisioning, the framework, and the in-server agent.</div>
+<div class="block">Runtime manifests, versioned test plans and process coordination shared across Maven, JUnit and the in-server agent.
+ <a href="ModuleTestPlan.html" title="class in nl.pim16aap2.lightkeeper.runtime"><code>ModuleTestPlan</code></a> records module ownership and supported Maven build context;
+ <a href="MavenRuntimeContext.html" title="class in nl.pim16aap2.lightkeeper.runtime"><code>MavenRuntimeContext</code></a> ties a variant's immutable inputs to its real producer.
+ Build leases protect packaging and capture, while runtime manifests describe independently mutable server sessions.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
 <li>
 <div id="class-summary">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="class-summary-tab0" role="tab" aria-selected="true" aria-controls="class-summary.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary', 2)" class="active-table-tab">All Classes and Interfaces</button><button id="class-summary-tab2" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab2', 2)" class="table-tab">Classes</button><button id="class-summary-tab4" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab4', 2)" class="table-tab">Record Classes</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="class-summary-tab0" role="tab" aria-selected="true" aria-controls="class-summary.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary', 2)" class="active-table-tab">All Classes and Interfaces</button><button id="class-summary-tab2" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab2', 2)" class="table-tab">Classes</button><button id="class-summary-tab3" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab3', 2)" class="table-tab">Enum Classes</button><button id="class-summary-tab4" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab4', 2)" class="table-tab">Record Classes</button></div>
 <div id="class-summary.tabpanel" role="tabpanel" aria-labelledby="class-summary-tab0">
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Class</div>
 <div class="table-header col-last">Description</div>
+<div class="col-first even-row-color class-summary class-summary-tab4"><a href="BuildLeaseIdentity.html" title="class in nl.pim16aap2.lightkeeper.runtime">BuildLeaseIdentity</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab4">
+<div class="block">Identity of the live process holding a cooperative producer-build lease.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="BuildOutputLease.html" title="class in nl.pim16aap2.lightkeeper.runtime">BuildOutputLease</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="block">Cooperative ownership of one module's outputs, covering packaging through immutable snapshot capture.</div>
+</div>
+<div class="col-first even-row-color class-summary class-summary-tab4"><a href="EffectiveTestPlan.html" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab4">
+<div class="block">Effective variant inputs exported by the configured Maven mojo after its real lifecycle and artifact selection.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab4"><a href="EffectiveTestPlan.AssetInput.html" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan.AssetInput</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab4">
+<div class="block">One effective local/materialized asset input; remote URLs and credentials remain in Maven configuration.</div>
+</div>
+<div class="col-first even-row-color class-summary class-summary-tab4"><a href="EffectiveTestPlan.Target.html" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan.Target</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab4">
+<div class="block">Logical target selection, without an inferred output filename.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab3"><a href="EffectiveTestPlan.TargetKind.html" title="enum class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan.TargetKind</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab3">
+<div class="block">Logical producer selection supported by the Maven target resolver.</div>
+</div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="FileLockLease.html" title="class in nl.pim16aap2.lightkeeper.runtime">FileLockLease</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="block">Exclusive process/thread coordination without replacing or deleting the shared kernel-lock inode.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="GeneratedMetadata.html" title="class in nl.pim16aap2.lightkeeper.runtime">GeneratedMetadata</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="block">Bounded JSON reads and atomic publication of LK-owned generated build metadata.</div>
+</div>
 <div class="col-first even-row-color class-summary class-summary-tab2"><a href="IdeRuntimeArtifactHasher.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeArtifactHasher</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab2">
-<div class="block">Canonically hashes files and directory trees used by IDE runtime preparation and validation.</div>
+<div class="block">Canonically hashes build inputs and immutable server trees without treating hashes as source-freshness proofs.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab4"><a href="IdeRuntimeDiscovery.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeDiscovery</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab4">
-<div class="block">Discovery metadata for a reusable IDE test runtime.</div>
-</div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="IdeRuntimeDiscoveryReader.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeDiscoveryReader</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
-<div class="block">Reads generated IDE runtime discovery metadata.</div>
-</div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="IdeRuntimeDiscoveryResolver.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeDiscoveryResolver</a></div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="IdeRuntimePaths.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimePaths</a></div>
 <div class="col-last odd-row-color class-summary class-summary-tab2">
-<div class="block">Resolves a module-owned IDE runtime from a test class output directory.</div>
+<div class="block">Canonical path and privacy policy for module-owned generated LightKeeper state.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="IdeRuntimeDiscoveryWriter.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeDiscoveryWriter</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
-<div class="block">Atomically publishes generated IDE runtime discovery metadata.</div>
-</div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="IdeRuntimeLock.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeLock</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
-<div class="block">Cross-process lease preventing concurrent use or replacement of a module's IDE runtime.</div>
-</div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="IdeRuntimePaths.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimePaths</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
-<div class="block">Canonical path policy for generated IDE test setup state.</div>
-</div>
-<div class="col-first odd-row-color class-summary class-summary-tab4"><a href="IdeRuntimeProvenance.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenance</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab4">
-<div class="block">Integrity and input provenance recorded beside a durable IDE runtime manifest.</div>
-</div>
-<div class="col-first even-row-color class-summary class-summary-tab4"><a href="IdeRuntimeProvenance.Artifact.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenance.Artifact</a></div>
+<div class="col-first even-row-color class-summary class-summary-tab4"><a href="MavenBuildContext.html" title="class in nl.pim16aap2.lightkeeper.runtime">MavenBuildContext</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab4">
-<div class="block">A path and its canonical content hash.</div>
+<div class="block">Supported non-secret Maven invocation settings retained for a later native JUnit producer build.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="IdeRuntimeProvenanceReader.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenanceReader</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
-<div class="block">Reads and validates IDE runtime provenance metadata.</div>
-</div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="IdeRuntimeProvenanceWriter.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenanceWriter</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
-<div class="block">Atomically writes IDE runtime provenance metadata.</div>
-</div>
-<div class="col-first odd-row-color class-summary class-summary-tab4"><a href="IdeRuntimeSelection.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeSelection</a></div>
+<div class="col-first odd-row-color class-summary class-summary-tab4"><a href="MavenRuntimeContext.html" title="class in nl.pim16aap2.lightkeeper.runtime">MavenRuntimeContext</a></div>
 <div class="col-last odd-row-color class-summary class-summary-tab4">
-<div class="block">Validated module-owned discovery selection for a framework launch.</div>
+<div class="block">One atomic module/variant export tied to its real Maven producer process and immutable snapshot.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="IdeRuntimeValidator.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeValidator</a></div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="ModulePlanPaths.html" title="class in nl.pim16aap2.lightkeeper.runtime">ModulePlanPaths</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab2">
-<div class="block">Validates discovered IDE runtime ownership, compatibility, integrity, and examined local inputs.</div>
+<div class="block">Canonical module-owned locations for effective plans, class-output anchors and invocation exports.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab4"><a href="ModuleTestPlan.html" title="class in nl.pim16aap2.lightkeeper.runtime">ModuleTestPlan</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab4">
+<div class="block">Durable Maven-derived ownership and build scope for one test module.</div>
+</div>
+<div class="col-first even-row-color class-summary class-summary-tab4"><a href="ProcessIdentity.html" title="class in nl.pim16aap2.lightkeeper.runtime">ProcessIdentity</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab4">
+<div class="block">Process identity that remains unambiguous when the operating system reuses a PID.</div>
 </div>
 <div class="col-first odd-row-color class-summary class-summary-tab4"><a href="RuntimeManifest.html" title="class in nl.pim16aap2.lightkeeper.runtime">RuntimeManifest</a></div>
 <div class="col-last odd-row-color class-summary class-summary-tab4">
@@ -158,8 +169,12 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Shared runtime protocol constants for LightKeeper.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="UserOnlyDirectory.html" title="class in nl.pim16aap2.lightkeeper.runtime">UserOnlyDirectory</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab4"><a href="TestModuleAnchor.html" title="class in nl.pim16aap2.lightkeeper.runtime">TestModuleAnchor</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab4">
+<div class="block">Ownership anchor written at the exact test-class output location, without a global classpath search.</div>
+</div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="UserOnlyDirectory.html" title="class in nl.pim16aap2.lightkeeper.runtime">UserOnlyDirectory</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Creates and validates directories that must only be accessible to the current operating-system user.</div>
 </div>
 </div>

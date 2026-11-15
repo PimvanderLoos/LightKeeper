@@ -20,7 +20,7 @@ loadScripts(document, 'script');</script>
 <div>JavaScript is disabled on your browser.</div>
 </noscript>
 <div class="flex-box">
-<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/3500b645423473bbbcc588919eec5e238af95883">3500b6454234</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
+<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/7a5a2f402c0d6c98711cce924650b67aa4a5715d">7a5a2f402c0d</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
 <nav role="navigation">
 <!-- ========= START OF TOP NAVBAR ======= -->
 <div class="top-nav" id="navbar-top"><button id="navbar-toggle-button" aria-controls="navbar-top" aria-expanded="false" aria-label="Toggle navigation links"><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span></button>
@@ -60,7 +60,7 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-first odd-row-color"><a href="#nl.pim16aap2.lightkeeper.runtime">nl.pim16aap2.lightkeeper.runtime</a></div>
 <div class="col-last odd-row-color">
-<div class="block">Runtime manifest model and cross-process constants used by provisioning, the framework, and the in-server agent.</div>
+<div class="block">Runtime manifests, versioned test plans and process coordination shared across Maven, JUnit and the in-server agent.</div>
 </div>
 </div>
 <section class="package-uses">
@@ -84,25 +84,41 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Class</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color"><a href="class-use/IdeRuntimeDiscovery.html#nl.pim16aap2.lightkeeper.runtime">IdeRuntimeDiscovery</a></div>
+<div class="col-first even-row-color"><a href="class-use/BuildLeaseIdentity.html#nl.pim16aap2.lightkeeper.runtime">BuildLeaseIdentity</a></div>
 <div class="col-last even-row-color">
-<div class="block">Discovery metadata for a reusable IDE test runtime.</div>
+<div class="block">Identity of the live process holding a cooperative producer-build lease.</div>
 </div>
-<div class="col-first odd-row-color"><a href="class-use/IdeRuntimeLock.html#nl.pim16aap2.lightkeeper.runtime">IdeRuntimeLock</a></div>
+<div class="col-first odd-row-color"><a href="class-use/BuildOutputLease.html#nl.pim16aap2.lightkeeper.runtime">BuildOutputLease</a></div>
 <div class="col-last odd-row-color">
-<div class="block">Cross-process lease preventing concurrent use or replacement of a module's IDE runtime.</div>
+<div class="block">Cooperative ownership of one module's outputs, covering packaging through immutable snapshot capture.</div>
 </div>
-<div class="col-first even-row-color"><a href="class-use/IdeRuntimeProvenance.html#nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenance</a></div>
+<div class="col-first even-row-color"><a href="class-use/EffectiveTestPlan.html#nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan</a></div>
 <div class="col-last even-row-color">
-<div class="block">Integrity and input provenance recorded beside a durable IDE runtime manifest.</div>
+<div class="block">Effective variant inputs exported by the configured Maven mojo after its real lifecycle and artifact selection.</div>
 </div>
-<div class="col-first odd-row-color"><a href="class-use/IdeRuntimeProvenance.Artifact.html#nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenance.Artifact</a></div>
+<div class="col-first odd-row-color"><a href="class-use/EffectiveTestPlan.AssetInput.html#nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan.AssetInput</a></div>
 <div class="col-last odd-row-color">
-<div class="block">A path and its canonical content hash.</div>
+<div class="block">One effective local/materialized asset input; remote URLs and credentials remain in Maven configuration.</div>
 </div>
-<div class="col-first even-row-color"><a href="class-use/IdeRuntimeSelection.html#nl.pim16aap2.lightkeeper.runtime">IdeRuntimeSelection</a></div>
+<div class="col-first even-row-color"><a href="class-use/EffectiveTestPlan.Target.html#nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan.Target</a></div>
 <div class="col-last even-row-color">
-<div class="block">Validated module-owned discovery selection for a framework launch.</div>
+<div class="block">Logical target selection, without an inferred output filename.</div>
+</div>
+<div class="col-first odd-row-color"><a href="class-use/EffectiveTestPlan.TargetKind.html#nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan.TargetKind</a></div>
+<div class="col-last odd-row-color">
+<div class="block">Logical producer selection supported by the Maven target resolver.</div>
+</div>
+<div class="col-first even-row-color"><a href="class-use/FileLockLease.html#nl.pim16aap2.lightkeeper.runtime">FileLockLease</a></div>
+<div class="col-last even-row-color">
+<div class="block">Exclusive process/thread coordination without replacing or deleting the shared kernel-lock inode.</div>
+</div>
+<div class="col-first odd-row-color"><a href="class-use/MavenBuildContext.html#nl.pim16aap2.lightkeeper.runtime">MavenBuildContext</a></div>
+<div class="col-last odd-row-color">
+<div class="block">Supported non-secret Maven invocation settings retained for a later native JUnit producer build.</div>
+</div>
+<div class="col-first even-row-color"><a href="class-use/ProcessIdentity.html#nl.pim16aap2.lightkeeper.runtime">ProcessIdentity</a></div>
+<div class="col-last even-row-color">
+<div class="block">Process identity that remains unambiguous when the operating system reuses a PID.</div>
 </div>
 <div class="col-first odd-row-color"><a href="class-use/RuntimeManifest.html#nl.pim16aap2.lightkeeper.runtime">RuntimeManifest</a></div>
 <div class="col-last odd-row-color">

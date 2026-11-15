@@ -20,7 +20,7 @@ loadScripts(document, 'script');</script>
 <div>JavaScript is disabled on your browser.</div>
 </noscript>
 <div class="flex-box">
-<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/3500b645423473bbbcc588919eec5e238af95883">3500b6454234</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
+<header role="banner" class="flex-header"><div class="lightkeeper-version">Master — development build · Maven 1.2.0-SNAPSHOT · <a href="https://github.com/PimvanderLoos/LightKeeper/commit/7a5a2f402c0d6c98711cce924650b67aa4a5715d">7a5a2f402c0d</a> · <a href="https://lightkeeper.pim16aap2.nl/javadoc/">API versions</a> · <a href="https://lightkeeper.pim16aap2.nl/">Current master guides</a></div>
 <nav role="navigation">
 <!-- ========= START OF TOP NAVBAR ======= -->
 <div class="top-nav" id="navbar-top"><button id="navbar-toggle-button" aria-controls="navbar-top" aria-expanded="false" aria-label="Toggle navigation links"><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span><span class="nav-bar-toggle-icon">&nbsp;</span></button>
@@ -50,20 +50,28 @@ loadScripts(document, 'script');</script>
 <div class="header">
 <h1>Index</h1>
 </div>
-<a href="#I:A">A</a>&nbsp;<a href="#I:B">B</a>&nbsp;<a href="#I:C">C</a>&nbsp;<a href="#I:D">D</a>&nbsp;<a href="#I:E">E</a>&nbsp;<a href="#I:F">F</a>&nbsp;<a href="#I:G">G</a>&nbsp;<a href="#I:H">H</a>&nbsp;<a href="#I:I">I</a>&nbsp;<a href="#I:J">J</a>&nbsp;<a href="#I:L">L</a>&nbsp;<a href="#I:M">M</a>&nbsp;<a href="#I:N">N</a>&nbsp;<a href="#I:O">O</a>&nbsp;<a href="#I:P">P</a>&nbsp;<a href="#I:Q">Q</a>&nbsp;<a href="#I:R">R</a>&nbsp;<a href="#I:S">S</a>&nbsp;<a href="#I:T">T</a>&nbsp;<a href="#I:U">U</a>&nbsp;<a href="#I:V">V</a>&nbsp;<a href="#I:W">W</a>&nbsp;<a href="#I:X">X</a>&nbsp;<a href="#I:Y">Y</a>&nbsp;<a href="#I:Z">Z</a>&nbsp;<br><a href="allclasses-index.html">All&nbsp;Classes&nbsp;and&nbsp;Interfaces</a><span class="vertical-separator">|</span><a href="allpackages-index.html">All&nbsp;Packages</a><span class="vertical-separator">|</span><a href="constant-values.html">Constant&nbsp;Field&nbsp;Values</a><span class="vertical-separator">|</span><a href="serialized-form.html">Serialized&nbsp;Form</a>
+<a href="#I:A">A</a>&nbsp;<a href="#I:B">B</a>&nbsp;<a href="#I:C">C</a>&nbsp;<a href="#I:D">D</a>&nbsp;<a href="#I:E">E</a>&nbsp;<a href="#I:F">F</a>&nbsp;<a href="#I:G">G</a>&nbsp;<a href="#I:H">H</a>&nbsp;<a href="#I:I">I</a>&nbsp;<a href="#I:J">J</a>&nbsp;<a href="#I:K">K</a>&nbsp;<a href="#I:L">L</a>&nbsp;<a href="#I:M">M</a>&nbsp;<a href="#I:N">N</a>&nbsp;<a href="#I:O">O</a>&nbsp;<a href="#I:P">P</a>&nbsp;<a href="#I:Q">Q</a>&nbsp;<a href="#I:R">R</a>&nbsp;<a href="#I:S">S</a>&nbsp;<a href="#I:T">T</a>&nbsp;<a href="#I:U">U</a>&nbsp;<a href="#I:V">V</a>&nbsp;<a href="#I:W">W</a>&nbsp;<a href="#I:X">X</a>&nbsp;<a href="#I:Y">Y</a>&nbsp;<a href="#I:Z">Z</a>&nbsp;<br><a href="allclasses-index.html">All&nbsp;Classes&nbsp;and&nbsp;Interfaces</a><span class="vertical-separator">|</span><a href="allpackages-index.html">All&nbsp;Packages</a><span class="vertical-separator">|</span><a href="constant-values.html">Constant&nbsp;Field&nbsp;Values</a><span class="vertical-separator">|</span><a href="serialized-form.html">Serialized&nbsp;Form</a>
 <h2 class="title" id="I:A">A</h2>
 <dl class="index">
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/IProtocolValue.PDropped.html#accessorName()" class="member-name-link">accessorName()</a> - Method in record class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/IProtocolValue.PDropped.html" title="class in nl.pim16aap2.lightkeeper.protocol">IProtocolValue.PDropped</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/protocol/IProtocolValue.PDropped.html#param-accessorName"><code>accessorName</code></a> record component.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeLock.html#acquire(java.nio.file.Path)" class="member-name-link">acquire(Path)</a> - Static method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeLock.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeLock</a></dt>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/BuildOutputLease.html#acquire(java.nio.file.Path,java.time.Duration)" class="member-name-link">acquire(Path, Duration)</a> - Static method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/BuildOutputLease.html" title="class in nl.pim16aap2.lightkeeper.runtime">BuildOutputLease</a></dt>
 <dd>
-<div class="block">Attempts to acquire the module-wide IDE runtime lock without waiting.</div>
+<div class="block">Waits for exclusive access to this reactor's producer outputs.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/FileLockLease.html#acquire(java.nio.file.Path,java.time.Duration)" class="member-name-link">acquire(Path, Duration)</a> - Static method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/FileLockLease.html" title="class in nl.pim16aap2.lightkeeper.runtime">FileLockLease</a></dt>
+<dd>
+<div class="block">Acquires one stable lock file, respecting timeout and interruption.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.ClickAction.html#action()" class="member-name-link">action()</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.ClickAction.html" title="class in nl.pim16aap2.lightkeeper.framework">ChatComponentSnapshot.ClickAction</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.ClickAction.html#param-action"><code>action</code></a> record component.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html#activeProfiles()" class="member-name-link">activeProfiles()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html" title="class in nl.pim16aap2.lightkeeper.runtime">MavenBuildContext</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html#param-activeProfiles"><code>activeProfiles</code></a> record component.</div>
 </dd>
 <dt><a href="index.html#a-first-test-heading" class="search-tag-link">A first test</a> - Search tag in Overview</dt>
 <dd>Section</dd>
@@ -157,13 +165,13 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Archive expanded with path traversal checks.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.Artifact.html#%3Cinit%3E(java.lang.String,java.lang.String)" class="member-name-link">Artifact(String, String)</a> - Constructor for record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.Artifact.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenance.Artifact</a></dt>
-<dd>
-<div class="block">Creates an instance of a <code>Artifact</code> record class.</div>
-</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/assets/PluginArtifactSpec.html#artifactId()" class="member-name-link">artifactId()</a> - Method in record class nl.pim16aap2.lightkeeper.provisioning.assets.<a href="nl/pim16aap2/lightkeeper/provisioning/assets/PluginArtifactSpec.html" title="class in nl.pim16aap2.lightkeeper.provisioning.assets">PluginArtifactSpec</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/provisioning/assets/PluginArtifactSpec.html#param-artifactId"><code>artifactId</code></a> record component.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.Target.html#artifactId()" class="member-name-link">artifactId()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.Target.html" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan.Target</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.Target.html#param-artifactId"><code>artifactId</code></a> record component.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html#asBoolean()" class="member-name-link">asBoolean()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ProtocolValueAssert</a></dt>
 <dd>&nbsp;</dd>
@@ -236,6 +244,14 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html#assertThat(nl.pim16aap2.lightkeeper.protocol.IProtocolValue)" class="member-name-link">assertThat(IProtocolValue)</a> - Static method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/LightkeeperAssertions.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">LightkeeperAssertions</a></dt>
 <dd>
 <div class="block">Creates frozen typed-value assertions.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.AssetInput.html#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String)" class="member-name-link">AssetInput(String, String, String)</a> - Constructor for record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.AssetInput.html" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan.AssetInput</a></dt>
+<dd>
+<div class="block">Validates the input's domain, name and optional local path.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.html#assets()" class="member-name-link">assets()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.html" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.html#param-assets"><code>assets</code></a> record component.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html#asString()" class="member-name-link">asString()</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ProtocolValueAssert</a></dt>
 <dd>&nbsp;</dd>
@@ -356,6 +372,22 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Retrieves the block type at a position.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html#BOOTSTRAP_EXECUTION_ENV" class="member-name-link">BOOTSTRAP_EXECUTION_ENV</a> - Static variable in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html" title="class in nl.pim16aap2.lightkeeper.runtime">MavenRuntimeContext</a></dt>
+<dd>
+<div class="block">Private bootstrap environment selecting a prepare-server execution within that module.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html#BOOTSTRAP_MODULE_ENV" class="member-name-link">BOOTSTRAP_MODULE_ENV</a> - Static variable in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html" title="class in nl.pim16aap2.lightkeeper.runtime">MavenRuntimeContext</a></dt>
+<dd>
+<div class="block">Private bootstrap environment selecting the one owning test module to prepare.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html#BOOTSTRAP_NONCE_ENV" class="member-name-link">BOOTSTRAP_NONCE_ENV</a> - Static variable in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html" title="class in nl.pim16aap2.lightkeeper.runtime">MavenRuntimeContext</a></dt>
+<dd>
+<div class="block">Private bootstrap environment proving that an export belongs to the requesting launch.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html#BOOTSTRAP_RESULT_ENV" class="member-name-link">BOOTSTRAP_RESULT_ENV</a> - Static variable in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html" title="class in nl.pim16aap2.lightkeeper.runtime">MavenRuntimeContext</a></dt>
+<dd>
+<div class="block">Private bootstrap environment identifying a unique launch export, separate from shared context pointers.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/BotJoinDeniedException.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.framework">BotJoinDeniedException</a> - Exception Class in <a href="nl/pim16aap2/lightkeeper/framework/package-summary.html">nl.pim16aap2.lightkeeper.framework</a></dt>
 <dd>
 <div class="block">Thrown when a <code>FULL_LOGIN</code> bot is refused by the server (whitelist, ban, full server, or a plugin
@@ -390,6 +422,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Builds and creates the configured world.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html#buildContext()" class="member-name-link">buildContext()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html" title="class in nl.pim16aap2.lightkeeper.runtime">ModuleTestPlan</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html#param-buildContext"><code>buildContext</code></a> record component.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/IBots.html#builder()" class="member-name-link">builder()</a> - Method in interface nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/IBots.html" title="interface in nl.pim16aap2.lightkeeper.framework">IBots</a></dt>
 <dd>
 <div class="block">Creates a player builder.</div>
@@ -401,6 +437,18 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/PaperBuildMetadata.html#buildId()" class="member-name-link">buildId()</a> - Method in record class nl.pim16aap2.lightkeeper.provisioning.<a href="nl/pim16aap2/lightkeeper/provisioning/PaperBuildMetadata.html" title="class in nl.pim16aap2.lightkeeper.provisioning">PaperBuildMetadata</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/provisioning/PaperBuildMetadata.html#param-buildId"><code>buildId</code></a> record component.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/BuildLeaseIdentity.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.runtime">BuildLeaseIdentity</a> - Record Class in <a href="nl/pim16aap2/lightkeeper/runtime/package-summary.html">nl.pim16aap2.lightkeeper.runtime</a></dt>
+<dd>
+<div class="block">Identity of the live process holding a cooperative producer-build lease.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/BuildLeaseIdentity.html#%3Cinit%3E(java.lang.String,nl.pim16aap2.lightkeeper.runtime.ProcessIdentity,java.lang.String)" class="member-name-link">BuildLeaseIdentity(String, ProcessIdentity, String)</a> - Constructor for record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/BuildLeaseIdentity.html" title="class in nl.pim16aap2.lightkeeper.runtime">BuildLeaseIdentity</a></dt>
+<dd>
+<div class="block">Validates the output scope and process identity before publication.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/BuildOutputLease.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.runtime">BuildOutputLease</a> - Class in <a href="nl/pim16aap2/lightkeeper/runtime/package-summary.html">nl.pim16aap2.lightkeeper.runtime</a></dt>
+<dd>
+<div class="block">Cooperative ownership of one module's outputs, covering packaging through immutable snapshot capture.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/SpigotBuildMetadata.html#buildToolsIdentity()" class="member-name-link">buildToolsIdentity()</a> - Method in record class nl.pim16aap2.lightkeeper.provisioning.<a href="nl/pim16aap2/lightkeeper/provisioning/SpigotBuildMetadata.html" title="class in nl.pim16aap2.lightkeeper.provisioning">SpigotBuildMetadata</a></dt>
 <dd>
@@ -531,9 +579,25 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/provisioning/assets/PluginArtifactSpec.html#param-classifier"><code>classifier</code></a> record component.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.Target.html#classifier()" class="member-name-link">classifier()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.Target.html" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan.Target</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.Target.html#param-classifier"><code>classifier</code></a> record component.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/IProtocolValue.PRef.html#className()" class="member-name-link">className()</a> - Method in record class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/IProtocolValue.PRef.html" title="class in nl.pim16aap2.lightkeeper.protocol">IProtocolValue.PRef</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/protocol/IProtocolValue.PRef.html#param-className"><code>className</code></a> record component.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/ModulePlanPaths.html#classOutputAnchor(java.nio.file.Path)" class="member-name-link">classOutputAnchor(Path)</a> - Static method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/ModulePlanPaths.html" title="class in nl.pim16aap2.lightkeeper.runtime">ModulePlanPaths</a></dt>
+<dd>
+<div class="block">Returns the exact anchor written into Maven's effective test-class output directory.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html#classOutputDirectory()" class="member-name-link">classOutputDirectory()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html" title="class in nl.pim16aap2.lightkeeper.runtime">ModuleTestPlan</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html#param-classOutputDirectory"><code>classOutputDirectory</code></a> record component.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/TestModuleAnchor.html#classOutputDirectory()" class="member-name-link">classOutputDirectory()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/TestModuleAnchor.html" title="class in nl.pim16aap2.lightkeeper.runtime">TestModuleAnchor</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/TestModuleAnchor.html#param-classOutputDirectory"><code>classOutputDirectory</code></a> record component.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/util/FileUtil.html#cleanDirectory(java.nio.file.Path,java.lang.String)" class="member-name-link">cleanDirectory(Path, String)</a> - Static method in class nl.pim16aap2.lightkeeper.provisioning.util.<a href="nl/pim16aap2/lightkeeper/provisioning/util/FileUtil.html" title="class in nl.pim16aap2.lightkeeper.provisioning.util">FileUtil</a></dt>
 <dd>
@@ -640,8 +704,14 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Deletes this owned session after its process stops, unless retained for failure diagnostics.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeLock.html#close()" class="member-name-link">close()</a> - Method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeLock.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeLock</a></dt>
-<dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/BuildOutputLease.html#close()" class="member-name-link">close()</a> - Method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/BuildOutputLease.html" title="class in nl.pim16aap2.lightkeeper.runtime">BuildOutputLease</a></dt>
+<dd>
+<div class="block">Removes the process identity while ownership is held, then releases the kernel lease.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/FileLockLease.html#close()" class="member-name-link">close()</a> - Method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/FileLockLease.html" title="class in nl.pim16aap2.lightkeeper.runtime">FileLockLease</a></dt>
+<dd>
+<div class="block">Releases the kernel channel before allowing another thread to open its descriptor.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/ExecuteCommand.Command.html#command()" class="member-name-link">command()</a> - Method in record class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/ExecuteCommand.Command.html" title="class in nl.pim16aap2.lightkeeper.protocol">ExecuteCommand.Command</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/protocol/ExecuteCommand.Command.html#param-command"><code>command</code></a> record component.</div>
@@ -842,6 +912,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Condition callback used by <a href="nl/pim16aap2/lightkeeper/framework/ILightkeeperFramework.html#waitUntil(nl.pim16aap2.lightkeeper.framework.Condition,java.time.Duration)"><code>ILightkeeperFramework.waitUntil(Condition, java.time.Duration)</code></a>.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.html#configuration()" class="member-name-link">configuration()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.html" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.html#param-configuration"><code>configuration</code></a> record component.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/CommandSource.html#CONSOLE" class="member-name-link">CONSOLE</a> - Enum constant in enum class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/CommandSource.html" title="enum class in nl.pim16aap2.lightkeeper.protocol">CommandSource</a></dt>
 <dd>
 <div class="block">Commands run as the server console sender.</div>
@@ -918,6 +992,14 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Identifies a Spigot build by revision, BuildTools, Java and platform.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/ProcessIdentity.html#current()" class="member-name-link">current()</a> - Static method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/ProcessIdentity.html" title="class in nl.pim16aap2.lightkeeper.runtime">ProcessIdentity</a></dt>
+<dd>
+<div class="block">Captures this JVM's operating-system identity.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.TargetKind.html#CURRENT_MODULE" class="member-name-link">CURRENT_MODULE</a> - Enum constant in enum class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.TargetKind.html" title="enum class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan.TargetKind</a></dt>
+<dd>
+<div class="block">Current module's actual main or attached artifact.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/IFrameworkGatewayView.html#currentServerTick()" class="member-name-link">currentServerTick()</a> - Method in interface nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/IFrameworkGatewayView.html" title="interface in nl.pim16aap2.lightkeeper.framework">IFrameworkGatewayView</a></dt>
 <dd>
 <div class="block">Gets the server's current tick.</div>
@@ -946,6 +1028,10 @@ loadScripts(document, 'script');</script>
 <div class="block">Default maximum time, in seconds, the agent waits for a scheduled synchronous server operation before reporting
  <code>TIMEOUT</code>.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html#defaultExecutionId()" class="member-name-link">defaultExecutionId()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html" title="class in nl.pim16aap2.lightkeeper.runtime">ModuleTestPlan</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html#param-defaultExecutionId"><code>defaultExecutionId</code></a> record component.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/util/FileUtil.PruneResult.html#deletedDirectories()" class="member-name-link">deletedDirectories()</a> - Method in record class nl.pim16aap2.lightkeeper.provisioning.util.<a href="nl/pim16aap2/lightkeeper/provisioning/util/FileUtil.PruneResult.html" title="class in nl.pim16aap2.lightkeeper.provisioning.util">FileUtil.PruneResult</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/provisioning/util/FileUtil.PruneResult.html#param-deletedDirectories"><code>deletedDirectories</code></a> record component.</div>
@@ -953,6 +1039,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/util/FileUtil.html#deleteRecursively(java.nio.file.Path,java.lang.String)" class="member-name-link">deleteRecursively(Path, String)</a> - Static method in class nl.pim16aap2.lightkeeper.provisioning.util.<a href="nl/pim16aap2/lightkeeper/provisioning/util/FileUtil.html" title="class in nl.pim16aap2.lightkeeper.provisioning.util">FileUtil</a></dt>
 <dd>
 <div class="block">Deletes a file or directory recursively.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.TargetKind.html#DEPENDENCY" class="member-name-link">DEPENDENCY</a> - Enum constant in enum class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.TargetKind.html" title="enum class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan.TargetKind</a></dt>
+<dd>
+<div class="block">Declared dependency, preferring current reactor artifacts.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/EntityQuery.html#description()" class="member-name-link">description()</a> - Method in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/EntityQuery.html" title="class in nl.pim16aap2.lightkeeper.framework">EntityQuery</a></dt>
 <dd>&nbsp;</dd>
@@ -971,18 +1061,6 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/PlayerUnavailableException.Reason.html#DISCONNECTED" class="member-name-link">DISCONNECTED</a> - Enum constant in enum class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/PlayerUnavailableException.Reason.html" title="enum class in nl.pim16aap2.lightkeeper.framework">PlayerUnavailableException.Reason</a></dt>
 <dd>
 <div class="block">The player left the server or otherwise went offline.</div>
-</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeSelection.html#discovery()" class="member-name-link">discovery()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeSelection.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeSelection</a></dt>
-<dd>
-<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/IdeRuntimeSelection.html#param-discovery"><code>discovery</code></a> record component.</div>
-</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimePaths.html#DISCOVERY_FILE_NAME" class="member-name-link">DISCOVERY_FILE_NAME</a> - Static variable in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimePaths.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimePaths</a></dt>
-<dd>
-<div class="block">Name of the discovery metadata document.</div>
-</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimePaths.html#discoveryFile(java.nio.file.Path)" class="member-name-link">discoveryFile(Path)</a> - Static method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimePaths.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimePaths</a></dt>
-<dd>
-<div class="block">Returns the discovery metadata path for a Maven module.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/ExecuteCommand.Response.html#dispatched()" class="member-name-link">dispatched()</a> - Method in record class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/ExecuteCommand.Response.html" title="class in nl.pim16aap2.lightkeeper.protocol">ExecuteCommand.Response</a></dt>
 <dd>
@@ -1087,6 +1165,26 @@ loadScripts(document, 'script');</script>
 </dl>
 <h2 class="title" id="I:E">E</h2>
 <dl class="index">
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan</a> - Record Class in <a href="nl/pim16aap2/lightkeeper/runtime/package-summary.html">nl.pim16aap2.lightkeeper.runtime</a></dt>
+<dd>
+<div class="block">Effective variant inputs exported by the configured Maven mojo after its real lifecycle and artifact selection.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.html#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String,java.lang.String,nl.pim16aap2.lightkeeper.runtime.EffectiveTestPlan.Target,java.util.Map,java.util.List)" class="member-name-link">EffectiveTestPlan(String, String, String, String, EffectiveTestPlan.Target, Map&lt;String, String&gt;, List&lt;EffectiveTestPlan.AssetInput&gt;)</a> - Constructor for record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.html" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan</a></dt>
+<dd>
+<div class="block">Validates variant identity and freezes its effective input collections.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.AssetInput.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan.AssetInput</a> - Record Class in <a href="nl/pim16aap2/lightkeeper/runtime/package-summary.html">nl.pim16aap2.lightkeeper.runtime</a></dt>
+<dd>
+<div class="block">One effective local/materialized asset input; remote URLs and credentials remain in Maven configuration.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.Target.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan.Target</a> - Record Class in <a href="nl/pim16aap2/lightkeeper/runtime/package-summary.html">nl.pim16aap2.lightkeeper.runtime</a></dt>
+<dd>
+<div class="block">Logical target selection, without an inferred output filename.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.TargetKind.html" class="type-name-link" title="enum class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan.TargetKind</a> - Enum Class in <a href="nl/pim16aap2/lightkeeper/runtime/package-summary.html">nl.pim16aap2.lightkeeper.runtime</a></dt>
+<dd>
+<div class="block">Logical producer selection supported by the Maven target resolver.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html#element(int)" class="member-name-link">element(int)</a> - Method in class nl.pim16aap2.lightkeeper.framework.assertions.<a href="nl/pim16aap2/lightkeeper/framework/assertions/ProtocolValueAssert.html" title="class in nl.pim16aap2.lightkeeper.framework.assertions">ProtocolValueAssert</a></dt>
 <dd>
 <div class="block">Selects a nested list element and retains its index in diagnostics.</div>
@@ -1652,19 +1750,35 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeDiscovery</a></dt>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/BuildLeaseIdentity.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/BuildLeaseIdentity.html" title="class in nl.pim16aap2.lightkeeper.runtime">BuildLeaseIdentity</a></dt>
 <dd>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.Artifact.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.Artifact.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenance.Artifact</a></dt>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.AssetInput.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.AssetInput.html" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan.AssetInput</a></dt>
 <dd>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenance</a></dt>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.html" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan</a></dt>
 <dd>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeSelection.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeSelection.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeSelection</a></dt>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.Target.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.Target.html" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan.Target</a></dt>
+<dd>
+<div class="block">Indicates whether some other object is "equal to" this one.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html" title="class in nl.pim16aap2.lightkeeper.runtime">MavenBuildContext</a></dt>
+<dd>
+<div class="block">Indicates whether some other object is "equal to" this one.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html" title="class in nl.pim16aap2.lightkeeper.runtime">MavenRuntimeContext</a></dt>
+<dd>
+<div class="block">Indicates whether some other object is "equal to" this one.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html" title="class in nl.pim16aap2.lightkeeper.runtime">ModuleTestPlan</a></dt>
+<dd>
+<div class="block">Indicates whether some other object is "equal to" this one.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/ProcessIdentity.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/ProcessIdentity.html" title="class in nl.pim16aap2.lightkeeper.runtime">ProcessIdentity</a></dt>
 <dd>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
 </dd>
@@ -1673,6 +1787,10 @@ loadScripts(document, 'script');</script>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/runtime/RuntimeManifest.ProvisionedWorld.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/RuntimeManifest.ProvisionedWorld.html" title="class in nl.pim16aap2.lightkeeper.runtime">RuntimeManifest.ProvisionedWorld</a></dt>
+<dd>
+<div class="block">Indicates whether some other object is "equal to" this one.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/TestModuleAnchor.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/TestModuleAnchor.html" title="class in nl.pim16aap2.lightkeeper.runtime">TestModuleAnchor</a></dt>
 <dd>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
 </dd>
@@ -1792,16 +1910,20 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Response record for <code>EXECUTE_PLAYER_COMMAND</code>.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html#executionId()" class="member-name-link">executionId()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeDiscovery</a></dt>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.html#executionId()" class="member-name-link">executionId()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.html" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan</a></dt>
 <dd>
-<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html#param-executionId"><code>executionId</code></a> record component.</div>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.html#param-executionId"><code>executionId</code></a> record component.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html#executionId()" class="member-name-link">executionId()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenance</a></dt>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html#executionIds()" class="member-name-link">executionIds()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html" title="class in nl.pim16aap2.lightkeeper.runtime">ModuleTestPlan</a></dt>
 <dd>
-<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html#param-executionId"><code>executionId</code></a> record component.</div>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html#param-executionIds"><code>executionIds</code></a> record component.</div>
 </dd>
 <dt><a href="index.html#explore-the-api-heading" class="search-tag-link">Explore the API</a> - Search tag in Overview</dt>
 <dd>Section</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html#exportNonce()" class="member-name-link">exportNonce()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html" title="class in nl.pim16aap2.lightkeeper.runtime">MavenRuntimeContext</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html#param-exportNonce"><code>exportNonce</code></a> record component.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/ServerSpecification.html#extraJvmArgs()" class="member-name-link">extraJvmArgs()</a> - Method in record class nl.pim16aap2.lightkeeper.provisioning.<a href="nl/pim16aap2/lightkeeper/provisioning/ServerSpecification.html" title="class in nl.pim16aap2.lightkeeper.provisioning">ServerSpecification</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/provisioning/ServerSpecification.html#param-extraJvmArgs"><code>extraJvmArgs</code></a> record component.</div>
@@ -1830,6 +1952,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/LightkeeperEmbeddedAgent.html#FILE_NAME" class="member-name-link">FILE_NAME</a> - Static variable in class nl.pim16aap2.lightkeeper.provisioning.<a href="nl/pim16aap2/lightkeeper/provisioning/LightkeeperEmbeddedAgent.html" title="class in nl.pim16aap2.lightkeeper.provisioning">LightkeeperEmbeddedAgent</a></dt>
 <dd>
 <div class="block">Fixed output file name used when provisioning the embedded agent into a server.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/FileLockLease.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.runtime">FileLockLease</a> - Class in <a href="nl/pim16aap2/lightkeeper/runtime/package-summary.html">nl.pim16aap2.lightkeeper.runtime</a></dt>
+<dd>
+<div class="block">Exclusive process/thread coordination without replacing or deleting the shared kernel-lock inode.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/ModrinthPluginMetadata.html#fileName()" class="member-name-link">fileName()</a> - Method in record class nl.pim16aap2.lightkeeper.provisioning.<a href="nl/pim16aap2/lightkeeper/provisioning/ModrinthPluginMetadata.html" title="class in nl.pim16aap2.lightkeeper.provisioning">ModrinthPluginMetadata</a></dt>
 <dd>
@@ -1892,6 +2018,10 @@ loadScripts(document, 'script');</script>
 </dl>
 <h2 class="title" id="I:G">G</h2>
 <dl class="index">
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/GeneratedMetadata.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.runtime">GeneratedMetadata</a> - Class in <a href="nl/pim16aap2/lightkeeper/runtime/package-summary.html">nl.pim16aap2.lightkeeper.runtime</a></dt>
+<dd>
+<div class="block">Bounded JSON reads and atomic publication of LK-owned generated build metadata.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/IFrameworkGatewayView.html#getBlock(java.lang.String,nl.pim16aap2.lightkeeper.framework.BlockPos)" class="member-name-link">getBlock(String, BlockPos)</a> - Method in interface nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/IFrameworkGatewayView.html" title="interface in nl.pim16aap2.lightkeeper.framework">IFrameworkGatewayView</a></dt>
 <dd>
 <div class="block">Gets block material at a position.</div>
@@ -2033,6 +2163,14 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Response record for <code>GET_SERVER_TICK</code>.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html#globalSettings()" class="member-name-link">globalSettings()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html" title="class in nl.pim16aap2.lightkeeper.runtime">MavenBuildContext</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html#param-globalSettings"><code>globalSettings</code></a> record component.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html#globalToolchains()" class="member-name-link">globalToolchains()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html" title="class in nl.pim16aap2.lightkeeper.runtime">MavenBuildContext</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html#param-globalToolchains"><code>globalToolchains</code></a> record component.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/PermissionControl.html#grant(java.lang.String)" class="member-name-link">grant(String)</a> - Method in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/PermissionControl.html" title="class in nl.pim16aap2.lightkeeper.framework">PermissionControl</a></dt>
 <dd>
 <div class="block">Grants a permission node by setting it to <code>true</code> on the player's attachment.</div>
@@ -2048,6 +2186,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/assets/PluginArtifactSpec.html#groupId()" class="member-name-link">groupId()</a> - Method in record class nl.pim16aap2.lightkeeper.provisioning.assets.<a href="nl/pim16aap2/lightkeeper/provisioning/assets/PluginArtifactSpec.html" title="class in nl.pim16aap2.lightkeeper.provisioning.assets">PluginArtifactSpec</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/provisioning/assets/PluginArtifactSpec.html#param-groupId"><code>groupId</code></a> record component.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.Target.html#groupId()" class="member-name-link">groupId()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.Target.html" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan.Target</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.Target.html#param-groupId"><code>groupId</code></a> record component.</div>
 </dd>
 </dl>
 <h2 class="title" id="I:H">H</h2>
@@ -2608,19 +2750,35 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns a hash code value for this object.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeDiscovery</a></dt>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/BuildLeaseIdentity.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/BuildLeaseIdentity.html" title="class in nl.pim16aap2.lightkeeper.runtime">BuildLeaseIdentity</a></dt>
 <dd>
 <div class="block">Returns a hash code value for this object.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.Artifact.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.Artifact.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenance.Artifact</a></dt>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.AssetInput.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.AssetInput.html" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan.AssetInput</a></dt>
 <dd>
 <div class="block">Returns a hash code value for this object.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenance</a></dt>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.html" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan</a></dt>
 <dd>
 <div class="block">Returns a hash code value for this object.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeSelection.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeSelection.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeSelection</a></dt>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.Target.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.Target.html" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan.Target</a></dt>
+<dd>
+<div class="block">Returns a hash code value for this object.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html" title="class in nl.pim16aap2.lightkeeper.runtime">MavenBuildContext</a></dt>
+<dd>
+<div class="block">Returns a hash code value for this object.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html" title="class in nl.pim16aap2.lightkeeper.runtime">MavenRuntimeContext</a></dt>
+<dd>
+<div class="block">Returns a hash code value for this object.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html" title="class in nl.pim16aap2.lightkeeper.runtime">ModuleTestPlan</a></dt>
+<dd>
+<div class="block">Returns a hash code value for this object.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/ProcessIdentity.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/ProcessIdentity.html" title="class in nl.pim16aap2.lightkeeper.runtime">ProcessIdentity</a></dt>
 <dd>
 <div class="block">Returns a hash code value for this object.</div>
 </dd>
@@ -2629,6 +2787,10 @@ loadScripts(document, 'script');</script>
 <div class="block">Returns a hash code value for this object.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/runtime/RuntimeManifest.ProvisionedWorld.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/RuntimeManifest.ProvisionedWorld.html" title="class in nl.pim16aap2.lightkeeper.runtime">RuntimeManifest.ProvisionedWorld</a></dt>
+<dd>
+<div class="block">Returns a hash code value for this object.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/TestModuleAnchor.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/TestModuleAnchor.html" title="class in nl.pim16aap2.lightkeeper.runtime">TestModuleAnchor</a></dt>
 <dd>
 <div class="block">Returns a hash code value for this object.</div>
 </dd>
@@ -2801,85 +2963,17 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/protocol/IProtocolValue.PRef.html#param-id"><code>id</code></a> record component.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimePaths.html#IDE_DIRECTORY_NAME" class="member-name-link">IDE_DIRECTORY_NAME</a> - Static variable in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimePaths.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimePaths</a></dt>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/BuildOutputLease.html#identity()" class="member-name-link">identity()</a> - Method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/BuildOutputLease.html" title="class in nl.pim16aap2.lightkeeper.runtime">BuildOutputLease</a></dt>
 <dd>
-<div class="block">Name of the IDE test setup directory within the generated state directory.</div>
-</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimePaths.html#ideDirectory(java.nio.file.Path)" class="member-name-link">ideDirectory(Path)</a> - Static method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimePaths.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimePaths</a></dt>
-<dd>
-<div class="block">Returns the IDE test setup directory owned by a Maven module.</div>
+<div class="block">Returns the held invocation identity without transferring ownership.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeArtifactHasher.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeArtifactHasher</a> - Class in <a href="nl/pim16aap2/lightkeeper/runtime/package-summary.html">nl.pim16aap2.lightkeeper.runtime</a></dt>
 <dd>
-<div class="block">Canonically hashes files and directory trees used by IDE runtime preparation and validation.</div>
-</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeDiscovery</a> - Record Class in <a href="nl/pim16aap2/lightkeeper/runtime/package-summary.html">nl.pim16aap2.lightkeeper.runtime</a></dt>
-<dd>
-<div class="block">Discovery metadata for a reusable IDE test runtime.</div>
-</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html#%3Cinit%3E(int,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String)" class="member-name-link">IdeRuntimeDiscovery(int, String, String, String, String, String)</a> - Constructor for record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeDiscovery</a></dt>
-<dd>
-<div class="block">Creates an instance of a <code>IdeRuntimeDiscovery</code> record class.</div>
-</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscoveryReader.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeDiscoveryReader</a> - Class in <a href="nl/pim16aap2/lightkeeper/runtime/package-summary.html">nl.pim16aap2.lightkeeper.runtime</a></dt>
-<dd>
-<div class="block">Reads generated IDE runtime discovery metadata.</div>
-</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscoveryReader.html#%3Cinit%3E()" class="member-name-link">IdeRuntimeDiscoveryReader()</a> - Constructor for class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscoveryReader.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeDiscoveryReader</a></dt>
-<dd>&nbsp;</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscoveryResolver.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeDiscoveryResolver</a> - Class in <a href="nl/pim16aap2/lightkeeper/runtime/package-summary.html">nl.pim16aap2.lightkeeper.runtime</a></dt>
-<dd>
-<div class="block">Resolves a module-owned IDE runtime from a test class output directory.</div>
-</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscoveryWriter.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeDiscoveryWriter</a> - Class in <a href="nl/pim16aap2/lightkeeper/runtime/package-summary.html">nl.pim16aap2.lightkeeper.runtime</a></dt>
-<dd>
-<div class="block">Atomically publishes generated IDE runtime discovery metadata.</div>
-</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscoveryWriter.html#%3Cinit%3E()" class="member-name-link">IdeRuntimeDiscoveryWriter()</a> - Constructor for class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscoveryWriter.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeDiscoveryWriter</a></dt>
-<dd>&nbsp;</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeLock.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeLock</a> - Class in <a href="nl/pim16aap2/lightkeeper/runtime/package-summary.html">nl.pim16aap2.lightkeeper.runtime</a></dt>
-<dd>
-<div class="block">Cross-process lease preventing concurrent use or replacement of a module's IDE runtime.</div>
+<div class="block">Canonically hashes build inputs and immutable server trees without treating hashes as source-freshness proofs.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimePaths.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimePaths</a> - Class in <a href="nl/pim16aap2/lightkeeper/runtime/package-summary.html">nl.pim16aap2.lightkeeper.runtime</a></dt>
 <dd>
-<div class="block">Canonical path policy for generated IDE test setup state.</div>
-</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenance</a> - Record Class in <a href="nl/pim16aap2/lightkeeper/runtime/package-summary.html">nl.pim16aap2.lightkeeper.runtime</a></dt>
-<dd>
-<div class="block">Integrity and input provenance recorded beside a durable IDE runtime manifest.</div>
-</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html#%3Cinit%3E(int,java.lang.String,java.lang.String,java.lang.String,java.lang.String,int,java.util.List,java.util.List)" class="member-name-link">IdeRuntimeProvenance(int, String, String, String, String, int, List&lt;IdeRuntimeProvenance.Artifact&gt;, List&lt;IdeRuntimeProvenance.Artifact&gt;)</a> - Constructor for record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenance</a></dt>
-<dd>
-<div class="block">Creates an instance of a <code>IdeRuntimeProvenance</code> record class.</div>
-</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.Artifact.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenance.Artifact</a> - Record Class in <a href="nl/pim16aap2/lightkeeper/runtime/package-summary.html">nl.pim16aap2.lightkeeper.runtime</a></dt>
-<dd>
-<div class="block">A path and its canonical content hash.</div>
-</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenanceReader.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenanceReader</a> - Class in <a href="nl/pim16aap2/lightkeeper/runtime/package-summary.html">nl.pim16aap2.lightkeeper.runtime</a></dt>
-<dd>
-<div class="block">Reads and validates IDE runtime provenance metadata.</div>
-</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenanceReader.html#%3Cinit%3E()" class="member-name-link">IdeRuntimeProvenanceReader()</a> - Constructor for class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenanceReader.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenanceReader</a></dt>
-<dd>&nbsp;</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenanceWriter.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenanceWriter</a> - Class in <a href="nl/pim16aap2/lightkeeper/runtime/package-summary.html">nl.pim16aap2.lightkeeper.runtime</a></dt>
-<dd>
-<div class="block">Atomically writes IDE runtime provenance metadata.</div>
-</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenanceWriter.html#%3Cinit%3E()" class="member-name-link">IdeRuntimeProvenanceWriter()</a> - Constructor for class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenanceWriter.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenanceWriter</a></dt>
-<dd>&nbsp;</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeSelection.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeSelection</a> - Record Class in <a href="nl/pim16aap2/lightkeeper/runtime/package-summary.html">nl.pim16aap2.lightkeeper.runtime</a></dt>
-<dd>
-<div class="block">Validated module-owned discovery selection for a framework launch.</div>
-</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeSelection.html#%3Cinit%3E(java.nio.file.Path,java.nio.file.Path,nl.pim16aap2.lightkeeper.runtime.IdeRuntimeDiscovery)" class="member-name-link">IdeRuntimeSelection(Path, Path, IdeRuntimeDiscovery)</a> - Constructor for record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeSelection.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeSelection</a></dt>
-<dd>
-<div class="block">Creates an instance of a <code>IdeRuntimeSelection</code> record class.</div>
-</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeValidator.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeValidator</a> - Class in <a href="nl/pim16aap2/lightkeeper/runtime/package-summary.html">nl.pim16aap2.lightkeeper.runtime</a></dt>
-<dd>
-<div class="block">Validates discovered IDE runtime ownership, compatibility, integrity, and examined local inputs.</div>
+<div class="block">Canonical path and privacy policy for module-owned generated LightKeeper state.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/IEvents.html" class="type-name-link" title="interface in nl.pim16aap2.lightkeeper.framework">IEvents</a> - Interface in <a href="nl/pim16aap2/lightkeeper/framework/package-summary.html">nl.pim16aap2.lightkeeper.framework</a></dt>
 <dd>
@@ -2892,6 +2986,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/ILightkeeperFramework.html" class="type-name-link" title="interface in nl.pim16aap2.lightkeeper.framework">ILightkeeperFramework</a> - Interface in <a href="nl/pim16aap2/lightkeeper/framework/package-summary.html">nl.pim16aap2.lightkeeper.framework</a></dt>
 <dd>
 <div class="block">LightKeeper end-to-end test framework entrypoint.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html#inactiveProfiles()" class="member-name-link">inactiveProfiles()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html" title="class in nl.pim16aap2.lightkeeper.runtime">MavenBuildContext</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html#param-inactiveProfiles"><code>inactiveProfiles</code></a> record component.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/assets/PluginArtifactSpec.html#includeTransitive()" class="member-name-link">includeTransitive()</a> - Method in record class nl.pim16aap2.lightkeeper.provisioning.assets.<a href="nl/pim16aap2/lightkeeper/provisioning/assets/PluginArtifactSpec.html" title="class in nl.pim16aap2.lightkeeper.provisioning.assets">PluginArtifactSpec</a></dt>
 <dd>
@@ -3188,6 +3286,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/RuntimeManifest.html#param-javaExecutablePath"><code>javaExecutablePath</code></a> record component.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html#javaHome()" class="member-name-link">javaHome()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html" title="class in nl.pim16aap2.lightkeeper.runtime">MavenBuildContext</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html#param-javaHome"><code>javaHome</code></a> record component.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/IBots.html#join(java.lang.String,java.util.UUID,nl.pim16aap2.lightkeeper.framework.WorldHandle)" class="member-name-link">join(String, UUID, WorldHandle)</a> - Method in interface nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/IBots.html" title="interface in nl.pim16aap2.lightkeeper.framework">IBots</a></dt>
 <dd>
 <div class="block">Joins an invulnerable synthetic player into a world at spawn.</div>
@@ -3207,6 +3309,17 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.html#json()" class="member-name-link">json()</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">ChatComponentSnapshot</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.html#param-json"><code>json</code></a> record component.</div>
+</dd>
+</dl>
+<h2 class="title" id="I:K">K</h2>
+<dl class="index">
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.AssetInput.html#kind()" class="member-name-link">kind()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.AssetInput.html" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan.AssetInput</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.AssetInput.html#param-kind"><code>kind</code></a> record component.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.Target.html#kind()" class="member-name-link">kind()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.Target.html" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan.Target</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.Target.html#param-kind"><code>kind</code></a> record component.</div>
 </dd>
 </dl>
 <h2 class="title" id="I:L">L</h2>
@@ -3248,6 +3361,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/QueryEntities.TransformData.html#leftRotation()" class="member-name-link">leftRotation()</a> - Method in record class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/QueryEntities.TransformData.html" title="class in nl.pim16aap2.lightkeeper.protocol">QueryEntities.TransformData</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/protocol/QueryEntities.TransformData.html#param-leftRotation"><code>leftRotation</code></a> record component.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.TargetKind.html#LEGACY_ASSETS" class="member-name-link">LEGACY_ASSETS</a> - Enum constant in enum class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.TargetKind.html" title="enum class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan.TargetKind</a></dt>
+<dd>
+<div class="block">Existing explicit asset-only fixture without automatic plugin-under-test selection.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/JoinMode.html#LEGACY_SPAWN" class="member-name-link">LEGACY_SPAWN</a> - Enum constant in enum class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/JoinMode.html" title="enum class in nl.pim16aap2.lightkeeper.protocol">JoinMode</a></dt>
 <dd>
@@ -3295,7 +3412,7 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/LightkeeperRuntimeResolver.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.framework">LightkeeperRuntimeResolver</a> - Class in <a href="nl/pim16aap2/lightkeeper/framework/package-summary.html">nl.pim16aap2.lightkeeper.framework</a></dt>
 <dd>
-<div class="block">Resolves a LightKeeper runtime manifest for a JUnit test class.</div>
+<div class="block">Resolves a JUnit class's Maven-owned module plan or an authoritative explicit runtime manifest.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/WorldHandle.html#loadChunk(int,int)" class="member-name-link">loadChunk(int, int)</a> - Method in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/WorldHandle.html" title="class in nl.pim16aap2.lightkeeper.framework">WorldHandle</a></dt>
 <dd>
@@ -3337,13 +3454,9 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/protocol/CreatePlayer.Command.html#param-locale"><code>locale</code></a> record component.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimePaths.html#LOCK_FILE_NAME" class="member-name-link">LOCK_FILE_NAME</a> - Static variable in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimePaths.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimePaths</a></dt>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/BuildOutputLease.html#lockPath(java.nio.file.Path)" class="member-name-link">lockPath(Path)</a> - Static method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/BuildOutputLease.html" title="class in nl.pim16aap2.lightkeeper.runtime">BuildOutputLease</a></dt>
 <dd>
-<div class="block">Name of the operating-system lock used for IDE setup and launches.</div>
-</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimePaths.html#lockFile(java.nio.file.Path)" class="member-name-link">lockFile(Path)</a> - Static method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimePaths.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimePaths</a></dt>
-<dd>
-<div class="block">Returns the module-wide runtime lock path.</div>
+<div class="block">Returns the stable kernel lock location for a reactor root.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/ServerErrorSnapshot.html#LOGGER_NAME_STDERR" class="member-name-link">LOGGER_NAME_STDERR</a> - Static variable in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/ServerErrorSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">ServerErrorSnapshot</a></dt>
 <dd>
@@ -3407,6 +3520,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Compares only material, display name and ordered lore, excluding unobserved metadata and amount.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/ProcessIdentity.html#matchesCurrentAncestry()" class="member-name-link">matchesCurrentAncestry()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/ProcessIdentity.html" title="class in nl.pim16aap2.lightkeeper.runtime">ProcessIdentity</a></dt>
+<dd>
+<div class="block">Checks the actual process ancestry rather than trusting a persistent Maven flag or a PID alone.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/MenuItemSnapshot.html#matchesMaterial(java.lang.String)" class="member-name-link">matchesMaterial(String)</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/MenuItemSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">MenuItemSnapshot</a></dt>
 <dd>
 <div class="block">Compares normalized material keys.</div>
@@ -3463,9 +3580,25 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Maven repository or reactor artifact.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscoveryResolver.html#MAVEN_OUTPUT_DIRECTORY_NAME" class="member-name-link">MAVEN_OUTPUT_DIRECTORY_NAME</a> - Static variable in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscoveryResolver.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeDiscoveryResolver</a></dt>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.runtime">MavenBuildContext</a> - Record Class in <a href="nl/pim16aap2/lightkeeper/runtime/package-summary.html">nl.pim16aap2.lightkeeper.runtime</a></dt>
 <dd>
-<div class="block">Maven build output directory name supported for automatic discovery.</div>
+<div class="block">Supported non-secret Maven invocation settings retained for a later native JUnit producer build.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html#%3Cinit%3E(java.lang.String,java.lang.String,java.util.List,java.util.List,java.util.Map,java.lang.String,java.lang.String,java.lang.String,java.lang.String)" class="member-name-link">MavenBuildContext(String, String, List&lt;String&gt;, List&lt;String&gt;, Map&lt;String, String&gt;, String, String, String, String)</a> - Constructor for record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html" title="class in nl.pim16aap2.lightkeeper.runtime">MavenBuildContext</a></dt>
+<dd>
+<div class="block">Validates retained properties and freezes caller-owned collections.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html#mavenExecutable()" class="member-name-link">mavenExecutable()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html" title="class in nl.pim16aap2.lightkeeper.runtime">MavenBuildContext</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html#param-mavenExecutable"><code>mavenExecutable</code></a> record component.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.runtime">MavenRuntimeContext</a> - Record Class in <a href="nl/pim16aap2/lightkeeper/runtime/package-summary.html">nl.pim16aap2.lightkeeper.runtime</a></dt>
+<dd>
+<div class="block">One atomic module/variant export tied to its real Maven producer process and immutable snapshot.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html#%3Cinit%3E(int,nl.pim16aap2.lightkeeper.runtime.EffectiveTestPlan,java.lang.String,nl.pim16aap2.lightkeeper.runtime.ProcessIdentity,java.lang.String)" class="member-name-link">MavenRuntimeContext(int, EffectiveTestPlan, String, ProcessIdentity, String)</a> - Constructor for record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html" title="class in nl.pim16aap2.lightkeeper.runtime">MavenRuntimeContext</a></dt>
+<dd>
+<div class="block">Validates export format, snapshot ownership and invocation identity.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/QueryEntities.Command.html#maxX()" class="member-name-link">maxX()</a> - Method in record class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/QueryEntities.Command.html" title="class in nl.pim16aap2.lightkeeper.protocol">QueryEntities.Command</a></dt>
 <dd>
@@ -3626,17 +3759,37 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/provisioning/assets/PluginArtifactSpec.html#param-modrinthVersionId"><code>modrinthVersionId</code></a> record component.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html#moduleDirectory()" class="member-name-link">moduleDirectory()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeDiscovery</a></dt>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.html#moduleDirectory()" class="member-name-link">moduleDirectory()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.html" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan</a></dt>
 <dd>
-<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html#param-moduleDirectory"><code>moduleDirectory</code></a> record component.</div>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.html#param-moduleDirectory"><code>moduleDirectory</code></a> record component.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html#moduleDirectory()" class="member-name-link">moduleDirectory()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenance</a></dt>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html#moduleDirectory()" class="member-name-link">moduleDirectory()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html" title="class in nl.pim16aap2.lightkeeper.runtime">ModuleTestPlan</a></dt>
 <dd>
-<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html#param-moduleDirectory"><code>moduleDirectory</code></a> record component.</div>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html#param-moduleDirectory"><code>moduleDirectory</code></a> record component.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeSelection.html#moduleDirectory()" class="member-name-link">moduleDirectory()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeSelection.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeSelection</a></dt>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/TestModuleAnchor.html#moduleDirectory()" class="member-name-link">moduleDirectory()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/TestModuleAnchor.html" title="class in nl.pim16aap2.lightkeeper.runtime">TestModuleAnchor</a></dt>
 <dd>
-<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/IdeRuntimeSelection.html#param-moduleDirectory"><code>moduleDirectory</code></a> record component.</div>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/TestModuleAnchor.html#param-moduleDirectory"><code>moduleDirectory</code></a> record component.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/ModulePlanPaths.html#modulePlan(java.nio.file.Path)" class="member-name-link">modulePlan(Path)</a> - Static method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/ModulePlanPaths.html" title="class in nl.pim16aap2.lightkeeper.runtime">ModulePlanPaths</a></dt>
+<dd>
+<div class="block">Returns the durable module build plan outside disposable Maven outputs.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/ModulePlanPaths.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.runtime">ModulePlanPaths</a> - Class in <a href="nl/pim16aap2/lightkeeper/runtime/package-summary.html">nl.pim16aap2.lightkeeper.runtime</a></dt>
+<dd>
+<div class="block">Canonical module-owned locations for effective plans, class-output anchors and invocation exports.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html#modulePom()" class="member-name-link">modulePom()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html" title="class in nl.pim16aap2.lightkeeper.runtime">ModuleTestPlan</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html#param-modulePom"><code>modulePom</code></a> record component.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.runtime">ModuleTestPlan</a> - Record Class in <a href="nl/pim16aap2/lightkeeper/runtime/package-summary.html">nl.pim16aap2.lightkeeper.runtime</a></dt>
+<dd>
+<div class="block">Durable Maven-derived ownership and build scope for one test module.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html#%3Cinit%3E(int,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.util.List,java.lang.String,nl.pim16aap2.lightkeeper.runtime.MavenBuildContext)" class="member-name-link">ModuleTestPlan(int, String, String, String, String, List&lt;String&gt;, String, MavenBuildContext)</a> - Constructor for record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html" title="class in nl.pim16aap2.lightkeeper.runtime">ModuleTestPlan</a></dt>
+<dd>
+<div class="block">Validates ownership, known variant IDs and the module plan format.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/MutatePlayerPermission.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.protocol">MutatePlayerPermission</a> - Class in <a href="nl/pim16aap2/lightkeeper/protocol/package-summary.html">nl.pim16aap2.lightkeeper.protocol</a></dt>
 <dd>
@@ -3692,6 +3845,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/assets/WorldInputSpec.html#name()" class="member-name-link">name()</a> - Method in record class nl.pim16aap2.lightkeeper.provisioning.assets.<a href="nl/pim16aap2/lightkeeper/provisioning/assets/WorldInputSpec.html" title="class in nl.pim16aap2.lightkeeper.provisioning.assets">WorldInputSpec</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/provisioning/assets/WorldInputSpec.html#param-name"><code>name</code></a> record component.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.AssetInput.html#name()" class="member-name-link">name()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.AssetInput.html" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan.AssetInput</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.AssetInput.html#param-name"><code>name</code></a> record component.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/runtime/RuntimeManifest.ProvisionedWorld.html#name()" class="member-name-link">name()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/RuntimeManifest.ProvisionedWorld.html" title="class in nl.pim16aap2.lightkeeper.runtime">RuntimeManifest.ProvisionedWorld</a></dt>
 <dd>
@@ -3750,7 +3907,11 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/runtime/package-summary.html">nl.pim16aap2.lightkeeper.runtime</a> - package nl.pim16aap2.lightkeeper.runtime</dt>
 <dd>
-<div class="block">Runtime manifest model and cross-process constants used by provisioning, the framework, and the in-server agent.</div>
+<div class="block">Runtime manifests, versioned test plans and process coordination shared across Maven, JUnit and the in-server agent.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/BuildLeaseIdentity.html#nonce()" class="member-name-link">nonce()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/BuildLeaseIdentity.html" title="class in nl.pim16aap2.lightkeeper.runtime">BuildLeaseIdentity</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/BuildLeaseIdentity.html#param-nonce"><code>nonce</code></a> record component.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/WorldSpec.WorldEnvironment.html#NORMAL" class="member-name-link">NORMAL</a> - Enum constant in enum class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/WorldSpec.WorldEnvironment.html" title="enum class in nl.pim16aap2.lightkeeper.framework">WorldSpec.WorldEnvironment</a></dt>
 <dd>&nbsp;</dd>
@@ -3872,13 +4033,17 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/provisioning/assets/PluginArtifactSpec.html#param-path"><code>path</code></a> record component.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.Artifact.html#path()" class="member-name-link">path()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.Artifact.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenance.Artifact</a></dt>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.Target.html#path()" class="member-name-link">path()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.Target.html" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan.Target</a></dt>
 <dd>
-<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.Artifact.html#param-path"><code>path</code></a> record component.</div>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.Target.html#param-path"><code>path</code></a> record component.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/assets/PluginArtifactSpec.SourceType.html#PATH" class="member-name-link">PATH</a> - Enum constant in enum class nl.pim16aap2.lightkeeper.provisioning.assets.<a href="nl/pim16aap2/lightkeeper/provisioning/assets/PluginArtifactSpec.SourceType.html" title="enum class in nl.pim16aap2.lightkeeper.provisioning.assets">PluginArtifactSpec.SourceType</a></dt>
 <dd>
 <div class="block">Explicit local plugin file.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.TargetKind.html#PATH" class="member-name-link">PATH</a> - Enum constant in enum class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.TargetKind.html" title="enum class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan.TargetKind</a></dt>
+<dd>
+<div class="block">Authoritative explicitly configured local artifact path.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/IProtocolValue.PBool.html#%3Cinit%3E(boolean)" class="member-name-link">PBool(boolean)</a> - Constructor for record class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/IProtocolValue.PBool.html" title="class in nl.pim16aap2.lightkeeper.protocol">IProtocolValue.PBool</a></dt>
 <dd>
@@ -3939,6 +4104,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/PlacePlayerBlock.Response.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.protocol">PlacePlayerBlock.Response</a> - Record Class in <a href="nl/pim16aap2/lightkeeper/protocol/package-summary.html">nl.pim16aap2.lightkeeper.protocol</a></dt>
 <dd>
 <div class="block">Response record for <code>PLACE_PLAYER_BLOCK</code>.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html#plan()" class="member-name-link">plan()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html" title="class in nl.pim16aap2.lightkeeper.runtime">MavenRuntimeContext</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html#param-plan"><code>plan</code></a> record component.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/IServerControl.html#platform()" class="member-name-link">platform()</a> - Method in interface nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/IServerControl.html" title="interface in nl.pim16aap2.lightkeeper.framework">IServerControl</a></dt>
 <dd>
@@ -4081,18 +4250,6 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Validates the fields.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html#preparationFingerprint()" class="member-name-link">preparationFingerprint()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeDiscovery</a></dt>
-<dd>
-<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html#param-preparationFingerprint"><code>preparationFingerprint</code></a> record component.</div>
-</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html#preparationFingerprint()" class="member-name-link">preparationFingerprint()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenance</a></dt>
-<dd>
-<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html#param-preparationFingerprint"><code>preparationFingerprint</code></a> record component.</div>
-</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimePaths.html#preparationsDirectory(java.nio.file.Path)" class="member-name-link">preparationsDirectory(Path)</a> - Static method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimePaths.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimePaths</a></dt>
-<dd>
-<div class="block">Returns the root containing immutable IDE runtime preparations.</div>
-</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/runtime/UserOnlyDirectory.html#prepare(java.nio.file.Path)" class="member-name-link">prepare(Path)</a> - Static method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/UserOnlyDirectory.html" title="class in nl.pim16aap2.lightkeeper.runtime">UserOnlyDirectory</a></dt>
 <dd>
 <div class="block">Creates a directory with <code>0700</code> permissions and verifies its owner and permissions on POSIX file systems.</div>
@@ -4105,13 +4262,45 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Validates the immutable snapshot metadata.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/UserOnlyDirectory.html#prepareGenerated(java.nio.file.Path)" class="member-name-link">prepareGenerated(Path)</a> - Static method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/UserOnlyDirectory.html" title="class in nl.pim16aap2.lightkeeper.runtime">UserOnlyDirectory</a></dt>
+<dd>
+<div class="block">Creates private LK-generated state or migrates its existing current-user-owned directory to <code>0700</code>.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/serverprovider/ServerProvider.html#prepareServer()" class="member-name-link">prepareServer()</a> - Method in class nl.pim16aap2.lightkeeper.provisioning.serverprovider.<a href="nl/pim16aap2/lightkeeper/provisioning/serverprovider/ServerProvider.html" title="class in nl.pim16aap2.lightkeeper.provisioning.serverprovider">ServerProvider</a></dt>
 <dd>
 <div class="block">Prepares the server for use.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimePaths.html#prepareStateDirectory(java.nio.file.Path)" class="member-name-link">prepareStateDirectory(Path)</a> - Static method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimePaths.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimePaths</a></dt>
+<dd>
+<div class="block">Creates private generated state and prevents its runtime tokens/metadata from being added to Git accidentally.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/session/ServerSession.html#preserve()" class="member-name-link">preserve()</a> - Method in class nl.pim16aap2.lightkeeper.provisioning.session.<a href="nl/pim16aap2/lightkeeper/provisioning/session/ServerSession.html" title="class in nl.pim16aap2.lightkeeper.provisioning.session">ServerSession</a></dt>
 <dd>
 <div class="block">Keeps this session's server and diagnostic files after a failed test or startup.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/BuildLeaseIdentity.html#process()" class="member-name-link">process()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/BuildLeaseIdentity.html" title="class in nl.pim16aap2.lightkeeper.runtime">BuildLeaseIdentity</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/BuildLeaseIdentity.html#param-process"><code>process</code></a> record component.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/ProcessIdentity.html#processId()" class="member-name-link">processId()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/ProcessIdentity.html" title="class in nl.pim16aap2.lightkeeper.runtime">ProcessIdentity</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/ProcessIdentity.html#param-processId"><code>processId</code></a> record component.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/ProcessIdentity.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.runtime">ProcessIdentity</a> - Record Class in <a href="nl/pim16aap2/lightkeeper/runtime/package-summary.html">nl.pim16aap2.lightkeeper.runtime</a></dt>
+<dd>
+<div class="block">Process identity that remains unambiguous when the operating system reuses a PID.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/ProcessIdentity.html#%3Cinit%3E(long,java.lang.String)" class="member-name-link">ProcessIdentity(long, String)</a> - Constructor for record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/ProcessIdentity.html" title="class in nl.pim16aap2.lightkeeper.runtime">ProcessIdentity</a></dt>
+<dd>
+<div class="block">Validates the PID and start instant.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/ProcessIdentity.html#processStart()" class="member-name-link">processStart()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/ProcessIdentity.html" title="class in nl.pim16aap2.lightkeeper.runtime">ProcessIdentity</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/ProcessIdentity.html#param-processStart"><code>processStart</code></a> record component.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html#producer()" class="member-name-link">producer()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html" title="class in nl.pim16aap2.lightkeeper.runtime">MavenRuntimeContext</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html#param-producer"><code>producer</code></a> record component.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/BlockSpec.html#properties()" class="member-name-link">properties()</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/BlockSpec.html" title="class in nl.pim16aap2.lightkeeper.framework">BlockSpec</a></dt>
 <dd>
@@ -4162,10 +4351,6 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/Handshake.Response.html#protocolVersion()" class="member-name-link">protocolVersion()</a> - Method in record class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/Handshake.Response.html" title="class in nl.pim16aap2.lightkeeper.protocol">Handshake.Response</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/protocol/Handshake.Response.html#param-protocolVersion"><code>protocolVersion</code></a> record component.</div>
-</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimePaths.html#PROVENANCE_FILE_NAME" class="member-name-link">PROVENANCE_FILE_NAME</a> - Static variable in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimePaths.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimePaths</a></dt>
-<dd>
-<div class="block">Name of the provenance metadata document stored with a prepared runtime.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/runtime/RuntimeManifest.ProvisionedWorld.html#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String,long,boolean)" class="member-name-link">ProvisionedWorld(String, String, String, long, boolean)</a> - Constructor for record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/RuntimeManifest.ProvisionedWorld.html" title="class in nl.pim16aap2.lightkeeper.runtime">RuntimeManifest.ProvisionedWorld</a></dt>
 <dd>
@@ -4233,21 +4418,29 @@ loadScripts(document, 'script');</script>
 </dl>
 <h2 class="title" id="I:R">R</h2>
 <dl class="index">
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/BuildLeaseIdentity.html#reactorDirectory()" class="member-name-link">reactorDirectory()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/BuildLeaseIdentity.html" title="class in nl.pim16aap2.lightkeeper.runtime">BuildLeaseIdentity</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/BuildLeaseIdentity.html#param-reactorDirectory"><code>reactorDirectory</code></a> record component.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html#reactorDirectory()" class="member-name-link">reactorDirectory()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html" title="class in nl.pim16aap2.lightkeeper.runtime">ModuleTestPlan</a></dt>
+<dd>
+<div class="block">Returns the directory containing the retained Maven reactor entry POM.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html#reactorPom()" class="member-name-link">reactorPom()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html" title="class in nl.pim16aap2.lightkeeper.runtime">ModuleTestPlan</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html#param-reactorPom"><code>reactorPom</code></a> record component.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/session/ServerSnapshots.html#read(java.nio.file.Path)" class="member-name-link">read(Path)</a> - Static method in class nl.pim16aap2.lightkeeper.provisioning.session.<a href="nl/pim16aap2/lightkeeper/provisioning/session/ServerSnapshots.html" title="class in nl.pim16aap2.lightkeeper.provisioning.session">ServerSnapshots</a></dt>
 <dd>
 <div class="block">Reads published snapshot metadata without inferring any producer build or fallback runtime.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscoveryReader.html#read(java.nio.file.Path)" class="member-name-link">read(Path)</a> - Method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscoveryReader.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeDiscoveryReader</a></dt>
-<dd>
-<div class="block">Reads and validates discovery metadata.</div>
-</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenanceReader.html#read(java.nio.file.Path)" class="member-name-link">read(Path)</a> - Method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenanceReader.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenanceReader</a></dt>
-<dd>
-<div class="block">Reads provenance metadata.</div>
-</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/runtime/RuntimeManifestReader.html#read(java.nio.file.Path)" class="member-name-link">read(Path)</a> - Method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/RuntimeManifestReader.html" title="class in nl.pim16aap2.lightkeeper.runtime">RuntimeManifestReader</a></dt>
 <dd>
 <div class="block">Reads and validates a runtime manifest.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/GeneratedMetadata.html#read(java.nio.file.Path,java.lang.Class)" class="member-name-link">read(Path, Class&lt;T&gt;)</a> - Static method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/GeneratedMetadata.html" title="class in nl.pim16aap2.lightkeeper.runtime">GeneratedMetadata</a></dt>
+<dd>
+<div class="block">Reads one bounded regular JSON file without following a symbolic link.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/PlayerUnavailableException.html#reason()" class="member-name-link">reason()</a> - Method in exception class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/PlayerUnavailableException.html" title="class in nl.pim16aap2.lightkeeper.framework">PlayerUnavailableException</a></dt>
 <dd>
@@ -4317,6 +4510,10 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/AgentErrorCode.html#REQUEST_FAILED" class="member-name-link">REQUEST_FAILED</a> - Enum constant in enum class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/AgentErrorCode.html" title="enum class in nl.pim16aap2.lightkeeper.protocol">AgentErrorCode</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.html#requestedServerVersion()" class="member-name-link">requestedServerVersion()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.html" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.html#param-requestedServerVersion"><code>requestedServerVersion</code></a> record component.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/BlockType.Command.html#requestId()" class="member-name-link">requestId()</a> - Method in record class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/BlockType.Command.html" title="class in nl.pim16aap2.lightkeeper.protocol">BlockType.Command</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/protocol/BlockType.Command.html#param-requestId"><code>requestId</code></a> record component.</div>
@@ -4477,10 +4674,6 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/protocol/WaitTicks.Command.html#param-requestId"><code>requestId</code></a> record component.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html#requiredArtifacts()" class="member-name-link">requiredArtifacts()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenance</a></dt>
-<dd>
-<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html#param-requiredArtifacts"><code>requiredArtifacts</code></a> record component.</div>
-</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/ProtocolPreconditions.html#requireFinite(double,java.lang.String)" class="member-name-link">requireFinite(double, String)</a> - Static method in class nl.pim16aap2.lightkeeper.protocol.<a href="nl/pim16aap2/lightkeeper/protocol/ProtocolPreconditions.html" title="class in nl.pim16aap2.lightkeeper.protocol">ProtocolPreconditions</a></dt>
 <dd>
 <div class="block">Requires that a coordinate is a finite number (not NaN or infinite).</div>
@@ -4524,10 +4717,6 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/ModrinthDownloadsClient.html#resolvePluginFile(nl.pim16aap2.lightkeeper.provisioning.assets.PluginArtifactSpec)" class="member-name-link">resolvePluginFile(PluginArtifactSpec)</a> - Method in class nl.pim16aap2.lightkeeper.provisioning.<a href="nl/pim16aap2/lightkeeper/provisioning/ModrinthDownloadsClient.html" title="class in nl.pim16aap2.lightkeeper.provisioning">ModrinthDownloadsClient</a></dt>
 <dd>
 <div class="block">Resolves an exact Modrinth version and selects one jar file compatible with the configured loader.</div>
-</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscoveryResolver.html#resolveSelection(java.nio.file.Path)" class="member-name-link">resolveSelection(Path)</a> - Static method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscoveryResolver.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeDiscoveryResolver</a></dt>
-<dd>
-<div class="block">Resolves discovery metadata and its owning module from a test class output directory.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/LightkeeperEmbeddedAgent.html#RESOURCE_PATH" class="member-name-link">RESOURCE_PATH</a> - Static variable in class nl.pim16aap2.lightkeeper.provisioning.<a href="nl/pim16aap2/lightkeeper/provisioning/LightkeeperEmbeddedAgent.html" title="class in nl.pim16aap2.lightkeeper.provisioning">LightkeeperEmbeddedAgent</a></dt>
 <dd>
@@ -4779,6 +4968,14 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/protocol/DropItem.Response.html#param-result"><code>result</code></a> record component.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html#RETAINED_PROPERTIES" class="member-name-link">RETAINED_PROPERTIES</a> - Static variable in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html" title="class in nl.pim16aap2.lightkeeper.runtime">MavenBuildContext</a></dt>
+<dd>
+<div class="block">Fixed retention contract; no arbitrary repository authentication properties can enter the generated plan.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html#retainProperties(java.util.Properties)" class="member-name-link">retainProperties(Properties)</a> - Static method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html" title="class in nl.pim16aap2.lightkeeper.runtime">MavenBuildContext</a></dt>
+<dd>
+<div class="block">Selects the supported property subset without copying repository credentials or test/invocation controls.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/PermissionControl.html#revoke(java.lang.String)" class="member-name-link">revoke(String)</a> - Method in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/PermissionControl.html" title="class in nl.pim16aap2.lightkeeper.framework">PermissionControl</a></dt>
 <dd>
 <div class="block">Revokes a permission node by setting it to <code>false</code> on the player's attachment.</div>
@@ -4849,6 +5046,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">System property containing an authoritative explicit runtime manifest path.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/ModulePlanPaths.html#runtimeContext(java.nio.file.Path,java.lang.String)" class="member-name-link">runtimeContext(Path, String)</a> - Static method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/ModulePlanPaths.html" title="class in nl.pim16aap2.lightkeeper.runtime">ModulePlanPaths</a></dt>
+<dd>
+<div class="block">Returns a variant's invocation context without treating the execution ID as a filesystem path.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/runtime/RuntimeManifest.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.runtime">RuntimeManifest</a> - Record Class in <a href="nl/pim16aap2/lightkeeper/runtime/package-summary.html">nl.pim16aap2.lightkeeper.runtime</a></dt>
 <dd>
 <div class="block">Runtime manifest written by <code>prepare-server</code>.</div>
@@ -4868,14 +5069,6 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/ServerSpecification.html#runtimeManifestPath()" class="member-name-link">runtimeManifestPath()</a> - Method in record class nl.pim16aap2.lightkeeper.provisioning.<a href="nl/pim16aap2/lightkeeper/provisioning/ServerSpecification.html" title="class in nl.pim16aap2.lightkeeper.provisioning">ServerSpecification</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/provisioning/ServerSpecification.html#param-runtimeManifestPath"><code>runtimeManifestPath</code></a> record component.</div>
-</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html#runtimeManifestPath()" class="member-name-link">runtimeManifestPath()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeDiscovery</a></dt>
-<dd>
-<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html#param-runtimeManifestPath"><code>runtimeManifestPath</code></a> record component.</div>
-</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeSelection.html#runtimeManifestPath()" class="member-name-link">runtimeManifestPath()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeSelection.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeSelection</a></dt>
-<dd>
-<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/IdeRuntimeSelection.html#param-runtimeManifestPath"><code>runtimeManifestPath</code></a> record component.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/runtime/RuntimeManifestReader.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.runtime">RuntimeManifestReader</a> - Class in <a href="nl/pim16aap2/lightkeeper/runtime/package-summary.html">nl.pim16aap2.lightkeeper.runtime</a></dt>
 <dd>
@@ -4900,10 +5093,6 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/ServerSpecification.html#runtimeProtocolVersion()" class="member-name-link">runtimeProtocolVersion()</a> - Method in record class nl.pim16aap2.lightkeeper.provisioning.<a href="nl/pim16aap2/lightkeeper/provisioning/ServerSpecification.html" title="class in nl.pim16aap2.lightkeeper.provisioning">ServerSpecification</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/provisioning/ServerSpecification.html#param-runtimeProtocolVersion"><code>runtimeProtocolVersion</code></a> record component.</div>
-</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html#runtimeProtocolVersion()" class="member-name-link">runtimeProtocolVersion()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenance</a></dt>
-<dd>
-<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html#param-runtimeProtocolVersion"><code>runtimeProtocolVersion</code></a> record component.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/runtime/RuntimeManifest.html#runtimeProtocolVersion()" class="member-name-link">runtimeProtocolVersion()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/RuntimeManifest.html" title="class in nl.pim16aap2.lightkeeper.runtime">RuntimeManifest</a></dt>
 <dd>
@@ -4938,25 +5127,33 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Supported snapshot metadata format.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html#SCHEMA_VERSION" class="member-name-link">SCHEMA_VERSION</a> - Static variable in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeDiscovery</a></dt>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html#SCHEMA_VERSION" class="member-name-link">SCHEMA_VERSION</a> - Static variable in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html" title="class in nl.pim16aap2.lightkeeper.runtime">MavenRuntimeContext</a></dt>
 <dd>
-<div class="block">Current discovery document schema version.</div>
+<div class="block">Supported runtime export format.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html#SCHEMA_VERSION" class="member-name-link">SCHEMA_VERSION</a> - Static variable in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenance</a></dt>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html#SCHEMA_VERSION" class="member-name-link">SCHEMA_VERSION</a> - Static variable in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html" title="class in nl.pim16aap2.lightkeeper.runtime">ModuleTestPlan</a></dt>
 <dd>
-<div class="block">Current provenance document schema version.</div>
+<div class="block">Supported module plan format.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/TestModuleAnchor.html#SCHEMA_VERSION" class="member-name-link">SCHEMA_VERSION</a> - Static variable in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/TestModuleAnchor.html" title="class in nl.pim16aap2.lightkeeper.runtime">TestModuleAnchor</a></dt>
+<dd>
+<div class="block">Supported anchor format.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/session/PreparedServerSnapshot.html#schemaVersion()" class="member-name-link">schemaVersion()</a> - Method in record class nl.pim16aap2.lightkeeper.provisioning.session.<a href="nl/pim16aap2/lightkeeper/provisioning/session/PreparedServerSnapshot.html" title="class in nl.pim16aap2.lightkeeper.provisioning.session">PreparedServerSnapshot</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/provisioning/session/PreparedServerSnapshot.html#param-schemaVersion"><code>schemaVersion</code></a> record component.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html#schemaVersion()" class="member-name-link">schemaVersion()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeDiscovery</a></dt>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html#schemaVersion()" class="member-name-link">schemaVersion()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html" title="class in nl.pim16aap2.lightkeeper.runtime">MavenRuntimeContext</a></dt>
 <dd>
-<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html#param-schemaVersion"><code>schemaVersion</code></a> record component.</div>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html#param-schemaVersion"><code>schemaVersion</code></a> record component.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html#schemaVersion()" class="member-name-link">schemaVersion()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenance</a></dt>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html#schemaVersion()" class="member-name-link">schemaVersion()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html" title="class in nl.pim16aap2.lightkeeper.runtime">ModuleTestPlan</a></dt>
 <dd>
-<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html#param-schemaVersion"><code>schemaVersion</code></a> record component.</div>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html#param-schemaVersion"><code>schemaVersion</code></a> record component.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/TestModuleAnchor.html#schemaVersion()" class="member-name-link">schemaVersion()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/TestModuleAnchor.html" title="class in nl.pim16aap2.lightkeeper.runtime">TestModuleAnchor</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/TestModuleAnchor.html#param-schemaVersion"><code>schemaVersion</code></a> record component.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/WorldSpec.html#seed()" class="member-name-link">seed()</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/WorldSpec.html" title="class in nl.pim16aap2.lightkeeper.framework">WorldSpec</a></dt>
 <dd>
@@ -4982,6 +5179,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Gets the server-control facet: command execution, console output, platform, filesystem access, process
  lifecycle, tick counter, and captured server errors.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.TargetKind.html#SERVER_ONLY" class="member-name-link">SERVER_ONLY</a> - Enum constant in enum class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.TargetKind.html" title="enum class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan.TargetKind</a></dt>
+<dd>
+<div class="block">Deliberate server-only test without a target plugin.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/assets/ServerAssetInstaller.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.provisioning.assets">ServerAssetInstaller</a> - Class in <a href="nl/pim16aap2/lightkeeper/provisioning/assets/package-summary.html">nl.pim16aap2.lightkeeper.provisioning.assets</a></dt>
 <dd>
@@ -5083,13 +5284,9 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/provisioning/session/PreparedServerSnapshot.html#param-serverTreeSha256"><code>serverTreeSha256</code></a> record component.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html#serverType()" class="member-name-link">serverType()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeDiscovery</a></dt>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.html#serverType()" class="member-name-link">serverType()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.html" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan</a></dt>
 <dd>
-<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html#param-serverType"><code>serverType</code></a> record component.</div>
-</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html#serverType()" class="member-name-link">serverType()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenance</a></dt>
-<dd>
-<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html#param-serverType"><code>serverType</code></a> record component.</div>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.html#param-serverType"><code>serverType</code></a> record component.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/runtime/RuntimeManifest.html#serverType()" class="member-name-link">serverType()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/RuntimeManifest.html" title="class in nl.pim16aap2.lightkeeper.runtime">RuntimeManifest</a></dt>
 <dd>
@@ -5151,10 +5348,6 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/provisioning/PaperBuildMetadata.html#param-sha256"><code>sha256</code></a> record component.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.Artifact.html#sha256()" class="member-name-link">sha256()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.Artifact.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenance.Artifact</a></dt>
-<dd>
-<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.Artifact.html#param-sha256"><code>sha256</code></a> record component.</div>
-</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/util/HashUtil.html#sha256(byte%5B%5D)" class="member-name-link">sha256(byte[])</a> - Static method in class nl.pim16aap2.lightkeeper.provisioning.util.<a href="nl/pim16aap2/lightkeeper/provisioning/util/HashUtil.html" title="class in nl.pim16aap2.lightkeeper.provisioning.util">HashUtil</a></dt>
 <dd>
 <div class="block">Computes SHA-256 for an in-memory input.</div>
@@ -5166,6 +5359,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/util/HashUtil.html#sha256(java.lang.String)" class="member-name-link">sha256(String)</a> - Static method in class nl.pim16aap2.lightkeeper.provisioning.util.<a href="nl/pim16aap2/lightkeeper/provisioning/util/HashUtil.html" title="class in nl.pim16aap2.lightkeeper.provisioning.util">HashUtil</a></dt>
 <dd>
 <div class="block">Computes SHA-256 using the string's UTF-8 encoding.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeArtifactHasher.html#sha256(java.lang.String)" class="member-name-link">sha256(String)</a> - Static method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeArtifactHasher.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeArtifactHasher</a></dt>
+<dd>
+<div class="block">Computes SHA-256 for canonical metadata text without writing it to disk.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/util/HashUtil.html#sha256(java.nio.file.Path)" class="member-name-link">sha256(Path)</a> - Static method in class nl.pim16aap2.lightkeeper.provisioning.util.<a href="nl/pim16aap2/lightkeeper/provisioning/util/HashUtil.html" title="class in nl.pim16aap2.lightkeeper.provisioning.util">HashUtil</a></dt>
 <dd>
@@ -5219,13 +5416,17 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Snapshots entities in a world matching the optional type and bounds filters, in one main-thread burst.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html#snapshotMetadataPath()" class="member-name-link">snapshotMetadataPath()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html" title="class in nl.pim16aap2.lightkeeper.runtime">MavenRuntimeContext</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html#param-snapshotMetadataPath"><code>snapshotMetadataPath</code></a> record component.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/ModulePlanPaths.html#snapshotsDirectory(java.nio.file.Path)" class="member-name-link">snapshotsDirectory(Path)</a> - Static method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/ModulePlanPaths.html" title="class in nl.pim16aap2.lightkeeper.runtime">ModulePlanPaths</a></dt>
+<dd>
+<div class="block">Returns the module-owned immutable snapshot root shared by Maven exports and native JUnit preparation.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/assets/ResolvedPluginArtifact.html#sourceDescription()" class="member-name-link">sourceDescription()</a> - Method in record class nl.pim16aap2.lightkeeper.provisioning.assets.<a href="nl/pim16aap2/lightkeeper/provisioning/assets/ResolvedPluginArtifact.html" title="class in nl.pim16aap2.lightkeeper.provisioning.assets">ResolvedPluginArtifact</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/provisioning/assets/ResolvedPluginArtifact.html#param-sourceDescription"><code>sourceDescription</code></a> record component.</div>
-</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html#sourceInputs()" class="member-name-link">sourceInputs()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenance</a></dt>
-<dd>
-<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html#param-sourceInputs"><code>sourceInputs</code></a> record component.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/assets/ResolvedPluginArtifact.html#sourceJar()" class="member-name-link">sourceJar()</a> - Method in record class nl.pim16aap2.lightkeeper.provisioning.assets.<a href="nl/pim16aap2/lightkeeper/provisioning/assets/ResolvedPluginArtifact.html" title="class in nl.pim16aap2.lightkeeper.provisioning.assets">ResolvedPluginArtifact</a></dt>
 <dd>
@@ -5234,6 +5435,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/assets/WorldInputSpec.html#sourcePath()" class="member-name-link">sourcePath()</a> - Method in record class nl.pim16aap2.lightkeeper.provisioning.assets.<a href="nl/pim16aap2/lightkeeper/provisioning/assets/WorldInputSpec.html" title="class in nl.pim16aap2.lightkeeper.provisioning.assets">WorldInputSpec</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/provisioning/assets/WorldInputSpec.html#param-sourcePath"><code>sourcePath</code></a> record component.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.AssetInput.html#sourcePath()" class="member-name-link">sourcePath()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.AssetInput.html" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan.AssetInput</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.AssetInput.html#param-sourcePath"><code>sourcePath</code></a> record component.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/assets/PluginArtifactSpec.html#sourceType()" class="member-name-link">sourceType()</a> - Method in record class nl.pim16aap2.lightkeeper.provisioning.assets.<a href="nl/pim16aap2/lightkeeper/provisioning/assets/PluginArtifactSpec.html" title="class in nl.pim16aap2.lightkeeper.provisioning.assets">PluginArtifactSpec</a></dt>
 <dd>
@@ -5285,7 +5490,7 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/Lightkeeper.html#start(java.lang.Class)" class="member-name-link">start(Class&lt;?&gt;)</a> - Static method in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/Lightkeeper.html" title="class in nl.pim16aap2.lightkeeper.framework">Lightkeeper</a></dt>
 <dd>
-<div class="block">Resolves the runtime selected for a test class and starts a private mutable server session.</div>
+<div class="block">Packages current production inputs for a test class and starts a private mutable server session.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/Lightkeeper.html#start(java.nio.file.Path)" class="member-name-link">start(Path)</a> - Static method in class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/Lightkeeper.html" title="class in nl.pim16aap2.lightkeeper.framework">Lightkeeper</a></dt>
 <dd>
@@ -5357,6 +5562,14 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Response record for <code>TAB_COMPLETE_PLAYER</code>.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.html#target()" class="member-name-link">target()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.html" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.html#param-target"><code>target</code></a> record component.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.Target.html#%3Cinit%3E(nl.pim16aap2.lightkeeper.runtime.EffectiveTestPlan.TargetKind,java.lang.String,java.lang.String,java.lang.String,java.lang.String)" class="member-name-link">Target(EffectiveTestPlan.TargetKind, String, String, String, String)</a> - Constructor for record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.Target.html" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan.Target</a></dt>
+<dd>
+<div class="block">Validates the required inputs for the chosen selection mode.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/serverprovider/ServerProvider.html#targetJarFilePath()" class="member-name-link">targetJarFilePath()</a> - Method in class nl.pim16aap2.lightkeeper.provisioning.serverprovider.<a href="nl/pim16aap2/lightkeeper/provisioning/serverprovider/ServerProvider.html" title="class in nl.pim16aap2.lightkeeper.provisioning.serverprovider">ServerProvider</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/serverprovider/ServerProvider.html#targetServerDirectoryPath()" class="member-name-link">targetServerDirectoryPath()</a> - Method in class nl.pim16aap2.lightkeeper.provisioning.serverprovider.<a href="nl/pim16aap2/lightkeeper/provisioning/serverprovider/ServerProvider.html" title="class in nl.pim16aap2.lightkeeper.provisioning.serverprovider">ServerProvider</a></dt>
@@ -5392,6 +5605,14 @@ loadScripts(document, 'script');</script>
 <dt><a href="nl/pim16aap2/lightkeeper/protocol/TeleportPlayer.Response.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.protocol">TeleportPlayer.Response</a> - Record Class in <a href="nl/pim16aap2/lightkeeper/protocol/package-summary.html">nl.pim16aap2.lightkeeper.protocol</a></dt>
 <dd>
 <div class="block">Response record for <code>TELEPORT_PLAYER</code>.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/TestModuleAnchor.html" class="type-name-link" title="class in nl.pim16aap2.lightkeeper.runtime">TestModuleAnchor</a> - Record Class in <a href="nl/pim16aap2/lightkeeper/runtime/package-summary.html">nl.pim16aap2.lightkeeper.runtime</a></dt>
+<dd>
+<div class="block">Ownership anchor written at the exact test-class output location, without a global classpath search.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/TestModuleAnchor.html#%3Cinit%3E(int,java.lang.String,java.lang.String)" class="member-name-link">TestModuleAnchor(int, String, String)</a> - Constructor for record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/TestModuleAnchor.html" title="class in nl.pim16aap2.lightkeeper.runtime">TestModuleAnchor</a></dt>
+<dd>
+<div class="block">Validates the anchor format and absolute ownership paths.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.ClickAction.html#text()" class="member-name-link">text()</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/ChatComponentSnapshot.ClickAction.html" title="class in nl.pim16aap2.lightkeeper.framework">ChatComponentSnapshot.ClickAction</a></dt>
 <dd>
@@ -5978,19 +6199,35 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns a string representation of this record class.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html#toString()" class="member-name-link">toString()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscovery.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeDiscovery</a></dt>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/BuildLeaseIdentity.html#toString()" class="member-name-link">toString()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/BuildLeaseIdentity.html" title="class in nl.pim16aap2.lightkeeper.runtime">BuildLeaseIdentity</a></dt>
 <dd>
 <div class="block">Returns a string representation of this record class.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.Artifact.html#toString()" class="member-name-link">toString()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.Artifact.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenance.Artifact</a></dt>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.AssetInput.html#toString()" class="member-name-link">toString()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.AssetInput.html" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan.AssetInput</a></dt>
 <dd>
 <div class="block">Returns a string representation of this record class.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html#toString()" class="member-name-link">toString()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenance.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenance</a></dt>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.Target.html#toString()" class="member-name-link">toString()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.Target.html" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan.Target</a></dt>
 <dd>
 <div class="block">Returns a string representation of this record class.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeSelection.html#toString()" class="member-name-link">toString()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeSelection.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeSelection</a></dt>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.html#toString()" class="member-name-link">toString()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.html" title="class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan</a></dt>
+<dd>
+<div class="block">Returns a string representation of this record class.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html#toString()" class="member-name-link">toString()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html" title="class in nl.pim16aap2.lightkeeper.runtime">MavenBuildContext</a></dt>
+<dd>
+<div class="block">Returns a string representation of this record class.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html#toString()" class="member-name-link">toString()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/MavenRuntimeContext.html" title="class in nl.pim16aap2.lightkeeper.runtime">MavenRuntimeContext</a></dt>
+<dd>
+<div class="block">Returns a string representation of this record class.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html#toString()" class="member-name-link">toString()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/ModuleTestPlan.html" title="class in nl.pim16aap2.lightkeeper.runtime">ModuleTestPlan</a></dt>
+<dd>
+<div class="block">Returns a string representation of this record class.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/ProcessIdentity.html#toString()" class="member-name-link">toString()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/ProcessIdentity.html" title="class in nl.pim16aap2.lightkeeper.runtime">ProcessIdentity</a></dt>
 <dd>
 <div class="block">Returns a string representation of this record class.</div>
 </dd>
@@ -5999,6 +6236,10 @@ loadScripts(document, 'script');</script>
 <div class="block">Returns a string representation of this record class.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/runtime/RuntimeManifest.html#toString()" class="member-name-link">toString()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/RuntimeManifest.html" title="class in nl.pim16aap2.lightkeeper.runtime">RuntimeManifest</a></dt>
+<dd>
+<div class="block">Returns a string representation of this record class.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/TestModuleAnchor.html#toString()" class="member-name-link">toString()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/TestModuleAnchor.html" title="class in nl.pim16aap2.lightkeeper.runtime">TestModuleAnchor</a></dt>
 <dd>
 <div class="block">Returns a string representation of this record class.</div>
 </dd>
@@ -6133,6 +6374,18 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Creates and validates directories that must only be accessible to the current operating-system user.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html#userProperties()" class="member-name-link">userProperties()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html" title="class in nl.pim16aap2.lightkeeper.runtime">MavenBuildContext</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html#param-userProperties"><code>userProperties</code></a> record component.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html#userSettings()" class="member-name-link">userSettings()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html" title="class in nl.pim16aap2.lightkeeper.runtime">MavenBuildContext</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html#param-userSettings"><code>userSettings</code></a> record component.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html#userToolchains()" class="member-name-link">userToolchains()</a> - Method in record class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html" title="class in nl.pim16aap2.lightkeeper.runtime">MavenBuildContext</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/MavenBuildContext.html#param-userToolchains"><code>userToolchains</code></a> record component.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/EntitySnapshot.html#uuid()" class="member-name-link">uuid()</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/EntitySnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">EntitySnapshot</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/framework/EntitySnapshot.html#param-uuid"><code>uuid</code></a> record component.</div>
@@ -6228,10 +6481,6 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Validates every present Bukkit/Paper descriptor and requires at least one descriptor.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeValidator.html#validate(nl.pim16aap2.lightkeeper.runtime.IdeRuntimeDiscovery,java.nio.file.Path,nl.pim16aap2.lightkeeper.runtime.RuntimeManifest)" class="member-name-link">validate(IdeRuntimeDiscovery, Path, RuntimeManifest)</a> - Static method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeValidator.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeValidator</a></dt>
-<dd>
-<div class="block">Validates a discovered runtime before Minecraft starts.</div>
-</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/runtime/RuntimeManifestValidator.html#validateForRuntimeStartup(nl.pim16aap2.lightkeeper.runtime.RuntimeManifest,int)" class="member-name-link">validateForRuntimeStartup(RuntimeManifest, int)</a> - Static method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/RuntimeManifestValidator.html" title="class in nl.pim16aap2.lightkeeper.runtime">RuntimeManifestValidator</a></dt>
 <dd>
 <div class="block">Validates protocol compatibility and required runtime files before server startup.</div>
@@ -6316,6 +6565,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the enum constant of this class with the specified name.</div>
 </dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.TargetKind.html#valueOf(java.lang.String)" class="member-name-link">valueOf(String)</a> - Static method in enum class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.TargetKind.html" title="enum class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan.TargetKind</a></dt>
+<dd>
+<div class="block">Returns the enum constant of this class with the specified name.</div>
+</dd>
 <dt><a href="nl/pim16aap2/lightkeeper/framework/CapturedEventSnapshot.html#values()" class="member-name-link">values()</a> - Method in record class nl.pim16aap2.lightkeeper.framework.<a href="nl/pim16aap2/lightkeeper/framework/CapturedEventSnapshot.html" title="class in nl.pim16aap2.lightkeeper.framework">CapturedEventSnapshot</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/framework/CapturedEventSnapshot.html#param-values"><code>values</code></a> record component.</div>
@@ -6384,6 +6637,11 @@ the order they are declared.</div>
 the order they are declared.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/provisioning/assets/WorldInputSpec.SourceType.html#values()" class="member-name-link">values()</a> - Static method in enum class nl.pim16aap2.lightkeeper.provisioning.assets.<a href="nl/pim16aap2/lightkeeper/provisioning/assets/WorldInputSpec.SourceType.html" title="enum class in nl.pim16aap2.lightkeeper.provisioning.assets">WorldInputSpec.SourceType</a></dt>
+<dd>
+<div class="block">Returns an array containing the constants of this enum class, in
+the order they are declared.</div>
+</dd>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.TargetKind.html#values()" class="member-name-link">values()</a> - Static method in enum class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/EffectiveTestPlan.TargetKind.html" title="enum class in nl.pim16aap2.lightkeeper.runtime">EffectiveTestPlan.TargetKind</a></dt>
 <dd>
 <div class="block">Returns an array containing the constants of this enum class, in
 the order they are declared.</div>
@@ -6651,13 +6909,9 @@ the order they are declared.</div>
 <dd>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/runtime/RuntimeManifest.ProvisionedWorld.html#param-worldType"><code>worldType</code></a> record component.</div>
 </dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscoveryWriter.html#write(nl.pim16aap2.lightkeeper.runtime.IdeRuntimeDiscovery,java.nio.file.Path)" class="member-name-link">write(IdeRuntimeDiscovery, Path)</a> - Method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeDiscoveryWriter.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeDiscoveryWriter</a></dt>
+<dt><a href="nl/pim16aap2/lightkeeper/runtime/GeneratedMetadata.html#write(java.lang.Object,java.nio.file.Path)" class="member-name-link">write(Object, Path)</a> - Static method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/GeneratedMetadata.html" title="class in nl.pim16aap2.lightkeeper.runtime">GeneratedMetadata</a></dt>
 <dd>
-<div class="block">Writes discovery metadata using same-filesystem atomic replacement.</div>
-</dd>
-<dt><a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenanceWriter.html#write(nl.pim16aap2.lightkeeper.runtime.IdeRuntimeProvenance,java.nio.file.Path)" class="member-name-link">write(IdeRuntimeProvenance, Path)</a> - Method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/IdeRuntimeProvenanceWriter.html" title="class in nl.pim16aap2.lightkeeper.runtime">IdeRuntimeProvenanceWriter</a></dt>
-<dd>
-<div class="block">Writes provenance beside a prepared runtime.</div>
+<div class="block">Publishes a complete JSON document inside a user-only directory.</div>
 </dd>
 <dt><a href="nl/pim16aap2/lightkeeper/runtime/RuntimeManifestWriter.html#write(nl.pim16aap2.lightkeeper.runtime.RuntimeManifest,java.nio.file.Path)" class="member-name-link">write(RuntimeManifest, Path)</a> - Method in class nl.pim16aap2.lightkeeper.runtime.<a href="nl/pim16aap2/lightkeeper/runtime/RuntimeManifestWriter.html" title="class in nl.pim16aap2.lightkeeper.runtime">RuntimeManifestWriter</a></dt>
 <dd>
@@ -6841,7 +7095,7 @@ the order they are declared.</div>
 <div class="block">Returns the value of the <a href="./nl/pim16aap2/lightkeeper/protocol/UnloadChunk.Command.html#param-z"><code>z</code></a> record component.</div>
 </dd>
 </dl>
-<a href="#I:A">A</a>&nbsp;<a href="#I:B">B</a>&nbsp;<a href="#I:C">C</a>&nbsp;<a href="#I:D">D</a>&nbsp;<a href="#I:E">E</a>&nbsp;<a href="#I:F">F</a>&nbsp;<a href="#I:G">G</a>&nbsp;<a href="#I:H">H</a>&nbsp;<a href="#I:I">I</a>&nbsp;<a href="#I:J">J</a>&nbsp;<a href="#I:L">L</a>&nbsp;<a href="#I:M">M</a>&nbsp;<a href="#I:N">N</a>&nbsp;<a href="#I:O">O</a>&nbsp;<a href="#I:P">P</a>&nbsp;<a href="#I:Q">Q</a>&nbsp;<a href="#I:R">R</a>&nbsp;<a href="#I:S">S</a>&nbsp;<a href="#I:T">T</a>&nbsp;<a href="#I:U">U</a>&nbsp;<a href="#I:V">V</a>&nbsp;<a href="#I:W">W</a>&nbsp;<a href="#I:X">X</a>&nbsp;<a href="#I:Y">Y</a>&nbsp;<a href="#I:Z">Z</a>&nbsp;<br><a href="allclasses-index.html">All&nbsp;Classes&nbsp;and&nbsp;Interfaces</a><span class="vertical-separator">|</span><a href="allpackages-index.html">All&nbsp;Packages</a><span class="vertical-separator">|</span><a href="constant-values.html">Constant&nbsp;Field&nbsp;Values</a><span class="vertical-separator">|</span><a href="serialized-form.html">Serialized&nbsp;Form</a></main>
+<a href="#I:A">A</a>&nbsp;<a href="#I:B">B</a>&nbsp;<a href="#I:C">C</a>&nbsp;<a href="#I:D">D</a>&nbsp;<a href="#I:E">E</a>&nbsp;<a href="#I:F">F</a>&nbsp;<a href="#I:G">G</a>&nbsp;<a href="#I:H">H</a>&nbsp;<a href="#I:I">I</a>&nbsp;<a href="#I:J">J</a>&nbsp;<a href="#I:K">K</a>&nbsp;<a href="#I:L">L</a>&nbsp;<a href="#I:M">M</a>&nbsp;<a href="#I:N">N</a>&nbsp;<a href="#I:O">O</a>&nbsp;<a href="#I:P">P</a>&nbsp;<a href="#I:Q">Q</a>&nbsp;<a href="#I:R">R</a>&nbsp;<a href="#I:S">S</a>&nbsp;<a href="#I:T">T</a>&nbsp;<a href="#I:U">U</a>&nbsp;<a href="#I:V">V</a>&nbsp;<a href="#I:W">W</a>&nbsp;<a href="#I:X">X</a>&nbsp;<a href="#I:Y">Y</a>&nbsp;<a href="#I:Z">Z</a>&nbsp;<br><a href="allclasses-index.html">All&nbsp;Classes&nbsp;and&nbsp;Interfaces</a><span class="vertical-separator">|</span><a href="allpackages-index.html">All&nbsp;Packages</a><span class="vertical-separator">|</span><a href="constant-values.html">Constant&nbsp;Field&nbsp;Values</a><span class="vertical-separator">|</span><a href="serialized-form.html">Serialized&nbsp;Form</a></main>
 <footer role="contentinfo">
 <hr>
 <p class="legal-copy"><small>Copyright &#169; 2026. All rights reserved.</small></p>
