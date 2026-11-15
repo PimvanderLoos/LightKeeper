@@ -39,6 +39,7 @@ jobs:
         run: |
           python3 .github/scripts/site_checks.py --site ../website --source-only
           node --check ../website/assets/main.js
+          python3 .github/scripts/check_onboarding.py --site ../website
 
       - name: Build the current API and Maven descriptors without server tests
         working-directory: code

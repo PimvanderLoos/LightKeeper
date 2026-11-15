@@ -31,12 +31,12 @@
     <section class="home-hero" aria-labelledby="hero-title">
         <div class="hero-copy">
             <p class="eyebrow hero-badge"><span class="status-dot" aria-hidden="true"></span>End-to-end testing for Minecraft plugins</p>
-            <h1 id="hero-title">Real servers. <span>Not a mock.</span></h1>
+            <h1 id="hero-title">Your plugin. <span>A real server.</span></h1>
             <p class="lead">Test your plugin against real Paper and Spigot servers. Spawn players, drive menus,
                 inspect worlds, and catch regressions before your players do.</p>
             <div class="button-row">
-                <a class="button button-primary" href="#quickstart">Get started <span aria-hidden="true">↗</span></a>
-                <a class="button button-ghost" href="https://github.com/PimvanderLoos/LightKeeper">View on GitHub <span aria-hidden="true">↗</span></a>
+                <a class="button button-primary" href="getting-started.html#try-the-example">Try a working project <span aria-hidden="true">↗</span></a>
+                <a class="button button-ghost" href="getting-started.html#add-to-your-plugin">Add to your plugin <span aria-hidden="true">↗</span></a>
             </div>
             <p class="requirements">JAVA 21 <span>/</span> MAVEN 3.9+ <span>/</span> PAPER + SPIGOT<br>Linux &amp; macOS recommended · <a href="getting-started.html">Requirements</a></p>
         </div>
@@ -83,149 +83,68 @@ class BlockPlacementIT
 
     <section class="home-section" id="quickstart" aria-labelledby="quickstart-title">
         <div class="section-heading">
-            <div><p class="eyebrow">/ Get started in minutes</p><h2 id="quickstart-title">Your first passing test.</h2></div>
+            <div><p class="eyebrow">/ Your first working test</p><h2 id="quickstart-title">Your first passing test.</h2></div>
             <p>Set up the Maven plugin and JUnit framework, write a test, and run it against a real Paper or Spigot server.</p>
         </div>
         <div class="quickstart">
             <div class="quickstart-tabs" role="tablist" aria-label="Your first passing test" aria-orientation="vertical" hidden>
                 <p class="quickstart-label" role="presentation">Quickstart</p>
-                <button type="button" role="tab" id="tab-dependencies" aria-controls="step-dependencies" aria-selected="true"><span aria-hidden="true">01</span>Add dependencies</button>
+                <button type="button" role="tab" id="tab-dependencies" aria-controls="step-dependencies" aria-selected="true"><span aria-hidden="true">01</span>Try the example</button>
                 <button type="button" role="tab" id="tab-test" aria-controls="step-test" aria-selected="false" tabindex="-1"><span aria-hidden="true">02</span>Write a test</button>
                 <button type="button" role="tab" id="tab-run" aria-controls="step-run" aria-selected="false" tabindex="-1"><span aria-hidden="true">03</span>Run &amp; inspect</button>
             </div>
             <div class="quickstart-panel" id="step-dependencies" role="tabpanel" aria-labelledby="tab-dependencies" tabindex="0">
-                <h3>Add the Maven dependencies</h3>
-                <p>This standalone server-only smoke project uses <code>serverOnly=true</code> explicitly.
-                    To test your own packaged plugin, omit that option and follow the
-                    <a href="getting-started.html">plugin setup guide</a>. EldoNexus supplies LK artifacts;
-                    the starter supplies the test API and JUnit engine.</p>
-                <div class="editor">
-            <div class="editor-bar"><span>pom.xml · complete test project</span><button class="copy-button" type="button" data-copy="setup-code" hidden>Copy code ↗</button></div>
-            <pre id="setup-code" tabindex="0" aria-label="pom.xml · complete test project"><code data-language="xml">&lt;project xmlns=&quot;http://maven.apache.org/POM/4.0.0&quot;
-         xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
-         xsi:schemaLocation=&quot;http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd&quot;&gt;
-  &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
-  &lt;groupId&gt;com.example&lt;/groupId&gt;
-  &lt;artifactId&gt;my-plugin-tests&lt;/artifactId&gt;
-  &lt;version&gt;1.0-SNAPSHOT&lt;/version&gt;
-
-  &lt;properties&gt;
-    &lt;maven.compiler.release&gt;21&lt;/maven.compiler.release&gt;
-    &lt;project.build.sourceEncoding&gt;UTF-8&lt;/project.build.sourceEncoding&gt;
-    &lt;lightkeeper.version&gt;1.2.0-SNAPSHOT&lt;/lightkeeper.version&gt;
-  &lt;/properties&gt;
-
-  &lt;repositories&gt;
-    &lt;repository&gt;
-      &lt;id&gt;eldonexus-snapshots&lt;/id&gt;
-      &lt;url&gt;https://eldonexus.de/repository/maven-snapshots/&lt;/url&gt;
-    &lt;/repository&gt;
-    &lt;repository&gt;
-      &lt;id&gt;spigotmc-snapshots&lt;/id&gt;
-      &lt;url&gt;https://hub.spigotmc.org/nexus/content/groups/public/&lt;/url&gt;
-    &lt;/repository&gt;
-  &lt;/repositories&gt;
-  &lt;pluginRepositories&gt;
-    &lt;pluginRepository&gt;
-      &lt;id&gt;eldonexus-snapshots&lt;/id&gt;
-      &lt;url&gt;https://eldonexus.de/repository/maven-snapshots/&lt;/url&gt;
-    &lt;/pluginRepository&gt;
-  &lt;/pluginRepositories&gt;
-
-  &lt;dependencies&gt;
-    &lt;dependency&gt;
-      &lt;groupId&gt;nl.pim16aap2.lightkeeper&lt;/groupId&gt;
-      &lt;artifactId&gt;lightkeeper-junit-starter&lt;/artifactId&gt;
-      &lt;version&gt;${lightkeeper.version}&lt;/version&gt;
-      &lt;scope&gt;test&lt;/scope&gt;
-    &lt;/dependency&gt;
-  &lt;/dependencies&gt;
-
-  &lt;build&gt;
-    &lt;plugins&gt;
-</code><code data-language="xml" data-maven-plugin="lightkeeper">      &lt;plugin&gt;
-        &lt;groupId&gt;nl.pim16aap2.lightkeeper&lt;/groupId&gt;
-        &lt;artifactId&gt;lightkeeper-maven-plugin&lt;/artifactId&gt;
-        &lt;version&gt;${lightkeeper.version}&lt;/version&gt;
-        &lt;executions&gt;
-          &lt;execution&gt;
-            &lt;goals&gt;
-              &lt;goal&gt;lock-build&lt;/goal&gt;
-              &lt;goal&gt;prepare-server&lt;/goal&gt;
-            &lt;/goals&gt;
-          &lt;/execution&gt;
-        &lt;/executions&gt;
-      &lt;/plugin&gt;</code><code data-language="xml">
-      &lt;plugin&gt;
-        &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
-        &lt;artifactId&gt;maven-compiler-plugin&lt;/artifactId&gt;
-        &lt;version&gt;3.15.0&lt;/version&gt;
-      &lt;/plugin&gt;
-      &lt;plugin&gt;
-        &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
-        &lt;artifactId&gt;maven-failsafe-plugin&lt;/artifactId&gt;
-        &lt;version&gt;3.6.1&lt;/version&gt;
-        &lt;configuration&gt;
-          &lt;failIfNoTests&gt;true&lt;/failIfNoTests&gt;
-        &lt;/configuration&gt;
-        &lt;executions&gt;
-          &lt;execution&gt;
-            &lt;goals&gt;
-              &lt;goal&gt;integration-test&lt;/goal&gt;
-              &lt;goal&gt;verify&lt;/goal&gt;
-            &lt;/goals&gt;
-          &lt;/execution&gt;
-        &lt;/executions&gt;
-      &lt;/plugin&gt;
-    &lt;/plugins&gt;
-  &lt;/build&gt;
-&lt;/project&gt;</code></pre>
-
-        </div>
-                <p class="step-note">Use this setup in an existing deployable plugin module with valid plugin metadata.
-                    The starter is a test dependency; the Maven plugin belongs in <code>build/plugins</code>.
-                    These guides use <code>1.2.0-SNAPSHOT</code>.
-                    <a href="getting-started.html">See complete setup →</a></p>
+                <h3>Run a complete plugin project.</h3>
+                <p>The example builds a valid plugin, installs it on Paper and runs JUnit. Java 21 and Maven 3.9+
+                    are required. You do not need to build LightKeeper itself.</p>
+                <pre id="setup-code" tabindex="0" aria-label="Try the complete example"><code data-language="shell">git clone https://github.com/PimvanderLoos/LightKeeper.git
+cd LightKeeper
+mvn -f examples/single-module/pom.xml -Dit.test=GettingStartedIT verify</code></pre>
+                <p class="step-note">For your existing plugin, add the starter test dependency and Maven preparation plugin.
+                    <a href="getting-started.html#add-to-your-plugin">Get the configuration →</a></p>
             </div>
             <div class="quickstart-panel" id="step-test" role="tabpanel" aria-labelledby="tab-test" tabindex="0">
                 <h3>Write a test. Use a real world.</h3>
-                <p>Save this as <code>src/test/java/FirstPassingTestIT.java</code>. The extension starts the prepared server
-                    and injects the framework. This explicit server-only example needs no target plugin;
-                    the normal plugin-module route requires your packaged plugin’s metadata.</p>
+                <p>Save this as <code>src/test/java/example/GettingStartedIT.java</code>. The extension starts the prepared server
+                    and injects the framework. The example installs its own plugin; this first world interaction checks
+                    the environment before you add assertions about your own commands or events.</p>
                 <div class="editor">
-            <div class="editor-bar"><span>FirstPassingTestIT.java</span><button class="copy-button" type="button" data-copy="test-code" hidden>Copy code ↗</button></div>
-            <pre id="test-code" tabindex="0" aria-label="FirstPassingTestIT.java"><code data-language="java" data-java-class="FirstPassingTestIT">import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
+            <div class="editor-bar"><span>GettingStartedIT.java</span><button class="copy-button" type="button" data-copy="test-code" hidden>Copy code ↗</button></div>
+            <pre id="test-code" tabindex="0" aria-label="GettingStartedIT.java"><code data-language="java" data-java-class="GettingStartedIT">package example;
+
+import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.LightkeeperExtension;
+import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
+import nl.pim16aap2.lightkeeper.framework.WorldHandle;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
 
+/** A complete first integration test; no commands or plugins from LightKeeper's internal fixtures are needed. */
 @ExtendWith(LightkeeperExtension.class)
-class FirstPassingTestIT
+class GettingStartedIT
 {
     @Test
     void placeBlock_shouldUpdateWorld(ILightkeeperFramework framework)
     {
         // setup
-        var world = framework.worlds().main();
-        var player = framework.bots().builder()
-            .withName(&quot;lk_tester&quot;)
+        final WorldHandle world = framework.worlds().main();
+        final PlayerHandle player = framework.bots().builder()
+            .withName("lk_tester")
             .atSpawn(world)
             .build();
 
         // execute
-        player.placeBlock(&quot;minecraft:stone&quot;, 1, 100, 0)
-            .andWaitTicks(1);
+        player.placeBlock("minecraft:stone", 1, 100, 0).andWaitTicks(1);
 
         // verify
-        assertThat(world).hasBlockAt(1, 100, 0)
-            .ofType(&quot;minecraft:stone&quot;);
+        assertThat(world).hasBlockAt(1, 100, 0).ofType("minecraft:stone");
     }
 }</code></pre>
 
         </div>
-                <p class="step-note">To test your own plugin, configure its packaged JAR for provisioning.
+                <p class="step-note">The standard configuration selects and installs your module’s packaged plugin automatically.
                     <a href="features.html">Explore what you can test →</a></p>
             </div>
             <div class="quickstart-panel" id="step-run" role="tabpanel" aria-labelledby="tab-run" tabindex="0">
@@ -233,7 +152,7 @@ class FirstPassingTestIT
                 <p>With the POM from step 01 and an <code>*IT.java</code> test in place, run the full integration lifecycle.</p>
                 <div class="editor">
             <div class="editor-bar"><span>Terminal</span><button class="copy-button" type="button" data-copy="run-code" hidden>Copy code ↗</button></div>
-            <pre id="run-code" tabindex="0" aria-label="Terminal"><code data-language="shell">mvn verify</code></pre>
+            <pre id="run-code" tabindex="0" aria-label="Terminal"><code data-language="shell">mvn -f examples/single-module/pom.xml -Dit.test=GettingStartedIT verify</code></pre>
 
         </div>
                 <ol class="timeline">
@@ -242,7 +161,7 @@ class FirstPassingTestIT
                     <li>Read test results in <code>target/failsafe-reports/</code> and server logs under <code>target/lightkeeper-server/</code>.</li>
                 </ol>
                 <p class="step-note">Spigot is also supported; its first preparation builds the server with BuildTools. Cached builds are reused.
-                    <a href="ide-testing.html">Save production edits, then run ordinary JUnit →</a></p>
+                    <a href="getting-started.html#source-freshness-demo">Watch a production change make the test fail, then pass →</a></p>
             </div>
         </div>
     </section>
