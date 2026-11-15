@@ -39,7 +39,21 @@ jobs:
         run: |
           python3 .github/scripts/site_checks.py --site ../website --source-only
           node --check ../website/assets/main.js
+          node --check ../website/assets/setup.mjs
+          node --test ../website/.github/setup.test.mjs
+          python3 .github/scripts/setup_examples.py --check ../website/assets/setup-presets.json
           python3 .github/scripts/check_onboarding.py --site ../website
+
+      - name: Test setup configurator in Chromium
+        run: |
+          mkdir -p "$RUNNER_TEMP/website-browser"
+          cp website/.github/browser/package.json website/.github/browser/package-lock.json website/.github/browser/check.mjs "$RUNNER_TEMP/website-browser/"
+          npm ci --prefix "$RUNNER_TEMP/website-browser" --no-audit --no-fund
+          "$RUNNER_TEMP/website-browser/node_modules/.bin/playwright" install chromium
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory website > "$RUNNER_TEMP/website-server.log" 2>&1 &
+          website_server_pid=$!
+          trap 'kill "$website_server_pid"' EXIT
+          node "$RUNNER_TEMP/website-browser/check.mjs"
 
       - name: Build the current API and Maven descriptors without server tests
         working-directory: code
