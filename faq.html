@@ -37,8 +37,9 @@
 
     <section class="panel">
         <h2>How do I run tests directly from my IDE?</h2>
-        <p>Prepare the owning module once with <code>mvn pre-integration-test -Dlightkeeper.ide=true</code>,
-            then use its JUnit gutter button. See <a href="ide-testing.html">IDE setup</a> for refresh, persistence, and troubleshooting.</p>
+        <p>Run normal <code>mvn verify</code> once, then save production edits and use the JUnit gutter button.
+            Each native launch automatically packages current production inputs through Maven. See
+            <a href="ide-testing.html">direct JUnit setup</a> for retained build context, sessions and troubleshooting.</p>
     </section>
 
     <section class="panel">
@@ -80,16 +81,17 @@
     <section class="panel">
         <h2>Can LightKeeper remove server folders after successful tests?</h2>
         <p>
-            Yes. Use <code>lightkeeper:cleanup-server</code> and set <code>deleteTargetServerOnSuccess=true</code>. It checks
-            failsafe summaries and only cleans on success.
+            Successful private class sessions are removed automatically after Minecraft stops; failed sessions retain diagnostics.
+            Optional <code>cleanup-server</code> can additionally remove prepared work directories after successful Failsafe tests.
         </p>
     </section>
 
     <section class="panel">
         <h2>How can I run the same tests on Paper and Spigot?</h2>
         <p>
-            Configure two plugin executions and two Failsafe executions with different runtime manifest/system property values.
-            The module <code>lightkeeper-integration-tests</code> demonstrates this.
+            Use separate Paper/Spigot profiles and perform initial verification with the desired profile. A module with
+            several active preparations requires <code>lightkeeper.executionId</code> to select a native variant.
+            Explicit manifests remain available for advanced Failsafe matrices, as in LK's own integration tests.
         </p>
     </section>
     <section class="panel">

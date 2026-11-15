@@ -39,20 +39,23 @@
         <h2>Execution flow</h2>
         <div class="flow">
             <article class="flow-step">
-                <h3>1. Maven Prepare Phase</h3>
-                <p><code>lightkeeper:prepare-server</code> resolves platform build metadata, server binaries, and agent artifact.</p>
+                <h3>1. Real producer lifecycle</h3>
+                <p><code>lock-build</code> protects outputs before compilation. Maven performs real filtering, generation,
+                    Shade and Assembly; <code>prepare-server</code> selects its actual artifact.</p>
             </article>
             <article class="flow-step">
                 <h3>2. Cache Resolution</h3>
-                <p>Jar/base-server caches are checked with keys that include platform/version/build, Java/OS, protocol, and agent identity.</p>
+                <p>Shared JAR/base caches use ordered kernel leases through rebuild, pruning and copying. Cache identity includes
+                    platform/build, Java/OS and agent inputs where applicable.</p>
             </article>
             <article class="flow-step">
                 <h3>3. Server Assembly</h3>
                 <p>Worlds, plugins, and overlay files are installed into the target server work directory.</p>
             </article>
             <article class="flow-step">
-                <h3>4. Runtime Manifest Emission</h3>
-                <p>Manifest captures server path, jar path, Java executable, JVM arguments, UDS socket path, auth token, and preloaded world metadata.</p>
+                <h3>4. Immutable runtime export</h3>
+                <p>Maven publishes module ownership and a complete immutable snapshot tied to its actual JVM identity. Failsafe
+                    uses that live export. Direct JUnit invokes a new producer build and accepts only its own successful export.</p>
             </article>
             <article class="flow-step">
                 <h3>5. Test Execution</h3>
@@ -60,7 +63,8 @@
             </article>
             <article class="flow-step">
                 <h3>6. Optional Cleanup</h3>
-                <p><code>lightkeeper:cleanup-server</code> reads failsafe summary and removes target server folders when configured and successful.</p>
+                <p>Successful class sessions and owned snapshots are cleaned automatically after use. Failed sessions retain
+                    diagnostics; <code>cleanup-server</code> remains optional for prepared work directories.</p>
             </article>
         </div>
     </section>
@@ -68,7 +72,8 @@
     <section class="panel">
         <h2>Module responsibilities</h2>
         <ul class="checklist">
-            <li><code>lightkeeper-maven-plugin</code>: provisioning, caching, runtime manifest creation, cleanup</li>
+            <li><code>lightkeeper-junit-starter</code>: coherent framework, JUnit and assertions on the test classpath</li>
+            <li><code>lightkeeper-maven-plugin</code>: early build coordination, Maven artifact resolution and runtime export</li>
             <li><code>lightkeeper-provisioning</code>: shared providers, downloads, assets, embedded agent, immutable snapshots, and private session copies</li>
             <li><code>lightkeeper-runtime-core</code>: runtime manifests and cross-process constants</li>
             <li><code>lightkeeper-agent-spigot</code>: in-server command execution and data collection</li>

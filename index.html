@@ -149,12 +149,10 @@ class BlockPlacementIT
         &lt;version&gt;${lightkeeper.version}&lt;/version&gt;
         &lt;executions&gt;
           &lt;execution&gt;
-            &lt;id&gt;prepare-server&lt;/id&gt;
-            &lt;phase&gt;pre-integration-test&lt;/phase&gt;
-            &lt;goals&gt;&lt;goal&gt;prepare-server&lt;/goal&gt;&lt;/goals&gt;
-            &lt;configuration&gt;
-              &lt;serverOnly&gt;true&lt;/serverOnly&gt;
-            &lt;/configuration&gt;
+            &lt;goals&gt;
+              &lt;goal&gt;lock-build&lt;/goal&gt;
+              &lt;goal&gt;prepare-server&lt;/goal&gt;
+            &lt;/goals&gt;
           &lt;/execution&gt;
         &lt;/executions&gt;
       &lt;/plugin&gt;</code><code data-language="xml">
@@ -166,11 +164,9 @@ class BlockPlacementIT
       &lt;plugin&gt;
         &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
         &lt;artifactId&gt;maven-failsafe-plugin&lt;/artifactId&gt;
-        &lt;version&gt;3.5.6&lt;/version&gt;
+        &lt;version&gt;3.6.1&lt;/version&gt;
         &lt;configuration&gt;
-          &lt;systemPropertyVariables&gt;
-            &lt;lightkeeper.runtimeManifestPath&gt;${project.build.directory}/lightkeeper/runtime-manifest.json&lt;/lightkeeper.runtimeManifestPath&gt;
-          &lt;/systemPropertyVariables&gt;
+          &lt;failIfNoTests&gt;true&lt;/failIfNoTests&gt;
         &lt;/configuration&gt;
         &lt;executions&gt;
           &lt;execution&gt;
@@ -186,7 +182,9 @@ class BlockPlacementIT
 &lt;/project&gt;</code></pre>
 
         </div>
-                <p class="step-note">These guides use <code>1.2.0-SNAPSHOT</code>. The Maven plugin belongs in <code>build/plugins</code>.
+                <p class="step-note">Use this setup in an existing deployable plugin module with valid plugin metadata.
+                    The starter is a test dependency; the Maven plugin belongs in <code>build/plugins</code>.
+                    These guides use <code>1.2.0-SNAPSHOT</code>.
                     <a href="getting-started.html">See complete setup →</a></p>
             </div>
             <div class="quickstart-panel" id="step-test" role="tabpanel" aria-labelledby="tab-test" tabindex="0">
@@ -239,12 +237,12 @@ class FirstPassingTestIT
 
         </div>
                 <ol class="timeline">
-                    <li><code>pre-integration-test</code> prepares a Paper server and writes the runtime manifest.</li>
+                    <li><code>pre-integration-test</code> prepares the actual packaged plugin and captures immutable server inputs.</li>
                     <li>Failsafe runs your test against that server, then verifies the result.</li>
                     <li>Read test results in <code>target/failsafe-reports/</code> and server logs under <code>target/lightkeeper-server/</code>.</li>
                 </ol>
                 <p class="step-note">Spigot is also supported; its first preparation builds the server with BuildTools. Cached builds are reused.
-                    <a href="ide-testing.html">Prefer the IDE gutter? Set it up →</a></p>
+                    <a href="ide-testing.html">Save production edits, then run ordinary JUnit →</a></p>
             </div>
         </div>
     </section>
