@@ -88,7 +88,6 @@ export async function mountSetup(document, load = () => fetch('assets/setup-pres
             status.textContent = `Setup for LightKeeper ${presets.version} is ready to copy. Merge matching POM sections; preserve your plugin build settings.`;
         };
         form.addEventListener('input', update);
-        form.addEventListener('change', update);
         form.addEventListener('submit', event => event.preventDefault());
         update();
     } catch (error) {

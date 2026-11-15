@@ -981,9 +981,12 @@ pre code {
 
 /* Setup fragments remain selectable and readable without code-editor dependencies. */
 #setup-form { display: grid; gap: .75rem; max-width: 42rem; }
-#setup-form fieldset { border: 1px solid var(--border, #34434e); padding: 1rem; }
+#setup-form fieldset { min-width: 0; border: 1px solid var(--border, #34434e); padding: 1rem; }
 #setup-form label { display: block; margin-top: .5rem; }
-#setup-form input, #setup-form select { width: 100%; padding: .65rem; font: inherit; }
+#setup-form input, #setup-form select { width: 100%; padding: .65rem; font: inherit;
+    color: var(--ink); background: var(--surface); border: 1px solid var(--line); }
+#setup-output h2 { overflow-wrap: anywhere; }
+#setup-output button { background: transparent; }
 #setup-output textarea { display: block; width: 100%; margin-top: 1rem; padding: 1rem;
     color: inherit; background: #0b141b; border: 1px solid #34434e; font-family: 'JetBrains Mono', monospace;
     font-size: .85rem; line-height: 1.5; resize: vertical; tab-size: 4; }
