@@ -324,7 +324,8 @@ explicit reasons for APIs that should not receive custom assertions.
 
 Run `mvn lightkeeper:doctor`, or `mvn -pl :your-e2e-module -am lightkeeper:doctor` from a reactor root.
 The aggregate goal inspects the selected preparation modules once: Maven/Java, transport, effective server settings,
-producer guards, target selection, Failsafe bindings/skips and direct-JUnit ownership metadata. It never executes build
+producer guards, target selection, Failsafe bindings/skips and direct-JUnit ownership metadata. Configured server
+JDK versions are read from local release metadata without executing them; unknown wrapper versions are warnings. It never executes build
 phases, resolves server downloads or writes project files; Maven may resolve the plugin itself. Errors include a fix
 and fail the command; warnings cover expected first-run conditions such as an unbuilt JAR or absent IDE metadata.
 Run normal `verify` once to initialize those generated inputs. It validates available selected archives statically,

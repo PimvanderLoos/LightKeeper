@@ -169,6 +169,60 @@ class DoctorInspectionTest
             finding.level() == DoctorFinding.Level.WARN && finding.action().contains("skip"));
     }
 
+    @Test
+    void inspect_shouldRejectConfiguredOldServerJavaWithoutExecutingIt()
+        throws Exception
+    {
+        // setup
+        final MavenProject project = project();
+        final Path home = Files.createDirectory(root.resolve("java17"));
+        final Path bin = Files.createDirectory(home.resolve("bin"));
+        final Path executable = Files.writeString(bin.resolve("java"), "#!/bin/sh\nexit 99\n");
+        Files.setPosixFilePermissions(executable,
+            java.nio.file.attribute.PosixFilePermissions.fromString("rwx------"));
+        Files.writeString(home.resolve("release"), "JAVA_VERSION=\"17.0.10\"\n");
+        project.getBuildPlugins().getFirst().setConfiguration(
+            configuration("javaExecutablePath", executable.toString()));
+        final MavenSession session = session();
+
+        // execute
+        final var findings = inspect(project, session);
+
+        // verify
+        assertThat(findings).filteredOn(finding -> finding.subject().equals("Server Java"))
+            .singleElement().satisfies(finding ->
+            {
+                assertThat(finding.level()).isEqualTo(DoctorFinding.Level.ERROR);
+                assertThat(finding.detail()).contains("17.0.10");
+                assertThat(finding.action()).contains("Java 21+");
+            });
+    }
+
+    @Test
+    void inspect_shouldWarnForAnUnknownWrapperVersionWithoutExecutingIt()
+        throws Exception
+    {
+        // setup
+        final MavenProject project = project();
+        final Path executable = Files.writeString(root.resolve("java-wrapper"), "#!/bin/sh\nexit 99\n");
+        Files.setPosixFilePermissions(executable,
+            java.nio.file.attribute.PosixFilePermissions.fromString("rwx------"));
+        project.getBuildPlugins().getFirst().setConfiguration(
+            configuration("javaExecutablePath", executable.toString()));
+        final MavenSession session = session();
+
+        // execute
+        final var findings = inspect(project, session);
+
+        // verify
+        assertThat(findings).filteredOn(finding -> finding.subject().equals("Server Java"))
+            .singleElement().satisfies(finding ->
+            {
+                assertThat(finding.level()).isEqualTo(DoctorFinding.Level.WARN);
+                assertThat(finding.action()).contains("never runs it");
+            });
+    }
+
     private List<DoctorFinding> inspect(MavenProject project, MavenSession session)
     {
         return new DoctorInspection(project, session,
