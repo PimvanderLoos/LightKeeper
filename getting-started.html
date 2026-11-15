@@ -31,8 +31,8 @@
     <p class="version-note">These guides describe the current master build. Select a release in the <a href="javadoc/">API Reference</a> for released APIs.</p>
     <section class="guide-hero">
         <p class="eyebrow">Getting Started</p>
-        <h1>From zero to full server integration test.</h1>
-        <p class="lead">Use this as your baseline setup for a Maven project that tests a plugin on real Paper/Spigot runtimes.</p>
+        <h1>Your first test on a real Minecraft server.</h1>
+        <p class="lead">Try a complete working project, or add LightKeeper to your existing plugin. Start with one passing test and grow from there.</p>
     </section>
 
     <section class="panel">
@@ -44,7 +44,21 @@
         </ul>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="try-the-example">
+        <h2>Try a working project</h2>
+        <p>This independent example includes a real plugin, complete Maven configuration and a first test.
+            You do not need to build LightKeeper itself or install its artifacts locally.</p>
+        <pre><code>git clone https://github.com/PimvanderLoos/LightKeeper.git
+cd LightKeeper
+mvn -f examples/single-module/pom.xml -Dit.test=GettingStartedIT verify</code></pre>
+        <p>Success ends with <code>Tests run: 1, Failures: 0, Errors: 0</code> for <code>GettingStartedIT</code>
+            and <code>BUILD SUCCESS</code>. The first run downloads and prepares server files; later runs reuse caches.
+            Download and startup times depend on your computer and connection.</p>
+        <p>Ready to use your own plugin? Continue with the configuration below. For a reactor,
+            see the <a href="https://github.com/PimvanderLoos/LightKeeper/blob/master/examples/reactor/README.md">separate test-module example</a>.</p>
+    </section>
+
+    <section class="panel" id="add-to-your-plugin">
         <h2>1. Add one starter test dependency</h2>
         <p>Use the EldoNexus snapshot repository in both <code>repositories</code> and
             <code>pluginRepositories</code>: <code>https://eldonexus.de/repository/maven-snapshots/</code>.
@@ -125,8 +139,10 @@
 
     <section class="panel">
         <h2>4. Write your first test</h2>
-        <p>Save this as <code>src/test/java/GettingStartedIT.java</code> so Failsafe selects it during <code>mvn verify</code>.</p>
-        <pre><code data-java-class="GettingStartedIT">import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
+        <p>Save this as <code>src/test/java/example/GettingStartedIT.java</code> so Failsafe selects it during <code>mvn verify</code>.</p>
+        <pre><code data-java-class="GettingStartedIT">package example;
+
+import nl.pim16aap2.lightkeeper.framework.ILightkeeperFramework;
 import nl.pim16aap2.lightkeeper.framework.LightkeeperExtension;
 import nl.pim16aap2.lightkeeper.framework.PlayerHandle;
 import nl.pim16aap2.lightkeeper.framework.WorldHandle;
@@ -135,6 +151,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static nl.pim16aap2.lightkeeper.framework.assertions.LightkeeperAssertions.assertThat;
 
+/** A complete first integration test; no commands or plugins from LightKeeper's internal fixtures are needed. */
 @ExtendWith(LightkeeperExtension.class)
 class GettingStartedIT
 {
@@ -144,17 +161,48 @@ class GettingStartedIT
         // setup
         final WorldHandle world = framework.worlds().main();
         final PlayerHandle player = framework.bots().builder()
-            .withName(&quot;lk_tester&quot;)
+            .withName("lk_tester")
             .atSpawn(world)
             .build();
 
         // execute
-        player.placeBlock(&quot;minecraft:stone&quot;, 1, 100, 0).andWaitTicks(1);
+        player.placeBlock("minecraft:stone", 1, 100, 0).andWaitTicks(1);
 
         // verify
-        assertThat(world).hasBlockAt(1, 100, 0).ofType(&quot;minecraft:stone&quot;);
+        assertThat(world).hasBlockAt(1, 100, 0).ofType("minecraft:stone");
     }
 }</code></pre>
+    </section>
+    <section class="panel" id="source-freshness-demo">
+        <h2>See a saved plugin change reach Minecraft</h2>
+        <p>The included consumer's <code>lkversion</code> command reads production Java and filtered resources
+            from its deployed JAR. This walkthrough shows the three outcomes; the commands run locally, not in your browser.</p>
+        <details open>
+            <summary>1. Original plugin and expectation: passing</summary>
+            <p><code>SourceFreshnessIT</code> expects the message returned by the packaged plugin.</p>
+            <pre>Production response: code-v1:resource-v1:present
+Test expectation:    code-v1:resource-v1:present
+Result: PASS</pre>
+        </details>
+        <details>
+            <summary>2. Save production Java, then run JUnit: failing as expected</summary>
+            <p>In <code>ConsumerPlugin.java</code>, change <code>code-v1:</code> to <code>code-v2:</code>.
+                Keep the test's old expectation. Run <code>SourceFreshnessIT</code> directly from JUnit after the initial Maven build.</p>
+            <pre>Production response: code-v2:resource-v1:present
+Test expectation:    code-v1:resource-v1:present
+Result: FAIL — Minecraft is running the changed production code</pre>
+        </details>
+        <details>
+            <summary>3. Update the test expectation, then run JUnit: passing</summary>
+            <p>In <code>SourceFreshnessIT.java</code>, update the default expected response to
+                <code>code-v2:resource-v1:present</code>. The IDE compiles the changed test as usual;
+                LightKeeper packages the production plugin automatically.</p>
+            <pre>Production response: code-v2:resource-v1:present
+Test expectation:    code-v2:resource-v1:present
+Result: PASS</pre>
+        </details>
+        <p>No manual producer rebuild, runtime manifest option or LightKeeper IDE plugin is required.
+            See <a href="ide-testing.html">the IDE guide</a> for the supported build context and initial setup.</p>
     </section>
     <p class="guide-footnote">Run the independent <a href="https://github.com/PimvanderLoos/LightKeeper/tree/master/examples">single-module and Shade/Assembly consumer examples</a>.
         CI executes them through normal Maven and direct JUnit, using installed SDK artifacts.</p>
