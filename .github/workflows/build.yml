@@ -106,8 +106,11 @@ jobs:
             **/target/**/lightkeeper-diagnostics/**
             ${{ runner.temp }}/lightkeeper-consumers/*.log
             ${{ runner.temp }}/lightkeeper-consumers/results.json
+            ${{ runner.temp }}/lightkeeper-consumers/**/.lightkeeper/launches/*/index.html
+            ${{ runner.temp }}/lightkeeper-consumers/**/.lightkeeper/launches/*/maven.log
           if-no-files-found: ignore
           retention-days: 3
+          include-hidden-files: true
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1

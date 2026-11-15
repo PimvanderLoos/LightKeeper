@@ -352,3 +352,7 @@ under `target/lightkeeper-reports/` (relative to the test JVM's working director
 directory properties keep their meaning. Overview excerpts are bounded, escaped and redact common credential
 fields; original complete logs remain unchanged. Report creation is best-effort and never replaces the original
 failure. Fix the reported build error and rerun; a failed build never uses an older prepared runtime.
+
+For CI artifacts, retain the report and original logs with their directory structure. Native failures are under
+the hidden `.lightkeeper/launches/` directory; GitHub Actions upload-artifact needs `include-hidden-files: true`
+when selecting its `index.html` and `maven.log`. Do not archive runtime export/authentication metadata.
