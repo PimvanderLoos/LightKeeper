@@ -67,7 +67,9 @@ For independent Paper/Spigot profiles, run initial setup with the desired profil
 the preparation child, including a renamed single default execution.
 
 `lightkeeper.buildTimeoutSeconds` controls the producer-build timeout and checkout-lease wait; the default is 300
-seconds. Cancellation terminates the owned Maven child tree. A watchdog also guards that child if the test JVM dies.
+seconds. Cancellation terminates the owned Maven child tree and waits up to five seconds for exit, then restores
+the caller's interrupt status. Repeated interrupts do not abandon that cleanup wait. A watchdog also guards the
+child if the test JVM dies.
 
 ## Session lifecycle and explicit overrides
 
