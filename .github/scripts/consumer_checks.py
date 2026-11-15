@@ -87,6 +87,11 @@ class ConsumerChecks:
 
     def single_module(self, platform):
         root = self.copy("single-module", "single-" + platform)
+        before = {path.relative_to(root): path.read_bytes() for path in root.rglob("*") if path.is_file()}
+        doctor = self.maven(root, platform + "-doctor", "lightkeeper:doctor")
+        after = {path.relative_to(root): path.read_bytes() for path in root.rglob("*") if path.is_file()}
+        require(before == after and "[OK] Producer guards" in doctor and "[WARN] Packaged JAR" in doctor,
+                "Setup doctor wrote project state or rejected a valid unbuilt consumer")
         # Ordinary unit tests must remain independent of any server provisioning.
         log = self.maven(root, platform + "-unit", "-Dtest=OrdinaryUnitTest", "test")
         require("LK_BUILD:" not in log and not (root / ".lightkeeper/snapshots").exists()

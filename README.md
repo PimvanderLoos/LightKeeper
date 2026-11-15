@@ -27,6 +27,9 @@ server files; subsequent runs reuse caches. Download and startup times depend on
 
 ## Quick start
 
+Prefer setup for your project layout? Use the [website configurator](https://pimvanderloos.github.io/LightKeeper/setup.html).
+After adding the plugin, `mvn lightkeeper:doctor` checks effective setup without starting Minecraft or changing project files.
+
 Keep your production API dependencies and packaging. Add the following to an existing Maven plugin project that
 produces a JAR with `plugin.yml` or `paper-plugin.yml`. For a separate E2E module, use the
 [test-module example](examples/reactor/README.md) instead.

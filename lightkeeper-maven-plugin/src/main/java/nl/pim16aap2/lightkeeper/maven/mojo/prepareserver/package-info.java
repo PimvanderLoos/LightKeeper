@@ -1,6 +1,7 @@
 /**
- * Prepare-server mojo implementation and focused collaborators.
+ * Server preparation, read-only setup diagnosis and focused Maven collaborators.
  * <p>
+ * Run {@code mvn lightkeeper:doctor} to inspect effective setup without building or starting a server.
  * This package resolves server/runtime inputs, prepares server assets, and writes the runtime manifest consumed by
  * integration test execution. The default target is the current module's actual packaged main artifact;
  * {@code pluginUnderTest} selects a declared producer dependency, classifier or explicit file instead.

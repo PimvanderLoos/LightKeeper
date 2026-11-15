@@ -23,43 +23,18 @@ final class PluginUnderTestResolver
     )
         throws MojoExecutionException
     {
-        final String artifactId = selection == null ? null : normalized(selection.artifactId());
-        final String groupId = selection == null ? null : normalized(selection.groupId());
+        final Dependency dependency = selectedDependency(project, selection);
         final String classifier = selection == null ? null : normalized(selection.classifier());
         final Path path = selection == null ? null : selection.path();
         if (path != null)
         {
-            if (artifactId != null || groupId != null || classifier != null)
-            {
-                throw failure(project, "pluginUnderTest.path cannot be combined with artifact coordinates");
-            }
             final Path resolved = path.isAbsolute() ? path : project.getBasedir().toPath().resolve(path);
             return resolved(project, resolved, "path:" + resolved);
         }
-        if (artifactId == null)
+        if (dependency == null)
         {
-            if (groupId != null)
-            {
-                throw failure(project, "pluginUnderTest.groupId requires an artifactId");
-            }
             return fromProject(project, project, classifier);
         }
-
-        final List<Dependency> matches = project.getDependencies().stream()
-            .filter(dependency -> artifactId.equals(dependency.getArtifactId()))
-            .filter(dependency -> groupId == null || groupId.equals(dependency.getGroupId()))
-            .filter(dependency -> classifier == null || classifier.equals(normalized(dependency.getClassifier())))
-            .toList();
-        if (matches.size() != 1)
-        {
-            throw failure(
-                project,
-                "selector '%s:%s:%s' matches %d declared dependencies; declare exactly one dependency or add "
-                    .formatted(groupId, artifactId, classifier, matches.size())
-                    + "pluginUnderTest.groupId/classifier to disambiguate"
-            );
-        }
-        final Dependency dependency = matches.getFirst();
         final String selectedClassifier = normalized(dependency.getClassifier());
         for (final MavenProject reactorProject : reactorProjects)
         {
@@ -82,6 +57,41 @@ final class PluginUnderTestResolver
                 project, "declared dependency has no resolved packaged artifact: " + dependency
             ));
         return fromArtifact(project, artifact);
+    }
+
+    /** Validates a logical selector without requiring packaged files or resolving dependencies. */
+    @Nullable Dependency selectedDependency(MavenProject project, @Nullable PluginUnderTestConfig selection)
+        throws MojoExecutionException
+    {
+        final String artifactId = selection == null ? null : normalized(selection.artifactId());
+        final String groupId = selection == null ? null : normalized(selection.groupId());
+        final String classifier = selection == null ? null : normalized(selection.classifier());
+        final Path path = selection == null ? null : selection.path();
+        if (path != null && (artifactId != null || groupId != null || classifier != null))
+        {
+            throw failure(project, "pluginUnderTest.path cannot be combined with artifact coordinates");
+        }
+        if (artifactId == null)
+        {
+            if (groupId != null)
+            {
+                throw failure(project, "pluginUnderTest.groupId requires an artifactId");
+            }
+            return null;
+        }
+        final List<Dependency> matches = project.getDependencies().stream()
+            .filter(dependency -> artifactId.equals(dependency.getArtifactId()))
+            .filter(dependency -> groupId == null || groupId.equals(dependency.getGroupId()))
+            .filter(dependency -> classifier == null || classifier.equals(normalized(dependency.getClassifier())))
+            .toList();
+        if (matches.size() != 1)
+        {
+            throw failure(project,
+                "selector '%s:%s:%s' matches %d declared dependencies; declare exactly one dependency or add "
+                    .formatted(groupId, artifactId, classifier, matches.size())
+                    + "pluginUnderTest.groupId/classifier to disambiguate");
+        }
+        return matches.getFirst();
     }
 
     private static ResolvedPluginArtifact fromProject(
