@@ -108,6 +108,10 @@ jobs:
             ${{ runner.temp }}/lightkeeper-consumers/results.json
             ${{ runner.temp }}/lightkeeper-consumers/**/.lightkeeper/launches/*/index.html
             ${{ runner.temp }}/lightkeeper-consumers/**/.lightkeeper/launches/*/maven.log
+            ${{ runner.temp }}/lightkeeper-consumers/**/lightkeeper-diagnostics/**/index.html
+            ${{ runner.temp }}/lightkeeper-consumers/**/lightkeeper-diagnostics/**/failure.txt
+            ${{ runner.temp }}/lightkeeper-consumers/**/lightkeeper-diagnostics/**/server-output.log
+            ${{ runner.temp }}/lightkeeper-consumers/**/target/lightkeeper-reports/**
           if-no-files-found: ignore
           retention-days: 3
           include-hidden-files: true
