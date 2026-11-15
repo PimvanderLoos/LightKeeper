@@ -223,6 +223,34 @@ class DoctorInspectionTest
             });
     }
 
+    @Test
+    void inspect_shouldRejectAnExplicitMissingJarWithoutSuggestingThatDoctorCanBuildIt()
+        throws Exception
+    {
+        // setup
+        final MavenProject project = project();
+        final Xpp3Dom config = new Xpp3Dom("configuration");
+        final Xpp3Dom target = new Xpp3Dom("pluginUnderTest");
+        final Xpp3Dom path = new Xpp3Dom("path");
+        path.setValue("missing-plugin.jar");
+        target.addChild(path);
+        config.addChild(target);
+        project.getBuildPlugins().getFirst().setConfiguration(config);
+        final MavenSession session = session();
+
+        // execute
+        final var findings = inspect(project, session);
+
+        // verify
+        assertThat(findings).filteredOn(finding -> finding.subject().equals("Packaged JAR"))
+            .singleElement().satisfies(finding ->
+            {
+                assertThat(finding.level()).isEqualTo(DoctorFinding.Level.ERROR);
+                assertThat(finding.detail()).contains("missing-plugin.jar", "not a readable JAR");
+                assertThat(finding.action()).contains("pluginUnderTest.path");
+            });
+    }
+
     private List<DoctorFinding> inspect(MavenProject project, MavenSession session)
     {
         return new DoctorInspection(project, session,

@@ -327,7 +327,9 @@ The aggregate goal inspects the selected preparation modules once: Maven/Java, t
 producer guards, target selection, Failsafe bindings/skips and direct-JUnit ownership metadata. Configured server
 JDK versions are read from local release metadata without executing them; unknown wrapper versions are warnings. It never executes build
 phases, resolves server downloads or writes project files; Maven may resolve the plugin itself. Errors include a fix
-and fail the command; warnings cover expected first-run conditions such as an unbuilt JAR or absent IDE metadata.
+and fail the command; warnings include artifacts unavailable to a doctor-only invocation and absent IDE metadata.
+Doctor does not build or resolve dependencies, so an artifact warning alone never labels an existing JAR stale.
+An explicit missing/unreadable `pluginUnderTest.path` is a definite configuration error.
 Run normal `verify` once to initialize those generated inputs. It validates available selected archives statically,
 without loading classes or requiring the target plugin to enable.
 

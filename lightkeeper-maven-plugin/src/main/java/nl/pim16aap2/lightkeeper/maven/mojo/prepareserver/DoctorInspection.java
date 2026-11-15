@@ -188,8 +188,18 @@ final class DoctorInspection
         }
         catch (MojoExecutionException exception)
         {
-            add(WARN, "Packaged JAR", "The selected packaged artifact is not available yet.",
-                "Run normal Maven verify with the producer selected (-pl :test-module -am for a reactor).");
+            if (selection.path() != null)
+            {
+                add(ERROR, "Packaged JAR", message(exception),
+                    "Fix pluginUnderTest.path to name an existing readable packaged plugin JAR.");
+            }
+            else
+            {
+                add(WARN, "Packaged JAR", "This doctor-only invocation does not expose the packaged artifact; "
+                    + "no build or dependency resolution was requested.",
+                    "Run normal Maven verify to validate the actual packaging. This warning alone does not "
+                        + "mean an existing JAR is stale or invalid.");
+            }
             return;
         }
         try
