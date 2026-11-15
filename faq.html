@@ -52,8 +52,9 @@
 
     <section class="panel">
         <h2>Where are integration-test logs?</h2>
-        <p>See Failsafe output and summaries under:</p>
-        <pre><code>lightkeeper-integration-tests/target/failsafe-reports/</code></pre>
+        <p>Normal Maven summaries are in your test module's <code>target/failsafe-reports/</code>.
+            Build, server-lifecycle and test failures also link a self-contained <code>index.html</code> overview with
+            cause, location, next action and the original logs. See <a href="ide-testing.html#progress-and-reports">progress and diagnostic report locations</a>.</p>
     </section>
 
     <section class="panel">
